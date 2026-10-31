@@ -1,251 +1,57 @@
 /* ============================================================================
-   Header v7 - night sky canvas.
-   Rebuilt 26 Oct 2026 (the original file was missing from the server).
-
-   The approved concept: a genuinely dark night sky; the moon on one side
-   giving its own light with "ChartPulse" written inside it; many stars, of
-   which only a few twinkle, and those carry a famous market symbol. No
-   sun-style rays, no mountains.
-
-   Engineering guards, all of which only ever reduce work:
-     - devicePixelRatio capped at 2
-     - paused while the tab is hidden
-     - prefers-reduced-motion  -> one static frame, no loop
-     - Save-Data on            -> one static frame, no loop
-     - deviceMemory under 4 GB -> one static frame, no loop
-     - under 30 fps sustained  -> stops and leaves the static frame
-   The canvas is decorative and aria-hidden in the markup.
-   ========================================================================== */
-(function () {
-  'use strict';
-
-  var cv = document.getElementById('fx7');
-  if (!cv || !cv.getContext) return;
-
-  var ctx = cv.getContext('2d', { alpha: true });
-  if (!ctx) return;
-
-  // ---- capability gates ---------------------------------------------------
-  var mq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
-  var conn = navigator.connection || {};
-  var lowEnd = (navigator.deviceMemory && navigator.deviceMemory < 4) || conn.saveData === true;
-
-  function wantsStill() {
-    return lowEnd || (mq && mq.matches);
-  }
-
-  // ---- model --------------------------------------------------------------
-  var SYMBOLS = ['NIFTY', 'BTC', 'S&P 500', 'GOLD', 'EUR/USD', 'NASDAQ', 'DAX'];
-  var stars = [];
-  var twinklers = [];
-  var moon = { x: 0, y: 0, r: 0 };
-  var W = 0, H = 0, dpr = 1;
-
-  function rand(a, b) { return a + Math.random() * (b - a); }
-
-  function build() {
-    var rect = cv.getBoundingClientRect();
-    W = Math.max(1, Math.round(rect.width));
-    H = Math.max(1, Math.round(rect.height));
-    dpr = Math.min(window.devicePixelRatio || 1, 2);   // capped at 2
-
-    cv.width = Math.round(W * dpr);
-    cv.height = Math.round(H * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    // The moon sits on the right, clear of the copy, and shrinks on narrow screens.
-    moon.r = Math.max(42, Math.min(W, H) * (W < 760 ? 0.13 : 0.11));
-    moon.x = W < 760 ? W * 0.78 : W * 0.80;
-    moon.y = W < 760 ? H * 0.20 : H * 0.30;
-
-    // Density scales with area so a phone does not draw a desktop's worth.
-    var count = Math.round(Math.min(190, Math.max(50, (W * H) / 9000)));
-    stars = [];
-    for (var i = 0; i < count; i++) {
-      stars.push({ x: rand(0, W), y: rand(0, H), r: rand(0.4, 1.5), a: rand(0.18, 0.78) });
-    }
-
-    // Only a few twinkle, and those are the ones carrying a symbol.
-    var n = W < 560 ? 3 : (W < 900 ? 5 : SYMBOLS.length);
-    twinklers = [];
-    for (var j = 0; j < n; j++) {
-      twinklers.push({
-        x: rand(W * 0.06, W * (W < 760 ? 0.92 : 0.70)),
-        y: rand(H * 0.12, H * 0.86),
-        r: rand(1.5, 2.3),
-        label: SYMBOLS[j % SYMBOLS.length],
-        phase: Math.random() * Math.PI * 2,
-        speed: rand(0.6, 1.1)
-      });
-    }
-  }
-
-  // ---- paint --------------------------------------------------------------
-  function drawMoon() {
-    var r = moon.r;
-
-    // Its own light, falling off smoothly. No rays.
-    var glow = ctx.createRadialGradient(moon.x, moon.y, r * 0.7, moon.x, moon.y, r * 3.6);
-    glow.addColorStop(0, 'rgba(206,218,255,0.17)');
-    glow.addColorStop(0.45, 'rgba(176,192,240,0.06)');
-    glow.addColorStop(1, 'rgba(176,192,240,0)');
-    ctx.fillStyle = glow;
-    ctx.beginPath();
-    ctx.arc(moon.x, moon.y, r * 3.6, 0, Math.PI * 2);
-    ctx.fill();
-
-    // The disc.
-    var face = ctx.createRadialGradient(
-      moon.x - r * 0.32, moon.y - r * 0.34, r * 0.1,
-      moon.x, moon.y, r
-    );
-    face.addColorStop(0, '#F4F7FF');
-    face.addColorStop(0.58, '#DCE3F5');
-    face.addColorStop(1, '#AFBBD8');
-    ctx.fillStyle = face;
-    ctx.beginPath();
-    ctx.arc(moon.x, moon.y, r, 0, Math.PI * 2);
-    ctx.fill();
-
-    // A few craters so it is a moon, not a circle.
-    ctx.fillStyle = 'rgba(126,140,172,0.20)';
-    var craters = [[-0.34, -0.12, 0.15], [0.26, 0.30, 0.11], [0.06, -0.44, 0.08], [-0.12, 0.42, 0.07]];
-    for (var i = 0; i < craters.length; i++) {
-      ctx.beginPath();
-      ctx.arc(moon.x + craters[i][0] * r, moon.y + craters[i][1] * r, craters[i][2] * r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // "ChartPulse" written inside the moon.
-    var fs = Math.max(9, r * 0.235);
-    ctx.save();
-    ctx.font = '600 ' + fs.toFixed(1) + 'px "IBM Plex Sans", system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(42,52,78,0.80)';
-    ctx.fillText('ChartPulse', moon.x, moon.y + r * 0.04);
-    ctx.restore();
-  }
-
-  function drawStars() {
-    for (var i = 0; i < stars.length; i++) {
-      var s = stars[i];
-      ctx.globalAlpha = s.a;
-      ctx.fillStyle = '#DCE6FF';
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  function drawTwinklers(t) {
-    for (var i = 0; i < twinklers.length; i++) {
-      var k = twinklers[i];
-      // t is 0 when still, so this collapses to a steady star.
-      var pulse = t ? (0.55 + 0.45 * Math.sin(k.phase + t * k.speed)) : 0.9;
-
-      ctx.globalAlpha = pulse;
-      ctx.fillStyle = '#FFF4DC';
-      ctx.beginPath();
-      ctx.arc(k.x, k.y, k.r, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.globalAlpha = pulse * 0.30;
-      ctx.fillStyle = '#F4B740';
-      ctx.beginPath();
-      ctx.arc(k.x, k.y, k.r * 3.1, 0, Math.PI * 2);
-      ctx.fill();
-
-      // the symbol it carries
-      ctx.globalAlpha = Math.min(0.72, pulse * 0.8);
-      ctx.fillStyle = '#C9D4EE';
-      ctx.font = '500 10px "IBM Plex Mono", ui-monospace, Menlo, monospace';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(k.label, k.x + k.r * 4.2, k.y);
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  function frame(t) {
-    ctx.clearRect(0, 0, W, H);
-    drawStars();
-    drawMoon();
-    drawTwinklers(t);
-  }
-
-  // ---- loop, with the fps guard -------------------------------------------
-  var raf = 0, running = false, start = 0;
-  var samples = 0, slow = 0, last = 0;
-
-  function tick(now) {
-    if (!running) return;
-    if (!start) start = now;
-    if (last) {
-      var dt = now - last;
-      // Sustained slowness, not one hitch: 30 slow frames in 120 and it stops.
-      samples++;
-      if (dt > 33.4) slow++;
-      if (samples >= 120) {
-        if (slow > 30) { stop(); frame(0); return; }
-        samples = 0; slow = 0;
-      }
-    }
-    last = now;
-    frame((now - start) / 1000);
-    raf = requestAnimationFrame(tick);
-  }
-
-  function play() {
-    if (running || wantsStill()) return;
-    running = true;
-    last = 0;
-    raf = requestAnimationFrame(tick);
-  }
-
-  function stop() {
-    running = false;
-    if (raf) cancelAnimationFrame(raf);
-    raf = 0;
-  }
-
-  // ---- wiring -------------------------------------------------------------
-  var resizeTimer = 0;
-  function onResize() {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function () {
-      build();
-      if (wantsStill()) { stop(); frame(0); } else { frame(0); }
-    }, 150);
-  }
-
-  document.addEventListener('visibilitychange', function () {
-    if (document.hidden) stop();
-    else if (!wantsStill()) play();
-  });
-
-  if (mq) {
-    var onMq = function () {
-      build();
-      if (wantsStill()) { stop(); frame(0); } else { play(); }
-    };
-    if (mq.addEventListener) mq.addEventListener('change', onMq);
-    else if (mq.addListener) mq.addListener(onMq);
-  }
-
-  window.addEventListener('resize', onResize, { passive: true });
-
-  function boot() {
-    build();
-    frame(0);                       // a complete still frame first
-    if (!wantsStill() && !document.hidden) play();
-  }
-
-  // Start after first paint so the hero text is never held up.
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(boot, { timeout: 1200 });
-  } else {
-    requestAnimationFrame(function () { setTimeout(boot, 0); });
-  }
+   Header v7 - original cinematic space hero with Earth video + canvas FX
+   ============================================================================ */
+(function(){
+var hero=document.querySelector('.cp-hero7'),v=document.getElementById('cp-hero7-video'),c=document.getElementById('fx7');
+if(!c||!c.getContext)return;
+if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches){if(v){v.removeAttribute('autoplay');v.pause();}return;}
+var x=c.getContext('2d'),W=0,H=0,AH=0,G={mx:0,my:0},stars=[],rings=[],shoot=null,nextRing=1800,nextShoot=3200,run=true,raf=0,
+m={x:0,y:0,tx:0,ty:0,a:0,ta:0},par={x:0,y:0};
+function geo(){if(!hero||!v)return;var h=hero.getBoundingClientRect(),r=v.getBoundingClientRect(),s=Math.max(r.width/1280,r.height/720);
+ G.mx=1120*s+r.left-h.left+(r.width-1280*s)*.85;G.my=170*s+r.top-h.top;AH=Math.min(H,r.bottom-h.top);}
+function size(){var d=Math.min(window.devicePixelRatio||1,2);if(!hero)return;W=hero.clientWidth;H=hero.clientHeight;c.width=W*d;c.height=H*d;x.setTransform(d,0,0,d,0,0);geo();
+ var n=Math.min(70,Math.round(W*AH/20000));stars=[];
+ for(var i=0;i<n;i++)stars.push({x:Math.random()*W,y:Math.random()*AH,r:.5+Math.random()*.7,p:Math.random()*6.28,s:.0007+Math.random()*.0016,b:i%12===0});}
+function flare(px,py,r,a){var g=x.createRadialGradient(px,py,0,px,py,r*.55);
+ g.addColorStop(0,'rgba(255,244,205,'+a+')');g.addColorStop(1,'rgba(255,244,205,0)');
+ x.fillStyle=g;x.beginPath();x.arc(px,py,r*.55,0,6.283);x.fill();
+ x.strokeStyle='rgba(255,240,200,'+a*.7+')';x.lineWidth=1;x.beginPath();x.moveTo(px-r,py);x.lineTo(px+r,py);x.moveTo(px,py-r);x.lineTo(px,py+r);x.stroke();}
+function frame(t){raf=0;if(!run)return;
+ x.clearRect(0,0,W,H);x.globalCompositeOperation='lighter';
+ m.x+=(m.tx-m.x)*.1;m.y+=(m.ty-m.y)*.1;m.a+=(m.ta-m.a)*.08;
+ par.x+=((m.ta?(.5-m.tx/W)*14:0)-par.x)*.06;par.y+=((m.ta?(.5-m.ty/H)*8:0)-par.y)*.06;
+ if(v)v.style.transform='translate3d('+par.x.toFixed(2)+'px,'+par.y.toFixed(2)+'px,0)';
+ var cx=G.mx+par.x,cy=G.my+par.y,i,s,a;
+ for(i=0;i<stars.length;i++){s=stars[i];a=.5+.5*Math.sin(t*s.s+s.p);
+  if(s.b)flare(s.x,s.y,5+10*a,a*.85);
+  else{x.fillStyle='rgba(205,224,255,'+(.12+.5*a)+')';x.beginPath();x.arc(s.x,s.y,s.r,0,6.283);x.fill();}}
+ a=.5+.5*Math.sin(t/650);var g=x.createRadialGradient(cx,cy,0,cx,cy,190);
+ g.addColorStop(0,'rgba(215,235,255,'+(.1+.07*a)+')');g.addColorStop(1,'rgba(215,235,255,0)');x.fillStyle=g;x.fillRect(cx-190,cy-190,380,380);
+ if(t>nextRing){rings.push(t);nextRing=t+5200;}
+ rings=rings.filter(function(q){return t-q<4600;});
+ rings.forEach(function(q){var k=(t-q)/4600,r=45+k*Math.min(W*.62,900),o=(1-k)*(1-k);
+  x.beginPath();x.arc(cx,cy,r,0,6.283);x.lineWidth=8;x.strokeStyle='rgba(120,200,255,'+o*.05+')';x.stroke();
+  x.lineWidth=1.3;x.strokeStyle='rgba(195,232,255,'+o*.4+')';x.stroke();});
+ if(!shoot&&t>nextShoot){var an=Math.PI*(.11+Math.random()*.1);shoot={x:W*(.4+Math.random()*.55),y:AH*Math.random()*.3,vx:-Math.cos(an)*.9,vy:Math.sin(an)*.9,t:t};}
+ if(shoot){var k2=t-shoot.t;if(k2>950){shoot=null;nextShoot=t+3500+Math.random()*4500;}
+  else{var hx=shoot.x+shoot.vx*k2,hy=shoot.y+shoot.vy*k2,al=Math.sin(k2/950*Math.PI),lg=x.createLinearGradient(hx-shoot.vx*170,hy-shoot.vy*170,hx,hy);
+   lg.addColorStop(0,'rgba(255,255,255,0)');lg.addColorStop(1,'rgba(255,246,220,'+al+')');
+   x.strokeStyle=lg;x.lineWidth=1.6;x.beginPath();x.moveTo(hx-shoot.vx*170,hy-shoot.vy*170);x.lineTo(hx,hy);x.stroke();flare(hx,hy,9,al*.8);}}
+ if(m.a>.01){var cg=x.createRadialGradient(m.x,m.y,0,m.x,m.y,200);
+  cg.addColorStop(0,'rgba(255,232,170,'+.2*m.a+')');cg.addColorStop(.35,'rgba(120,200,255,'+.07*m.a+')');cg.addColorStop(1,'rgba(120,200,255,0)');
+  x.fillStyle=cg;x.fillRect(m.x-200,m.y-200,400,400);}
+ var y0=H-3,bx=((t%7500)/7500)*(W+400)-200,fa=Math.max(0,Math.min(1,Math.min(bx+80,W+80-bx)/200)),hg=x.createLinearGradient(0,0,W,0);
+ hg.addColorStop(0,'rgba(90,216,255,0)');hg.addColorStop(.5,'rgba(90,216,255,.45)');hg.addColorStop(1,'rgba(90,216,255,0)');
+ x.strokeStyle=hg;x.lineWidth=1;x.beginPath();x.moveTo(0,y0);x.lineTo(W,y0);x.stroke();
+ var P=[[-60,0],[-44,0],[-34,-4],[-24,0],[-12,6],[0,-30],[10,12],[22,0],[44,-7],[64,0]];
+ x.save();x.globalAlpha=fa;x.shadowColor='#f5c451';x.shadowBlur=12;x.strokeStyle='rgba(255,226,150,.9)';x.lineWidth=1.8;x.beginPath();
+ P.forEach(function(p,j){j?x.lineTo(bx+p[0],y0+p[1]):x.moveTo(bx+p[0],y0+p[1]);});x.stroke();x.restore();
+ flare(bx,y0-30,12,.9*fa);
+ raf=requestAnimationFrame(frame);}
+if(hero){hero.addEventListener('pointermove',function(e){if(e.pointerType!=='mouse')return;var r=hero.getBoundingClientRect();m.tx=e.clientX-r.left;m.ty=e.clientY-r.top;if(!m.ta){m.x=m.tx;m.y=m.ty;}m.ta=1;});
+hero.addEventListener('pointerleave',function(){m.ta=0;});}
+if(window.ResizeObserver)new ResizeObserver(size).observe(hero||c);else addEventListener('resize',size);
+size();
+if('IntersectionObserver'in window)new IntersectionObserver(function(e){run=e[0].isIntersecting;if(run&&!raf)raf=requestAnimationFrame(frame);}).observe(hero||c);
+raf=requestAnimationFrame(frame);
 })();
