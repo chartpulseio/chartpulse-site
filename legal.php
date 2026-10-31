@@ -6,7 +6,7 @@ $biz = t_cfg('business_name', 'ChartPulse'); $mail = t_cfg('support_email', '');
 $sebi = t_cfg('sebi_registration', ''); $upd = t_cfg('legal_updated', '25 September 2026');
 $pages = ['terms' => 'Terms & Conditions', 'privacy' => 'Privacy Policy', 'refund' => 'Refund & Cancellation', 'contact' => 'Contact us', 'disclaimer' => 'Risk disclaimer'];
 $p = $_GET['p'] ?? 'terms'; if (!isset($pages[$p])) $p = 'terms';
-$title = $pages[$p] . ' · ' . $biz;
+$title = $pages[$p] . ' Â· ' . $biz;
 ?><!doctype html>
 <html lang="en">
 <head>
@@ -28,7 +28,7 @@ $title = $pages[$p] . ' · ' . $biz;
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88' aria-hidden='true'><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%23F4B740' stroke-width='3'/><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%2322AB94' stroke-width='2.4' transform='rotate(60 44 44)'/><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%23F7525F' stroke-width='2.4' transform='rotate(-60 44 44)'/><circle cx='44' cy='44' r='4.5' fill='%23EDEDEF'/></svg>">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/static/v2/fonts/ibm-plex-sans-400-latin.woff2" crossorigin>
-<link rel="stylesheet" href="/static/v2/base.css?v=9">
+<link rel="stylesheet" href="/static/v2/base.css?v=10">
 <link rel="stylesheet" href="/static/v2/cp.css?v=9">
 <link rel="stylesheet" href="/static/v2/odds.css?v=2">
 <script defer src="/static/v2/consent.js?v=2"></script>
@@ -49,8 +49,8 @@ $title = $pages[$p] . ' · ' . $biz;
     <a href="pricing.html" data-p="pricing">Pricing</a>
   </nav>
   <div class="head-right">
-    <button class="cmdk-trigger" type="button" data-cmdk aria-label="Search markets"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search markets…</span><kbd>⌘K</kbd></button>
-    <span class="live-pill" id="hdrLive" title="Instruments trading right now"><span class="ldot off"></span><b>–</b> live</span>
+    <button class="cmdk-trigger" type="button" data-cmdk aria-label="Search markets"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search marketsâ¦</span><kbd>âK</kbd></button>
+    <span class="live-pill" id="hdrLive" title="Instruments trading right now"><span class="ldot off"></span><b>â</b> live</span>
     <span class="clock" id="cpClock" title="Times on this site are shown in your own time zone"></span>
     <a class="btn primary" href="pricing.html">Get access</a>
     <button class="nav-toggle" type="button" aria-label="Menu" aria-controls="siteNav" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
@@ -111,10 +111,10 @@ or buy/sell recommendations.</p>
 <?php elseif ($p === 'contact'): ?>
   <p>We usually reply within one working day.</p>
   <div class="g2" style="margin-top:10px">
-    <div class="card spot"><h2>Email</h2><p style="font-size:16px"><?= $mail ? '<a href="mailto:' . $e($mail) . '">' . $e($mail) . '</a>' : '—' ?></p></div>
-    <div class="card spot"><h2>Phone</h2><p style="font-size:16px"><?= $tel ? '<a href="tel:' . $e(preg_replace('/\s+/', '', $tel)) . '">' . $e($tel) . '</a>' : '—' ?></p></div>
+    <div class="card spot"><h2>Email</h2><p style="font-size:16px"><?= $mail ? '<a href="mailto:' . $e($mail) . '">' . $e($mail) . '</a>' : 'â' ?></p></div>
+    <div class="card spot"><h2>Phone</h2><p style="font-size:16px"><?= $tel ? '<a href="tel:' . $e(preg_replace('/\s+/', '', $tel)) . '">' . $e($tel) . '</a>' : 'â' ?></p></div>
     <div class="card spot"><h2>Business</h2><p style="font-size:16px"><?= $e($biz) ?></p></div>
-    <div class="card spot"><h2>Address</h2><p style="font-size:16px;white-space:pre-line"><?= $addr ? $e($addr) : '—' ?></p></div>
+    <div class="card spot"><h2>Address</h2><p style="font-size:16px;white-space:pre-line"><?= $addr ? $e($addr) : 'â' ?></p></div>
   </div>
 <?php else: ?>
   <p><b><?= $e($biz) ?></b> provides market data analytics and rule-based scanning tools for education and research.</p>
@@ -134,9 +134,9 @@ or buy/sell recommendations.</p>
     </div>
     <div><h4>Product</h4><a href="./">Overview</a><a href="scanner.html">Tier-1 Scanner</a><a href="insights.html">Market Insights</a><a href="news.html">News &amp; Impact</a><a href="pricing.html">Pricing</a></div>
     <div><h4>Company</h4><a href="legal.php?p=contact">Contact us</a><a href="legal.php?p=terms">Terms &amp; Conditions</a><a href="legal.php?p=privacy">Privacy Policy</a><a href="legal.php?p=refund">Refund &amp; Cancellation</a></div>
-    <div><h4>Resources</h4><a href="legal.php?p=disclaimer">Risk disclaimer</a><a href="/api.php?r=export">Signals CSV</a><a href="#" data-cmdk>Search <kbd>⌘K</kbd></a></div>
+    <div><h4>Resources</h4><a href="legal.php?p=disclaimer">Risk disclaimer</a><a href="/api.php?r=export">Signals CSV</a><a href="#" data-cmdk>Search <kbd>âK</kbd></a></div>
   </div>
-  <div class="disclaimer wrap"><b>Risk disclaimer:</b> ChartPulse provides market data analytics and rule-based scanning tools for education and research. Nothing on this website is investment advice or a recommendation to buy or sell any security, derivative, currency or crypto asset. Trading involves substantial risk of loss. Signals are model output based on delayed or real-time third-party data that may be inaccurate. Consult a SEBI-registered adviser before acting. © <span data-year></span> ChartPulse.</div>
+  <div class="disclaimer wrap"><b>Risk disclaimer:</b> ChartPulse provides market data analytics and rule-based scanning tools for education and research. Nothing on this website is investment advice or a recommendation to buy or sell any security, derivative, currency or crypto asset. Trading involves substantial risk of loss. Signals are model output based on delayed or real-time third-party data that may be inaccurate. Consult a SEBI-registered adviser before acting. Â© <span data-year></span> ChartPulse.</div>
 </footer>
 <script defer src="/static/v2/cp.js?v=12"></script>
 </body>
