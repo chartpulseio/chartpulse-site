@@ -62,8 +62,18 @@
   }
 }
 
-/* The video element is kept out of the layout: its sources no longer exist. */
-.cp-hero7 #bg7{ display: none !important; }
+/* Video background — rotating Earth */
+.cp-hero7 #cp-hero7-video{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 85% center;
+  z-index: 0;
+  pointer-events: none;
+  will-change: transform;
+}
 
 /* ---- copy ---------------------------------------------------------------- */
 .cp-hero7 .h7-copy{
