@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>200 EMA Scanner — ChartPulse</title>
+<meta name="description" content="Daily 200 EMA entries in four stages — Watch, Early, Confirmed and Best — built on Weinstein Stage 2, the Minervini trend template and the 200-day rule.">
+<style>
+:root{
+  --void:#060A10; --panel:#0C121B; --panel-2:#111926; --raised:#16202E;
+  --rule:#1B2534; --rule-soft:#131C28;
+  --ink:#DDE6F2; --ink-dim:#8A9AB0; --ink-faint:#5A6B82;
+  --live:#2DD4AA; --s1c:#3987e5; --s2c:#BE8524;
+  --up:#27A567; --down:#D4504A;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--void);color:var(--ink);font:13.5px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:var(--s1c);text-decoration:none}
+a:hover{text-decoration:underline}
+
+.rail{display:flex;align-items:center;gap:16px;height:46px;padding:0 18px;border-bottom:1px solid var(--rule);
+  background:var(--panel);position:sticky;top:0;z-index:30;overflow-x:auto}
+.mark{font:600 13px/1 var(--mono);letter-spacing:.14em;white-space:nowrap}
+.mark b{color:var(--live)}
+.slug{font:12px/1 var(--mono);color:var(--ink-faint);white-space:nowrap}
+.rail .sp{flex:1}
+.rail nav{display:flex;gap:14px}
+.rail nav a{font:12px/1 var(--mono);color:var(--ink-dim);white-space:nowrap}
+
+.head{padding:22px 18px 0;max-width:1480px;margin:0 auto}
+.head h1{margin:0 0 7px;font:600 20px/1.2 var(--sans);letter-spacing:-.01em}
+.head p{margin:0 0 4px;color:var(--ink-dim);max-width:80ch}
+.wrap{max-width:1480px;margin:0 auto;padding:18px}
+
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0;padding:0;list-style:none}
+.steps li{background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:7px 11px;
+  font:11.5px/1 var(--mono);color:var(--ink-dim)}
+.steps b{color:var(--ink);font-weight:500}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--rule);
+  border:1px solid var(--rule);border-radius:3px;overflow:hidden;margin:18px 0}
+.kpi{background:var(--panel);padding:12px 14px}
+.kpi span{display:block;font:11px/1.3 var(--mono);color:var(--ink-faint);margin-bottom:5px}
+.kpi b{font:500 19px/1 var(--mono);font-variant-numeric:tabular-nums}
+.kpi.k-best b{color:var(--live)}
+.kpi.k-conf b{color:var(--s1c)}
+.kpi.k-early b{color:var(--s2c)}
+
+.ctl{display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap;padding:14px 0 16px;border-bottom:1px solid var(--rule)}
+.grp{display:flex;flex-direction:column;gap:6px}
+.grp>span{font:11px/1 var(--mono);color:var(--ink-faint)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{background:var(--panel-2);border:1px solid var(--rule);color:var(--ink-dim);border-radius:2px;
+  padding:6px 11px;font:12px/1 var(--mono);cursor:pointer}
+.chip:hover{color:var(--ink);border-color:#27364a}
+.chip[aria-pressed=true]{background:var(--raised);border-color:var(--s1c);color:var(--ink)}
+.grp select{background:var(--panel-2);border:1px solid var(--rule);color:var(--ink);border-radius:2px;
+  padding:6px 9px;font:12px/1 var(--mono)}
+
+.tbl{width:100%;border-collapse:collapse;margin-top:14px}
+.tbl th{text-align:left;font:11px/1 var(--mono);color:var(--ink-faint);font-weight:400;
+  padding:9px 10px;border-bottom:1px solid var(--rule);white-space:nowrap}
+.tbl td{padding:11px 10px;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+.tbl tbody tr:hover{background:var(--panel)}
+.tbl th.r,.tbl td.r{text-align:right}
+
+.sym{font:500 13px/1.3 var(--mono)}
+.mkt{display:block;font:10.5px/1.3 var(--mono);color:var(--ink-faint);margin-top:3px}
+.badge{display:inline-block;padding:2px 7px;border-radius:2px;font:600 10px/1.4 var(--mono);letter-spacing:.04em}
+.b-best{color:var(--live);border:1px solid rgba(45,212,170,.5);background:rgba(45,212,170,.08)}
+.b-confirmed{color:var(--s1c);border:1px solid rgba(57,135,229,.5);background:rgba(57,135,229,.08)}
+.b-early{color:var(--s2c);border:1px solid rgba(190,133,36,.55);background:rgba(190,133,36,.09)}
+.b-watch{color:var(--ink-faint);border:1px solid var(--rule);background:var(--panel-2)}
+.side-LONG{color:var(--up);font:600 11.5px/1 var(--mono)}
+.side-SHORT{color:var(--down);font:600 11.5px/1 var(--mono)}
+.trg{font:11.5px/1.4 var(--mono);color:var(--ink-dim)}
+.tag{display:block;margin-top:4px;font:10px/1.3 var(--mono);color:var(--ink-faint)}
+.flt{display:flex;gap:4px}
+.f{width:16px;height:16px;border-radius:2px;border:1px solid var(--rule);font:9px/14px var(--mono);
+  text-align:center;color:var(--ink-faint);background:var(--panel-2)}
+.f.on{color:var(--live);border-color:rgba(45,212,170,.5);background:rgba(45,212,170,.1)}
+.bar{width:56px;height:5px;border-radius:2px;background:var(--rule);overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;background:var(--live)}
+.pos{color:var(--up)} .neg{color:var(--down)}
+
+.note{margin:20px 0 0;padding:13px 15px;border:1px solid var(--rule);border-left:2px solid var(--s2c);
+  border-radius:3px;background:var(--panel);color:var(--ink-dim);font-size:12.5px;max-width:92ch}
+.note b{color:var(--ink)}
+.msg{padding:28px 10px;color:var(--ink-faint);font:12.5px/1.6 var(--mono)}
+.foot{padding:16px 18px 40px;max-width:1480px;margin:0 auto;color:var(--ink-faint);font:11.5px/1.6 var(--mono)}
+@media (max-width:760px){ .tbl .hide{display:none} }
+</style>
+</head>
+<body>
+
+<div class="rail">
+  <span class="mark">CHART<b>PULSE</b></span>
+  <span class="slug">200 EMA SCANNER</span>
+  <span class="sp"></span>
+  <nav>
+    <a href="./">Overview</a>
+    <a href="scanner.html">Scanner</a>
+    <a href="/bias/">Bias</a>
+    <a href="/pro-backtesting">Backtesting</a>
+    <a href="/dashboard.html">Bottom Reversal</a>
+  </nav>
+</div>
+
+<div class="head">
+  <h1>200 EMA Scanner</h1>
+  <p>Daily 200 EMA entries, from the earliest read to the safest. A plain cross is noisy, so each symbol is
+     placed in one of four stages instead: price approaching the average, a first trigger near it, a confirmed
+     close through it, and a retest that held. Every row is a daily-timeframe read of the 200 EMA.</p>
+  <ul class="steps">
+    <li><b>0</b> Watch · near the EMA</li>
+    <li><b>1</b> Early · trigger fired</li>
+    <li><b>2</b> Confirmed · closed through</li>
+    <li><b>3</b> Best · retest held</li>
+  </ul>
+</div>
+
+<div class="wrap">
+  <div class="kpis">
+    <div class="kpi k-best"><span>BEST (RETEST)</span><b id="kBest">–</b></div>
+    <div class="kpi k-conf"><span>CONFIRMED</span><b id="kConf">–</b></div>
+    <div class="kpi k-early"><span>EARLY</span><b id="kEarly">–</b></div>
+    <div class="kpi"><span>WATCH</span><b id="kWatch">–</b></div>
+    <div class="kpi"><span>SYMBOLS SCANNED</span><b id="kScan">–</b></div>
+    <div class="kpi"><span>SKIPPED · SHORT HISTORY</span><b id="kSkip">–</b></div>
+  </div>
+
+  <div class="ctl">
+    <div class="grp">
+      <span>DIRECTION</span>
+      <div class="chips" id="cSide">
+        <button class="chip" data-v="ALL" aria-pressed="true">All</button>
+        <button class="chip" data-v="LONG" aria-pressed="false">Long</button>
+        <button class="chip" data-v="SHORT" aria-pressed="false">Short</button>
+      </div>
+    </div>
+    <div class="grp">
+      <span>STAGE</span>
+      <div class="chips" id="cEntry">
+        <button class="chip" data-v="best" aria-pressed="true">Best</button>
+        <button class="chip" data-v="confirmed" aria-pressed="true">Confirmed</button>
+        <button class="chip" data-v="early" aria-pressed="true">Early</button>
+        <button class="chip" data-v="watch" aria-pressed="true">Watch</button>
+      </div>
+    </div>
+    <div class="grp">
+      <span>MIN FILTERS AGREEING</span>
+      <select id="cScore">
+        <option value="">Per-stage default</option>
+        <option value="0">0 or more</option>
+        <option value="1">1 or more</option>
+        <option value="2">2 or more</option>
+        <option value="3">All three</option>
+      </select>
+    </div>
+    <div class="grp">
+      <span>&nbsp;</span>
+      <div class="chips"><button class="chip" id="cRefresh">Refresh</button></div>
+    </div>
+  </div>
+
+  <div id="out"><div class="msg">Loading…</div></div>
+
+  <p class="note">
+    <b>Strength is a checklist score, not a probability.</b> It is the stage base (Watch 20, Early 35,
+    Confirmed 50, Best 65) plus 15 for each of the three filters that agrees — EMA slope, volume on the
+    trigger bar, and the weekly trend — capped at 95. The thresholds (1.5 ATR approach zone, 20-bar sweep,
+    3-bar trigger window, 1.2× volume) are starting values and <b>have not been backtested on this
+    universe</b>. Early and Watch will produce more false signals than Confirmed and Best. Watch rows are
+    a watchlist, not entries. While a market is open the current daily candle is included, so Early and
+    Confirmed rows can appear and disappear before the close; they are final after it.
+  </p>
+</div>
+
+<div class="foot">
+  Daily 200 EMA · data from the frames the Tier 1 / Tier 2 scanner already fetched, so this page costs no
+  extra market-data calls · symbols with fewer than 260 daily candles are skipped ·
+  updated <span id="upd" class="num">–</span>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  var API = window.EMA200_API || 'ema200_api.php';
+  var state = { side:'ALL', entry:['best','confirmed','early','watch'], score:'' };
+  var out = document.getElementById('out');
+  var seq = 0;
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+  function num(v, dp){ return (v===null||v===undefined||!isFinite(v)) ? '–' : Number(v).toFixed(dp); }
+
+  var STAGE = { 3:'Best', 2:'Confirmed', 1:'Early', 0:'Watch' };
+
+  function row(s){
+    var st = STAGE[s.stage] || '–';
+    var f = '<div class="flt">'
+      + '<i class="f'+(s.slope_ok?' on':'')+'" title="200 EMA slope agrees">S</i>'
+      + '<i class="f'+(s.vol_ok?' on':'')+'" title="Volume above 1.2x average">V</i>'
+      + '<i class="f'+(s.weekly_ok?' on':'')+'" title="Weekly trend agrees">W</i></div>';
+    var d = s.dist_pct;
+    return '<tr>'
+      + '<td><span class="sym">'+esc(s.symbol)+'</span><span class="mkt">'+esc(s.market)+'</span></td>'
+      + '<td><span class="side-'+esc(s.side)+'">'+esc(s.side)+'</span></td>'
+      + '<td><span class="badge b-'+esc(s.entry_type)+'">'+esc(st)+'</span>'
+        + (s.is_entry ? '' : '<span class="tag">watchlist, not an entry</span>') + '</td>'
+      + '<td class="hide"><span class="trg">'+(s.trigger?esc(s.trigger):'–')+'</span>'
+        + '<span class="tag">'+esc(s.tag)+'</span></td>'
+      + '<td class="r"><span class="num">'+(s.strength|0)+'</span>'
+        + '<div class="bar"><i style="width:'+Math.max(0,Math.min(100,s.strength|0))+'%"></i></div></td>'
+      + '<td>'+f+'</td>'
+      + '<td class="r num '+(d>0?'pos':(d<0?'neg':''))+'">'+num(d,2)+'%</td>'
+      + '<td class="r num hide">'+num(s.ema200,4)+'</td>'
+      + '<td class="r num hide">'+num(s.price,4)+'</td>'
+      + '<td class="r num hide">'+(s.bars_since_cross===null?'–':s.bars_since_cross)+'</td>'
+      + '</tr>';
+  }
+
+  function render(d){
+    var c = d.counts || {};
+    document.getElementById('kBest').textContent  = c.best|0;
+    document.getElementById('kConf').textContent  = c.confirmed|0;
+    document.getElementById('kEarly').textContent = c.early|0;
+    document.getElementById('kWatch').textContent = c.watch|0;
+    document.getElementById('kScan').textContent  = d.scanned|0;
+    document.getElementById('kSkip').textContent  = d.skipped|0;
+    document.getElementById('upd').textContent    = d.updated || '–';
+
+    var sig = d.signals || [];
+    if (!sig.length) { out.innerHTML = '<div class="msg">No symbol matches these filters right now.</div>'; return; }
+
+    var h = '<table class="tbl"><thead><tr>'
+      + '<th>SYMBOL</th><th>SIDE</th><th>STAGE</th><th class="hide">TRIGGER</th>'
+      + '<th class="r">STRENGTH</th><th>FILTERS</th><th class="r">DIST</th>'
+      + '<th class="r hide">200 EMA</th><th class="r hide">PRICE</th><th class="r hide">BARS SINCE</th>'
+      + '</tr></thead><tbody>';
+    for (var i = 0; i < sig.length; i++) h += row(sig[i]);
+    out.innerHTML = h + '</tbody></table>';
+  }
+
+  function load(){
+    var my = ++seq;                       // only the newest request may render
+    if (!state.entry.length) { out.innerHTML = '<div class="msg">Pick at least one stage.</div>'; return; }
+
+    var q = 'side=' + encodeURIComponent(state.side)
+          + '&entry=' + encodeURIComponent(state.entry.join(','));
+    if (state.score !== '') q += '&min_score=' + encodeURIComponent(state.score);
+
+    fetch(API + '?' + q, { headers:{ 'Accept':'application/json' } })
+      .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(d){ if (my === seq) render(d); })
+      .catch(function(){ if (my === seq) out.innerHTML = '<div class="msg">Scanner temporarily unavailable. Try Refresh in a moment.</div>'; });
+  }
+
+  // single-select chips
+  document.getElementById('cSide').addEventListener('click', function(e){
+    var b = e.target.closest('.chip'); if (!b) return;
+    [].forEach.call(this.querySelectorAll('.chip'), function(x){ x.setAttribute('aria-pressed', String(x === b)); });
+    state.side = b.dataset.v; load();
+  });
+
+  // multi-select chips
+  document.getElementById('cEntry').addEventListener('click', function(e){
+    var b = e.target.closest('.chip'); if (!b) return;
+    b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+    state.entry = [].filter.call(this.querySelectorAll('.chip'), function(x){
+      return x.getAttribute('aria-pressed') === 'true'; }).map(function(x){ return x.dataset.v; });
+    load();
+  });
+
+  document.getElementById('cScore').addEventListener('change', function(){ state.score = this.value; load(); });
+  document.getElementById('cRefresh').addEventListener('click', load);
+
+  load();
+})();
+</script>
+</body>
+</html>

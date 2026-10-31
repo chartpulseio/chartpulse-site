@@ -1,0 +1,30 @@
+# ChartPulse
+
+> Among millions of stars, ChartPulse gives you the brightest.
+
+ChartPulse is a multi-market trading research tool that scans stocks, indices, futures, forex and crypto instruments. It provides rule-based signal scanning, market bias analysis, and backtesting tools. ChartPulse is an analytics and education tool, not investment advice.
+
+## Key Pages
+
+- [Overview](https://chartpulse.io/) — Live global market dashboard with movers, bias and heatmap
+- [Tier-1 Scanner](https://chartpulse.io/scanner.html) — Rule-based signal scanner for live markets
+- [Bias Check](https://chartpulse.io/bias/) — Daily directional bias for all tracked instruments
+- [Market Movers](https://chartpulse.io/movers/) — Biggest daily movers across all markets
+- [Backtesting](https://chartpulse.io/pro-backtesting) — Test trading ideas against historical data
+- [Bottom Reversal Scanner](https://chartpulse.io/dashboard.html) — Daily bottom zone reversal detection
+- [Market Insights](https://chartpulse.io/insights.html) — AI-generated market analysis
+- [News & Impact](https://chartpulse.io/news.html) — Market news with impact scoring
+- [Pricing](https://chartpulse.io/pricing.html) — Plans: Starter, Core, Algo
+
+## Legal
+
+- [Risk Disclaimer](https://chartpulse.io/legal.php?p=disclaimer) — Trading involves substantial risk of loss
+- [Terms & Conditions](https://chartpulse.io/legal.php?p=terms)
+- [Privacy Policy](https://chartpulse.io/legal.php?p=privacy)
+
+## Contact
+
+- Email: admin@chartpulse.io
+- Telegram: @chartpulseio_bot
+
+ChartPulse has an AI assistant that can answer questions about the platform and market data.

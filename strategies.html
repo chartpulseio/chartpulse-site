@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Strategies — ChartPulse</title>
+<style>
+:root{
+  --void:#060A10;--panel:#0C121B;--panel-2:#111926;--raised:#16202E;
+  --rule:#1B2534;--ink:#DDE6F2;--ink-dim:#8A9AB0;--ink-faint:#5A6B82;
+  --live:#2DD4AA;--s1c:#3987e5;--gold:#F5C842;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--void);color:var(--ink);font:13.5px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--s1c);text-decoration:none}
+.rail{display:flex;align-items:center;gap:16px;height:46px;padding:0 18px;
+  border-bottom:1px solid var(--rule);background:var(--panel);
+  position:sticky;top:0;z-index:30;overflow-x:auto}
+.rail .logo{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
+.rail .logo svg{width:28px;height:28px}
+.rail .logo span{font:600 13px/1 var(--mono);letter-spacing:.12em;color:var(--ink)}
+.rail .logo span b{color:var(--live)}
+.rail .sp{flex:1}
+.site-nav{display:flex;gap:14px;align-items:center}
+.site-nav a{font:12px/1 var(--mono);color:var(--ink-dim);white-space:nowrap;text-decoration:none}
+.site-nav a:hover{color:var(--ink)}
+.site-nav a.active{color:var(--ink)}
+.site-nav small{font-size:9px;opacity:.7;margin-left:2px}
+.wrap{max-width:1100px;margin:0 auto;padding:36px 18px 60px}
+.page-head{margin-bottom:40px}
+.page-head h1{margin:0 0 8px;font:700 26px/1.2 var(--sans);letter-spacing:-.02em}
+.page-head p{margin:0;color:var(--ink-dim);max-width:72ch;font-size:13.5px}
+.cats{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:640px){.cats{grid-template-columns:1fr}}
+.cat-card{background:var(--panel);border:1px solid var(--rule);border-radius:6px;overflow:hidden;transition:border-color .15s}
+.cat-card:hover{border-color:#27364a}
+.cat-banner{padding:28px 24px 22px;border-bottom:1px solid var(--rule)}
+.cat-tag{display:inline-flex;align-items:center;gap:6px;font:11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:12px}
+.cat-tag .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.cat-card.institutional .cat-tag{color:var(--s1c)}
+.cat-card.ema .cat-tag{color:var(--gold)}
+.cat-banner h2{margin:0 0 8px;font:600 20px/1.2 var(--sans)}
+.cat-banner p{margin:0;color:var(--ink-dim);font-size:13px;line-height:1.5}
+.cat-body{padding:20px 24px}
+.strategy-list{list-style:none;margin:0 0 20px;padding:0;display:flex;flex-direction:column;gap:8px}
+.strategy-list li{display:flex;align-items:center;gap:10px;font:12.5px/1.4 var(--mono);color:var(--ink-dim)}
+.strategy-list li::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--ink-faint);flex-shrink:0}
+.cat-card.institutional .strategy-list li::before{background:var(--s1c)}
+.cat-card.ema .strategy-list li::before{background:var(--gold)}
+.count-badge{font:11px/1 var(--mono);color:var(--ink-faint);background:var(--panel-2);border:1px solid var(--rule);border-radius:2px;padding:2px 7px;float:right}
+.open-btn{display:inline-flex;align-items:center;gap:8px;background:var(--raised);border:1px solid var(--rule);border-radius:4px;padding:9px 16px;font:12px/1 var(--mono);color:var(--ink);text-decoration:none;transition:border-color .15s,background .15s}
+.open-btn:hover{border-color:var(--s1c);background:#0e1926;color:var(--ink)}
+.cat-card.ema .open-btn:hover{border-color:var(--gold)}
+.open-btn svg{width:14px;height:14px;opacity:.6}
+</style>
+</head>
+<body>
+<div class="rail">
+  <a class="logo" href="/">
+    <svg viewBox="0 0 88 88" fill="none"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#2DD4AA" stroke-width="2.4"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#3987e5" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg>
+    <span>CHART<b>PULSE</b></span>
+  </a>
+  <span class="sp"></span>
+  <nav class="site-nav" aria-label="Site">
+    <a href="/" data-p="home">Overview</a>
+    <a href="/scanner.html" data-p="scanner">Scanner <small>TIER-1</small></a>
+    <a href="/bias/" data-p="seo">Bias <small>FREE</small></a>
+    <a href="/movers/" data-p="movers">Movers</a>
+    <a href="/pro-backtesting" data-p="backtest">Backtesting <small>FREE</small></a>
+    <a href="/dashboard.html" data-p="bottomreversal">Bottom Reversal <small>FREE</small></a>
+    <a href="/ema200.html" data-p="ema200">200 EMA <small>FREE</small></a>
+    <a href="/strategies.html" data-p="strategies" class="active">Strategies</a>
+    <a href="/insights.html" data-p="insights">Insights</a>
+    <a href="/news.html" data-p="news">News <small>IMPACT</small></a>
+    <a href="/pricing.html" data-p="pricing">Pricing</a>
+  </nav>
+</div>
+<div class="wrap">
+  <div class="page-head">
+    <h1>Strategies</h1>
+    <p>Advanced multi-condition scanners — each built on a specific market structure. Pick a category to explore all strategies inside it.</p>
+  </div>
+  <div class="cats">
+    <div class="cat-card institutional">
+      <div class="cat-banner">
+        <div class="cat-tag"><span class="dot"></span>Premium</div>
+        <span class="count-badge">7 Strategies</span>
+        <h2>Institutional</h2>
+        <p>SMC, Order Flow, and Mean Reversion setups used by institutional traders. Footprint, VWAP, Supply/Demand and advanced order block confluence.</p>
+      </div>
+      <div class="cat-body">
+        <ul class="strategy-list">
+          <li>SMC Power of 3 + OTE + Killzone</li>
+          <li>Order Flow + CVD Divergence + Footprint</li>
+          <li>Liquidity Sweep + Order Block + FVG</li>
+          <li>Opening Range Breakout + VWAP Volume Spike</li>
+          <li>Supply/Demand Flip + Breaker Block + HTF Filter</li>
+          <li>Statistical Mean Reversion (BB Squeeze + RSI 2)</li>
+          <li>VWAP Reversion + Anchored VWAP</li>
+        </ul>
+        <a class="open-btn" href="/institutional/">Open Institutional Scanners <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+      </div>
+    </div>
+    <div class="cat-card ema">
+      <div class="cat-banner">
+        <div class="cat-tag"><span class="dot"></span>Free</div>
+        <span class="count-badge">8 Strategies</span>
+        <h2>EMA Strategies</h2>
+        <p>High win-rate EMA 200 based scanners — combining RSI, Supertrend, Ichimoku, Fibonacci and volume filters for trend-following and positional trades.</p>
+      </div>
+      <div class="cat-body">
+        <ul class="strategy-list">
+          <li>EMA 200 + Order Block + Liquidity Sweep</li>
+          <li>EMA 200 + RSI Divergence + Engulfing</li>
+          <li>EMA 200 + EMA 50 + EMA 21 Alignment</li>
+          <li>EMA 200 + Support/Resistance + Volume</li>
+          <li>VWAP + EMA 200 Combo</li>
+          <li>Ichimoku Cloud + EMA 200</li>
+          <li>EMA 200 + Supertrend + RSI 50</li>
+          <li>EMA 200 + Fibonacci 0.618 Golden Zone</li>
+        </ul>
+        <a class="open-btn" href="/ema-strategies/">Open EMA Strategies <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

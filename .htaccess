@@ -1,0 +1,64 @@
+# ===== ChartPulse .htaccess =====
+Options -Indexes -MultiViews
+ErrorDocument 404 /404.html
+ErrorDocument 500 /500.html
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+
+# --- block dotfiles (except .well-known for SSL/verification)
+RewriteRule (^|/)\.(?!well-known/) - [F,L]
+
+# --- block dev/sensitive folders
+RewriteRule ^(tools|deploy|baseline|rollback|cache|inc)(/|$) - [F,L]
+
+# --- 301 redirects: old .html -> clean URLs
+RewriteRule ^scanner\.html$     /scanner.html      [L]
+RewriteRule ^news\.html$        /news.html         [L]
+RewriteRule ^insights\.html$    /insights.html     [L]
+RewriteRule ^pricing\.html$     /pricing.html      [L]
+RewriteRule ^day-drive\.html$   /dashboard.html    [R=301,L]
+
+</IfModule>
+
+# --- block sensitive file types from web access
+<FilesMatch "\.(sqlite|sqlite3|db|sql|log|bak|old|orig|prev|swp|env|ini|lock)$">
+  Require all denied
+</FilesMatch>
+
+# --- block specific sensitive files
+<FilesMatch "^(dd_engine|dd_api|app|engine|test_engine|requirements)\.">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  # Security headers
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # noindex for API endpoints
+  <FilesMatch "^(api|dd_br_api|dd_api|health)\.php$">
+    Header set X-Robots-Tag "noindex, nofollow"
+  </FilesMatch>
+</IfModule>
+
+# --- Gzip compression
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml application/xml application/javascript application/json image/svg+xml
+</IfModule>
+
+# --- Browser caching
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType text/javascript "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 month"
+  ExpiresByType image/avif "access plus 1 month"
+  ExpiresByType image/png "access plus 1 month"
+  ExpiresByType image/jpeg "access plus 1 month"
+  ExpiresByType image/svg+xml "access plus 1 month"
+  ExpiresByType image/x-icon "access plus 1 month"
+  ExpiresByType text/html "access plus 0 seconds"
+</IfModule>

@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Day Drive Scanner — ChartPulse</title>
+<meta name="description" content="A volume-free institutional day-drive model: weekly and daily structure, 4H/1H trend with KAMA and Supertrend, then a 15m change of character — with every input labelled real or estimated.">
+<style>
+:root{
+  --void:#060A10; --panel:#0C121B; --panel-2:#111926; --raised:#16202E;
+  --rule:#1B2534; --rule-soft:#131C28;
+  --ink:#DDE6F2; --ink-dim:#8A9AB0; --ink-faint:#5A6B82;
+  --live:#2DD4AA; --s1c:#3987e5; --s2c:#BE8524;
+  --up:#27A567; --down:#D4504A;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--void);color:var(--ink);font:13.5px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:var(--s1c);text-decoration:none}
+a:hover{text-decoration:underline}
+
+.rail{display:flex;align-items:center;gap:16px;height:46px;padding:0 18px;border-bottom:1px solid var(--rule);
+  background:var(--panel);position:sticky;top:0;z-index:30;overflow-x:auto}
+.mark{font:600 13px/1 var(--mono);letter-spacing:.14em;white-space:nowrap}
+.mark b{color:var(--live)}
+.slug{font:12px/1 var(--mono);color:var(--ink-faint);white-space:nowrap}
+.rail .sp{flex:1}
+.rail nav{display:flex;gap:14px}
+.rail nav a{font:12px/1 var(--mono);color:var(--ink-dim);white-space:nowrap}
+
+.head{padding:22px 18px 0;max-width:1480px;margin:0 auto}
+.head h1{margin:0 0 7px;font:600 20px/1.2 var(--sans);letter-spacing:-.01em}
+.head p{margin:0 0 4px;color:var(--ink-dim);max-width:80ch}
+.wrap{max-width:1480px;margin:0 auto;padding:18px}
+
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0;padding:0;list-style:none}
+.steps li{background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:7px 11px;
+  font:11.5px/1 var(--mono);color:var(--ink-dim)}
+.steps b{color:var(--ink);font-weight:500}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--rule);
+  border:1px solid var(--rule);border-radius:3px;overflow:hidden;margin:18px 0}
+.kpi{background:var(--panel);padding:12px 14px}
+.kpi span{display:block;font:11px/1.3 var(--mono);color:var(--ink-faint);margin-bottom:5px}
+.kpi b{font:500 19px/1 var(--mono);font-variant-numeric:tabular-nums}
+.kpi.k-d b{color:var(--live)}
+.kpi.k-a b{color:var(--s2c)}
+
+.ctl{display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap;padding:14px 0 16px;border-bottom:1px solid var(--rule)}
+.grp{display:flex;flex-direction:column;gap:6px}
+.grp>span{font:11px/1 var(--mono);color:var(--ink-faint)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{background:var(--panel-2);border:1px solid var(--rule);color:var(--ink-dim);border-radius:2px;
+  padding:6px 11px;font:12px/1 var(--mono);cursor:pointer}
+.chip:hover{color:var(--ink);border-color:#27364a}
+.chip[aria-pressed=true]{background:var(--raised);border-color:var(--s1c);color:var(--ink)}
+.btn{background:var(--s1c);border:0;color:#fff;border-radius:2px;padding:8px 15px;font:12px/1 var(--mono);cursor:pointer}
+.btn:disabled{opacity:.5;cursor:default}
+
+.tbl{width:100%;border-collapse:collapse;margin-top:14px}
+.tbl th{text-align:left;font:11px/1 var(--mono);color:var(--ink-faint);font-weight:400;
+  padding:0 10px 9px;border-bottom:1px solid var(--rule);white-space:nowrap}
+.tbl td{padding:11px 10px;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+.tbl tbody tr.r{cursor:pointer}
+.tbl tbody tr.r:hover{background:var(--panel)}
+.tbl th.r,.tbl td.r{text-align:right}
+.sym{font:500 13px/1.3 var(--mono)}
+.sub{font:11px/1.4 var(--sans);color:var(--ink-faint)}
+.tv{font:10.5px/1 var(--mono);color:var(--ink-faint);cursor:pointer;border:1px solid var(--rule-soft);
+  border-radius:2px;padding:2px 5px;display:inline-block;margin-top:4px}
+.tv:hover{color:var(--ink-dim);border-color:var(--rule)}
+.side{font:600 11px/1 var(--mono);padding:4px 7px;border-radius:2px;display:inline-block}
+.side.PUT{background:rgba(212,80,74,.14);color:var(--down)}
+.side.CALL{background:rgba(39,165,103,.14);color:var(--up)}
+.st{font:600 10.5px/1 var(--mono);letter-spacing:.04em;padding:5px 8px;border-radius:2px;display:inline-block;white-space:nowrap}
+.st.DRIVE{background:rgba(45,212,170,.16);color:var(--live);box-shadow:0 0 0 1px rgba(45,212,170,.3)}
+.st.ARMED{background:rgba(190,133,36,.16);color:var(--s2c)}
+.st.TRENDOK,.st.STRUCTUREOK{background:var(--raised);color:var(--ink-dim)}
+.st.WATCH,.st.OFFHOURS{background:var(--panel-2);color:var(--ink-faint)}
+.bars{display:flex;gap:2px;margin-top:5px}
+.bars i{height:5px;border-radius:2px;background:var(--rule)}
+.bars i.f1{width:26px}.bars i.f2{width:19px}.bars i.f3{width:30px}
+.bars i.on{background:var(--s1c)}
+.bars i.full{background:var(--live)}
+
+.det td{background:#080D14;padding:0 10px 18px}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(252px,1fr));gap:16px;padding-top:4px}
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:13px 14px}
+.card h3{margin:0 0 11px;font:500 11px/1.4 var(--mono);color:var(--ink-faint);letter-spacing:.03em}
+.card h3 em{font-style:normal;color:var(--ink)}
+.lad{display:grid;gap:7px}
+.lad>div{display:flex;gap:9px;align-items:flex-start;font:12px/1.45 var(--sans)}
+.tick{width:13px;flex:0 0 13px;font:11px/1.45 var(--mono);text-align:center}
+.tick.y{color:var(--live)}
+.tick.n{color:var(--ink-faint)}
+.lad b{font-weight:500;color:var(--ink)}
+.lad em{font-style:normal;color:var(--ink-faint);font-size:11.5px}
+.warn{color:var(--s2c)}
+.est{font:9.5px/1 var(--mono);background:rgba(190,133,36,.16);color:var(--s2c);padding:3px 4px;
+  border-radius:2px;margin-left:5px;vertical-align:1px}
+.tg{display:grid;gap:5px}
+.tg>div{display:flex;justify-content:space-between;gap:12px;font:12px/1.5 var(--sans)}
+.tg span{color:var(--ink-faint)}
+.tg b{font:500 12px/1.5 var(--mono);font-variant-numeric:tabular-nums}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font:12px/1.5 var(--sans);margin:0}
+.kv dt{color:var(--ink-faint)}
+.kv dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+
+.avail{margin-top:30px;border-top:1px solid var(--rule);padding-top:20px}
+.avail h2{margin:0 0 4px;font:500 13px/1.3 var(--sans)}
+.avail>p{margin:0 0 14px;color:var(--ink-dim);max-width:80ch}
+.alist{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+.arow{background:var(--panel);padding:10px 13px;display:grid;grid-template-columns:132px 1fr auto;gap:12px;align-items:baseline}
+.arow .g{font:11px/1.5 var(--mono);color:var(--ink-faint)}
+.arow .i{font:12.5px/1.5 var(--sans);color:var(--ink-dim)}
+.sstate{font:10px/1 var(--mono);padding:4px 7px;border-radius:2px;white-space:nowrap}
+.sstate.real{background:rgba(39,165,103,.15);color:var(--up)}
+.sstate.estimated{background:rgba(190,133,36,.15);color:var(--s2c)}
+.sstate.unavailable{background:rgba(212,80,74,.14);color:var(--down)}
+
+.note{margin-top:24px;padding:13px 15px;border:1px solid var(--rule);border-left:2px solid var(--s2c);
+  border-radius:3px;background:var(--panel);color:var(--ink-dim);font-size:12.5px;max-width:94ch}
+.note b{color:var(--ink)}
+.note+.note{margin-top:10px}
+.msg{padding:30px 10px;text-align:center;color:var(--ink-faint);font:12.5px/1.6 var(--mono)}
+.foot{padding:22px 18px 40px;max-width:1480px;margin:0 auto;color:var(--ink-faint);font-size:11.5px}
+
+@media(max-width:860px){
+  .head h1{font-size:18px}
+  .tbl .hide{display:none}
+  .arow{grid-template-columns:1fr auto;gap:5px}
+  .arow .g{grid-column:1/-1}
+}
+</style>
+</head>
+<body>
+
+<div class="rail">
+  <span class="mark">CHART<b>PULSE</b></span>
+  <span class="slug">DAY DRIVE SCANNER</span>
+  <span class="sp"></span>
+  <nav>
+    <a href="./">Overview</a>
+    <a href="scanner.html">Scanner</a>
+    <a href="/bias/">Bias</a>
+    <a href="pro-backtesting.html">Backtesting</a>
+  </nav>
+</div>
+
+<div class="head">
+  <h1>Day Drive Scanner</h1>
+  <p>A volume-free structural model. Weekly and daily structure must agree, then the 4H and 1H trend has to
+     confirm with KAMA and Supertrend, and only then does the 15-minute trigger layer look for a change of
+     character at a swept level. Nothing here needs a volume feed.</p>
+  <ul class="steps">
+    <li><b>1</b> Macro · W/D</li>
+    <li><b>2</b> Trend · 4H/1H</li>
+    <li><b>3</b> Entry · 15M/5M</li>
+    <li><b>4</b> Stop &amp; risk</li>
+    <li><b>5</b> Targets</li>
+  </ul>
+</div>
+
+<div class="wrap">
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="ctl">
+    <div class="grp">
+      <span>MARKET</span>
+      <div class="chips" id="mkt">
+        <button class="chip" data-v="all" aria-pressed="true">All</button>
+        <button class="chip" data-v="forex" aria-pressed="false">Forex</button>
+        <button class="chip" data-v="crypto" aria-pressed="false">Crypto</button>
+        <button class="chip" data-v="other" aria-pressed="false">Stocks &amp; futures</button>
+      </div>
+    </div>
+    <div class="grp">
+      <span>&nbsp;</span>
+      <button class="btn" id="go">Refresh</button>
+    </div>
+    <div class="grp">
+      <span>&nbsp;</span>
+      <span class="slug num" id="stamp">—</span>
+    </div>
+  </div>
+
+  <div id="out"><div class="msg">Loading…</div></div>
+
+  <div class="avail">
+    <h2>What backs each requirement</h2>
+    <p>The model asks for footprint and order-book reads. This page runs on ordinary bar data, so every
+       requirement is listed with what actually stands behind it — and the one thing that cannot be
+       substituted is marked unavailable rather than guessed.</p>
+    <div class="alist" id="avail"></div>
+  </div>
+
+  <div class="note">
+    <b>The score is a checklist total, not a probability.</b> It adds up which conditions are met, with
+    weights set by hand. A score of 90 does not mean a 90% chance of anything, and this model has not yet
+    been measured on this universe — until it has, treat the score as "how much of the checklist is
+    ticked" and nothing more.
+  </div>
+
+  <div class="note">
+    <b>Not advice.</b> This page shows what a rule set flags, not a recommendation, and nothing here is a
+    promise about the future. Flow figures are estimates from bar shape, not order-flow data. Trade your
+    own plan and your own risk.
+  </div>
+
+</div>
+
+<div class="foot">Day Drive Scanner · volume-free structural model · free, no sign-in</div>
+
+<script>
+(function(){
+'use strict';
+var API='dd_api.php', mkt='all', open={}, busy=false, data=null;
+
+function q(s){return document.querySelector(s);}
+function el(t,c,x){var e=document.createElement(t); if(c)e.className=c; if(x!=null)e.textContent=x; return e;}
+function n(v,d){ if(v==null||v===''||isNaN(v))return '—';
+  var a=Math.abs(v); d=(d==null)?(a>=100?2:a>=1?4:6):d; return Number(v).toFixed(d); }
+function sc(v){ return v==null?'—':Number(v).toFixed(0); }
+
+q('#mkt').addEventListener('click',function(e){
+  var b=e.target.closest('.chip'); if(!b)return;
+  mkt=b.dataset.v;
+  [].forEach.call(this.querySelectorAll('.chip'),function(c){
+    c.setAttribute('aria-pressed', c===b?'true':'false');
+  });
+  load();
+});
+q('#go').addEventListener('click',function(){load(true);});
+
+function kpis(m){
+  var box=q('#kpis'); box.textContent='';
+  [['DRIVE',m.drive,'k-d'],['ARMED',m.armed,'k-a'],['PAST STEP 1',m.structure,''],
+   ['SCANNED',m.scanned,''],['VIX',m.vix==null?'—':Number(m.vix).toFixed(2),''],
+   ['BTC ATR%',m.btc_atr_pct==null?'—':Number(m.btc_atr_pct).toFixed(2),'']
+  ].forEach(function(it){
+    var k=el('div','kpi '+it[2]);
+    k.appendChild(el('span',null,it[0]));
+    k.appendChild(el('b',null,String(it[1]==null?'—':it[1])));
+    box.appendChild(k);
+  });
+}
+
+function ladder(g,order,names){
+  var d=el('div','lad');
+  order.forEach(function(k){
+    var x=g&&g[k]; if(!x)return;
+    var row=el('div');
+    row.appendChild(el('span','tick '+(x.ok?'y':'n'), x.ok?'✓':'·'));
+    var t=el('span');
+    t.appendChild(el('b',null,names[k]));
+    if(x.estimated) t.appendChild(el('span','est','est'));
+    var why=(x.why||[]).join(' · ');
+    if(why){ t.appendChild(document.createTextNode(' ')); t.appendChild(el('em',null,'— '+why)); }
+    row.appendChild(t); d.appendChild(row);
+  });
+  return d;
+}
+
+function detail(r){
+  var g=el('div','dgrid');
+
+  var c1=el('div','card');
+  var h1=el('h3'); h1.appendChild(document.createTextNode('STEP 1 · MACRO  '));
+  h1.appendChild(el('em',null,sc(r.s1)+'/35')); c1.appendChild(h1);
+  c1.appendChild(ladder(r.gates,['weekly','daily','block','vwap','fractal'],
+    {weekly:'Weekly', daily:'Daily', block:'Order block', vwap:'VWAP', fractal:'5-wave fractal'}));
+  g.appendChild(c1);
+
+  var c2=el('div','card');
+  var h2=el('h3'); h2.appendChild(document.createTextNode('STEP 2 · TREND  '));
+  h2.appendChild(el('em',null,(r.s2==null?'—':sc(r.s2))+'/25')); c2.appendChild(h2);
+  if(r.s2!=null){
+    c2.appendChild(ladder(r.gates,['h4','h1_st','h1_bb','h1_delta','h1_fib'],
+      {h4:'4H EMA + KAMA', h1_st:'1H Supertrend', h1_bb:'1H not compressed', h1_delta:'1H delta', h1_fib:'Fib extension'}));
+  } else c2.appendChild(el('p','sub','Runs once Step 1 passes.'));
+  g.appendChild(c2);
+
+  var c3=el('div','card');
+  var h3=el('h3'); h3.appendChild(document.createTextNode('STEP 3 · ENTRY  '));
+  h3.appendChild(el('em',null,(r.s3==null?'—':sc(r.s3))+'/40')); c3.appendChild(h3);
+  if(r.s3!=null){
+    c3.appendChild(ladder(r.gates,['choch','sweep','foot','rsi','time'],
+      {choch:'2-bar CHoCH', sweep:'Liquidity sweep', foot:'Footprint', rsi:'RSI / hidden div', time:'Session'}));
+    if(r.entry_note) c3.appendChild(el('p','sub',r.entry_note));
+  } else c3.appendChild(el('p','sub','Runs once Step 2 passes.'));
+  g.appendChild(c3);
+
+  var c4=el('div','card'); c4.appendChild(el('h3',null,'CONTEXT'));
+  var dl=el('dl','kv');
+  function kv(k,v){ dl.appendChild(el('dt',null,k)); dl.appendChild(el('dd',null,v)); }
+  kv('Price', n(r.price));
+  if(r.vwap!=null) kv(r.vwap_mode==='vwap'?'VWAP':'Time-price avg', n(r.vwap));
+  if(r.delta!=null) kv('Delta (est.)', Number(r.delta).toFixed(2));
+  if(r.bb_width!=null) kv('1H BB width', Number(r.bb_width).toFixed(0)+'th pct');
+  if(r.rsi!=null) kv('5M RSI', Number(r.rsi).toFixed(0));
+  kv('Regime', r.regime.trend+' · '+r.regime.vol+' vol');
+  kv('ADX (1D)', Number(r.regime.adx).toFixed(1));
+  c4.appendChild(dl);
+  g.appendChild(c4);
+
+  var c5=el('div','card'); c5.appendChild(el('h3',null,'STEPS 4-5 · STOP, RISK, TARGETS'));
+  if(r.risk){
+    var t=el('div','tg');
+    function tg(k,v){ var d=el('div'); d.appendChild(el('span',null,k)); d.appendChild(el('b',null,v)); t.appendChild(d); }
+    tg('Entry', n(r.risk.entry));
+    tg('Stop ('+r.risk.sl_from+')', n(r.risk.sl)+(r.risk.wide?'  ⚠ wide':''));
+    if(r.risk.sl_structural!=null) tg('— 15m structural', n(r.risk.sl_structural));
+    if(r.risk.sl_alt!=null) tg('— ATR alternative', n(r.risk.sl_alt));
+    tg('Risk', n(r.risk.risk)+(r.risk.risk_pct!=null?'  ·  '+r.risk.risk_pct+'%':''));
+    (r.risk.targets||[]).forEach(function(x){ tg(x.label+'  '+x.rr+'R  '+x.note, n(x.price)); });
+    if(r.risk.block_exit!=null) tg('Structural exit (4H/1H block)', n(r.risk.block_exit));
+    tg('Position size', r.risk.size_pct+'%  (max '+r.risk.max_loss+'%)');
+    c5.appendChild(t);
+    c5.appendChild(el('p','sub','Trail: '+r.risk.trail));
+    if(r.risk.vol_index!=null) c5.appendChild(el('p','sub','Sized against '+r.risk.vol_index_name+' '+r.risk.vol_index+'.'));
+  } else c5.appendChild(el('p','sub','Levels appear once Step 3 produces an entry.'));
+  g.appendChild(c5);
+
+  return g;
+}
+
+function render(){
+  var out=q('#out'); out.textContent='';
+  if(!data){ out.appendChild(el('div','msg','Loading…')); return; }
+  if(data.error){ out.appendChild(el('div','msg',data.error)); return; }
+  var rows=data.rows||[];
+  if(data.meta) kpis(data.meta);
+  if(!rows.length){
+    out.appendChild(el('div','msg','Nothing is through the structure gates in this market right now. For a model this selective that is the normal state — check back when the session is busier.'));
+    return;
+  }
+  var tb=el('table','tbl'), th=el('thead'), hr=el('tr');
+  [['Symbol',''],['Side',''],['Status',''],['Score','r'],['Steps',''],
+   ['Price','r'],['Stop','r hide'],['T1','r hide'],['Size','r hide']].forEach(function(h){
+    hr.appendChild(el('th',h[1],h[0]));
+  });
+  th.appendChild(hr); tb.appendChild(th);
+  var bd=el('tbody');
+
+  rows.forEach(function(r){
+    var tr=el('tr','r');
+    var c=el('td');
+    c.appendChild(el('div','sym',r.symbol));
+    c.appendChild(el('div','sub',r.name||''));
+    if(r.tv){
+      var tvb=el('span','tv',r.tv); tvb.title='Click to copy the TradingView code';
+      tvb.addEventListener('click',function(e){ e.stopPropagation();
+        try{ navigator.clipboard.writeText(r.tv); tvb.textContent='copied';
+          setTimeout(function(){tvb.textContent=r.tv;},900); }catch(_){}
+      });
+      c.appendChild(tvb);
+    }
+    tr.appendChild(c);
+
+    var sd=el('td'); sd.appendChild(el('span','side '+r.side,r.side)); tr.appendChild(sd);
+    var st=el('td'); st.appendChild(el('span','st '+r.status.replace(/[^A-Z]/g,''),r.status)); tr.appendChild(st);
+    tr.appendChild(el('td','r num',sc(r.score)));
+
+    var bc=el('td'); var bars=el('div','bars');
+    [['f1',r.s1,35],['f2',r.s2,25],['f3',r.s3,40]].forEach(function(b){
+      var i=el('i',b[0]+(b[1]==null?'':(b[1]>=b[2]*0.8?' full':' on')));
+      bars.appendChild(i);
+    });
+    bc.appendChild(bars); tr.appendChild(bc);
+
+    tr.appendChild(el('td','r num',n(r.price)));
+    tr.appendChild(el('td','r num hide'+(r.risk&&r.risk.wide?' warn':''),
+      r.risk?(n(r.risk.sl)+(r.risk.wide?' ⚠':'')):'—'));
+    var t1=null;
+    if(r.risk&&r.risk.targets){ r.risk.targets.forEach(function(x){ if(x.label==='T1') t1=x.price; }); }
+    tr.appendChild(el('td','r num hide',t1==null?'—':n(t1)));
+    tr.appendChild(el('td','r num hide',r.risk?r.risk.size_pct+'%':'—'));
+    bd.appendChild(tr);
+
+    var dr=el('tr','det'), dc=el('td'); dc.colSpan=9;
+    dc.appendChild(detail(r)); dr.appendChild(dc);
+    dr.style.display = open[r.symbol] ? '' : 'none';
+    bd.appendChild(dr);
+
+    tr.addEventListener('click',function(){
+      open[r.symbol]=!open[r.symbol];
+      dr.style.display = open[r.symbol] ? '' : 'none';
+    });
+  });
+
+  tb.appendChild(bd); out.appendChild(tb);
+}
+
+function avail(list){
+  var box=q('#avail'); box.textContent='';
+  (list||[]).forEach(function(a){
+    var r=el('div','arow');
+    r.appendChild(el('div','g',a.group));
+    r.appendChild(el('div','i',a.item));
+    r.appendChild(el('span','sstate '+a.state,a.state));
+    box.appendChild(r);
+  });
+}
+
+function load(force){
+  if(busy)return; busy=true;
+  var b=q('#go'); b.disabled=true; b.textContent='Scanning…';
+  fetch(API+'?r=scan&mkt='+mkt+(force?'&force=1':''),{headers:{'Accept':'application/json'}})
+    .then(function(x){return x.json();})
+    .then(function(j){
+      data=j; render();
+      if(j.availability) avail(j.availability);
+      if(j.at) q('#stamp').textContent='updated '+new Date(j.at*1000).toLocaleTimeString();
+    })
+    .catch(function(){
+      data={error:'The scanner could not be reached just now. Sorry for the inconvenience — please try again in a moment.'};
+      render();
+    })
+    .then(function(){ busy=false; b.disabled=false; b.textContent='Refresh'; });
+}
+
+load();
+setInterval(function(){ if(!document.hidden) load(); }, 60000);
+})();
+</script>
+</body>
+</html>
