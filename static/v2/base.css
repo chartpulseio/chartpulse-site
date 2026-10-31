@@ -43,6 +43,7 @@ svg{flex:none}
 .rail{position:sticky;top:0;height:100vh;width:76px;flex:none;display:flex;flex-direction:column;align-items:center;
   gap:18px;padding:16px 0;background:var(--glass);border-right:1px solid var(--line);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%)}
 .brand svg{width:44px;height:44px;animation:spin 40s linear infinite}
+.logo svg{animation:spin 40s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .rail-links{display:flex;flex-direction:column;gap:6px;width:100%;padding:0 8px}
 .rail-links a{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border-radius:var(--r-sm);
@@ -150,7 +151,7 @@ svg{flex:none}
 .ai-points{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
 .ai-points li{position:relative;padding-left:18px;color:var(--ink2);font-size:13.5px;max-width:72ch}
 .ai-points li::before{content:"";position:absolute;left:2px;top:.62em;width:7px;height:7px;border:1.5px solid var(--ai);border-radius:2px;transform:rotate(45deg)}
-.ai-points li.typing::after{content:"▍";color:var(--ai);animation:blink 1s steps(2) infinite}
+.ai-points li.typing::after{content:"â";color:var(--ai);animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}
 .regime{font:600 11px var(--f-mono);letter-spacing:.08em;padding:4px 10px;border-radius:7px;background:var(--raise);color:var(--ink2);box-shadow:inset 0 0 0 1px var(--line2)}
 .regime.on{color:var(--call);background:var(--call-soft)}.regime.off{color:var(--put);background:var(--put-soft)}
