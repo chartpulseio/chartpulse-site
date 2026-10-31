@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pro Backtesting - test any strategy, free | ChartPulse</title>
+<meta name="description" content="Build a trading strategy with indicators and rules, then test it on real market history for free. Honest metrics, equity curve against buy &amp; hold, Monte Carlo and walk-forward out-of-sample testing. No sign-up.">
+<link rel="canonical" href="https://chartpulse.io/pro-backtesting">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://chartpulse.io/pro-backtesting">
+<meta property="og:title" content="Pro Backtesting - test any strategy, free">
+<meta property="og:description" content="Build a strategy with indicators and rules, test it on real market history. Equity curve vs buy &amp; hold, Monte Carlo, walk-forward. Free, no sign-up.">
+<meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preload" as="font" type="font/woff2" href="/static/v2/fonts/ibm-plex-sans-400-latin.woff2" crossorigin>
+<link rel="stylesheet" href="/static/v2/btpro.css?v=2">
+<script src="/static/v2/consent.js?v=1"></script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebApplication","name":"ChartPulse Pro Backtesting",
+"url":"https://chartpulse.io/pro-backtesting","applicationCategory":"FinanceApplication",
+"operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},
+"description":"Free strategy backtester with indicator rule builder, Monte Carlo and walk-forward testing."}
+</script>
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
+</head>
+<body class="btp">
+
+<nav class="btp-nav">
+  <div class="wrap">
+    <a class="btp-brand" href="/">
+      <svg class="btp-ring" viewBox="0 0 40 40" aria-hidden="true">
+        <ellipse cx="20" cy="20" rx="17" ry="7" fill="none" stroke="#2962ff" stroke-width="2"/>
+        <ellipse cx="20" cy="20" rx="7" ry="17" fill="none" stroke="#ff9800" stroke-width="2" opacity=".85"/>
+        <circle cx="20" cy="20" r="3" fill="#f4b740"/>
+      </svg>
+      <b>ChartPulse</b>
+    </a>
+    <div class="btp-links">
+      <a href="/">Home</a>
+      <a href="/scanner.html">Scanner</a>
+      <a href="/bias/" class="free">Bias</a>
+      <a href="/movers/">Movers</a>
+      <a href="/desk">Desk</a>
+      <a href="/news.html">News</a>
+      <a href="/pro-backtesting" class="on">Backtesting</a>
+      <a href="/pricing.html">Pricing</a>
+    </div>
+  </div>
+</nav>
+
+<header class="btp-hero">
+  <div class="wrap">
+    <span class="btp-tag">Free · no sign-up · no limits on ideas</span>
+    <h1>Pro Backtesting</h1>
+    <p>Build a strategy out of indicators and rules, then run it over real market history — stocks, indices, forex, crypto and commodities. You get the numbers a desk would ask for, including the ones that say an edge is not real.</p>
+    <ul>
+      <li><b>33 indicators</b>multi-timeframe, no lookahead</li>
+      <li><b>Realistic fills</b>next-bar open, fees, slippage, gaps</li>
+      <li><b>Monte Carlo</b>what luck could have done</li>
+      <li><b>Walk-forward</b>tested on data it never saw</li>
+    </ul>
+  </div>
+</header>
+
+<div class="wrap">
+  <p class="btp-risk"><b>Read this first.</b> A backtest is history, not a forecast. Past results do not repeat, costs on a real account are usually worse than modelled, and a strategy that looks good on one symbol often fails on the next. This tool is for research and education only — nothing here is investment advice.</p>
+</div>
+
+<div class="wrap">
+<div class="btp-grid">
+
+  <!-- ----------------------------------------------------------- controls -->
+  <aside class="btp-side">
+
+    <section class="btp-card">
+      <header><span class="step">1</span><h2>Market &amp; data</h2></header>
+      <div class="body">
+        <label class="btp-field">
+          <span>Symbol</span>
+          <select id="symSel" class="num"></select>
+        </label>
+        <label class="btp-field">
+          <span>…or type any code (Yahoo / Binance style)</span>
+          <input id="symIn" class="num" placeholder="e.g. TSLA, ^NSEI, EURUSD=X, BTC-USD" autocomplete="off">
+        </label>
+        <label class="btp-field">
+          <span>Timeframe</span>
+          <select id="tfSel"></select>
+        </label>
+        <p class="btp-help" id="tfNote"></p>
+        <div class="btp-row">
+          <label class="btp-field"><span>From</span><input id="dFrom" class="num" type="date"></label>
+          <label class="btp-field"><span>To</span><input id="dTo" class="num" type="date"></label>
+        </div>
+        <div class="btp-chips" id="rangeChips">
+          <button class="btp-chip" data-years="1">1Y</button>
+          <button class="btp-chip" data-years="3">3Y</button>
+          <button class="btp-chip" data-years="5">5Y</button>
+          <button class="btp-chip" data-years="10">10Y</button>
+          <button class="btp-chip" data-days="60">60D</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="btp-card">
+      <header><span class="step">2</span><h2>Strategy</h2></header>
+      <div class="body">
+        <span class="btp-field" style="margin-bottom:8px"><span>Start from a known idea</span></span>
+        <div class="btp-chips" id="presetChips"></div>
+        <p class="btp-help" id="presetAbout"></p>
+
+        <div id="buckets" style="margin-top:14px"></div>
+
+        <div class="btp-bucket">
+          <h3>Risk &amp; exits<span class="hint">blank = off</span></h3>
+          <div>
+            <div class="btp-row">
+              <label class="btp-field"><span>Stop loss %</span><input id="rSlPct" class="num" type="number" step="0.1" min="0.01" placeholder="—"></label>
+              <label class="btp-field"><span>Stop loss × ATR</span><input id="rSlAtr" class="num" type="number" step="0.1" min="0.1" placeholder="—"></label>
+            </div>
+            <div class="btp-row">
+              <label class="btp-field"><span>Take profit %</span><input id="rTpPct" class="num" type="number" step="0.1" min="0.01" placeholder="—"></label>
+              <label class="btp-field"><span>Take profit × ATR</span><input id="rTpAtr" class="num" type="number" step="0.1" min="0.1" placeholder="—"></label>
+            </div>
+            <div class="btp-row">
+              <label class="btp-field"><span>Trailing stop %</span><input id="rTrPct" class="num" type="number" step="0.1" min="0.05" placeholder="—"></label>
+              <label class="btp-field"><span>Trailing × ATR</span><input id="rTrAtr" class="num" type="number" step="0.1" min="0.1" placeholder="—"></label>
+            </div>
+            <div class="btp-row">
+              <label class="btp-field"><span>Time exit (bars)</span><input id="rMaxBars" class="num" type="number" step="1" min="1" placeholder="—"></label>
+              <label class="btp-field"><span>ATR period</span><input id="rAtrP" class="num" type="number" step="1" min="2" placeholder="14"></label>
+            </div>
+            <p class="btp-help">A stop and a target inside the same bar is always counted as the stop.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="btp-card">
+      <header><span class="step">3</span><h2>Account &amp; costs</h2></header>
+      <div class="body">
+        <div class="btp-row">
+          <label class="btp-field"><span>Capital</span><input id="sCap" class="num" type="number" min="1" value="10000"></label>
+          <label class="btp-field"><span>Risk per trade</span>
+            <select id="sSizeMode">
+              <option value="all">All equity</option>
+              <option value="pct">% of equity</option>
+              <option value="risk">% risk on stop</option>
+            </select>
+          </label>
+        </div>
+        <div class="btp-row">
+          <label class="btp-field" id="sizeWrap"><span>Equity used %</span><input id="sSize" class="num" type="number" min="1" max="100" value="100"></label>
+          <label class="btp-field"><span>Commission % per side</span><input id="sComm" class="num" type="number" step="0.01" min="0" value="0.1"></label>
+        </div>
+        <label class="btp-field"><span>Slippage % per fill</span><input id="sSlip" class="num" type="number" step="0.01" min="0" value="0.05"></label>
+        <button class="btp-btn wide" id="runBtn">Run backtest</button>
+        <div class="btp-chips" style="margin-top:10px">
+          <button class="btp-chip" id="copyBtn">Copy strategy JSON</button>
+          <button class="btp-chip" id="pasteBtn">Load JSON</button>
+          <button class="btp-chip" id="resetBtn">Reset</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="btp-card">
+      <header><span class="step">4</span><h2>Walk-forward</h2></header>
+      <div class="body">
+        <p class="btp-help" style="margin:0 0 12px">The honest test. Parameters are chosen on a training window, then traded on the window after it that the optimiser never saw. Pick up to 4 numbers from your rules to tune.</p>
+        <div class="btp-wfgrid" id="wfGrid"></div>
+        <div class="btp-row3" style="margin-top:12px">
+          <label class="btp-field"><span>Train bars</span><input id="wfTrain" class="num" type="number" min="60" value="400"></label>
+          <label class="btp-field"><span>Test bars</span><input id="wfTest" class="num" type="number" min="20" value="100"></label>
+          <label class="btp-field"><span>Pick best by</span>
+            <select id="wfScore">
+              <option value="sharpe">Sharpe</option>
+              <option value="sortino">Sortino</option>
+              <option value="calmar">Calmar</option>
+              <option value="total_return_pct">Return</option>
+            </select>
+          </label>
+        </div>
+        <button class="btp-btn wide ghost" id="wfBtn">Run walk-forward</button>
+        <p class="btp-help" id="wfCount"></p>
+      </div>
+    </section>
+
+  </aside>
+
+  <!-- ------------------------------------------------------------ results -->
+  <main>
+    <section class="btp-card">
+      <header>
+        <h2 id="resTitle">Result</h2>
+        <span class="step" id="resMeta" style="margin-left:auto;display:none"></span>
+        <button class="btp-btn sm run" id="runBtn2">Run</button>
+      </header>
+      <div class="body" id="resBody">
+        <div class="btp-empty" id="emptyState">
+          <h3>Nothing tested yet</h3>
+          <p>Pick a symbol, choose an idea on the left, and press <b>Run backtest</b>.<br>
+          Every number you get back is computed on the server from real candles — signals are taken at a bar's close and filled at the next bar's open, so nothing here can see the future.</p>
+        </div>
+        <div id="resView" style="display:none"></div>
+      </div>
+    </section>
+
+    <section class="btp-card" style="margin-top:18px">
+      <header><h2>How this engine fills a trade</h2></header>
+      <div class="body">
+        <div class="btp-notes">
+          <div class="btp-note"><b>No lookahead.</b> A rule is tested on a closed bar; the order fills at the open of the bar after it. A higher-timeframe indicator only ever uses closed higher-timeframe candles.</div>
+          <div class="btp-note"><b>The bad case wins.</b> If a stop and a target are both touched inside one bar, the stop is taken. On a gap the fill is the open price, not your level.</div>
+          <div class="btp-note"><b>Costs are real.</b> Commission applies on both sides; slippage applies on market fills and stops, never on a limit target. Position size follows equity, so compounding is included.</div>
+          <div class="btp-note"><b>Ruin is final.</b> If equity reaches zero the position is force-closed and trading stops, exactly as a broker would.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+</div>
+</div>
+
+<footer class="btp-foot">
+  <div class="wrap">
+    ChartPulse · research and education only, not investment advice ·
+    <a href="/legal.php?p=terms">Terms</a> ·
+    <a href="/legal.php?p=privacy">Privacy</a> ·
+    <a href="/legal.php?p=risk">Risk disclosure</a>
+    <br><br>
+    Market data from public providers and may be delayed, revised or incomplete. Backtest results are hypothetical and carry no guarantee of future performance.
+  </div>
+</footer>
+
+<script src="/static/v2/btpro.js?v=1"></script>
+<script defer src="/static/v2/cp-launcher.js?v=1"></script>
+</body>
+</html>

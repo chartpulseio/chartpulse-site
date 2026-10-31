@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Something went wrong — ChartPulse</title>
+<style>
+:root{
+  --void:#060A10;--panel:#0C121B;--panel-2:#111926;--raised:#16202E;
+  --rule:#1B2534;--ink:#DDE6F2;--ink-dim:#8A9AB0;--ink-faint:#5A6B82;
+  --live:#2DD4AA;--s1c:#3987e5;--s2c:#BE8524;
+  --mono:"IBM Plex Mono","Plex Mono Fallback",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans","Plex Sans Fallback",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}html,body{margin:0;padding:0}
+body{background:var(--void);color:var(--ink);font:14px/1.6 var(--sans);-webkit-font-smoothing:antialiased;
+  display:flex;flex-direction:column;min-height:100vh}
+a{color:var(--s1c);text-decoration:none}a:hover{text-decoration:underline}
+
+.rail{display:flex;align-items:center;gap:16px;height:46px;padding:0 18px;border-bottom:1px solid var(--rule);
+  background:var(--panel);position:sticky;top:0;z-index:30}
+.mark{font:600 13px/1 var(--mono);letter-spacing:.14em;white-space:nowrap}
+.mark b{color:var(--live)}
+.rail nav{display:flex;gap:14px;margin-left:auto}
+.rail nav a{font:12px/1 var(--mono);color:var(--ink-dim);white-space:nowrap}
+
+.center{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.box{max-width:480px}
+.code{font:600 72px/1 var(--mono);color:var(--s2c);letter-spacing:.08em;margin:0 0 12px}
+h1{margin:0 0 10px;font:600 22px/1.3 var(--sans);letter-spacing:-.01em}
+p{color:var(--ink-dim);margin:0 0 24px;font-size:14px}
+.links{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.links a{font:12px/1 var(--mono);padding:8px 16px;border:1px solid var(--rule);border-radius:3px;
+  color:var(--ink-dim);transition:border-color .15s}
+.links a:hover{border-color:var(--s1c);color:var(--ink);text-decoration:none}
+
+.foot{padding:18px;text-align:center;color:var(--ink-faint);font-size:11.5px;border-top:1px solid var(--rule)}
+
+/* Narrow screens: the rail nav wraps instead of pushing the page sideways. */
+@media (max-width:560px){
+  .rail{height:auto;flex-wrap:wrap;gap:8px 12px;padding:10px 14px}
+  .rail nav{margin-left:0;flex-wrap:wrap;gap:10px 14px}
+}
+</style>
+<link rel="preload" as="font" type="font/woff2" href="/static/v2/fonts/ibm-plex-sans-400-latin.woff2" crossorigin>
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
+</head>
+<body>
+<div class="rail">
+  <a href="/" class="mark" style="color:var(--ink)">CHART<b>PULSE</b></a>
+  <nav>
+    <a href="/">Overview</a>
+    <a href="/scanner.html">Scanner</a>
+    <a href="/dashboard.html">Bottom Reversal</a>
+    <a href="/pricing.html">Pricing</a>
+  </nav>
+</div>
+<div class="center">
+  <div class="box">
+    <div class="code">500</div>
+    <h1>Something went wrong</h1>
+    <p>A server error stopped this page from loading. Market data and scanners are unaffected on other pages. Please try again in a few minutes.</p>
+    <div class="links">
+      <a href="/">Overview</a>
+      <a href="/scanner.html">Tier-1 Scanner</a>
+      <a href="/bias">Bias Check</a>
+      <a href="/legal.php?p=contact">Contact</a>
+    </div>
+  </div>
+</div>
+<div class="foot">ChartPulse &middot; chartpulse.io</div>
+<script defer src="/static/v2/cp-launcher.js?v=1"></script>
+</body>
+</html>

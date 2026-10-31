@@ -13,8 +13,8 @@
   --ink:#DDE6F2; --ink-dim:#8A9AB0; --ink-faint:#5A6B82;
   --live:#2DD4AA; --s1c:#3987e5; --s2c:#BE8524;
   --up:#27A567; --down:#D4504A;
-  --mono:ui-monospace,"SF Mono","JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace;
-  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono","Plex Mono Fallback",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans","Plex Sans Fallback",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
@@ -86,6 +86,8 @@ a:hover{text-decoration:underline}
   .ctl{gap:8px}
 }
 </style>
+<link rel="preload" as="font" type="font/woff2" href="/static/v2/fonts/ibm-plex-sans-400-latin.woff2" crossorigin>
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
 </head>
 <body>
 
@@ -187,5 +189,6 @@ async function load(){
 }
 load();setInterval(load,300000);
 </script>
+<script defer src="/static/v2/cp-launcher.js?v=1"></script>
 </body>
 </html>

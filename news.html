@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>News & Impact · ChartPulse</title>
+<meta name="description" content="Live market news from Indian and global financial media, graded for impact and linked to the instruments they move, with the price reaction since publication.">
+<meta name="theme-color" content="#050506">
+<meta property="og:title" content="News & Impact · ChartPulse">
+<meta property="og:description" content="Live market news from Indian and global financial media, graded for impact and linked to the instruments they move, with the price reaction since publication.">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://chartpulse.io/news.html">
+<meta property="og:site_name" content="ChartPulse">
+<meta property="og:url" content="https://chartpulse.io/news.html">
+<meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://chartpulse.io/static/og.jpg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88' aria-hidden='true'><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%23F4B740' stroke-width='3'/><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%2322AB94' stroke-width='2.4' transform='rotate(60 44 44)'/><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%23F7525F' stroke-width='2.4' transform='rotate(-60 44 44)'/><circle cx='44' cy='44' r='4.5' fill='%23EDEDEF'/></svg>">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/static/v2/fonts/ibm-plex-sans-400-latin.woff2" crossorigin>
+<link rel="stylesheet" href="/static/v2/base.css?v=9">
+<link rel="stylesheet" href="/static/v2/cp.css?v=9">
+<link rel="stylesheet" href="/static/v2/odds.css?v=2">
+<script defer src="/static/v2/consent.js?v=2"></script>
+<link rel="stylesheet" href="/static/v2/premium.css?v=2">
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
+</head>
+<body class="site news" data-page="news">
+<header class="site-head">
+  <a class="logo" href="./" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
+  <nav class="site-nav" id="siteNav" aria-label="Site">
+    <a href="./" data-p="home">Overview</a>
+    <a href="scanner.html" data-p="scanner">Scanner <small>TIER-1</small></a>
+    <a href="/bias/" data-p="seo">Bias <small>FREE</small></a>
+    <a href="/movers/" data-p="movers">Movers</a>
+    <a href="/pro-backtesting" data-p="backtest">Backtesting <small>FREE</small></a>
+    <a href="/dashboard.html" data-p="bottomreversal">Bottom Reversal <small>FREE</small></a>
+    <a href="insights.html" data-p="insights">Insights</a>
+    <a href="news.html" data-p="news">News <small>IMPACT</small></a>
+    <a href="pricing.html" data-p="pricing">Pricing</a>
+  </nav>
+  <div class="head-right">
+    <button class="cmdk-trigger" type="button" data-cmdk aria-label="Search markets"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search markets…</span><kbd>⌘K</kbd></button>
+    <span class="live-pill" id="hdrLive" title="Instruments trading right now"><span class="ldot off"></span><b>–</b> live</span>
+    <span class="clock" id="cpClock" title="Times on this site are shown in your own time zone"></span>
+    <a class="btn primary" href="pricing.html">Get access</a>
+    <button class="nav-toggle" type="button" aria-label="Menu" aria-controls="siteNav" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
+<main class="page wrap" id="main">
+  <section class="page-head news-hero">
+    <div><div class="eyebrow">News &amp; impact</div><h1>The stories moving<br>your markets.</h1>
+      <p>Live headlines from India's and the world's financial press, graded for impact and tied to the instruments they move, with the price reaction since each story broke.</p></div>
+    <div class="filters"><span class="badge"><span class="ldot"></span><span id="nUpd">Collecting stories…</span></span></div>
+  </section>
+
+  <div class="kpis news-kpis">
+    <div class="kpi"><div class="k-lbl">Stories today</div><div class="k-val" id="kStories">–</div><div class="k-sub" id="kStoriesS"></div></div>
+    <div class="kpi"><div class="k-lbl">High impact</div><div class="k-val" id="kHigh">–</div><div class="k-sub" id="kHighS"></div></div>
+    <div class="kpi mood"><div class="k-lbl">News mood · 24 h</div><div class="k-val" id="kMoodV">–</div><div class="mood-bar" id="kMood"></div><div class="k-sub" id="kMoodS"></div></div>
+    <div class="kpi"><div class="k-lbl">Most mentioned</div><div class="k-val sm" id="kTop">–</div><div class="k-sub" id="kTopS"></div></div>
+  </div>
+
+  <div class="news-filters">
+    <div class="tabs" id="nReg" role="group" aria-label="Region"><button type="button" data-r="ALL" class="on">All</button><button type="button" data-r="India">India</button><button type="button" data-r="Global">Global</button><button type="button" data-r="Forex">Forex</button><button type="button" data-r="Crypto">Crypto</button></div>
+    <select id="nImp" class="select" aria-label="Impact"><option value="ALL">All impact</option><option value="high">High impact</option><option value="med">Medium and high</option></select>
+    <select id="nSen" class="select" aria-label="Sentiment"><option value="ALL">Any sentiment</option><option value="bull">Bullish</option><option value="bear">Bearish</option><option value="neu">Neutral</option></select>
+    <input id="nQ" class="select" type="search" placeholder="Filter: Reliance, RBI, gold, Fed…" aria-label="Filter stories">
+  </div>
+
+  <section class="bento">
+    <div class="span-8 stack">
+      <div id="lead"><div class="skeleton" style="height:320px"></div></div>
+      <article class="card feed-card">
+        <header class="p-head"><div><h2>Latest</h2><p class="p-sub">Newest first · click a symbol for its Tier-1 analysis</p></div></header>
+        <div id="feed" class="feed"><div class="skeleton" style="height:120px"></div><div class="skeleton" style="height:120px"></div></div>
+        <button type="button" class="btn ghost more" id="more" hidden>Show more</button>
+      </article>
+    </div>
+    <div class="span-4 stack">
+      <article class="card spot">
+        <header class="p-head"><div><h2>Most mentioned</h2><p class="p-sub">Last 24 h · sentiment · day move · Tier-1</p></div></header>
+        <div id="mentions" class="mentions"></div>
+      </article>
+      <article class="card x-card">
+        <header class="p-head"><div><h2>From X</h2><p class="p-sub">Regulators, exchanges and market desks</p></div></header>
+        <div class="x-tabs" id="xTabs"></div>
+        <div class="x-box" id="xBox"></div>
+        <a class="link x-open" id="xOpen" href="https://x.com/" target="_blank" rel="noopener">Open on X ↗</a>
+      </article>
+      <article class="card">
+        <header class="p-head"><div><h2>Sources</h2><p class="p-sub" id="srcNote">–</p></div></header>
+        <div class="sources" id="sources"></div>
+        <p class="keys-note" id="keysNote" hidden></p>
+      </article>
+    </div>
+  </section>
+
+  <section class="card rv">
+    <header class="p-head"><div><h2>Economic calendar</h2><p class="p-sub">Scheduled high and medium impact events, in your time zone</p></div></header>
+    <div class="tv-box cal" id="calendar"></div>
+    <p class="tv-copy">Economic calendar by <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView</a>. Headlines belong to their publishers; ChartPulse links to the original story.</p>
+  </section>
+</main>
+<footer class="site-foot">
+  <div class="foot-grid wrap">
+    <div>
+      <a class="logo" href="./" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
+      <p>Multi-market Tier-1 scanner for stocks, indices, futures, forex and crypto. Market data from Yahoo Finance and Upstox (India). Charts by TradingView.</p>
+      <span class="foot-status"><span class="ldot"></span>Signals only for markets that are live</span>
+    </div>
+    <div><h4>Product</h4><a href="./">Overview</a><a href="scanner.html">Tier-1 Scanner</a><a href="insights.html">Market Insights</a><a href="news.html">News &amp; Impact</a><a href="pricing.html">Pricing</a></div>
+    <div><h4>Company</h4><a href="legal.php?p=contact">Contact us</a><a href="legal.php?p=terms">Terms &amp; Conditions</a><a href="legal.php?p=privacy">Privacy Policy</a><a href="legal.php?p=refund">Refund &amp; Cancellation</a></div>
+    <div><h4>Resources</h4><a href="legal.php?p=disclaimer">Risk disclaimer</a><a href="/api.php?r=export">Signals CSV</a><a href="#" data-cmdk>Search <kbd>⌘K</kbd></a></div>
+  </div>
+  <div class="disclaimer wrap"><b>Risk disclaimer:</b> ChartPulse provides market data analytics and rule-based scanning tools for education and research. Nothing on this website is investment advice or a recommendation to buy or sell any security, derivative, currency or crypto asset. Trading involves substantial risk of loss. Signals are model output based on delayed or real-time third-party data that may be inaccurate. Consult a SEBI-registered adviser before acting. © <span data-year></span> ChartPulse.</div>
+</footer>
+<script defer src="/static/v2/cp.js?v=93"></script>
+<script defer src="/static/v2/news.js?v=10"></script>
+<script defer src="/static/v2/cp-launcher.js?v=1"></script>
+</body>
+</html>

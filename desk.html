@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bias Desk · ChartPulse</title>
+<meta name="description" content="Free Bias Desk: daily and hourly bias for any symbol with a forecast cone, setup memory, news tone and AI analyst view.">
+<meta name="theme-color" content="#050506">
+<meta property="og:title" content="Bias Desk · ChartPulse">
+<meta property="og:description" content="Free Bias Desk: daily and hourly bias for any symbol with a forecast cone, setup memory, news tone and AI analyst view.">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://chartpulse.io/desk">
+<meta property="og:site_name" content="ChartPulse">
+<meta property="og:url" content="https://chartpulse.io/desk">
+<meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://chartpulse.io/static/og.jpg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88' aria-hidden='true'><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%23F4B740' stroke-width='3'/><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%2322AB94' stroke-width='2.4' transform='rotate(60 44 44)'/><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%23F7525F' stroke-width='2.4' transform='rotate(-60 44 44)'/><circle cx='44' cy='44' r='4.5' fill='%23EDEDEF'/></svg>">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/static/v2/fonts/ibm-plex-sans-400-latin.woff2" crossorigin>
+<link rel="stylesheet" href="/static/v2/base.css?v=9">
+<link rel="stylesheet" href="/static/v2/cp.css?v=9">
+<link rel="stylesheet" href="/static/v2/odds.css?v=2">
+<script src="/static/v2/consent.js?v=2"></script>
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
+</head>
+<body class="site desk" data-page="desk">
+<header class="site-head">
+  <a class="logo" href="./" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
+  <nav class="site-nav" id="siteNav" aria-label="Site">
+    <a href="./" data-p="home">Overview</a>
+    <a href="scanner.html" data-p="scanner">Scanner <small>TIER-1</small></a>
+    <a href="/bias/" data-p="seo">Bias <small>FREE</small></a>
+    <a href="/movers/" data-p="movers">Movers</a>
+    <a href="/pro-backtesting" data-p="backtest">Backtesting <small>FREE</small></a>
+    <a href="/dashboard.html" data-p="bottomreversal">Bottom Reversal <small>FREE</small></a>
+    <a href="insights.html" data-p="insights">Insights</a>
+    <a href="news.html" data-p="news">News <small>IMPACT</small></a>
+    <a href="pricing.html" data-p="pricing">Pricing</a>
+  </nav>
+  <div class="head-right">
+    <button class="cmdk-trigger" type="button" data-cmdk aria-label="Search markets"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search markets…</span><kbd>⌘K</kbd></button>
+    <span class="live-pill" id="hdrLive" title="Instruments trading right now"><span class="ldot off"></span><b>–</b> live</span>
+    <span class="clock" id="cpClock" title="Times on this site are shown in your own time zone"></span>
+    <a class="btn primary" href="pricing.html">Get access</a>
+    <button class="nav-toggle" type="button" aria-label="Menu" aria-controls="siteNav" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
+<main class="page wrap" id="main">
+  <section class="page-head">
+    <div><div class="eyebrow">Bias Desk · free</div><h1>Odds, not opinions.</h1>
+      <p>Pick any symbol for its daily or hourly bias: a forecast cone from its own history, setup memory, news tone, the live ChartPulse record and an AI analyst view. Free for everyone.</p></div>
+  </section>
+  <form class="dk-search" id="dkForm" autocomplete="off">
+    <input id="dkSym" class="select" list="dkList" placeholder="Symbol or name: BTC-USD, Apple, EURUSD, Gold…" aria-label="Symbol" required>
+    <datalist id="dkList"></datalist>
+    <select id="dkTf" class="select" aria-label="Timeframe"><option value="1D">Daily</option><option value="1H">Hourly</option></select>
+    <button class="btn primary" type="submit">Check bias</button>
+  </form>
+  <div class="dk-recent" id="dkRecent"></div>
+  <div id="dkOut"><div class="card empty">Type a symbol above to open its Bias Desk.</div></div>
+  <p class="t2-foot">Statistics and model output on third-party data, for education and research. Not investment advice.</p>
+</main>
+<footer class="site-foot">
+  <div class="foot-grid wrap">
+    <div>
+      <a class="logo" href="./" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
+      <p>Multi-market Tier-1 scanner for stocks, indices, futures, forex and crypto. Market data from Yahoo Finance and Upstox (India). Charts by TradingView.</p>
+      <span class="foot-status"><span class="ldot"></span>Signals only for markets that are live</span>
+    </div>
+    <div><h4>Product</h4><a href="./">Overview</a><a href="scanner.html">Tier-1 Scanner</a><a href="insights.html">Market Insights</a><a href="news.html">News &amp; Impact</a><a href="pricing.html">Pricing</a></div>
+    <div><h4>Company</h4><a href="legal.php?p=contact">Contact us</a><a href="legal.php?p=terms">Terms &amp; Conditions</a><a href="legal.php?p=privacy">Privacy Policy</a><a href="legal.php?p=refund">Refund &amp; Cancellation</a></div>
+    <div><h4>Resources</h4><a href="legal.php?p=disclaimer">Risk disclaimer</a><a href="/api.php?r=export">Signals CSV</a><a href="#" data-cmdk>Search <kbd>⌘K</kbd></a></div>
+  </div>
+  <div class="disclaimer wrap"><b>Risk disclaimer:</b> ChartPulse provides market data analytics and rule-based scanning tools for education and research. Nothing on this website is investment advice or a recommendation to buy or sell any security, derivative, currency or crypto asset. Trading involves substantial risk of loss. Signals are model output based on delayed or real-time third-party data that may be inaccurate. Consult a SEBI-registered adviser before acting. © <span data-year></span> ChartPulse.</div>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+<script>window.LightweightCharts || document.write('<script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"><\/script>');</script>
+<script src="/static/v2/cp.js?v=93"></script>
+<script src="/static/v2/desk.js?v=5"></script>
+<script src="/static/v2/scenario.js?v=4"></script>
+<script src="/static/v2/deskpage.js?v=3"></script>
+<script src="/static/v2/odds.js?v=3"></script>
+<script defer src="/static/v2/cp-launcher.js?v=1"></script>
+</body>
+</html>

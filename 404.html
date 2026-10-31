@@ -10,8 +10,8 @@
   --void:#060A10;--panel:#0C121B;--panel-2:#111926;--raised:#16202E;
   --rule:#1B2534;--ink:#DDE6F2;--ink-dim:#8A9AB0;--ink-faint:#5A6B82;
   --live:#2DD4AA;--s1c:#3987e5;
-  --mono:ui-monospace,"SF Mono","JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace;
-  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:"IBM Plex Mono","Plex Mono Fallback",ui-monospace,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans","Plex Sans Fallback",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
 }
 *{box-sizing:border-box}html,body{margin:0;padding:0}
 body{background:var(--void);color:var(--ink);font:14px/1.6 var(--sans);-webkit-font-smoothing:antialiased;
@@ -36,7 +36,16 @@ p{color:var(--ink-dim);margin:0 0 24px;font-size:14px}
 .links a:hover{border-color:var(--s1c);color:var(--ink);text-decoration:none}
 
 .foot{padding:18px;text-align:center;color:var(--ink-faint);font-size:11.5px;border-top:1px solid var(--rule)}
+
+/* Narrow screens: the rail nav wraps instead of pushing the page sideways.
+   Measured at 320px it overflowed by 134px before this. */
+@media (max-width:560px){
+  .rail{height:auto;flex-wrap:wrap;gap:8px 12px;padding:10px 14px}
+  .rail nav{margin-left:0;flex-wrap:wrap;gap:10px 14px}
+}
 </style>
+<link rel="preload" as="font" type="font/woff2" href="/static/v2/fonts/ibm-plex-sans-400-latin.woff2" crossorigin>
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
 </head>
 <body>
 <div class="rail">
@@ -62,5 +71,6 @@ p{color:var(--ink-dim);margin:0 0 24px;font-size:14px}
   </div>
 </div>
 <div class="foot">ChartPulse &middot; chartpulse.io</div>
+<script defer src="/static/v2/cp-launcher.js?v=1"></script>
 </body>
 </html>

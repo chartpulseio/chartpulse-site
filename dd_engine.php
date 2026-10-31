@@ -102,6 +102,28 @@ function dd_class(string $sym): string {
     return 'other';
 }
 
+/**
+ * TradingView symbol code, same mapping the Tier-1 scanner shows.
+ * Ported verbatim from t_tv_code() in torus_report.php (itself the PHP port of
+ * CP.tvSymbol in cp.js). Kept as a local copy so this page does not have to pull
+ * in torus_report.php, which drags torus_tier2 and torus_study with it. If the
+ * canonical mapping changes, change it here too.
+ */
+function dd_tv(string $s): string {
+    static $I = ['^NSEI' => 'NSE:NIFTY', '^NSEBANK' => 'NSE:BANKNIFTY', '^BSESN' => 'BSE:SENSEX', 'NIFTY_FIN_SERVICE.NS' => 'NSE:CNXFINANCE', 'NIFTY_MID_SELECT.NS' => 'NSE:NIFTY_MID_SELECT', '^CNXIT' => 'NSE:CNXIT', '^CNXAUTO' => 'NSE:CNXAUTO', '^CNXPHARMA' => 'NSE:CNXPHARMA', '^CNXFMCG' => 'NSE:CNXFMCG', '^CNXMETAL' => 'NSE:CNXMETAL', '^CNXREALTY' => 'NSE:CNXREALTY', '^CNXENERGY' => 'NSE:CNXENERGY', '^CNXPSUBANK' => 'NSE:CNXPSUBANK', '^GSPC' => 'SP:SPX', '^NDX' => 'NASDAQ:NDX', '^IXIC' => 'NASDAQ:IXIC', '^DJI' => 'DJ:DJI', '^RUT' => 'TVC:RUT', '^GSPTSE' => 'TSX:TSX', '^FTSE' => 'TVC:UKX', '^GDAXI' => 'XETR:DAX', '^FCHI' => 'EURONEXT:PX1', '^AEX' => 'EURONEXT:AEX', '^SSMI' => 'SIX:SMI', 'FTSEMIB.MI' => 'TVC:FTSEMIB', '^IBEX' => 'BME:IBC', '^STOXX50E' => 'TVC:SX5E', '^N225' => 'TVC:NI225', '^HSI' => 'TVC:HSI', '000001.SS' => 'SSE:000001', '000300.SS' => 'SSE:000300', '399001.SZ' => 'SZSE:399001', '^KS11' => 'KRX:KOSPI', '^TWII' => 'TWSE:TAIEX', '^STI' => 'TVC:STI', '^AXJO' => 'ASX:XJO', '^BVSP' => 'BMFBOVESPA:IBOV', '^MXX' => 'BMV:ME', '^TASI.SR' => 'TADAWUL:TASI', 'DX-Y.NYB' => 'TVC:DXY', 'ES=F' => 'CME_MINI:ES1!', 'NQ=F' => 'CME_MINI:NQ1!', 'YM=F' => 'CBOT_MINI:YM1!', 'RTY=F' => 'CME_MINI:RTY1!', 'NKD=F' => 'CME:NKD1!', 'ZN=F' => 'CBOT:ZN1!', 'ZB=F' => 'CBOT:ZB1!', 'GC=F' => 'COMEX:GC1!', 'SI=F' => 'COMEX:SI1!', 'HG=F' => 'COMEX:HG1!', 'PL=F' => 'NYMEX:PL1!', 'PA=F' => 'NYMEX:PA1!', 'CL=F' => 'NYMEX:CL1!', 'BZ=F' => 'NYMEX:BB1!', 'NG=F' => 'NYMEX:NG1!', 'HO=F' => 'NYMEX:HO1!', 'RB=F' => 'NYMEX:RB1!', 'ZC=F' => 'CBOT:ZC1!', 'ZS=F' => 'CBOT:ZS1!', 'ZW=F' => 'CBOT:ZW1!', 'KC=F' => 'ICEUS:KC1!', 'SB=F' => 'ICEUS:SB1!', 'CT=F' => 'ICEUS:CT1!', 'CC=F' => 'ICEUS:CC1!', 'LE=F' => 'CME:LE1!', 'HE=F' => 'CME:HE1!',
+        // PAXG-USD is the site's spot XAUUSD data source (owner, 6 Oct 2026), so its
+        // chart is spot gold, not the token. Matches CP.tvSymbol on Tier 1.
+        'PAXG-USD' => 'OANDA:XAUUSD'];
+    static $X = ['.NS' => 'NSE', '.BO' => 'BSE', '.TO' => 'TSX', '.L' => 'LSE', '.DE' => 'XETR', '.PA' => 'EURONEXT', '.AS' => 'EURONEXT', '.SW' => 'SIX', '.MI' => 'MIL', '.MC' => 'BME', '.CO' => 'OMXCOP', '.ST' => 'OMXSTO', '.T' => 'TSE', '.HK' => 'HKEX', '.SS' => 'SSE', '.SZ' => 'SZSE', '.KS' => 'KRX', '.TW' => 'TWSE', '.SI' => 'SGX', '.AX' => 'ASX', '.SA' => 'BMFBOVESPA', '.MX' => 'BMV', '.SR' => 'TADAWUL', '.JO' => 'JSE'];
+    if (isset($I[$s])) return $I[$s];
+    if (str_starts_with($s, 'MCX:')) return $s . '1!';
+    if (str_ends_with($s, '=X')) return 'FX_IDC:' . substr($s, 0, -2);
+    if (str_ends_with($s, '-USD')) return 'CRYPTO:' . preg_replace('/\d+$/', '', substr($s, 0, -4)) . 'USD';
+    $i = strrpos($s, '.');
+    if ($i && isset($X[substr($s, $i)])) { $base = str_replace('-', '_', substr($s, 0, $i)); if (str_ends_with($s, '.HK')) $base = (string)(int)$base; return $X[substr($s, $i)] . ':' . $base; }
+    return preg_replace('/-/', '.', $s, 1);
+}
+
 /** One pip / tick for the entry offset in Step 3. */
 function dd_tick(string $sym, float $px): array {
     $cls = dd_class($sym);
@@ -864,7 +886,7 @@ function dd_eval(string $sym, array $row, bool $deep, array $ctx, int $now): ?ar
     return [
         'symbol' => $sym, 'name' => t_name($sym),
         'market' => $row['market'] ?? (t_symbols()[$sym] ?? ''),
-        'class' => dd_class($sym), 'tv' => $row['tv'] ?? null,
+        'class' => dd_class($sym), 'tv' => $row['tv'] ?? dd_tv($sym),
         'side' => $sg < 0 ? 'PUT' : 'CALL',
         'price' => dd_f($px),
         'status' => dd_status($s1, $s2, $s3),

@@ -1,0 +1,263 @@
+/* ============================================================================
+   Header v7 - cinematic space hero.
+   Rebuilt 26 Oct 2026: the markup was live but header7.css, header7.js, the
+   loop video and its poster were all missing (404), so the hero rendered as an
+   empty black block. The video is gone for good - the sky is drawn in CSS and
+   the stars/moon in canvas, which costs nothing to download.
+
+   Everything is scoped to .cp-hero7 / .h7-about. Fixed-height box so there is
+   no layout shift while the canvas boots.
+   ========================================================================== */
+
+.cp-hero7{
+  --h7-ink:   var(--ink,   #EDEDEF);
+  --h7-ink2:  var(--ink2,  #A1A1AA);
+  --h7-acc:   var(--accent,#F4B740);
+  --h7-bg:    var(--bg,    #050506);
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  align-items: center;
+  /* Fixed box: reserved before the canvas paints, so CLS stays at zero. */
+  min-height: clamp(440px, 64vh, 620px);
+  padding: clamp(28px, 6vw, 72px) clamp(16px, 5vw, 64px);
+  padding-left:  max(clamp(16px, 5vw, 64px), env(safe-area-inset-left));
+  padding-right: max(clamp(16px, 5vw, 64px), env(safe-area-inset-right));
+
+  /* A genuinely dark night sky: deep blue-black, lightest where the moon sits.
+     No sun-style rays, no horizon, no mountains. */
+  background:
+    radial-gradient(120% 90% at 82% 26%, rgba(126,142,190,.20) 0%, rgba(126,142,190,.07) 34%, transparent 62%),
+    radial-gradient(130% 110% at 18% 8%,  rgba(40,52,88,.38)  0%, transparent 60%),
+    linear-gradient(180deg, #070A14 0%, #060811 46%, var(--h7-bg) 100%);
+}
+
+/* The canvas carries the stars and the moon. Decorative only. */
+.cp-hero7 #fx7{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Legibility wash under the copy, strongest on the text side. */
+.cp-hero7 .shade{
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(5,5,6,.86) 0%, rgba(5,5,6,.62) 42%, rgba(5,5,6,.10) 72%, transparent 100%),
+    linear-gradient(180deg, transparent 58%, rgba(5,5,6,.72) 100%);
+}
+@media (max-width: 760px){
+  /* On narrow screens the copy sits over the whole sky, so wash it evenly. */
+  .cp-hero7 .shade{
+    background: linear-gradient(180deg, rgba(5,5,6,.58) 0%, rgba(5,5,6,.76) 55%, rgba(5,5,6,.92) 100%);
+  }
+}
+
+/* The video element is kept out of the layout: its sources no longer exist. */
+.cp-hero7 #bg7{ display: none !important; }
+
+/* ---- copy ---------------------------------------------------------------- */
+.cp-hero7 .h7-copy{
+  position: relative;
+  z-index: 2;
+  max-width: 62ch;
+}
+
+.cp-hero7 .h7-chip{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 clamp(14px, 2.4vw, 22px);
+  padding: 6px 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 999px;
+  background: rgba(255,255,255,.05);
+  color: var(--h7-ink2);
+  font: 500 clamp(11px, 1.1vw, 12.5px)/1 var(--f-mono, ui-monospace, Menlo, monospace);
+  letter-spacing: .04em;
+  backdrop-filter: blur(3px);
+}
+.cp-hero7 .h7-chip span{
+  color: #22AB94;
+  font-weight: 600;
+  letter-spacing: .1em;
+}
+.cp-hero7 .h7-chip span::before{
+  content: "";
+  display: inline-block;
+  width: 6px; height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #22AB94;
+  box-shadow: 0 0 0 3px rgba(34,171,148,.18);
+  vertical-align: middle;
+  animation: h7pulse 2.4s ease-in-out infinite;
+}
+@keyframes h7pulse{ 0%,100%{opacity:1} 50%{opacity:.45} }
+
+/* The slogan stands alone and is never clipped, at any width. */
+.cp-hero7 .h7-h1{
+  margin: 0 0 clamp(12px, 2vw, 20px);
+  color: var(--h7-ink);
+  font-family: var(--f-disp, "IBM Plex Sans", sans-serif);
+  font-weight: 600;
+  font-size: clamp(30px, 5.4vw, 58px);
+  line-height: 1.08;
+  letter-spacing: -.02em;
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  hyphens: none;
+}
+.cp-hero7 .h7-h1 .l1,
+.cp-hero7 .h7-h1 .l2{ display: block; }
+.cp-hero7 .h7-h1 .l2{
+  background: linear-gradient(92deg, var(--h7-acc) 0%, #FFD27A 52%, #FFF1D0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.cp-hero7 .h7-sub{
+  margin: 0 0 clamp(20px, 3vw, 30px);
+  max-width: 56ch;
+  color: var(--h7-ink2);
+  font-size: clamp(14px, 1.45vw, 16.5px);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+.cp-hero7 .h7-sub b{ color: var(--h7-ink); font-weight: 600; }
+
+/* ---- actions ------------------------------------------------------------- */
+.cp-hero7 .h7-cta{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.cp-hero7 .h7-cta .btn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 0 20px;
+  border-radius: 10px;
+  font: 600 14.5px/1 var(--f-body, "IBM Plex Sans", sans-serif);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 120ms cubic-bezier(.2,.6,.3,1),
+              background-color 200ms cubic-bezier(.2,.6,.3,1),
+              border-color 200ms cubic-bezier(.2,.6,.3,1);
+}
+.cp-hero7 .h7-cta .btn.primary{
+  background: linear-gradient(180deg, #FFD27A 0%, var(--h7-acc) 100%);
+  color: #221703;
+  border: 1px solid rgba(255,255,255,.18);
+}
+.cp-hero7 .h7-cta .btn.primary:hover{ transform: translateY(-1px); }
+.cp-hero7 .h7-cta .btn.ghost{
+  background: rgba(255,255,255,.05);
+  color: var(--h7-ink);
+  border: 1px solid rgba(255,255,255,.16);
+}
+.cp-hero7 .h7-cta .btn.ghost:hover{
+  border-color: rgba(255,255,255,.34);
+  background: rgba(255,255,255,.08);
+}
+.cp-hero7 .h7-cta .btn:active{ transform: translateY(0); }
+.cp-hero7 .h7-cta .btn:focus-visible{
+  outline: 2px solid #FFD27A;
+  outline-offset: 3px;
+}
+.cp-hero7 .h7-cta .arr{ width: 16px; height: 16px; flex: none; }
+
+@media (max-width: 460px){
+  .cp-hero7 .h7-cta{ flex-direction: column; align-items: stretch; }
+  .cp-hero7 .h7-cta .btn{ width: 100%; }
+}
+
+/* ---- the section underneath --------------------------------------------- */
+.h7-about{
+  padding: clamp(36px, 7vw, 76px) clamp(16px, 5vw, 64px);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.h7-about .lead{
+  margin: 0 0 clamp(22px, 3.4vw, 34px);
+  max-width: 72ch;
+  color: var(--ink2, #A1A1AA);
+  font-size: clamp(15px, 1.6vw, 18px);
+  line-height: 1.65;
+  text-wrap: pretty;
+}
+.h7-about .lead strong{ color: var(--ink, #EDEDEF); font-weight: 600; }
+.h7-about .lead sup{ font-size: .7em; }
+
+.h7-about .h7-funnel{
+  list-style: none;
+  counter-reset: h7;
+  margin: 0 0 clamp(16px, 2.4vw, 24px);
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+.h7-about .h7-funnel li{
+  counter-increment: h7;
+  position: relative;
+  padding: 18px 18px 18px 46px;
+  border: 1px solid var(--line, #1D1D23);
+  border-radius: var(--r, 14px);
+  background: var(--panel, #0C0C0F);
+}
+.h7-about .h7-funnel li::before{
+  content: counter(h7);
+  position: absolute;
+  left: 16px; top: 17px;
+  width: 20px; height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(244,183,64,.12);
+  color: var(--accent, #F4B740);
+  font: 600 11px/1 var(--f-mono, ui-monospace, monospace);
+}
+.h7-about .h7-funnel li.hi{ border-color: rgba(244,183,64,.4); }
+.h7-about .h7-funnel li b{
+  display: block;
+  margin-bottom: 4px;
+  color: var(--ink, #EDEDEF);
+  font-size: 14.5px;
+}
+.h7-about .h7-funnel li span{
+  color: var(--ink2, #A1A1AA);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.h7-about .h7-note{
+  margin: 0;
+  color: var(--muted, #83838C);
+  font-size: 12.5px;
+}
+
+/* ---- reduced motion: the sky and moon stay, nothing moves ---------------- */
+@media (prefers-reduced-motion: reduce){
+  .cp-hero7 .h7-chip span::before{ animation: none; }
+  .cp-hero7 .h7-cta .btn{ transition: none; }
+}
+
+/* ---- print --------------------------------------------------------------- */
+@media print{
+  .cp-hero7{ min-height: 0; background: #fff !important; padding: 0; }
+  .cp-hero7 #fx7, .cp-hero7 .shade{ display: none !important; }
+  .cp-hero7 .h7-h1 .l2{ -webkit-text-fill-color: #111; color: #111; background: none; }
+}

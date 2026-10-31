@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Market Insights · ChartPulse</title>
+<meta name="description" content="Market breadth, trend matrix, risk vs return, RSI, volatility and the session clock across every market ChartPulse scans.">
+<meta name="theme-color" content="#050506">
+<meta property="og:title" content="Market Insights · ChartPulse">
+<meta property="og:description" content="Market breadth, trend matrix, risk vs return, RSI, volatility and the session clock across every market ChartPulse scans.">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://chartpulse.io/insights.html">
+<meta property="og:site_name" content="ChartPulse">
+<meta property="og:url" content="https://chartpulse.io/insights.html">
+<meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://chartpulse.io/static/og.jpg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88' aria-hidden='true'><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%23F4B740' stroke-width='3'/><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%2322AB94' stroke-width='2.4' transform='rotate(60 44 44)'/><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%23F7525F' stroke-width='2.4' transform='rotate(-60 44 44)'/><circle cx='44' cy='44' r='4.5' fill='%23EDEDEF'/></svg>">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/static/v2/fonts/ibm-plex-sans-400-latin.woff2" crossorigin>
+<link rel="stylesheet" href="/static/v2/base.css?v=9">
+<link rel="stylesheet" href="/static/v2/cp.css?v=9">
+<link rel="stylesheet" href="/static/v2/odds.css?v=2">
+<script defer src="/static/v2/consent.js?v=2"></script>
+<link rel="stylesheet" href="/static/v2/premium.css?v=2">
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
+</head>
+<body class="site insights" data-page="insights">
+<header class="site-head">
+  <a class="logo" href="./" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
+  <nav class="site-nav" id="siteNav" aria-label="Site">
+    <a href="./" data-p="home">Overview</a>
+    <a href="scanner.html" data-p="scanner">Scanner <small>TIER-1</small></a>
+    <a href="/bias/" data-p="seo">Bias <small>FREE</small></a>
+    <a href="/movers/" data-p="movers">Movers</a>
+    <a href="/pro-backtesting" data-p="backtest">Backtesting <small>FREE</small></a>
+    <a href="/dashboard.html" data-p="bottomreversal">Bottom Reversal <small>FREE</small></a>
+    <a href="insights.html" data-p="insights">Insights</a>
+    <a href="news.html" data-p="news">News <small>IMPACT</small></a>
+    <a href="pricing.html" data-p="pricing">Pricing</a>
+  </nav>
+  <div class="head-right">
+    <button class="cmdk-trigger" type="button" data-cmdk aria-label="Search markets"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search markets…</span><kbd>⌘K</kbd></button>
+    <span class="live-pill" id="hdrLive" title="Instruments trading right now"><span class="ldot off"></span><b>–</b> live</span>
+    <span class="clock" id="cpClock" title="Times on this site are shown in your own time zone"></span>
+    <a class="btn primary" href="pricing.html">Get access</a>
+    <button class="nav-toggle" type="button" aria-label="Menu" aria-controls="siteNav" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
+<main class="page wrap" id="main">
+  <section class="page-head">
+    <div><div class="eyebrow">Market insights</div><h1>The whole market,<br>at a glance.</h1>
+      <p>Breadth, trend, risk, momentum and the session clock across every market we scan. Click any symbol for its full analysis.</p></div>
+    <div class="filters"><select id="scope" class="select" aria-label="Market"><option value="ALL">All markets</option></select><span class="badge"><span class="ldot"></span><span id="iUpd">Loading…</span></span></div>
+  </section>
+
+  <div class="kpis" id="iKpis"></div>
+
+  <section class="bento">
+      <article class="card span-12">
+        <header class="p-head"><div><h2>Market sessions</h2><p class="p-sub" id="tlSub"></p></div></header>
+        <div id="timeline" class="timeline"></div>
+      </article>
+      <article class="card span-8">
+        <header class="p-head"><div><h2>Trend matrix</h2><p class="p-sub">Share of symbols in an up-trend on each Pulse layer, by market</p></div></header>
+        <div id="matrix" class="ec" style="height:420px"></div>
+      </article>
+      <article class="card span-4">
+        <header class="p-head"><div><h2>Sector map</h2><p class="p-sub">Sector indices: 1-month return against today's move</p></div></header>
+        <div id="sectors" class="ec" style="height:420px"></div>
+      </article>
+      <article class="card span-8">
+        <header class="p-head"><div><h2>Risk vs return</h2><p class="p-sub">Daily ATR % against 1-month return</p></div></header>
+        <div id="riskChart" class="ec" style="height:420px"></div><div class="legend" id="rrLegend"></div>
+      </article>
+      <article class="card span-4">
+        <header class="p-head"><div><h2>RSI distribution</h2><p class="p-sub">How stretched each market is right now</p></div></header>
+        <div id="rsiChart" class="ec" style="height:420px"></div>
+      </article>
+      <article class="card span-6">
+        <header class="p-head"><div><h2>Performance leaders</h2><p class="p-sub">Best and worst performers</p></div><div class="tabs" id="perfTab" role="group" aria-label="Period"><button type="button" data-k="ret_1w">1W</button><button type="button" data-k="ret_1m" class="on">1M</button></div></header>
+        <div class="g2"><div><p class="lbh">Top</p><div class="lb" id="perfTop"></div></div><div><p class="lbh">Bottom</p><div class="lb" id="perfBot"></div></div></div>
+      </article>
+      <article class="card span-6">
+        <header class="p-head"><div><h2>Volatility</h2><p class="p-sub">Most and least volatile instruments</p></div><div class="tabs" id="volTab" role="group" aria-label="Measure"><button type="button" data-k="atr_pct" class="on">ATR %</button><button type="button" data-k="vol_20d">20-day vol</button></div></header>
+        <div class="g2"><div><p class="lbh">Most volatile</p><div class="lb" id="volTop"></div></div><div><p class="lbh">Calmest</p><div class="lb" id="volBot"></div></div></div>
+      </article>
+      <article class="card span-6">
+        <header class="p-head"><div><h2>52-week extremes</h2><p class="p-sub">Closest to their 52-week high and low</p></div></header>
+        <div class="g2"><div><p class="lbh">Near high</p><div class="lb" id="hiList"></div></div><div><p class="lbh">Near low</p><div class="lb" id="loList"></div></div></div>
+      </article>
+      <article class="card span-6">
+        <header class="p-head"><div><h2>Stretched today</h2><p class="p-sub">Biggest moves measured in daily ATR</p></div></header>
+        <div class="g2"><div><p class="lbh">Stretched up</p><div class="lb" id="obList"></div></div><div><p class="lbh">Stretched down</p><div class="lb" id="osList"></div></div></div>
+      </article>
+      <article class="card span-12">
+        <header class="p-head"><div><h2>Strongest trends</h2><p class="p-sub">Full Pulse Sync with momentum behind it</p></div></header>
+        <div class="tbl-wrap"><table class="tbl" id="strong"></table></div>
+      </article>
+      <article class="card span-12">
+        <header class="p-head"><div><h2>Economic calendar</h2><p class="p-sub">High and medium impact events</p></div></header>
+        <div class="tv-box cal" id="calendar"></div>
+      </article>
+  </section>
+  <p class="t2-foot">Market data analytics for education and research. Not investment advice.</p>
+</main>
+<footer class="site-foot">
+  <div class="foot-grid wrap">
+    <div>
+      <a class="logo" href="./" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
+      <p>Multi-market Tier-1 scanner for stocks, indices, futures, forex and crypto. Market data from Yahoo Finance and Upstox (India). Charts by TradingView.</p>
+      <span class="foot-status"><span class="ldot"></span>Signals only for markets that are live</span>
+    </div>
+    <div><h4>Product</h4><a href="./">Overview</a><a href="scanner.html">Tier-1 Scanner</a><a href="insights.html">Market Insights</a><a href="news.html">News &amp; Impact</a><a href="pricing.html">Pricing</a></div>
+    <div><h4>Company</h4><a href="legal.php?p=contact">Contact us</a><a href="legal.php?p=terms">Terms &amp; Conditions</a><a href="legal.php?p=privacy">Privacy Policy</a><a href="legal.php?p=refund">Refund &amp; Cancellation</a></div>
+    <div><h4>Resources</h4><a href="legal.php?p=disclaimer">Risk disclaimer</a><a href="/api.php?r=export">Signals CSV</a><a href="#" data-cmdk>Search <kbd>⌘K</kbd></a></div>
+  </div>
+  <div class="disclaimer wrap"><b>Risk disclaimer:</b> ChartPulse provides market data analytics and rule-based scanning tools for education and research. Nothing on this website is investment advice or a recommendation to buy or sell any security, derivative, currency or crypto asset. Trading involves substantial risk of loss. Signals are model output based on delayed or real-time third-party data that may be inaccurate. Consult a SEBI-registered adviser before acting. © <span data-year></span> ChartPulse.</div>
+</footer>
+<script defer src="/static/v2/cp.js?v=93"></script>
+<script defer src="/static/v2/insights.js?v=12"></script>
+<script defer src="/static/v2/cp-launcher.js?v=1"></script>
+</body>
+</html>

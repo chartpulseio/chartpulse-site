@@ -1,0 +1,172 @@
+/* ============================================================================
+   ChartPulse premium layer  (Phase 5B + Phase 6 accessibility)
+   Loaded AFTER the existing stylesheets. Additive only.
+
+   Scope rules
+   -----------
+   * Global (safe everywhere): focus-visible, reduced-motion, scroll-padding,
+     the --muted contrast fix, print styles. These are colour/behaviour only and
+     cannot move tool layout.
+   * Structural rules are scoped to
+     body.site:not([data-page=desk]):not([data-page=tier2])
+     so Scanner (body.scanner), Backtesting (body.btp), Bottom Reversal
+     (no body class), Desk and Tier-2 interiors are never touched.
+   ========================================================================== */
+
+/* --- 1. Token layer -------------------------------------------------------
+   Mapped onto the values already declared by the site's own stylesheet.
+   Nothing here is invented; --cp-* are aliases so premium rules never hardcode
+   a hex value.                                                             */
+:root{
+  --cp-bg:         var(--bg,        #050506);
+  --cp-surface-1:  var(--panel,     #0C0C0F);
+  --cp-surface-2:  var(--panel2,    #111115);
+  --cp-raise:      var(--raise,     #18181D);
+  --cp-border:     var(--line,      #1D1D23);
+  --cp-border-2:   var(--line2,     #2A2A32);
+
+  --cp-text-1:     var(--ink,       #EDEDEF);
+  --cp-text-2:     var(--ink2,      #A1A1AA);
+  --cp-text-3:     var(--muted,     #83838C);
+
+  --cp-accent:     var(--accent,    #F4B740);
+  --cp-bull:       var(--call,      #22AB94);
+  --cp-bear:       var(--put,       #F7525F);
+  --cp-warn:       var(--accent,    #F4B740);
+  --cp-focus:      var(--accent-2,  #FFD27A);
+
+  --cp-r-sm:   var(--r-sm, 9px);
+  --cp-r:      var(--r,    14px);
+  --cp-r-pill: 999px;
+
+  /* 4px spacing scale */
+  --cp-1: 4px;  --cp-2: 8px;  --cp-3: 12px; --cp-4: 16px;
+  --cp-6: 24px; --cp-8: 32px; --cp-12: 48px; --cp-16: 64px; --cp-24: 96px;
+
+  --cp-prose: 68ch;
+  --cp-dur-1: 120ms;
+  --cp-dur-2: 200ms;
+  --cp-ease: cubic-bezier(.2,.6,.3,1);
+
+  /* Sticky header height, used so keyboard focus is never hidden behind it. */
+  --cp-header-h: 76px;
+}
+
+/* --- 2. Contrast fix (WCAG 2.2 AA, 1.4.3) ---------------------------------
+   Measured: the shipped --muted #71717A gives 3.66:1 on --raise (#18181D) and
+   4.22:1 on --bg. Both are below the 4.5:1 required for normal-size text.
+   #83838C measures 4.71:1 on --raise and 5.42:1 on --bg while staying in the
+   same neutral hue, so secondary text reads without changing the palette.    */
+:root{
+  --muted: #83838C;
+}
+
+/* --- 3. Focus visibility (WCAG 2.4.7, 2.4.11) -----------------------------
+   Global: a focus ring visible on every surface, plus scroll padding so a
+   focused element is never parked under the sticky header.                  */
+html{
+  scroll-padding-top: calc(var(--cp-header-h) + var(--cp-2));
+  scroll-padding-bottom: var(--cp-16);
+}
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible{
+  outline: 2px solid var(--cp-focus);
+  outline-offset: 2px;
+  border-radius: var(--cp-r-sm);
+}
+/* Never remove the ring without replacing it. */
+:where(a, button, input, select, textarea, summary):focus:not(:focus-visible){
+  outline: none;
+}
+
+/* --- 4. Reduced motion (WCAG 2.3.3) --------------------------------------- */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =============== Everything below: content pages only ===================== */
+
+/* --- 5. Typography and numbers (5B.2) ------------------------------------- */
+body.site:not([data-page="desk"]):not([data-page="tier2"]) :is(h1,h2,h3){
+  text-wrap: balance;
+}
+body.site:not([data-page="desk"]):not([data-page="tier2"]) p{
+  text-wrap: pretty;
+}
+/* Figures line up down a column and do not jitter as they tick. */
+body.site:not([data-page="desk"]):not([data-page="tier2"])
+  :is(.num, td, th, time, [class*="price"], [class*="pct"], [class*="value"]){
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+/* Prose measure on the reading pages. */
+body.site[data-page="legal"] :is(p, li){
+  max-width: var(--cp-prose);
+}
+
+/* --- 6. Target size (WCAG 2.5.8) -----------------------------------------
+   Inline links inside a sentence are exempt from the 24px minimum, so this
+   only lifts standalone link groups: nav, footer and header.               */
+body.site:not([data-page="desk"]):not([data-page="tier2"])
+  :is(nav, footer, .site-head) a{
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+}
+/* Three standalone links on the content pages are styled by higher-specificity
+   site rules and land at 19-22px. min-height is forced for them alone: it is the
+   AA minimum and it cannot move layout, since these already render as flex or
+   block boxes. The display property is deliberately left to the site's own CSS. */
+body.site:not([data-page="desk"]):not([data-page="tier2"]) header a,
+body.site:not([data-page="desk"]):not([data-page="tier2"]) td > a,
+body.site:not([data-page="desk"]):not([data-page="tier2"]) a.cp-badge{
+  min-height: 24px !important;
+}
+
+/* --- 7. Direction never by colour alone (5B.1) ---------------------------
+   A glyph is added so direction survives greyscale and colour blindness,
+   and only where the site has not already drawn one.                       */
+body.site:not([data-page="desk"]):not([data-page="tier2"])
+  [data-dir="up"]:not(:has(svg))::before{ content: "\25B2 "; font-size: .85em; }
+body.site:not([data-page="desk"]):not([data-page="tier2"])
+  [data-dir="down"]:not(:has(svg))::before{ content: "\25BC "; font-size: .85em; }
+
+/* --- 8. Motion discipline (5B.7) -----------------------------------------
+   Content-page transitions stay on compositor-friendly properties with one
+   duration/easing pair.                                                     */
+body.site:not([data-page="desk"]):not([data-page="tier2"])
+  :is(a, button, .card, [class*="card"]){
+  transition: opacity var(--cp-dur-1) var(--cp-ease),
+              transform var(--cp-dur-1) var(--cp-ease),
+              border-color var(--cp-dur-2) var(--cp-ease),
+              background-color var(--cp-dur-2) var(--cp-ease);
+}
+
+/* --- 9. Print (5B.5) ------------------------------------------------------
+   Legal pages should print as a readable document: light, no chrome.        */
+@media print{
+  html, body{ background: #fff !important; color: #111 !important; }
+  :is(header, nav, footer, canvas, video, iframe,
+      #cp-launch, .cp-panel, [class*="ticker"], [class*="marquee"]){
+    display: none !important;
+  }
+  main, article, section{ background: #fff !important; color: #111 !important; }
+  a{ color: #111 !important; text-decoration: underline; }
+  a[href^="http"]::after{ content: " (" attr(href) ")"; font-size: .85em; }
+  :is(h1,h2,h3){ page-break-after: avoid; }
+  p, li{ page-break-inside: avoid; max-width: none; }
+}
+
+/* --- 10. Assistant launcher: keep it clear of sticky bottom bars ---------- */
+@supports (padding: env(safe-area-inset-bottom)){
+  #cp-launch{ bottom: calc(18px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 620px){
+  body:is([data-page="scanner"], [data-page="desk"], [data-page="tier2"]) #cp-launch{
+    bottom: 76px;
+  }
+}
