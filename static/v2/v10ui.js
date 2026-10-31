@@ -54,13 +54,13 @@
     "GATE OPEN": "GATE OPEN: the zone was swept, waiting for the first entry tick",
     SIGNAL: "SIGNAL: entry ticks are coming in",
     "GATE CLOSE": "GATE CLOSE: price has left the entry range, this signal ends in a few minutes",
-    "APPROACHING AGAIN": "the zone moved and the setup is building again here — this signal was not cancelled"
+    "APPROACHING AGAIN": "the zone moved and the setup is building again here â this signal was not cancelled"
   };
 
   const tkDots = r => {
     if (!Array.isArray(r.ph) || !r.ph.length) return "";
     const TK = tkLabels(r), g = isGate(r);
-    const tip = r.ph.map((x, i) => (x ? "✓ " : "· ") + (TK[i] || "Tick " + i)).join(" | ");
+    const tip = r.ph.map((x, i) => (x ? "â " : "Â· ") + (TK[i] || "Tick " + i)).join(" | ");
     // The gate is a diamond and is NOT counted as a tick: the counter is the 3 entry ticks only.
     const ticks = g ? r.ph.slice(1) : r.ph;
     return `<span class="tks ${r.signal === "PUT" ? "put" : "call"}" title="${tip}">`
@@ -97,7 +97,7 @@
   const stateChip = (r, state) => {
     const side = r.signal === "PUT" ? "put" : r.signal === "CALL" ? "call" : "";
     const hc = state === "FLY" && r.hc;
-    return `<span class="flow ${state.toLowerCase().replace(/\s+/g, "-")} ${side}${hc ? " hc" : ""}" title="${hc ? "High-conviction entry · " : ""}${TIP[state] || ""}">${state === "FLY" ? "✈ " : ""}${state}${hc ? " ⚡" : ""}</span>`;
+    return `<span class="flow ${state.toLowerCase().replace(/\s+/g, "-")} ${side}${hc ? " hc" : ""}" title="${hc ? "High-conviction entry Â· " : ""}${TIP[state] || ""}">${state === "FLY" ? "â " : ""}${state}${hc ? " â¡" : ""}</span>`;
   };
   // Mid Target badge (midtrend). Long/Small target already show via the server remark field.
 // Appears on Tier 1 and Tier 2 rows via decorate(). Server-side setup field stays private.
@@ -105,7 +105,7 @@ const setupChip = r => {
     // Mid-trend rides on a Retracement row as r.mt (server sets it once Retracement TP1 has hit).
     if (r.mt && r.mt.flow) {
         const up = r.mt.sig === 'CALL';
-        return `<span class="tgt-chip tgt-mid" title="Mid Target — ${up ? 'Major Support' : 'Major Resistance'} zone">Mid Target</span>`;
+        return `<span class="tgt-chip tgt-mid" title="Mid Target â ${up ? 'Major Support' : 'Major Resistance'} zone">Mid Target</span>`;
     }
     return '';
 };
@@ -137,7 +137,7 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + slwChip(
       const st = STATUS_RANK[statusOf(r)] ?? 4;
       const pw = 2 - (r.pw || 0);
       const hc = r.hc ? 0 : 1;
-      return [out, zg, st, pw, hc, -(r.strength || 0)];
+      return [out, st, zg, pw, hc, -(r.strength || 0)];  // st before zg: FLY always beats APPROACHING regardless of zone strength
     };
     CP.byTier = (a, b) => {
       const ra = sortRank(a), rb = sortRank(b);
@@ -145,7 +145,7 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + slwChip(
       return 0;
     };
     CP.tkDots = tkDots; CP.pwChip = pwChip; CP.tkState = tkState; CP.zChip = zChip;
-    /* 25 Oct 2026: v10 patches applied — reveal scanner body */
+    /* 25 Oct 2026: v10 patches applied â reveal scanner body */
     document.body.classList.add("v10-ready");
   }
 
@@ -171,17 +171,17 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + slwChip(
   // Tier-1 state is written over that line (and over the copy in the Trade plan panel). APPROACHING is left
   // alone, because there the page's own wording is already correct.
   const T2_STATUS = {
-    FLY: "FLY · entry confirmed",
-    SIGNAL: "SIGNAL · entry ticks coming in",
-    "GATE OPEN": "GATE OPEN · zone swept, waiting for the entry tick",
-    "GATE CLOSE": "GATE CLOSE · this signal is ending"
+    FLY: "FLY Â· entry confirmed",
+    SIGNAL: "SIGNAL Â· entry ticks coming in",
+    "GATE OPEN": "GATE OPEN Â· zone swept, waiting for the entry tick",
+    "GATE CLOSE": "GATE CLOSE Â· this signal is ending"
   };
   const t2SyncStatus = r => {
     if (!r) return;
     const st = tkState(r) || r.flow || null;
     if (!st || !T2_STATUS[st]) return;
     const T = Array.isArray(r.ph) ? (isGate(r) ? r.ph.slice(1) : r.ph) : null;
-    const n = T ? (st === "GATE OPEN" ? "" : " · " + T.filter(Boolean).length + "/" + T.length) : "";
+    const n = T ? (st === "GATE OPEN" ? "" : " Â· " + T.filter(Boolean).length + "/" + T.length) : "";
     const want = T2_STATUS[st] + n;
     try {
       document.querySelectorAll("#t2Status b, .t2-status b").forEach(el => {
@@ -210,7 +210,7 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + slwChip(
     const TK = tkLabels(r), P = r.ph;
     const pw = r.pw === 2 ? '<span class="rtest" title="Retest at the Pulse zone">RETEST ++</span>'
       : r.pw === 1 ? '<span class="rtest sw" title="Sweep at the Pulse zone">+</span>' : "";
-    const row = (tag, name, on) => `<div class="sd-ph-r ${on ? "done" : ""}"><small>${tag}</small>${name}<span class="ck">✓</span></div>`;
+    const row = (tag, name, on) => `<div class="sd-ph-r ${on ? "done" : ""}"><small>${tag}</small>${name}<span class="ck">â</span></div>`;
     box.innerHTML = `<div class="sd-sync-h"><span>Entry ladder${pw}</span><b>${P.slice(1).filter(Boolean).length}/3</b></div>`
       + row("GATE", TK[0], P[0])
       + [1, 2, 3].map(i => row("TICK " + i, TK[i], P[i])).join("");
