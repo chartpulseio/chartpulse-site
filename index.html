@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ChartPulse Â· Measure the Pulse of Global Markets &amp; Trade the Right Direction</title>
+<title>ChartPulse · Measure the Pulse of Global Markets &amp; Trade the Right Direction</title>
 <meta name="description" content="Live world market dashboard and Tier-1 signal scanner for 600+ stocks, indices, futures, forex and crypto. Signals only for markets that are open.">
 <meta name="theme-color" content="#050506">
-<meta property="og:title" content="ChartPulse Â· Live multi-market trading dashboard & Tier-1 scanner">
+<meta property="og:title" content="ChartPulse · Live multi-market trading dashboard & Tier-1 scanner">
 <meta property="og:description" content="Live world market dashboard and Tier-1 signal scanner for 600+ stocks, indices, futures, forex and crypto. Signals only for markets that are open.">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://chartpulse.io/">
@@ -22,7 +22,7 @@
 <link rel="stylesheet" href="/static/v2/base.css?v=10">
 <link rel="stylesheet" href="/static/v2/cp.css?v=19">
 <link rel="stylesheet" href="/static/v2/odds.css?v=2">
-<link rel="stylesheet" href="/static/v2/header7.css?v=1">
+<link rel="stylesheet" href="/static/v2/header7.css?v=2">
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://chartpulse.io/#org","name":"ChartPulse","url":"https://chartpulse.io/","logo":"https://chartpulse.io/static/og.jpg"},{"@type":"WebSite","@id":"https://chartpulse.io/#site","name":"ChartPulse","url":"https://chartpulse.io/","publisher":{"@id":"https://chartpulse.io/#org"},"description":"Live trend bias, market movers and a rule-based signal scanner for stocks, indices, futures, forex and crypto."}]}</script>
 <script defer src="/static/v2/consent.js?v=2"></script>
 <link rel="stylesheet" href="/static/v2/premium.css?v=2">
@@ -45,8 +45,8 @@
     <a href="pricing.html" data-p="pricing">Pricing</a>
   </nav>
   <div class="head-right">
-    <button class="cmdk-trigger" type="button" data-cmdk aria-label="Search markets"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search marketsâ¦</span><kbd>âK</kbd></button>
-    <span class="live-pill" id="hdrLive" title="Instruments trading right now"><span class="ldot off"></span><b>â</b> live</span>
+    <button class="cmdk-trigger" type="button" data-cmdk aria-label="Search markets"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search markets…</span><kbd>⌘K</kbd></button>
+    <span class="live-pill" id="hdrLive" title="Instruments trading right now"><span class="ldot off"></span><b>–</b> live</span>
     <span class="clock" id="cpClock" title="Times on this site are shown in your own time zone"></span>
     <a class="btn primary" href="pricing.html">Get access</a>
     <button class="nav-toggle" type="button" aria-label="Menu" aria-controls="siteNav" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
@@ -54,8 +54,9 @@
 </header>
 <div class="tape" aria-label="Ticker tape"><div class="tape-track" id="tape"></div></div>
 
-<!-- âââ Header v7 â Cinematic space hero âââ -->
+<!-- ═══ Header v7 — Cinematic space hero ═══ -->
 <section class="cp-hero7" aria-label="ChartPulse hero">
+  <video id="cp-hero7-video" autoplay muted loop playsinline disablepictureinpicture preload="metadata" poster="/static/v2/chartpulse-poster.jpg" aria-hidden="true"><source src="/static/v2/chartpulse-loop.mp4" type="video/mp4"></video>
   <div class="shade" aria-hidden="true"></div>
   <canvas id="fx7" aria-hidden="true"></canvas>
   <div class="h7-copy">
@@ -70,18 +71,18 @@
 </section>
 
 <section class="h7-about">
-  <p class="lead"><strong>ChartPulse</strong> starts from every stock, index, future, forex pair and crypto token traded on the world's major exchanges â <strong>over 60,000 instruments</strong><sup>1</sup>. The Tier-1 engine scores, filters and ranks them in real time so you only see the setups that matter.</p>
+  <p class="lead"><strong>ChartPulse</strong> starts from every stock, index, future, forex pair and crypto token traded on the world's major exchanges — <strong>over 60,000 instruments</strong><sup>1</sup>. The Tier-1 engine scores, filters and ranks them in real time so you only see the setups that matter.</p>
   <ol class="h7-funnel">
     <li><b>60,000+</b><span>instruments scanned worldwide</span></li>
     <li><b>700+</b><span>pass our watch-list filter</span></li>
-    <li><b>~40â80</b><span>show a synced Pulse trend</span></li>
+    <li><b>~40–80</b><span>show a synced Pulse trend</span></li>
     <li class="hi"><b>Up to 10</b><span>final picks that match our setup</span></li>
   </ol>
   <p class="h7-note">&sup1; Source: World Federation of Exchanges (end-2024 data).</p>
 </section>
 <!-- home.js still writes the old hero stats; keep hidden targets so it never hits a missing element -->
 <div hidden aria-hidden="true"><span id="annTxt"></span><b id="hUniTxt"></b><i id="hUni"></i><i id="hEx"></i><i id="hTz"></i><i id="hLive"></i><i id="hLiveS"></i><i id="hSet"></i><i id="hSetS"></i><i id="hOpen"></i><i id="hOpenS"></i><i id="hBr"></i><i id="hBrS"></i><i id="hUpd"></i></div>
-<!-- âââ /Header v7 âââ -->
+<!-- ═══ /Header v7 ═══ -->
 
 <main class="page wrap" id="main">
   <section class="sec rv in bm-sec" id="free" aria-labelledby="bmTitle">
@@ -97,11 +98,11 @@
           <li><b>Data can be delayed or wrong.</b> Prices come from third-party feeds and may be delayed, incomplete or inaccurate. Always confirm prices with your broker before you place an order.</li>
           <li><b>You are responsible for your decisions.</b> We do not know your financial situation, objectives or experience. Consider independent advice from a licensed financial adviser in your country before you trade.</li>
         </ul>
-        <p class="rk-link"><a href="legal.php?p=disclaimer">Read the full risk disclaimer</a> Â· <a href="legal.php?p=terms">Terms &amp; Conditions</a></p>
+        <p class="rk-link"><a href="legal.php?p=disclaimer">Read the full risk disclaimer</a> · <a href="legal.php?p=terms">Terms &amp; Conditions</a></p>
       </div>
     </aside>
     <div class="sec-head bm-head">
-      <div><span class="free-tag">FREE Â· FOR EVERYONE</span><h2 id="bmTitle">Big Movers today</h2><p>The instruments on our watch list that have moved the most today, in percent and in daily ATRs (their average daily range). Live data only: no Tier-1 logic, no scores and no calls. Use it to see where the action is, then do your own analysis.</p></div>
+      <div><span class="free-tag">FREE · FOR EVERYONE</span><h2 id="bmTitle">Big Movers today</h2><p>The instruments on our watch list that have moved the most today, in percent and in daily ATRs (their average daily range). Live data only: no Tier-1 logic, no scores and no calls. Use it to see where the action is, then do your own analysis.</p></div>
       <div class="filters">
         <div class="tabs" id="bmSort" role="group" aria-label="Rank by"><button type="button" class="on" data-k="pct">Biggest %</button><button type="button" data-k="atr">Biggest ATR move</button></div>
         <div class="tabs" id="bmDir" role="group" aria-label="Direction"><button type="button" class="on" data-k="all">Both</button><button type="button" data-k="up">Up</button><button type="button" data-k="down">Down</button></div>
@@ -109,14 +110,14 @@
         <label class="check"><input type="checkbox" id="bmLive" aria-label="Show live markets only" checked> Live only</label>
       </div>
     </div>
-    <div class="bm-grid" id="bigMovers" aria-live="polite"><div class="empty">Loading today's moversâ¦</div></div>
-    <p class="bm-note" id="bmNote"><b>How to read it.</b> <i>ATR move</i> compares today's change with the instrument's average daily range (14-day ATR): 1.0Ã is a normal day, 2Ã or more is unusually stretched. The bar shows where the price sits inside today's lowâhigh range. Notes describe what the price has done; they are not a forecast or a recommendation.</p>
-    <p class="bm-more"><a href="/movers/">All of today's movers â</a><a href="/bias/">Trend bias for every symbol â</a></p>
+    <div class="bm-grid" id="bigMovers" aria-live="polite"><div class="empty">Loading today's movers…</div></div>
+    <p class="bm-note" id="bmNote"><b>How to read it.</b> <i>ATR move</i> compares today's change with the instrument's average daily range (14-day ATR): 1.0× is a normal day, 2× or more is unusually stretched. The bar shows where the price sits inside today's low–high range. Notes describe what the price has done; they are not a forecast or a recommendation.</p>
+    <p class="bm-more"><a href="/movers/">All of today's movers →</a><a href="/bias/">Trend bias for every symbol →</a></p>
   </section>
 
   <section class="sec rv in bc-sec" id="bias" aria-labelledby="bcTitle">
     <div class="sec-head">
-      <div><span class="free-tag">FREE Â· FOR EVERYONE</span><h2 id="bcTitle">Bias Check</h2><p>Type a symbol or drop a chart screenshot. You get the trend bias from the ChartPulse engine, the key stats and the latest news for that instrument. No sign-up, no cost.</p></div>
+      <div><span class="free-tag">FREE · FOR EVERYONE</span><h2 id="bcTitle">Bias Check</h2><p>Type a symbol or drop a chart screenshot. You get the trend bias from the ChartPulse engine, the key stats and the latest news for that instrument. No sign-up, no cost.</p></div>
     </div>
     <div class="bc-in card">
       <form class="bc-search" id="bcForm" autocomplete="off" role="search">
@@ -134,7 +135,7 @@
       <div class="bc-msg" id="bcMsg" aria-live="polite"></div>
     </div>
     <div id="bcCard" class="bc-card-wrap" aria-live="polite"></div>
-    <p class="bm-more"><a href="/bias/">Browse all 700+ symbols â</a><a href="/movers/">Today's biggest movers â</a></p>
+    <p class="bm-more"><a href="/bias/">Browse all 700+ symbols →</a><a href="/movers/">Today's biggest movers →</a></p>
   </section>
   <section class="sec rv">
     <div class="sec-head"><div><h2>World markets</h2><p>Exchange clocks with lunch breaks. Holidays and halts are detected from live trades, not a calendar.</p></div></div>
@@ -151,7 +152,7 @@
         </div>
       </header>
       <div class="hmap" id="hmap" aria-label="Market heatmap"></div>
-      <div class="p-head" style="margin:14px 0 0"><div class="hm-legend" id="mapLegend"></div><span class="src-note" id="mapNote">Click a region to open it Â· click a symbol for its analysis</span></div>
+      <div class="p-head" style="margin:14px 0 0"><div class="hm-legend" id="mapLegend"></div><span class="src-note" id="mapNote">Click a region to open it · click a symbol for its analysis</span></div>
     </article>
     <div class="span-4 stack">
       <article class="card spot">
@@ -178,18 +179,18 @@
         <button type="button" data-s="^GSPC">S&amp;P 500</button><button type="button" data-s="^NDX">Nasdaq 100</button>
         <button type="button" data-s="GC=F">Gold</button><button type="button" data-s="BTC-USD">Bitcoin</button><button type="button" data-s="EURUSD=X">EUR/USD</button></div></header>
       <div class="tv-box" id="tvHome"></div>
-      <p class="tv-copy" id="tvCopy">NSE, BSE and MCX charts are drawn by ChartPulse from exchange data (TradingView cannot embed them). Other markets use <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView</a>. <a id="tvOut" href="https://www.tradingview.com/" target="_blank" rel="noopener">Open on TradingView â</a></p>
+      <p class="tv-copy" id="tvCopy">NSE, BSE and MCX charts are drawn by ChartPulse from exchange data (TradingView cannot embed them). Other markets use <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView</a>. <a id="tvOut" href="https://www.tradingview.com/" target="_blank" rel="noopener">Open on TradingView ↗</a></p>
     </article>
     <article class="card spot span-4">
-      <header class="p-head"><div><h2>Breadth by region</h2><p class="p-sub">Average day change Â· share with an upward bias</p></div></header>
+      <header class="p-head"><div><h2>Breadth by region</h2><p class="p-sub">Average day change · share with an upward bias</p></div></header>
       <div id="breadth" class="dbar"></div>
     </article>
   </section>
 
   <section class="bento rv">
-    <article class="card spot span-4"><header class="p-head"><h2>Forex</h2><span class="p-sub">24Ã5 Â· majors &amp; INR</span></header><table class="mini" id="bFx"></table></article>
-    <article class="card spot span-4"><header class="p-head"><h2>Commodities</h2><span class="p-sub">Global futures Â· MCX</span></header><table class="mini" id="bCmd"></table></article>
-    <article class="card spot span-4"><header class="p-head"><h2>Crypto</h2><span class="p-sub">24Ã7</span></header><table class="mini" id="bCr"></table></article>
+    <article class="card spot span-4"><header class="p-head"><h2>Forex</h2><span class="p-sub">24×5 · majors &amp; INR</span></header><table class="mini" id="bFx"></table></article>
+    <article class="card spot span-4"><header class="p-head"><h2>Commodities</h2><span class="p-sub">Global futures · MCX</span></header><table class="mini" id="bCmd"></table></article>
+    <article class="card spot span-4"><header class="p-head"><h2>Crypto</h2><span class="p-sub">24×7</span></header><table class="mini" id="bCr"></table></article>
   </section>
 
   <section class="sec rv">
@@ -198,7 +199,7 @@
       <div class="step spot"><span class="n">01</span><h3>Pulse Sync</h3><p>The engine reads four trend layers, from fast to slow, for every instrument. Only a clear, synced trend enters the scanner; a split never does.</p><span class="pts">Trend layers</span></div>
       <div class="step spot"><span class="n">02</span><h3>Pulse zone</h3><p>Each day has a Pulse Floor and a Pulse Ceiling. CALL fires only at the Floor and PUT only at the Ceiling. The remark tells you whether it is a long or a small target. Until then the symbol is Under process.</p><span class="pts">Today's zone</span></div>
       <div class="step spot"><span class="n">03</span><h3>Confluence</h3><p>Key price levels that line up with the zone make a setup stronger.</p><span class="pts">Level clusters</span></div>
-      <div class="step spot"><span class="n">04</span><h3>Strength score</h3><p>Every setup gets a score out of 100. The score measures strength only; it never makes a symbol eligible.</p><span class="pts">0 â 100</span></div>
+      <div class="step spot"><span class="n">04</span><h3>Strength score</h3><p>Every setup gets a score out of 100. The score measures strength only; it never makes a symbol eligible.</p><span class="pts">0 – 100</span></div>
     </div>
   </section>
 
@@ -216,13 +217,13 @@
     </div>
     <div><h4>Product</h4><a href="./">Overview</a><a href="scanner.html">Tier-1 Scanner</a><a href="insights.html">Market Insights</a><a href="news.html">News &amp; Impact</a><a href="pricing.html">Pricing</a></div>
     <div><h4>Company</h4><a href="legal.php?p=contact">Contact us</a><a href="legal.php?p=terms">Terms &amp; Conditions</a><a href="legal.php?p=privacy">Privacy Policy</a><a href="legal.php?p=refund">Refund &amp; Cancellation</a></div>
-    <div><h4>Resources</h4><a href="legal.php?p=disclaimer">Risk disclaimer</a><a href="/api.php?r=export">Signals CSV</a><a href="#" data-cmdk>Search <kbd>âK</kbd></a></div>
+    <div><h4>Resources</h4><a href="legal.php?p=disclaimer">Risk disclaimer</a><a href="/api.php?r=export">Signals CSV</a><a href="#" data-cmdk>Search <kbd>⌘K</kbd></a></div>
   </div>
-  <div class="disclaimer wrap"><b>Risk disclaimer:</b> ChartPulse provides market data analytics and rule-based scanning tools for education and research. Nothing on this website is investment advice or a recommendation to buy or sell any security, derivative, currency or crypto asset. Trading involves substantial risk of loss. Signals are model output based on delayed or real-time third-party data that may be inaccurate. Consult a SEBI-registered adviser before acting. Â© <span data-year></span> ChartPulse.</div>
+  <div class="disclaimer wrap"><b>Risk disclaimer:</b> ChartPulse provides market data analytics and rule-based scanning tools for education and research. Nothing on this website is investment advice or a recommendation to buy or sell any security, derivative, currency or crypto asset. Trading involves substantial risk of loss. Signals are model output based on delayed or real-time third-party data that may be inaccurate. Consult a SEBI-registered adviser before acting. © <span data-year></span> ChartPulse.</div>
 </footer>
 <script defer src="/static/v2/cp.js?v=93"></script>
 <script defer src="/static/v2/home.js?v=16"></script>
-<script defer src="/static/v2/header7.js?v=1"></script>
+<script defer src="/static/v2/header7.js?v=2"></script>
 <script defer src="/static/v2/cp-launcher.js?v=1"></script>
 </body>
 </html>
