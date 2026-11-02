@@ -612,7 +612,27 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
         $mt = t_mt_eval($sym, $fr, array_map(fn($v) => (int)$v['dir'], $tfs), $mtctx);
         $isMt = $mt && !empty($mt['valid']);
     }
-    if ($setup === 'retrace') $bonus4 = 0.0;   // owner, 5 Oct 2026 11:37 IST: 4/4 Pulse Sync bonus only for trend setups
+    if ($setup === 'retrace' || $setup === 'midtrend') $bonus4 = 0.0;   // owner, 5 Oct 2026 11:37 IST: 4/4 Pulse Sync bonus only for trend setups
+    // Mid-trend setup (2 Nov 2026): MTF-aligned signal at a major key zone (PDH/PDL/PDC/Wk H+L/1H EMA 20/50/200)
+    // when price is NOT at Day Low/High (would be trend/retrace). CALL above Day Low, PUT below Day High.
+    $midZone = null; $midSetup = false;
+    if ($signal === 'WAIT' && $bias !== 'NEUTRAL') {
+        $mtTol = t_exchange($sym) === 'FX' ? 0.0015 : ($price * 0.003);   // FX=15 pips, others=0.3%
+        $pdc  = (float)($D['c'][$n - 2] ?? 0);
+        $midZone = t_midtrend_zone($price, $pdh, $pdl, $pdc, $fr['1W'], $fr['1H'], $mtTol);
+        if ($midZone) {
+            // CALL: MTF bullish + price above today's Day Low (not at it) + near major zone
+            // PUT:  MTF bearish + price below today's Day High (not at it) + near major zone
+            $mtCall = $bias === 'UP'   && $price > $atrLow  + $band && !$atLow;
+            $mtPut  = $bias === 'DOWN' && $price < $atrHigh - $band && !$atHigh;
+            if ($mtCall || $mtPut) {
+                $signal   = $mtCall ? 'CALL' : 'PUT';
+                $setup    = 'midtrend';
+                $wantUp   = $mtCall;
+                $midSetup = true;
+            }
+        }
+    }
     // Bounce + Liquidity-Sweep setup (2 Nov 2026): 3/4 MTF where 1H flipped bullish (PUT side) or bearish (CALL side)
     // against the 4H+1D trend. Price bouncing toward Day High (PUT) or Day Low (CALL) to sweep liquidity.
     // Stage 1 BOUNCE: label "bounce chal raha hai", no entry yet.
@@ -753,9 +773,9 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
     // The 13 Oct retracement SL buffer is gone: both setups now use 1.5% from the position line (owner, 19 Oct 2026).
     return [
         'symbol' => $sym, 'name' => t_name($sym), 'market' => t_symbols()[$sym] ?? 'Other', 'signal' => $signal, 'rule' => 5, 'setup' => $setup,
-        'remark' => $setup === 'trend' ? 'Long target' : ($setup === 'retrace' ? ($bounceLabel ?? 'Small target') : (($setup === 'sweep_put' || $setup === 'sweep_call') ? ($bounceLabel ?? 'Sweep trap') : ($bounceSetup ? ($bounceLabel ?? 'bounce chal raha hai') : null))),
+        'remark' => $setup === 'trend' ? 'Long target' : ($setup === 'retrace' ? ($bounceLabel ?? 'Small target') : ($setup === 'midtrend' ? 'Mid target' : ($setup === 'sweep_put' || $setup === 'sweep_call' ? ($bounceLabel ?? 'Sweep trap') : ($bounceSetup ? ($bounceLabel ?? 'bounce chal raha hai') : null)))),
         'strength' => round($strength, 2), 'bias' => $bias, 'alignment' => $alignment, 'tf' => $tfs,
-        'zone_touch' => $inZone, 'zone_near' => $zoneSide, 'overextended' => $overext, 'confluence' => $conf >= 5,
+        'zone_touch' => $inZone, 'zone_near' => $midSetup ? ($midZone['label'] ?? $zoneSide) : $zoneSide, 'overextended' => $overext, 'confluence' => $conf >= 5, 'mid_zone' => $midSetup ? $midZone : null,
         'components' => ['alignment' => round($trendPts, 2), 'alignment_max' => 30.0, 'bonus4' => $bonus4,
             'pdhl' => round($pdhlPts, 2), 'fib' => round($fibPts, 2), 'confluence' => round($conf, 2),
             'adx' => round($adxPts, 2), 'rsi' => round($rsiPts, 2), 'grade' => $gradePts, 'adx_state' => $adxState, 'score_v' => $scoreV,
@@ -830,6 +850,35 @@ function t_fp($p): string {
 /** Public names (owner, 29 Sep 2026): the rule's building blocks never appear under their technical names outside the server. */
 const T_PULSE = ['ATR Low' => 'Pulse Floor', 'ATR High' => 'Pulse Ceiling'];
 function t_pub_zone(?string $z): ?string { return $z === null ? null : (T_PULSE[$z] ?? $z); }
+/** Mid-trend major zones: PDH, PDL, PDC, Weekly High, Weekly Low, 1H EMA-20, 1H EMA-50, 1H EMA-200.
+ *  Returns the nearest zone level and its label if price is within $tol of any zone, else null.
+ *  Used to qualify Mid-target setups: CALL when price is above Day Low near a major zone (MTF bullish),
+ *  PUT when price is below Day High near a major zone (MTF bearish). (2 Nov 2026) */
+function t_midtrend_zone(float $price, float $pdh, float $pdl, float $pdc, array $fr1W, array $fr1H, float $tol): ?array {
+    $wN = count($fr1W['c']); $hN = count($fr1H['c']);
+    $wkH = $wN >= 2 ? (float)$fr1W['h'][$wN - 2] : 0.0;   // previous completed week high
+    $wkL = $wN >= 2 ? (float)$fr1W['l'][$wN - 2] : 0.0;   // previous completed week low
+    // 1H EMA-20, 50, 200
+    $ema20 = $hN >= 20 ? t_ema($fr1H['c'], 20)[$hN - 1] : 0.0;
+    $ema50 = $hN >= 50 ? t_ema($fr1H['c'], 50)[$hN - 1] : 0.0;
+    $ema200 = $hN >= 200 ? t_ema($fr1H['c'], 200)[$hN - 1] : 0.0;
+    $zones = array_filter([
+        'PDH'     => $pdh    > 0 ? $pdh    : null,
+        'PDL'     => $pdl    > 0 ? $pdl    : null,
+        'PDC'     => $pdc    > 0 ? $pdc    : null,
+        'Wk High' => $wkH   > 0 ? $wkH   : null,
+        'Wk Low'  => $wkL   > 0 ? $wkL   : null,
+        'EMA20'   => $ema20  > 0 ? $ema20  : null,
+        'EMA50'   => $ema50  > 0 ? $ema50  : null,
+        'EMA200'  => $ema200 > 0 ? $ema200 : null,
+    ], fn($v) => $v !== null);
+    $best = null; $bestDist = INF;
+    foreach ($zones as $lbl => $lvl) {
+        $dist = abs($price - $lvl);
+        if ($dist <= $tol && $dist < $bestDist) { $bestDist = $dist; $best = ['label' => $lbl, 'level' => $lvl, 'dist' => $dist]; }
+    }
+    return $best;
+}
 function t_pub_setup(?string $s): ?string { return $s === null ? null : ($s === 'trend' ? 'long' : ($s === 'midtrend' ? 'midtrend' : 'short')); }
 function t_pub_level(string $k): string { return $k === 'PP' ? 'P0' : (str_starts_with($k, 'R') ? 'U' . substr($k, 1) : (str_starts_with($k, 'S') ? 'D' . substr($k, 1) : $k)); }
 /** Public symbol brief: describes the state, never the rule's formulas or weights. */
@@ -1234,7 +1283,7 @@ function t_ensure_dirs(): void { if (!is_dir(T_FRAMES)) @mkdir(T_FRAMES, 0755, t
 
 function t_slim(array $r, array $st): array {
     $o = [];
-    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','al5','v10','go','t0','zg','zlv','lad','sl_wide','bounce','bounce_label','sweep_high','sweep_triggered','sweep_cancelled'] as $k) $o[$k] = $r[$k] ?? null;
+    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','al5','v10','go','t0','zg','zlv','lad','sl_wide','bounce','bounce_label','sweep_high','sweep_triggered','sweep_cancelled','mid_zone','prev_fly'] as $k) $o[$k] = $r[$k] ?? null;
     $o['tf'] = array_map(fn($v) => $v['dir'], $r['tf']);
     foreach (['spark', 'ret_1w', 'ret_1m', 'ret_3m', 'ret_1y', 'vol_20d', 'from_hi_pct', 'from_lo_pct', 'hi_52w', 'lo_52w'] as $k) $o[$k] = $st[$k];
     return $o;
