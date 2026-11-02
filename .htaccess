@@ -15,7 +15,7 @@ RewriteRule ^(.*)$ https://chartpulse.io/$1 [R=301,L]
 RewriteRule (^|/)\.(?!well-known/) - [F,L]
 
 # --- block dev/sensitive folders
-RewriteRule ^(tools|deploy|baseline|rollback|cache|inc)(/|$) - [F,L]
+RewriteRule ^(tools|deploy|baseline|rollback|cache|inc|next)(/|$) - [F,L]
 
 # --- 301 old URLs -> new URLs
 # THE_REQUEST checks the ORIGINAL request so internal rewrites below cannot loop.
