@@ -33,7 +33,9 @@
     + ".slw{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:4px;font:700 10px/1.3 var(--mono,monospace);color:#F4B740;border:1px solid rgba(244,183,64,.5);vertical-align:middle}"
     + ".t2v10{display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-left:4px}"
     + ".tgt-chip{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:5px;font:700 10px/1.3 var(--mono,monospace);letter-spacing:.04em;vertical-align:middle;border:1px solid}"
-    + ".tgt-mid{color:#5B9BD5;border-color:rgba(91,155,213,.55);background:rgba(91,155,213,.08)}";
+    + ".tgt-mid{color:#5B9BD5;border-color:rgba(91,155,213,.55);background:rgba(91,155,213,.08)}"
+    + ".pb5tick{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:5px;font:700 10px/1.3 var(--mono,monospace);letter-spacing:.04em;vertical-align:middle;border:1px solid;color:#A78BFA;border-color:rgba(167,139,250,.55);background:rgba(167,139,250,.1)}"
+    + ".pb5tick.put{color:#F7525F;border-color:rgba(247,82,95,.55);background:rgba(247,82,95,.08)}";
   try {
     if (!document.getElementById("cpV10Css")) { const s = document.createElement("style"); s.id = "cpV10Css"; s.textContent = css; document.head.appendChild(s); }
   } catch (e) {}
@@ -54,13 +56,13 @@
     "GATE OPEN": "GATE OPEN: the zone was swept, waiting for the first entry tick",
     SIGNAL: "SIGNAL: entry ticks are coming in",
     "GATE CLOSE": "GATE CLOSE: price has left the entry range, this signal ends in a few minutes",
-    "APPROACHING AGAIN": "the zone moved and the setup is building again here â this signal was not cancelled"
+    "APPROACHING AGAIN": "the zone moved and the setup is building again here — this signal was not cancelled"
   };
 
   const tkDots = r => {
     if (!Array.isArray(r.ph) || !r.ph.length) return "";
     const TK = tkLabels(r), g = isGate(r);
-    const tip = r.ph.map((x, i) => (x ? "â " : "Â· ") + (TK[i] || "Tick " + i)).join(" | ");
+    const tip = r.ph.map((x, i) => (x ? "✓ " : "· ") + (TK[i] || "Tick " + i)).join(" | ");
     // The gate is a diamond and is NOT counted as a tick: the counter is the 3 entry ticks only.
     const ticks = g ? r.ph.slice(1) : r.ph;
     return `<span class="tks ${r.signal === "PUT" ? "put" : "call"}" title="${tip}">`
@@ -97,7 +99,7 @@
   const stateChip = (r, state) => {
     const side = r.signal === "PUT" ? "put" : r.signal === "CALL" ? "call" : "";
     const hc = state === "FLY" && r.hc;
-    return `<span class="flow ${state.toLowerCase().replace(/\s+/g, "-")} ${side}${hc ? " hc" : ""}" title="${hc ? "High-conviction entry Â· " : ""}${TIP[state] || ""}">${state === "FLY" ? "â " : ""}${state}${hc ? " â¡" : ""}</span>`;
+    return `<span class="flow ${state.toLowerCase().replace(/\s+/g, "-")} ${side}${hc ? " hc" : ""}" title="${hc ? "High-conviction entry · " : ""}${TIP[state] || ""}">${state === "FLY" ? "✈ " : ""}${state}${hc ? " ⚡" : ""}</span>`;
   };
   // Mid Target badge (midtrend). Long/Small target already show via the server remark field.
 // Appears on Tier 1 and Tier 2 rows via decorate(). Server-side setup field stays private.
@@ -105,11 +107,17 @@ const setupChip = r => {
     // Mid-trend rides on a Retracement row as r.mt (server sets it once Retracement TP1 has hit).
     if (r.mt && r.mt.flow) {
         const up = r.mt.sig === 'CALL';
-        return `<span class="tgt-chip tgt-mid" title="Mid Target â ${up ? 'Major Support' : 'Major Resistance'} zone">Mid Target</span>`;
+        return `<span class="tgt-chip tgt-mid" title="Mid Target — ${up ? 'Major Support' : 'Major Resistance'} zone">Mid Target</span>`;
     }
     return '';
 };
-const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + slwChip(r) + pwChip(r);
+// Pullback+5EMA combined tick — informational only, shown on trend/retrace only (not mid-trend)
+const pb5Chip = r => {
+    if (!r || !r.pb5 || r.mt) return ''; // not for mid-trend (r.mt set = mid-trend)
+    const side = (r.signal === 'PUT' || r.bias === 'PUT') ? 'put' : 'call';
+    return `<span class="pb5tick ${side}" title="Structure shift on 5m + Pullback to 5 EMA + Rejection candle — Pullback+5EMA combined">PB+5EMA ✓</span>`;
+};
+const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(r) + slwChip(r) + pwChip(r);
 
   // ---- Tier 1 -------------------------------------------------------------
   if (CP && CP.flowChip) {
@@ -127,7 +135,7 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + slwChip(
       return h + decorate(r);
     };
 
-    // Sort: zone group, then status, then retest/sweep, then high-conviction, then score.
+    // Sort: status first (FLY at top), then zone group, then retest/sweep, then high-conviction, then score. (owner, 1 Nov 2026)
     const STATUS_RANK = { FLY: 0, SIGNAL: 1, RUNWAY: 1, "GATE OPEN": 2, APPROACHING: 3, "APPROACHING AGAIN": 3, "GATE CLOSE": 4 };
     const statusOf = r => tkState(r) || (r && r.flow) || null;
     const sortRank = r => {
@@ -145,7 +153,7 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + slwChip(
       return 0;
     };
     CP.tkDots = tkDots; CP.pwChip = pwChip; CP.tkState = tkState; CP.zChip = zChip;
-    /* 25 Oct 2026: v10 patches applied â reveal scanner body */
+    /* 1 Nov 2026: sort fix — status beats zone group; FLY always at top */
     document.body.classList.add("v10-ready");
   }
 
@@ -171,17 +179,17 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + slwChip(
   // Tier-1 state is written over that line (and over the copy in the Trade plan panel). APPROACHING is left
   // alone, because there the page's own wording is already correct.
   const T2_STATUS = {
-    FLY: "FLY Â· entry confirmed",
-    SIGNAL: "SIGNAL Â· entry ticks coming in",
-    "GATE OPEN": "GATE OPEN Â· zone swept, waiting for the entry tick",
-    "GATE CLOSE": "GATE CLOSE Â· this signal is ending"
+    FLY: "FLY · entry confirmed",
+    SIGNAL: "SIGNAL · entry ticks coming in",
+    "GATE OPEN": "GATE OPEN · zone swept, waiting for the entry tick",
+    "GATE CLOSE": "GATE CLOSE · this signal is ending"
   };
   const t2SyncStatus = r => {
     if (!r) return;
     const st = tkState(r) || r.flow || null;
     if (!st || !T2_STATUS[st]) return;
     const T = Array.isArray(r.ph) ? (isGate(r) ? r.ph.slice(1) : r.ph) : null;
-    const n = T ? (st === "GATE OPEN" ? "" : " Â· " + T.filter(Boolean).length + "/" + T.length) : "";
+    const n = T ? (st === "GATE OPEN" ? "" : " · " + T.filter(Boolean).length + "/" + T.length) : "";
     const want = T2_STATUS[st] + n;
     try {
       document.querySelectorAll("#t2Status b, .t2-status b").forEach(el => {
@@ -210,7 +218,7 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + slwChip(
     const TK = tkLabels(r), P = r.ph;
     const pw = r.pw === 2 ? '<span class="rtest" title="Retest at the Pulse zone">RETEST ++</span>'
       : r.pw === 1 ? '<span class="rtest sw" title="Sweep at the Pulse zone">+</span>' : "";
-    const row = (tag, name, on) => `<div class="sd-ph-r ${on ? "done" : ""}"><small>${tag}</small>${name}<span class="ck">â</span></div>`;
+    const row = (tag, name, on) => `<div class="sd-ph-r ${on ? "done" : ""}"><small>${tag}</small>${name}<span class="ck">✓</span></div>`;
     box.innerHTML = `<div class="sd-sync-h"><span>Entry ladder${pw}</span><b>${P.slice(1).filter(Boolean).length}/3</b></div>`
       + row("GATE", TK[0], P[0])
       + [1, 2, 3].map(i => row("TICK " + i, TK[i], P[i])).join("");
