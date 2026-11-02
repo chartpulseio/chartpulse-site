@@ -387,7 +387,6 @@ function t2_build(string $sym, string $bias): array {
     // setup: with the Tier-1 trend (long target) or a retracement against it (small target)
     $tb = $t1['bias'] ?? 'NEUTRAL';
     $setup = in_array($tb, ['UP', 'DOWN'], true) && (($bias === 'CALL') === ($tb === 'UP')) ? 'trend' : 'retrace';
-    if (($t1['setup'] ?? null) === 'midtrend') $setup = 'midtrend';   // Tier-1 mid-trend keeps its own label
     $zb = T2_ZB; $tolNow = $zb * (float)t2_last($a5); $dayL = min(array_slice($f5['l'], $a, $b - $a + 1)); $dayH = max(array_slice($f5['h'], $a, $b - $a + 1));
     $px = (float)end($f5['c']);
 
@@ -408,6 +407,58 @@ function t2_build(string $sym, string $bias): array {
         foreach (($open['targets_more'] ?? []) as $q => $x)
             $targets[] = ['label' => 'T' . ($q + 2), 'price' => $x['price'], 'fib' => $x['label'], 'rr' => $risk > 1e-12 ? round(abs($x['price'] - $open['entry']) / $risk, 2) : null];
     }
+    // --- pb5: Pullback+5EMA combined tick (only for trend/retrace setup, not mid-trend) ---
+    // Detects: structure shift on 5m (break of prev small high/low) → pullback to 5EMA → rejection candle
+    $pb5 = 0;
+    if ($setup !== 'mid') {
+        $n5 = count($f5['t']); $atrNow = (float)t2_last($a5);
+        $ema5 = $atrNow > 0 ? t_ema(['c' => $f5['c']], 5) : [];
+        // Look at last 20 5m bars of today's session only
+        $sStart = max($a, $n5 - 20); $sEnd = $n5 - 2; // -2: skip the live (unconfirmed) bar
+        if ($sEnd - $sStart >= 5 && count($ema5) >= $n5) {
+            if ($bias === 'CALL') {
+                // Bullish: find structure shift (bar broke prev high), then pullback to EMA, then rejection
+                $shiftIdx = null;
+                for ($i = $sStart + 1; $i <= $sEnd - 2; $i++) {
+                    if ((float)$f5['h'][$i] > (float)$f5['h'][$i - 1]) { $shiftIdx = $i; } // took out prev high = bullish shift
+                }
+                if ($shiftIdx !== null) {
+                    // After shift: look for a candle that pulled back to 5 EMA (low <= ema5, close >= ema5 * 0.9985)
+                    $pullIdx = null;
+                    for ($i = $shiftIdx + 1; $i <= $sEnd - 1; $i++) {
+                        $e = (float)$ema5[$i]; if ($e <= 0) continue;
+                        if ((float)$f5['l'][$i] <= $e * 1.0003 && (float)$f5['c'][$i] >= $e * 0.9985) { $pullIdx = $i; }
+                    }
+                    if ($pullIdx !== null) {
+                        // Last candle after pullback: bullish rejection = lower wick >= body, close near high, close > open
+                        $ri = $sEnd; $ro = (float)$f5['o'][$ri]; $rh = (float)$f5['h'][$ri]; $rl = (float)$f5['l'][$ri]; $rc = (float)$f5['c'][$ri];
+                        $body = abs($rc - $ro); $lwick = min($ro, $rc) - $rl; $uwick = $rh - max($ro, $rc);
+                        if ($rc > $ro && $lwick >= $body * 0.6 && $uwick <= $body * 1.5 && $rc >= $rh - ($rh - $rl) * 0.35) $pb5 = 1;
+                    }
+                }
+            } else { // PUT
+                // Bearish: find structure shift (bar broke prev low), then pullback to EMA, then rejection
+                $shiftIdx = null;
+                for ($i = $sStart + 1; $i <= $sEnd - 2; $i++) {
+                    if ((float)$f5['l'][$i] < (float)$f5['l'][$i - 1]) { $shiftIdx = $i; }
+                }
+                if ($shiftIdx !== null) {
+                    $pullIdx = null;
+                    for ($i = $shiftIdx + 1; $i <= $sEnd - 1; $i++) {
+                        $e = (float)$ema5[$i]; if ($e <= 0) continue;
+                        if ((float)$f5['h'][$i] >= $e * 0.9997 && (float)$f5['c'][$i] <= $e * 1.0015) { $pullIdx = $i; }
+                    }
+                    if ($pullIdx !== null) {
+                        $ri = $sEnd; $ro = (float)$f5['o'][$ri]; $rh = (float)$f5['h'][$ri]; $rl = (float)$f5['l'][$ri]; $rc = (float)$f5['c'][$ri];
+                        $body = abs($rc - $ro); $uwick = $rh - max($ro, $rc); $lwick = min($ro, $rc) - $rl;
+                        if ($rc < $ro && $uwick >= $body * 0.6 && $lwick <= $body * 1.5 && $rc <= $rl + ($rh - $rl) * 0.35) $pb5 = 1;
+                    }
+                }
+            }
+        }
+    }
+    // --- end pb5 ---
+
     // 10-minute chart
     $f10 = $g10; $n10 = count($f10['t']); $s0 = max(0, $n10 - 150);
     $candles = [];
@@ -462,7 +513,7 @@ function t2_build(string $sym, string $bias): array {
         'symbol' => $sym, 'name' => t_name($sym), 'market' => t_symbols()[$sym], 'bias' => $bias, 'status' => $status,
         'current_price' => $r6($px), 'atr_high' => $r6($atrH), 'atr_low' => $r6($atrL),
         'action_price' => $r6($act), 'action_time' => $actT, 'target' => $r6($tgt), 'sl' => $r6($sl), 'rr_ratio' => $rr, 'last_bar' => (int)end($f5['t']),
-        'setup' => $setup, 'remark' => $setup === 'trend' ? 'Long target' : ($setup === 'midtrend' ? 'Mid target' : 'Small target'),
+        'setup' => $setup, 'remark' => $setup === 'trend' ? 'Long target' : 'Small target',
         'targets' => array_map(fn($x) => ['label' => $x['label'], 'price' => $r6($x['price']), 'fib' => $x['fib'], 'rr' => $x['rr']], $targets),
         'zone' => ['from' => (int)$f5['t'][$a], 'day_low' => $r6($dayL), 'day_high' => $r6($dayH),
             'low_band' => [$r6($dayL), $r6($dayL + $tolNow)], 'high_band' => [$r6($dayH - $tolNow), $r6($dayH)],
@@ -485,6 +536,7 @@ function t2_build(string $sym, string $bias): array {
         'hc' => ($t1 && !empty($t1['live']) && ($t1['flow'] ?? null) === 'FLY' && !empty($t1['hc'])) ? 1 : 0,
         'grade' => $open['grade'] ?? (($t1 && !empty($t1['live']) && ($t1['flow'] ?? null) === 'FLY') ? ($t1['grade'] ?? null) : null),
         'trade' => $open ?: $last, 'trades' => $R['trades'], 'pending' => $R['pending'], 'pip' => t2_pip($sym, $px),
+        'pb5' => $pb5,
         'candles' => $candles, 'cset' => $cset, 'confluence' => $conf, 'news' => $news, 'generated_at' => $now,
     ];
 }
@@ -554,6 +606,7 @@ function t2_public(array $d): array {
             'setup' => t_pub_setup($d['tier1']['setup'] ?? null), 'zone_near' => t_pub_zone($d['tier1']['zone_near'] ?? null)] : null,
         'trade' => t2_pub_trade($live), 'trades' => array_map(fn($t) => t2_pub_trade($t), $d['trades'] ?? []),
         'pending' => $p ? ['stage' => 'setup', 'sig' => $p['sig'], 'time' => $p['time']] : null,
+        'pb5' => (int)($d['pb5'] ?? 0),
         'pip' => $d['pip'], 'candles' => $d['candles'], 'cset' => $d['cset'] ?? null, 'confluence' => $d['confluence'], 'news' => $d['news'], 'generated_at' => $d['generated_at'],
     ];
 }
