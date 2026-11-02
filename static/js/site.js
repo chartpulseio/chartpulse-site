@@ -168,7 +168,7 @@ function tvWidget(el, kind, cfg, onFail) {
     if (done || el._tv !== tok || el.querySelector('iframe')) return;
     done = true;
     if (onFail) onFail(el);
-    else el.innerHTML = '<div class="tv-fail"><b>TradingView could not load here</b><span>This browser or an ad-blocker is blocking tradingview.com widgets. Allow them for this site' + (kind === 'advanced-chart' ? ', or use the TORUS chart.' : '.') + '</span></div>';
+    else el.innerHTML = '<div class="tv-fail"><b>TradingView could not load here</b><span>This browser or an ad-blocker is blocking tradingview.com widgets. Allow them for this site' + (kind === 'advanced-chart' ? ', or use the ChartPulse chart.' : '.') + '</span></div>';
   };
   s.onerror = fail;
   s.onload = () => setTimeout(fail, 8000);

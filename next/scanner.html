@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tier-1 Scanner · ChartPulse</title>
+<meta name="description" content="Live Tier-1 signal scanner at each market's Pulse zones, for 600+ instruments. Live markets only.">
+<meta name="theme-color" content="#050506">
+<meta property="og:title" content="Tier-1 Scanner · ChartPulse">
+<meta property="og:description" content="Live Tier-1 signal scanner at each market's Pulse zones, for 600+ instruments. Live markets only.">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://chartpulse.io/scanner.html">
+<meta property="og:site_name" content="ChartPulse">
+<meta property="og:url" content="https://chartpulse.io/scanner.html">
+<meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://chartpulse.io/static/og.jpg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88' aria-hidden='true'><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%23F4B740' stroke-width='3'/><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%2322AB94' stroke-width='2.4' transform='rotate(60 44 44)'/><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%23F7525F' stroke-width='2.4' transform='rotate(-60 44 44)'/><circle cx='44' cy='44' r='4.5' fill='%23EDEDEF'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&display=swap">
+<link rel="stylesheet" href="/static/v2/base.css?v=9">
+<link rel="stylesheet" href="/static/v2/cp.css?v=20">
+<link rel="stylesheet" href="/static/v2/odds.css?v=2">
+<script src="/static/v2/consent.js?v=2"></script>
+</head>
+<body class="scanner" data-page="scanner">
+<header class="site-head">
+  <a class="logo" href="./" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
+  <nav class="site-nav" id="siteNav" aria-label="Site">
+    <a href="./" data-p="home">Overview</a>
+    <a href="scanner.html" data-p="scanner">Scanner <small>TIER-1</small></a>
+    <a href="/bias/" data-p="seo">Bias <small>FREE</small></a>
+    <a href="/movers/" data-p="movers">Movers</a>
+    <a href="insights.html" data-p="insights">Insights</a>
+    <a href="news.html" data-p="news">News <small>IMPACT</small></a>
+    <a href="pricing.html" data-p="pricing">Pricing</a>
+  </nav>
+  <div class="head-right">
+    <button class="cmdk-trigger" type="button" data-cmdk aria-label="Search markets"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search markets…</span><kbd>⌘K</kbd></button>
+    <span class="live-pill" id="hdrLive" title="Instruments trading right now"><span class="ldot off"></span><b>–</b> live</span>
+    <span class="clock" id="cpClock" title="Times on this site are shown in your own time zone"></span>
+    <a class="btn primary" href="pricing.html">Get access</a>
+    <button class="nav-toggle" type="button" aria-label="Menu" aria-controls="siteNav" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
+<div class="app">
+  <!-- ============ RAIL ============ -->
+  <nav class="rail" aria-label="Main">
+    <div class="rail-links">
+      <a href="#command" data-view="command" class="active"><svg viewBox="0 0 24 24"><path d="M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z"/></svg><span>Command</span></a>
+      <a href="#heatmap" data-view="heatmap"><svg viewBox="0 0 24 24"><path d="M3 3h5v5H3zM10 3h5v5h-5zM17 3h4v5h-4zM3 10h5v11H3zM10 10h11v5H10zM10 17h5v4h-5zM17 17h4v4h-4z"/></svg><span>Heatmap</span></a>
+      <a href="#analysis" data-view="analysis"><svg viewBox="0 0 24 24"><path d="M6 4v3M6 15v5M4 7h4v8H4zM12 3v5M12 14v7M10 8h4v6h-4zM18 6v4M18 17v3M16 10h4v7h-4z"/></svg><span>Analysis</span></a>
+      <a href="#screener" data-view="screener"><svg viewBox="0 0 24 24"><path d="M3 5h18M3 10h18M3 15h18M3 20h18M9 5v15"/></svg><span>Screener</span></a>
+    </div>
+    <div class="rail-foot mono" id="railClock">--:--</div>
+  </nav>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <header class="topbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="searchBox" type="search" placeholder="Search 700+ symbols: NIFTY, BTC, RELIANCE, Gold, EUR/USD…" autocomplete="off" aria-label="Search symbol">
+        <kbd>/</kbd>
+        <div class="search-pop" id="searchPop" hidden></div>
+      </div>
+      <div class="top-meta">
+        <span class="session open" id="liveNow"><i></i><b>LIVE</b><em>–</em></span>
+        <span class="mode-pill" id="modePill">CONNECTING</span>
+        <span class="scan-info mono" id="scanInfo">Scanning…</span>
+        <button class="btn ghost" id="refreshBtn" type="button" title="Run a fresh scan">
+          <svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg><span>Rescan</span>
+        </button>
+      </div>
+    </header>
+    <div class="scanbar"><i id="scanProgress"></i></div>
+    <div class="tape" aria-label="Ticker tape"><div class="tape-track" id="tape"></div></div>
+
+    <main class="views">
+      <!-- ===== COMMAND ===== -->
+      <section class="view active" id="view-command">
+        <div class="view-head">
+          <div>
+            <div class="eyebrow">Command Center</div>
+            <h1>Pulse signal scan</h1>
+          </div>
+          <div class="legend-inline">
+            <span><i class="dot call"></i>CALL</span><span><i class="dot put"></i>PUT</span><span><i class="dot proc"></i>UNDER PROCESS</span>
+          </div>
+        </div>
+
+        <div class="mkt-pick" id="mktPick" role="group" aria-label="Show one market"></div>
+
+        <div class="kpis" id="kpis"></div>
+      <section class="win-strip" id="winStrip" hidden aria-live="polite"></section>
+
+        <article class="panel queue-panel">
+          <header class="p-head"><div><h2>Signal queue</h2><span class="p-sub">Every shortlisted symbol: live signals first, then Under process by score · refreshes every minute</span></div><span class="q-count mono" id="queueCount">–</span></header>
+          <div class="tbl-wrap"><table class="tbl" id="topTable"></table></div>
+        </article>
+
+        <article class="panel recent-panel" hidden style="display:none">
+          <header class="p-head"><div><h2>Recent signals</h2><span class="p-sub">Every CALL / PUT of the last 24 hours, with the time it appeared and ended · live ones on top of the list stay green</span></div><span class="q-count mono" id="recentCount">–</span></header>
+          <div class="tbl-wrap"><table class="tbl" id="recentTable"></table></div>
+        </article>
+
+        <article class="panel trades-panel" hidden style="display:none">
+          <header class="p-head"><div><h2>Recent trades</h2><span class="p-sub">Every Tier-2 entry, win or loss, newest first · entry, stop-loss, minimum target and exit from the ChartPulse engine · every signal logged live, no edits</span></div><span class="q-count mono" id="tradesCount">–</span></header>
+          <div class="tr-stats" id="tradesStats"></div>
+          <div class="tr-top" id="tradesTop"></div>
+          <div class="tbl-wrap"><table class="tbl" id="tradesTable"></table></div>
+        </article>
+
+        <article class="panel">
+          <header class="p-head"><h2>Live signals</h2><span class="p-sub">CALL at the Pulse Floor · PUT at the Pulse Ceiling · remark shows a long or a small target</span></header>
+          <div class="setups" id="setups"></div>
+        </article>
+
+        <div class="grid g-cmd">
+          <article class="panel ai-panel" id="aiMarket">
+            <header class="p-head">
+              <div class="ai-tag"><span class="ai-orb"></span>ChartPulse AI · Market brief</div>
+              <span class="regime" id="regimePill">-</span>
+            </header>
+            <p class="ai-head" id="aiMarketHead">Reading the tape…</p>
+            <ul class="ai-points" id="aiMarketPts"></ul>
+          </article>
+
+          <article class="panel">
+            <header class="p-head"><h2>Tier-1 mix by market</h2><span class="p-sub">CALL · PUT · Under process</span></header>
+            <div id="mixChart" class="mix"></div>
+          </article>
+
+          <article class="panel span-12 dist-panel">
+            <header class="p-head"><h2>Strength distribution</h2><span class="p-sub">Tier-1 queue per 10-point bucket</span></header>
+            <div id="histChart" class="chart-box ec" style="height:210px"></div>
+            <header class="p-head sub"><h2>Pulse Sync</h2><span class="p-sub">Live instruments · Sync 3/4 and 4/4 qualify</span></header>
+            <div id="alignChart" class="align-bars"></div>
+          </article>
+        </div>
+
+      </section>
+
+      <!-- ===== HEATMAP ===== -->
+      <section class="view" id="view-heatmap">
+        <div class="view-head">
+          <div><div class="eyebrow">Live Heatmap</div><h1>The Tier-1 queue, one glance</h1></div>
+        </div>
+        <div class="filters">
+          <div class="chips" id="sigChips" role="group" aria-label="Signal filter">
+            <button class="chip on" data-sig="ALL" type="button">All</button>
+            <button class="chip" data-sig="CALL" type="button"><i class="dot call"></i>CALL</button>
+            <button class="chip" data-sig="PUT" type="button"><i class="dot put"></i>PUT</button>
+            <button class="chip" data-sig="PROC" type="button"><i class="dot proc"></i>Under process</button>
+          </div>
+          <select id="mktFilter" class="select" aria-label="Market"><option value="ALL">All markets</option></select>
+          <select id="hmSort" class="select" aria-label="Sort">
+            <option value="strength">Sort: Strength</option>
+            <option value="change">Sort: Day change</option>
+            <option value="name">Sort: Name</option>
+          </select>
+          <div class="hm-scale"><span>Low</span><i></i><span>High strength</span></div>
+        </div>
+        <div id="heatmap"></div>
+      </section>
+
+      <!-- ===== ANALYSIS ===== -->
+      <section class="view" id="view-analysis">
+        <div class="sym-head">
+          <div class="sym-id">
+            <div class="eyebrow" id="anMarket">-</div>
+            <h1 id="anName">Select a symbol</h1>
+            <div class="sym-price mono"><span id="anPrice">-</span><span id="anChg" class="chg">-</span></div>
+          </div>
+          <div class="sym-signal" id="anSignal"></div>
+        </div>
+
+        <div class="grid g-an">
+          <article class="panel chart-panel">
+            <header class="p-head">
+              <div class="tfs" id="anTfs" role="group" aria-label="Timeframe">
+                <button type="button" data-tf="10M" class="on">10m</button><button type="button" data-tf="1H">1H</button><button type="button" data-tf="4H">4H</button>
+                <button type="button" data-tf="1D">1D</button><button type="button" data-tf="1W">1W</button>
+              </div>
+              <div class="tabs" id="anEngine" role="group" aria-label="Chart"><button type="button" data-e="torus" class="on">ChartPulse</button><button type="button" data-e="tv">TradingView</button></div>
+              <a class="tv-out" id="anTvLink" href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView ↗</a>
+
+            </header>
+            <div class="t2-keys an-keys" id="anTfNote"><span><i style="background:#2962FF"></i>Pulse Ceiling</span><span><i style="background:#FF9800"></i>Pulse Floor</span><span><i class="dot"></i>Target ladder (P0 · U · D)</span></div>
+            <div class="candle-wrap" id="anWrap"><div class="lwc" id="anChart"></div><div class="c-legend mono" id="anLegend"></div></div>
+            <div class="candle-wrap tvw" id="anTv" hidden></div>
+            <p class="hint"><span id="anHint">Scroll to zoom · drag to pan</span> · Charts by <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView</a></p>
+          </article>
+
+          <div class="side-col">
+            <article class="panel">
+              <header class="p-head"><h2>Signal strength</h2><span class="p-sub" id="anConf">-</span></header>
+              <div class="gauge dial-box" id="anGauge"></div>
+            </article>
+            <article class="panel">
+              <header class="p-head"><h2>Pulse layers</h2><span class="p-sub">Trend direction per layer, L1 fastest to L4 slowest</span></header>
+              <div id="anMatrix" class="matrix"></div>
+            </article>
+          </div>
+
+          <article class="panel ai-panel span-7">
+            <header class="p-head"><div class="ai-tag"><span class="ai-orb"></span>ChartPulse AI · Symbol brief</div></header>
+            <p class="ai-head" id="anAiHead">-</p>
+            <ul class="ai-points" id="anAiPts"></ul>
+          </article>
+          <article class="panel span-5">
+            <header class="p-head"><h2>Key levels</h2><span class="p-sub">Today's Pulse levels</span></header>
+            <div class="tbl-wrap"><table class="tbl levels" id="anLevels"></table></div>
+          </article>
+          <article class="panel span-12">
+            <header class="p-head"><h2>Performance & risk</h2><span class="p-sub">Daily bars</span></header>
+            <div class="stats" id="anStats"></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ===== SCREENER ===== -->
+      <section class="view" id="view-screener">
+        <div class="view-head">
+          <div><div class="eyebrow">Screener</div><h1>Tier-1 signal table</h1></div>
+          <a class="btn ghost" id="csvBtn" href="/api.php?r=export">
+            <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v3h16v-3"/></svg><span>Export CSV</span>
+          </a>
+        </div>
+        <div class="filters">
+          <input id="scrQuery" class="select" type="search" placeholder="Filter symbols…" aria-label="Filter symbols">
+          <select id="scrMkt" class="select" aria-label="Market"><option value="ALL">All markets</option></select>
+          <select id="scrSig" class="select" aria-label="Signal"><option value="ALL">All signals</option><option>CALL</option><option>PUT</option><option value="PROC">UNDER PROCESS</option></select>
+          <label class="check"><input type="checkbox" id="scrAligned"> Only full sync (4/4)</label>
+        </div>
+        <div class="panel flush"><div class="tbl-wrap"><table class="tbl screener" id="scrTable"></table></div></div>
+      </section>
+
+      <footer class="foot">
+        <span>ChartPulse Tier-1 · signals are model output for live markets only, not investment advice. Times in your time zone.</span>
+        <span class="mono" id="footMeta"></span>
+      </footer>
+    </main>
+  </div>
+</div>
+<div class="tip mono" id="tip" hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+<script>window.LightweightCharts || document.write('<script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"><\/script>');</script>
+<script src="/static/v2/cp.js?v=93"></script>
+<script src="/static/v2/v10ui.js?v=1"></script>
+<script>window.TORUS_PHP = 1;</script>
+<script src="/static/v2/torus.js?v=83"></script>
+<script src="/static/v2/winners.js?v=81"></script>
+</body>
+</html>

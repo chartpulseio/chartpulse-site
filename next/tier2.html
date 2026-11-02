@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tier 2 · ChartPulse</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Tier 2 execution view: 10-minute chart, engine entry, minimum target and stop-loss, 12-factor confluence engine and Telegram alerts.">
+<meta name="theme-color" content="#050506">
+<meta property="og:title" content="Tier 2 · ChartPulse">
+<meta property="og:description" content="Tier 2 execution view: 10-minute chart, engine entry, minimum target and stop-loss, 12-factor confluence engine and Telegram alerts.">
+<meta property="og:type" content="website">
+<link rel="canonical" href="https://chartpulse.io/tier2.html">
+<meta property="og:site_name" content="ChartPulse">
+<meta property="og:url" content="https://chartpulse.io/tier2.html">
+<meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://chartpulse.io/static/og.jpg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88' aria-hidden='true'><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%23F4B740' stroke-width='3'/><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%2322AB94' stroke-width='2.4' transform='rotate(60 44 44)'/><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%23F7525F' stroke-width='2.4' transform='rotate(-60 44 44)'/><circle cx='44' cy='44' r='4.5' fill='%23EDEDEF'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&display=swap">
+<link rel="stylesheet" href="/static/v2/base.css?v=9">
+<link rel="stylesheet" href="/static/v2/cp.css?v=18">
+<link rel="stylesheet" href="/static/v2/odds.css?v=2">
+<script src="/static/v2/consent.js?v=2"></script>
+</head>
+<body class="site tier2" data-page="tier2">
+<header class="site-head">
+  <a class="logo" href="./" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
+  <nav class="site-nav" id="siteNav" aria-label="Site">
+    <a href="./" data-p="home">Overview</a>
+    <a href="scanner.html" data-p="scanner">Scanner <small>TIER-1</small></a>
+    <a href="/bias/" data-p="seo">Bias <small>FREE</small></a>
+    <a href="/movers/" data-p="movers">Movers</a>
+    <a href="insights.html" data-p="insights">Insights</a>
+    <a href="news.html" data-p="news">News <small>IMPACT</small></a>
+    <a href="pricing.html" data-p="pricing">Pricing</a>
+  </nav>
+  <div class="head-right">
+    <button class="cmdk-trigger" type="button" data-cmdk aria-label="Search markets"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search markets…</span><kbd>⌘K</kbd></button>
+    <span class="live-pill" id="hdrLive" title="Instruments trading right now"><span class="ldot off"></span><b>–</b> live</span>
+    <span class="clock" id="cpClock" title="Times on this site are shown in your own time zone"></span>
+    <a class="btn primary" href="pricing.html">Get access</a>
+    <button class="nav-toggle" type="button" aria-label="Menu" aria-controls="siteNav" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
+<main class="page wrap t2" id="main">
+  <section class="t2-head">
+    <div class="t2-id">
+      <a class="t2-back" href="scanner.html">&larr; Tier-1 scanner</a>
+      <div class="eyebrow" id="t2Mkt">Tier 2 &middot; execution view</div>
+      <h1 id="t2Name">Loading&hellip;</h1>
+      <div class="t2-chips"><span class="t2-sig" id="t2Sig" hidden></span><span class="t2-bias" id="t2Bias">&ndash;</span><span class="t2-status" id="t2Status"><i></i><b>Connecting&hellip;</b></span><span class="t2-t1" id="t2T1"></span></div>
+    </div>
+    <div class="t2-px"><div class="t2-price mono" id="t2Price">&ndash;</div><div class="t2-upd" id="t2Upd"></div></div>
+  </section>
+
+  <section class="t2-lock" id="t2Lock" hidden>
+    <div class="t2-ghost" aria-hidden="true"><span style="--h:20%;--d:0.0s"></span><span style="--h:57%;--d:0.3s"></span><span style="--h:34%;--d:0.6s"></span><span style="--h:71%;--d:0.9s"></span><span style="--h:48%;--d:1.2s"></span><span style="--h:25%;--d:1.5s"></span><span style="--h:62%;--d:1.8s"></span><span style="--h:39%;--d:0.0s"></span><span style="--h:76%;--d:0.3s"></span><span style="--h:53%;--d:0.6s"></span><span style="--h:30%;--d:0.9s"></span><span style="--h:67%;--d:1.2s"></span><span style="--h:44%;--d:1.5s"></span><span style="--h:21%;--d:1.8s"></span><span style="--h:58%;--d:0.0s"></span><span style="--h:35%;--d:0.3s"></span><span style="--h:72%;--d:0.6s"></span><span style="--h:49%;--d:0.9s"></span><span style="--h:26%;--d:1.2s"></span><span style="--h:63%;--d:1.5s"></span><span style="--h:40%;--d:1.8s"></span><span style="--h:77%;--d:0.0s"></span><span style="--h:54%;--d:0.3s"></span><span style="--h:31%;--d:0.6s"></span><span style="--h:68%;--d:0.9s"></span><span style="--h:45%;--d:1.2s"></span><span style="--h:22%;--d:1.5s"></span><span style="--h:59%;--d:1.8s"></span><span style="--h:36%;--d:0.0s"></span><span style="--h:73%;--d:0.3s"></span><span style="--h:50%;--d:0.6s"></span><span style="--h:27%;--d:0.9s"></span><span style="--h:64%;--d:1.2s"></span><span style="--h:41%;--d:1.5s"></span></div>
+    <div class="t2-lock-card beam">
+      <div class="t2-lock-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+      <div class="t2-sym" id="t2LockSym">&ndash;</div>
+      <h2>Tier 2 is a Core feature.</h2>
+      <p>The 10-minute execution chart with the engine's entry, minimum target and stop-loss, the 12-factor confluence engine, symbol news and Telegram delivery, ready for this symbol.</p>
+      <ul class="pp-feats">
+        <li>Multi-step entry confirmation by the ChartPulse engine</li><li>Target ladder and stop-loss drawn for you</li>
+        <li>12 live indicators, graded for your bias</li><li>News for this symbol and one-tap Telegram alerts</li>
+      </ul>
+      <a class="btn primary lg shine" href="pricing.html">Unlock with Core <svg class="arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a>
+      <form class="t2-code" id="t2CodeForm"><label for="t2Code">Have an access code?</label>
+        <div><input id="t2Code" class="select" placeholder="XXXX-XXXX" autocomplete="one-time-code" maxlength="40" required><button class="btn ghost" type="submit">Unlock</button></div>
+        <p class="m-err" id="t2CodeErr"></p></form>
+    </div>
+  </section>
+
+  <div id="t2Body" hidden>
+    <section class="t2-grid">
+      <article class="card t2-chart-card">
+        <header class="p-head"><div><h2 id="t2ChartTitle">10-minute execution chart</h2><p class="p-sub" id="t2ChartSub">Entry zone &middot; targets &middot; stop-loss</p></div>
+          <div class="tabs" id="t2Tf" role="group" aria-label="Timeframe"><button type="button" data-tf="3">3m</button><button type="button" data-tf="5">5m</button><button type="button" data-tf="10" class="on">10m</button><button type="button" data-tf="15">15m</button><button type="button" data-tf="60">1H</button></div><button type="button" class="btn ghost" id="t2Fs" aria-label="Full screen">⛶ Full screen</button>
+          <div class="tabs" id="t2Engine" role="group" aria-label="Chart"><button type="button" data-e="torus" class="on">ChartPulse &middot; zones</button><button type="button" data-e="tv">TradingView</button></div></header>
+        <div class="t2-keys" id="t2Keys"><span><i style="background:#2962FF"></i>Pulse Ceiling</span><span><i style="background:#FF9800"></i>Pulse Floor</span><span><i class="dot"></i>Target ladder</span><span><i style="background:#F4B740"></i>Entry</span><span><i class="dash" style="border-color:#22AB94"></i>Min target</span><span><i class="dash" style="border-color:#F7525F"></i>Stop-loss</span></div>
+        <div class="t2-flash" id="t2Flash" hidden></div>
+        <div class="t2-chart" id="t2Chart"></div>
+        <div class="t2-tv" id="t2Tv" hidden></div>
+        <div class="t2-explain" id="t2Explain"></div>
+      </article>
+      <div class="t2-side">
+        <article class="card t2-plan" id="t2Plan"></article>
+        <article class="card t2-tg">
+          <header class="p-head"><div><h2>Send to Telegram</h2><p class="p-sub">This trade plan, to your own chat</p></div></header>
+          <label class="field"><span>Your Telegram chat ID</span><input id="t2Chat" inputmode="numeric" placeholder="e.g. 123456789" maxlength="40"></label>
+          <label class="t2-auto"><input type="checkbox" id="t2Auto" checked><span>Send an alert automatically when an entry fires</span></label>
+          <button type="button" class="btn t2-tg-btn" id="t2TgBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 4-18 7 6 2 2 6 3-4 5 4z"/><path d="m9 13 12-9"/></svg>Send to Telegram</button>
+          <p class="t2-tg-note" id="t2TgNote">Open the ChartPulse bot on Telegram and press Start once, then paste your chat ID here. Automatic alerts go out while this page is open.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="card t2-desk"><header class="p-head"><div><h2>Market context · daily</h2><p class="p-sub">Forecast cone, setup memory, news tone and the live record for this symbol</p></div></header><div id="t2Desk"></div></section>
+
+    <section class="card t2-conf">
+      <header class="p-head"><div><h2>Multi-factor confluence engine</h2><p class="p-sub" id="t2ConfSub">Momentum, volatility, volume and trend across 12 live indicators</p></div>
+        <div class="t2-meter" id="t2Meter"></div></header>
+      <div class="t2-conf-grid" id="t2Conf"></div>
+    </section>
+
+    <section class="card t2-news">
+      <header class="p-head"><div><h2>Latest news</h2><p class="p-sub" id="t2NewsSub">From News &amp; Impact</p></div><a class="link" href="news.html">All news <svg class="arr" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a></header>
+      <div id="t2News"></div>
+    </section>
+    <p class="t2-foot">Tier 2 is model output on delayed or live third-party data, for education and research. It is not investment advice.</p>
+  </div>
+</main>
+<footer class="site-foot">
+  <div class="foot-grid wrap">
+    <div>
+      <a class="logo" href="./" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
+      <p>Multi-market Tier-1 scanner for stocks, indices, futures, forex and crypto. Market data from Yahoo Finance and Upstox (India). Charts by TradingView.</p>
+      <span class="foot-status"><span class="ldot"></span>Signals only for markets that are live</span>
+    </div>
+    <div><h4>Product</h4><a href="./">Overview</a><a href="scanner.html">Tier-1 Scanner</a><a href="insights.html">Market Insights</a><a href="news.html">News &amp; Impact</a><a href="pricing.html">Pricing</a></div>
+    <div><h4>Company</h4><a href="legal.php?p=contact">Contact us</a><a href="legal.php?p=terms">Terms &amp; Conditions</a><a href="legal.php?p=privacy">Privacy Policy</a><a href="legal.php?p=refund">Refund &amp; Cancellation</a></div>
+    <div><h4>Resources</h4><a href="legal.php?p=disclaimer">Risk disclaimer</a><a href="/api.php?r=export">Signals CSV</a><a href="#" data-cmdk>Search <kbd>⌘K</kbd></a></div>
+  </div>
+  <div class="disclaimer wrap"><b>Risk disclaimer:</b> ChartPulse provides market data analytics and rule-based scanning tools for education and research. Nothing on this website is investment advice or a recommendation to buy or sell any security, derivative, currency or crypto asset. Trading involves substantial risk of loss. Signals are model output based on delayed or real-time third-party data that may be inaccurate. Consult a SEBI-registered adviser before acting. © <span data-year></span> ChartPulse.</div>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+<script src="/static/v2/cp.js?v=93"></script>
+<script src="/static/v2/desk.js?v=5"></script>
+<script src="/static/v2/tier2.js?v=86"></script>
+<script src="/static/v2/odds.js?v=3"></script>
+<script src="/static/v2/scenario.js?v=4"></script>
+<script src="/static/v2/t2dash.js?v=6"></script>
+</body>
+</html>

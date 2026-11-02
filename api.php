@@ -118,7 +118,7 @@ if ($r === 'scan') {
     usort($rows, 't_row_cmp');   // v8: signal > queue > out; inside signals FLY A+ > A > B > RUNWAY > APPROACHING; then score
     $T1 = ['signal' => 'SIGNAL', 'queue' => 'UNDER PROCESS', 'out' => 'NOT IN SCANNER'];
     header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename=torus_signals.csv');
+    header('Content-Disposition: attachment; filename=chartpulse_signals.csv');
     $out = fopen('php://output', 'w');
     fputcsv($out, ['Symbol','Name','Market','Exchange','Status','Tier-1','Signal','Strength','Bias','Pulse Sync','Price','Change %','ATR %','Pulse zone','Pulse level','Updated IST'], ',', '"', '\\');
     foreach ($rows as $x) fputcsv($out, [$x['symbol'],$x['name'],$x['market'],$x['exchange'],$x['status'],$T1[$x['tier1']] ?? '',$x['signal'],$x['strength'],$x['bias'],$x['alignment'] . '/4',
