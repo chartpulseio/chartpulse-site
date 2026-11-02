@@ -548,12 +548,18 @@ function t10_replay(array $F, ?array $M1, int $a, int $b, callable $epFor, ?arra
             if ($risk <= 1e-12 || ($pe - $sl) * $sg <= 0) continue;
             $tg = t10_targets($P, $pe, $sg, $isTrend ? 3 : 1, $a5L); $tp1 = $tg[0]['price'] ?? $pe + $sg * $risk;
             $ex = null; $exT = null; $why = null; $touched = false; $tgT = null; $hit = [];
-            $x10 = t10_exit_8m($G8, $te, $sg, $now);
+            // owner, 2 Nov 2026: trend exits at the 2nd major key point beyond entry, or 1:5 RR, whichever comes first.
+            // It replaces the 8m exit for trend. Retracement keeps its own exit.
+            $exitPx = null;
+            if ($isTrend) { $k2 = count($tg) >= 3 ? (float)$tg[2]['price'] : ($tg ? (float)end($tg)['price'] : null);
+                $rr5 = $pe + $sg * 5 * $risk; $exitPx = $k2 === null ? $rr5 : ($sg > 0 ? min($k2, $rr5) : max($k2, $rr5)); }
+            $x10 = $isTrend ? null : t10_exit_8m($G8, $te, $sg, $now);
             for ($x = $first($M1['t'], $te); $x < $n1 && $M1['t'][$x] < $endTs; $x++) {
                 $tx = (int)$M1['t'][$x] + 60; if ($tx > $now) break;
                 if ($x10 && $tx > $x10[0]) { [$exT, $ex, $why] = $x10; break; }
                 $l = (float)$M1['l'][$x]; $h = (float)$M1['h'][$x];
                 if ($sg > 0 ? $l <= $sl : $h >= $sl) { $ex = $sl; $exT = $tx; $why = 'Stop-loss'; break; }
+                if ($exitPx !== null && ($sg > 0 ? $h >= $exitPx : $l <= $exitPx)) { $ex = $exitPx; $exT = $tx; $why = 'Key level / 1:5 RR'; break; }
                 foreach ($tg as $q => $t) if (!isset($hit[$q]) && ($sg > 0 ? $h >= $t['price'] : $l <= $t['price'])) $hit[$q] = $tx;
                 if (!$touched && isset($hit[0])) { $touched = true; $tgT = $hit[0];
                     // owner PDF, 19 Oct 2026: retracement has ONE target and the trade ends there. Trend's
