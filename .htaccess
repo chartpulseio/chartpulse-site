@@ -25,11 +25,13 @@ RewriteRule ^movers/?$                                   /movers.php            
 RewriteRule ^movers/([0-9]{4}-[0-9]{2}-[0-9]{2})/?$      /movers.php?d=$1             [L,QSA]
 RewriteRule ^bias/?$                                     /bias.php                    [L,QSA]
 RewriteRule ^bias/([^/]+)/?$                             /bias.php?slug=$1            [L,QSA]
+RewriteRule ^desk/?$                                     /desk.html                   [L,QSA]
+RewriteRule ^sitemap\.xml$                               /sitemap.php                 [L]
 
 </IfModule>
 
 # --- block sensitive file types from web access
-<FilesMatch "\.(sqlite|sqlite3|db|sql|log|bak|old|orig|prev|swp|env|ini|lock)$">
+<FilesMatch "\.(sqlite|sqlite3|db|sql|log|bak|old|orig|prev|swp|env|ini|lock|md|py|yml|yaml|sh)$">
   Require all denied
 </FilesMatch>
 
@@ -42,6 +44,19 @@ RewriteRule ^bias/([^/]+)/?$                             /bias.php?slug=$1      
   # Security headers
   Header always set X-Content-Type-Options "nosniff"
   Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # Staged: start at 5 minutes. Raise to six months after a clean week of HTTPS.
+  # Do NOT add preload without the owner's written OK.
+  Header always set Strict-Transport-Security "max-age=300"
+
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), usb=()"
+
+  # CSP stage 1 - ENFORCED.
+  Header always set Content-Security-Policy "object-src 'none'; base-uri 'self'; frame-ancestors 'self'"
+
+  # CSP stage 2 - REPORT-ONLY.
+  Header always set Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://s3.tradingview.com https://www.tradingview-widget.com https://checkout.razorpay.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.razorpay.com; frame-src 'self' https://s.tradingview.com https://www.tradingview-widget.com https://api.razorpay.com; form-action 'self' https://api.razorpay.com; object-src 'none'; base-uri 'self'"
 
   # noindex for API endpoints
   <FilesMatch "^(api|dd_br_api|dd_api|health)\.php$">
