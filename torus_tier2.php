@@ -387,6 +387,7 @@ function t2_build(string $sym, string $bias): array {
     // setup: with the Tier-1 trend (long target) or a retracement against it (small target)
     $tb = $t1['bias'] ?? 'NEUTRAL';
     $setup = in_array($tb, ['UP', 'DOWN'], true) && (($bias === 'CALL') === ($tb === 'UP')) ? 'trend' : 'retrace';
+    if (($t1['setup'] ?? null) === 'midtrend') $setup = 'midtrend';   // Tier-1 mid-trend keeps its own label
     $zb = T2_ZB; $tolNow = $zb * (float)t2_last($a5); $dayL = min(array_slice($f5['l'], $a, $b - $a + 1)); $dayH = max(array_slice($f5['h'], $a, $b - $a + 1));
     $px = (float)end($f5['c']);
 
@@ -461,7 +462,7 @@ function t2_build(string $sym, string $bias): array {
         'symbol' => $sym, 'name' => t_name($sym), 'market' => t_symbols()[$sym], 'bias' => $bias, 'status' => $status,
         'current_price' => $r6($px), 'atr_high' => $r6($atrH), 'atr_low' => $r6($atrL),
         'action_price' => $r6($act), 'action_time' => $actT, 'target' => $r6($tgt), 'sl' => $r6($sl), 'rr_ratio' => $rr, 'last_bar' => (int)end($f5['t']),
-        'setup' => $setup, 'remark' => $setup === 'trend' ? 'Long target' : 'Small target',
+        'setup' => $setup, 'remark' => $setup === 'trend' ? 'Long target' : ($setup === 'midtrend' ? 'Mid target' : 'Small target'),
         'targets' => array_map(fn($x) => ['label' => $x['label'], 'price' => $r6($x['price']), 'fib' => $x['fib'], 'rr' => $x['rr']], $targets),
         'zone' => ['from' => (int)$f5['t'][$a], 'day_low' => $r6($dayL), 'day_high' => $r6($dayH),
             'low_band' => [$r6($dayL), $r6($dayL + $tolNow)], 'high_band' => [$r6($dayH - $tolNow), $r6($dayH)],

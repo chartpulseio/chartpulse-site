@@ -495,9 +495,10 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
 }
 
 /** Next $n Fibonacci daily pivots beyond $px in the trade direction: [[label, price], ...]. */
-function t10_targets(?array $P, float $px, int $sg, int $n = 3): array {
+function t10_targets(?array $P, float $px, int $sg, int $n = 3, float $minD = 0.0): array {
     if (!$P) return [];
-    $L = []; foreach ($P as $k => $v) { $d = ((float)$v - $px) * $sg; if ($d > 0) $L[$k] = $d; }
+    // owner, 2 Nov 2026: a key zone sitting inside 1 x ATR5 of entry is ignored, it is not a target
+    $L = []; foreach ($P as $k => $v) { $d = ((float)$v - $px) * $sg; if ($d > $minD) $L[$k] = $d; }
     asort($L); $o = [];
     foreach ($L as $k => $d) { if (count($o) >= $n) break; $o[] = ['label' => $k, 'price' => $px + $sg * $d]; }
     return $o;
@@ -529,6 +530,7 @@ function t10_replay(array $F, ?array $M1, int $a, int $b, callable $epFor, ?arra
     $G8 = t10_eight($M1, $dayTs, $now);   // owner, 19 Oct 2026: exit moved from 10m to 8m (built from 1m bars)
     $first = function (array $t, int $x): int { $lo = 0; $hi = count($t) - 1; $r = count($t); while ($lo <= $hi) { $m = intdiv($lo + $hi, 2); if ($t[$m] >= $x) { $r = $m; $hi = $m - 1; } else $lo = $m + 1; } return $r; };
     $busy = 0;
+    $atrArrV = t_atr($F, 14); $a5L = $atrArrV ? (float)end($atrArrV) : 0.0;
     foreach (['CALL' => 1, 'PUT' => -1] as $sig => $sg) {
         $lvP = []; foreach (($P ?? []) as $pk => $pv) $lvP[(string)$pk] = (float)$pv;
         foreach (t10_session($F, $a, $b, $sg, $M1, T2_ZB, $now, null, $lvP, false) as $cy) {
@@ -544,7 +546,7 @@ function t10_replay(array $F, ?array $M1, int $a, int $b, callable $epFor, ?arra
             $sl = $slC !== null ? (float)$slC : ($sg > 0 ? $pe * (1 - T10_SL_PCT) : $pe * (1 + T10_SL_PCT));
             $risk = abs($pe - $sl);
             if ($risk <= 1e-12 || ($pe - $sl) * $sg <= 0) continue;
-            $tg = t10_targets($P, $pe, $sg, $isTrend ? 3 : 1); $tp1 = $tg[0]['price'] ?? $pe + $sg * $risk;
+            $tg = t10_targets($P, $pe, $sg, $isTrend ? 3 : 1, $a5L); $tp1 = $tg[0]['price'] ?? $pe + $sg * $risk;
             $ex = null; $exT = null; $why = null; $touched = false; $tgT = null; $hit = [];
             $x10 = t10_exit_8m($G8, $te, $sg, $now);
             for ($x = $first($M1['t'], $te); $x < $n1 && $M1['t'][$x] < $endTs; $x++) {
