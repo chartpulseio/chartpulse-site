@@ -19,6 +19,13 @@ RewriteRule ^insights\.html$    /insights.html     [L]
 RewriteRule ^pricing\.html$     /pricing.html      [L]
 RewriteRule ^day-drive\.html$   /dashboard.html    [R=301,L]
 
+# --- clean URLs for PHP/HTML pages (MultiViews is off, so map explicitly)
+RewriteRule ^pro-backtesting/?$                          /pro-backtesting.html        [L,QSA]
+RewriteRule ^movers/?$                                   /movers.php                  [L,QSA]
+RewriteRule ^movers/([0-9]{4}-[0-9]{2}-[0-9]{2})/?$      /movers.php?d=$1             [L,QSA]
+RewriteRule ^bias/?$                                     /bias.php                    [L,QSA]
+RewriteRule ^bias/([^/]+)/?$                             /bias.php?slug=$1            [L,QSA]
+
 </IfModule>
 
 # --- block sensitive file types from web access
