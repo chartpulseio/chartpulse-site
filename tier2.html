@@ -7,7 +7,7 @@
 <meta name="robots" content="noindex">
 <meta name="description" content="Tier 2 execution view: 10-minute chart, engine entry, minimum target and stop-loss, 12-factor confluence engine and Telegram alerts.">
 <meta name="theme-color" content="#050506">
-<meta property="og:title" content="Tier 2 Â· ChartPulse">
+<meta property="og:title" content="Tier 2 · ChartPulse">
 <meta property="og:description" content="Tier 2 execution view: 10-minute chart, engine entry, minimum target and stop-loss, 12-factor confluence engine and Telegram alerts.">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://chartpulse.io/tier2.html">
@@ -30,36 +30,20 @@
 <header class="site-head">
   <a class="logo" href="./" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
   <nav class="site-nav" id="siteNav" aria-label="Site">
-<style>
-.site-nav .nav-dd{position:relative;display:inline-block}
-.site-nav .nav-dd>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:.3em}
-.site-nav .nav-dd>summary::-webkit-details-marker{display:none}
-.site-nav .nav-menu{position:absolute;top:100%;left:0;min-width:210px;display:flex;flex-direction:column;padding:6px;background:#0C0C0F;border:1px solid #26262d;border-radius:8px;z-index:50}
-.site-nav .nav-menu a{white-space:nowrap;padding:6px 10px}
-</style>
-<details class="nav-dd"><summary>Markets</summary><div class="nav-menu">
-<a href="/bias/" data-p="seo">Bias <small>FREE</small></a>
-<a href="/movers/" data-p="movers">Movers</a>
-<a href="/news.html" data-p="news">News &amp; Impact <small>IMPACT</small></a>
-<a href="/insights.html" data-p="insights">Insights</a>
-</div></details>
-<details class="nav-dd"><summary>Scanners</summary><div class="nav-menu">
-<a href="/scanner.html" data-p="scanner">Tier-1 Scanner <small>TIER-1</small></a>
-<a href="/scanners/" data-p="scanners">All scanners <small class="badge-live">15</small></a>
-<a href="/scanners/bottom-reversal/" data-p="bottomreversal">Bottom Reversal <small>FREE</small></a>
-<a href="/scanners/ema-200/" data-p="ema200">200 EMA <small>FREE</small></a>
-<a href="/scanners/day-drive/" data-p="dayDrive">Day Drive <small>FREE</small></a>
-</div></details>
-<details class="nav-dd"><summary>Tools</summary><div class="nav-menu">
-<a href="/backtesting/" data-p="backtest">Backtesting <small>FREE</small></a>
-<a href="/desk" data-p="desk">Bias Desk <small>FREE</small></a>
-</div></details>
-<a href="/pricing.html" data-p="pricing">Pricing</a>
-<a href="/pricing.html" data-p="pricing-cta">Get access</a>
-</nav>
+    <a href="./" data-p="home">Overview</a>
+    <a href="scanner.html" data-p="scanner">Scanner <small>TIER-1</small></a>
+    <a href="/bias/" data-p="seo">Bias <small>FREE</small></a>
+    <a href="/movers/" data-p="movers">Movers</a>
+    <a href="/pro-backtesting" data-p="backtest">Backtesting <small>FREE</small></a>
+    <a href="/dashboard.html" data-p="bottomreversal">Bottom Reversal <small>FREE</small></a>
+    <a href="/ema200.html" data-p="ema200">200 EMA <small>FREE</small></a>
+    <a href="insights.html" data-p="insights">Insights</a>
+    <a href="news.html" data-p="news">News <small>IMPACT</small></a>
+    <a href="pricing.html" data-p="pricing">Pricing</a>
+  </nav>
   <div class="head-right">
-    <button class="cmdk-trigger" type="button" data-cmdk aria-label="Search markets"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search marketsâ¦</span><kbd>âK</kbd></button>
-    <span class="live-pill" id="hdrLive" title="Instruments trading right now"><span class="ldot off"></span><b>â</b> live</span>
+    <button class="cmdk-trigger" type="button" data-cmdk aria-label="Search markets"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search markets…</span><kbd>⌘K</kbd></button>
+    <span class="live-pill" id="hdrLive" title="Instruments trading right now"><span class="ldot off"></span><b>–</b> live</span>
     <span class="clock" id="cpClock" title="Times on this site are shown in your own time zone"></span>
     <a class="btn primary" href="pricing.html">Get access</a>
     <button class="nav-toggle" type="button" aria-label="Menu" aria-controls="siteNav" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
@@ -98,8 +82,8 @@
     <section class="t2-grid">
       <article class="card t2-chart-card">
         <header class="p-head"><div><h2 id="t2ChartTitle">10-minute execution chart</h2><p class="p-sub" id="t2ChartSub">Entry zone &middot; targets &middot; stop-loss</p></div>
-          <div class="tabs" id="t2Tf" role="group" aria-label="Timeframe"><button type="button" data-tf="3">3m</button><button type="button" data-tf="5">5m</button><button type="button" data-tf="10" class="on">10m</button><button type="button" data-tf="15">15m</button><button type="button" data-tf="60">1H</button></div><button type="button" class="btn ghost" id="t2Fs" aria-label="Full screen">â¶ Full screen</button>
-          <div class="tabs" id="t2Engine" role="group" aria-label="Chart"><button type="button" data-e="torus" class="on">ChartPulse &middot; zones</button><button type="button" data-e="tv">TradingView</button></div></header>
+          <div class="tabs" id="t2Tf" role="group" aria-label="Timeframe"><button type="button" data-tf="3">3m</button><button type="button" data-tf="5">5m</button><button type="button" data-tf="10" class="on">10m</button><button type="button" data-tf="15">15m</button><button type="button" data-tf="60">1H</button></div><button type="button" class="btn ghost" id="t2Fs" aria-label="Full screen">⛶ Full screen</button>
+          <div class="tabs" id="t2Engine" role="group" aria-label="Chart"><button type="button" data-e="torus" class="on">TORUS &middot; zones</button><button type="button" data-e="tv">TradingView</button></div></header>
         <div class="t2-keys" id="t2Keys"><span><i style="background:#2962FF"></i>Pulse Ceiling</span><span><i style="background:#FF9800"></i>Pulse Floor</span><span><i class="dot"></i>Target ladder</span><span><i style="background:#F4B740"></i>Entry</span><span><i class="dash" style="border-color:#22AB94"></i>Min target</span><span><i class="dash" style="border-color:#F7525F"></i>Stop-loss</span></div>
         <div class="t2-flash" id="t2Flash" hidden></div>
         <div class="t2-chart" id="t2Chart"></div>
@@ -118,7 +102,7 @@
       </div>
     </section>
 
-    <section class="card t2-desk"><header class="p-head"><div><h2>Market context Â· daily</h2><p class="p-sub">Forecast cone, setup memory, news tone and the live record for this symbol</p></div></header><div id="t2Desk"></div></section>
+    <section class="card t2-desk"><header class="p-head"><div><h2>Market context · daily</h2><p class="p-sub">Forecast cone, setup memory, news tone and the live record for this symbol</p></div></header><div id="t2Desk"></div></section>
 
     <section class="card t2-conf">
       <header class="p-head"><div><h2>Multi-factor confluence engine</h2><p class="p-sub" id="t2ConfSub">Momentum, volatility, volume and trend across 12 live indicators</p></div>
@@ -142,15 +126,15 @@
     </div>
     <div><h4>Product</h4><a href="./">Overview</a><a href="scanner.html">Tier-1 Scanner</a><a href="insights.html">Market Insights</a><a href="news.html">News &amp; Impact</a><a href="pricing.html">Pricing</a></div>
     <div><h4>Company</h4><a href="legal.php?p=contact">Contact us</a><a href="legal.php?p=terms">Terms &amp; Conditions</a><a href="legal.php?p=privacy">Privacy Policy</a><a href="legal.php?p=refund">Refund &amp; Cancellation</a></div>
-    <div><h4>Resources</h4><a href="legal.php?p=disclaimer">Risk disclaimer</a><a href="/api.php?r=export">Signals CSV</a><a href="#" data-cmdk>Search <kbd>âK</kbd></a></div>
+    <div><h4>Resources</h4><a href="legal.php?p=disclaimer">Risk disclaimer</a><a href="/api.php?r=export">Signals CSV</a><a href="#" data-cmdk>Search <kbd>⌘K</kbd></a></div>
   </div>
-  <div class="disclaimer wrap"><b>Risk disclaimer:</b> ChartPulse provides market data analytics and rule-based scanning tools for education and research. Nothing on this website is investment advice or a recommendation to buy or sell any security, derivative, currency or crypto asset. Trading involves substantial risk of loss. Signals are model output based on delayed or real-time third-party data that may be inaccurate. Consult a SEBI-registered adviser before acting. Â© <span data-year></span> ChartPulse.</div>
+  <div class="disclaimer wrap"><b>Risk disclaimer:</b> ChartPulse provides market data analytics and rule-based scanning tools for education and research. Nothing on this website is investment advice or a recommendation to buy or sell any security, derivative, currency or crypto asset. Trading involves substantial risk of loss. Signals are model output based on delayed or real-time third-party data that may be inaccurate. Consult a SEBI-registered adviser before acting. © <span data-year></span> ChartPulse.</div>
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
-<script src="/static/v2/cp.js?v=94"></script>
+<script src="/static/v2/cp.js?v=93"></script>
 <script src="/static/v2/desk.js?v=5"></script>
 <script src="/static/v2/tier2.js?v=86"></script>
-<script src="/static/v2/v10ui.js?v=10"></script>
+<script src="/static/v2/v10ui.js?v=11"></script>
 <script src="/static/v2/odds.js?v=3"></script>
 <script src="/static/v2/scenario.js?v=4"></script>
 <script src="/static/v2/t2dash.js?v=9"></script>
