@@ -671,7 +671,7 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
                         // Also need a bullish/bearish 10M candle pattern at the retest zone
                         $patDir = $bounceDir === -1 ? 1 : -1;   // sweep was PUT bounce, breakout → looking for CALL
                         $pat10 = null;
-                        if ($n10 >= 3) $pat10 = t_pattern($bars10, $n10 - 1, $patDir);
+                        if ($n10 >= 3) $pat10 = t_reversal($bars10, $n10 - 1, $patDir);
                         $hasPattern = $pat10 !== null;
                         if (($breakoutCall || $breakoutPut) && $hasPattern) {
                             $signal  = $bounceDir === -1 ? 'CALL' : 'PUT';
