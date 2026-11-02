@@ -6,21 +6,58 @@ ErrorDocument 500 /500.html
 <IfModule mod_rewrite.c>
 RewriteEngine On
 
+# --- canonical host: one 301 hop from http / www to https://chartpulse.io
+RewriteCond %{HTTP_HOST} !^chartpulse\.io$ [NC,OR]
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://chartpulse.io/$1 [R=301,L]
+
 # --- block dotfiles (except .well-known for SSL/verification)
 RewriteRule (^|/)\.(?!well-known/) - [F,L]
 
 # --- block dev/sensitive folders
 RewriteRule ^(tools|deploy|baseline|rollback|cache|inc)(/|$) - [F,L]
 
-# --- 301 redirects: old .html -> clean URLs
-RewriteRule ^scanner\.html$     /scanner.html      [L]
+# --- 301 old URLs -> new URLs
+# THE_REQUEST checks the ORIGINAL request so internal rewrites below cannot loop.
+RewriteCond %{THE_REQUEST} \ /scanners\.html[? ]
+RewriteRule ^scanners\.html$ /scanners/ [R=301,L]
+
+RewriteCond %{THE_REQUEST} \ /strategies\.html[? ]
+RewriteRule ^strategies\.html$ /scanners/ [R=301,L]
+
+RewriteCond %{THE_REQUEST} \ /ema200\.html[? ]
+RewriteRule ^ema200\.html$ /scanners/ema-200/ [R=301,L]
+
+RewriteCond %{THE_REQUEST} \ /dashboard\.html[? ]
+RewriteRule ^dashboard\.html$ /scanners/bottom-reversal/ [R=301,L]
+
+RewriteCond %{THE_REQUEST} \ /day-drive\.html[? ]
+RewriteRule ^day-drive\.html$ /scanners/day-drive/ [R=301,L]
+
+RewriteCond %{THE_REQUEST} \ /pro-backtesting(\.html)?[? ]
+RewriteRule ^pro-backtesting(\.html)?$ /backtesting/ [R=301,L]
+
+RewriteCond %{THE_REQUEST} \ /legal\.php\?p=(terms|privacy|refund|disclaimer)[ &]
+RewriteRule ^legal\.php$ /legal/%1? [R=301,L]
+
+RewriteCond %{THE_REQUEST} \ /legal\.php\?p=contact[ &]
+RewriteRule ^legal\.php$ /contact/? [R=301,L]
+
+# --- keep existing page URLs working where no redirect applies
 RewriteRule ^news\.html$        /news.html         [L]
 RewriteRule ^insights\.html$    /insights.html     [L]
 RewriteRule ^pricing\.html$     /pricing.html      [L]
-RewriteRule ^day-drive\.html$   /dashboard.html    [R=301,L]
 
-# --- clean URLs for PHP/HTML pages (MultiViews is off, so map explicitly)
-RewriteRule ^pro-backtesting/?$                          /pro-backtesting.html        [L,QSA]
+# --- clean URLs (new structure) -> real files
+RewriteRule ^scanners/?$                                 /scanners.html               [L]
+RewriteRule ^scanners/ema-200/?$                         /ema200.html                 [L]
+RewriteRule ^scanners/bottom-reversal/?$                 /dashboard.html              [L]
+RewriteRule ^scanners/day-drive/?$                       /day-drive.html              [L]
+RewriteRule ^backtesting/?$                              /pro-backtesting.html        [L]
+RewriteRule ^legal/(terms|privacy|refund|disclaimer)/?$  /legal.php?p=$1              [L,QSA]
+RewriteRule ^contact/?$                                  /legal.php?p=contact         [L,QSA]
+
+# --- existing clean URLs
 RewriteRule ^movers/?$                                   /movers.php                  [L,QSA]
 RewriteRule ^movers/([0-9]{4}-[0-9]{2}-[0-9]{2})/?$      /movers.php?d=$1             [L,QSA]
 RewriteRule ^bias/?$                                     /bias.php                    [L,QSA]
