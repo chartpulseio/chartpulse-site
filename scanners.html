@@ -107,6 +107,12 @@ a{color:var(--s1c);text-decoration:none}
 .hub-card.ema .hub-open:hover{border-color:var(--gold)}
 .hub-open svg{width:13px;height:13px;opacity:.55}
 </style>
+<link rel="canonical" href="https://chartpulse.io/scanners/">
+<meta property="og:title" content="Scanners — ChartPulse">
+<meta property="og:description" content="15 live stock scanners — 8 EMA Strategy scanners and 7 Institutional scanners. Real-time NSE/BSE signals on daily timeframe.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://chartpulse.io/scanners/">
+<meta property="og:image" content="https://chartpulse.io/static/og.jpg">
 </head>
 <body>
 
@@ -121,19 +127,34 @@ a{color:var(--s1c);text-decoration:none}
     <span>CHART<b>PULSE</b></span>
   </a>
   <span class="sp"></span>
-  <nav class="site-nav" aria-label="Site">
-    <a href="/">Overview</a>
-    <a href="/scanner.html">Scanner <small>TIER-1</small></a>
-    <a href="/bias/">Bias <small>FREE</small></a>
-    <a href="/movers/">Movers</a>
-    <a href="/pro-backtesting">Backtesting <small>FREE</small></a>
-    <a href="/dashboard.html">Bottom Reversal <small>FREE</small></a>
-    <a href="/ema200.html">200 EMA <small>FREE</small></a>
-    <a href="/strategies.html">Strategies</a>
-    <a href="/scanners.html" class="active">Scanners <small>15</small></a>
-    <a href="/insights.html">Insights</a>
-    <a href="/pricing.html">Pricing</a>
-  </nav>
+  <nav class="site-nav" id="siteNav" aria-label="Site">
+<style>
+.site-nav .nav-dd{position:relative;display:inline-block}
+.site-nav .nav-dd>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:.3em}
+.site-nav .nav-dd>summary::-webkit-details-marker{display:none}
+.site-nav .nav-menu{position:absolute;top:100%;left:0;min-width:210px;display:flex;flex-direction:column;padding:6px;background:#0C0C0F;border:1px solid #26262d;border-radius:8px;z-index:50}
+.site-nav .nav-menu a{white-space:nowrap;padding:6px 10px}
+</style>
+<details class="nav-dd"><summary>Markets</summary><div class="nav-menu">
+<a href="/bias/" data-p="seo">Bias <small>FREE</small></a>
+<a href="/movers/" data-p="movers">Movers</a>
+<a href="/news.html" data-p="news">News &amp; Impact <small>IMPACT</small></a>
+<a href="/insights.html" data-p="insights">Insights</a>
+</div></details>
+<details class="nav-dd"><summary>Scanners</summary><div class="nav-menu">
+<a href="/scanner.html" data-p="scanner">Tier-1 Scanner <small>TIER-1</small></a>
+<a href="/scanners/" data-p="scanners">All scanners <small class="badge-live">15</small></a>
+<a href="/scanners/bottom-reversal/" data-p="bottomreversal">Bottom Reversal <small>FREE</small></a>
+<a href="/scanners/ema-200/" data-p="ema200">200 EMA <small>FREE</small></a>
+<a href="/scanners/day-drive/" data-p="dayDrive">Day Drive <small>FREE</small></a>
+</div></details>
+<details class="nav-dd"><summary>Tools</summary><div class="nav-menu">
+<a href="/backtesting/" data-p="backtest">Backtesting <small>FREE</small></a>
+<a href="/desk" data-p="desk">Bias Desk <small>FREE</small></a>
+</div></details>
+<a href="/pricing.html" data-p="pricing">Pricing</a>
+<a href="/pricing.html" data-p="pricing-cta">Get access</a>
+</nav>
 </div>
 
 <div class="wrap">
