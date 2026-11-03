@@ -546,7 +546,7 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     // only when no entry was ever taken and the gate expired unused. Tick 4 = Double Confirm = FLY.
     $gateOn = ($cy['gate'] ?? null) !== null;
     $flow = !$valid ? null
-        : ($tk[4] ? 'FLY' : ($ticksFired ? 'SIGNAL'
+        : ($tk[4] && $ticksFired ? 'FLY' : ($ticksFired ? 'SIGNAL'
         : ($gateOn ? (!empty($cy['gate_exp']) ? 'GATE CLOSE' : 'GATE OPEN') : 'APPROACHING')));
     $go = $gateOn ? 1 : 0;
     // Tier-1 zone group + remark (owner PDF, 19 Oct 2026). Pivot and PDC count here only, never in the score.
@@ -856,7 +856,7 @@ function t_mt_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     $valid = ($score >= T_MT_MIN_SCORE && $cnt >= 2) || $ticksFired;
     $gateOn = ($cy['gate'] ?? null) !== null;
     $flow = !$valid ? null
-        : ($tk[4] ? 'FLY' : ($ticksFired ? 'SIGNAL'
+        : ($tk[4] && $ticksFired ? 'FLY' : ($ticksFired ? 'SIGNAL'
         : ($gateOn ? (!empty($cy['gate_exp']) ? 'GATE CLOSE' : 'GATE OPEN') : 'APPROACHING')));
     $go = $gateOn ? 1 : 0;
     [$zg, $zlv] = t10_zone_group($zone, $tol,
