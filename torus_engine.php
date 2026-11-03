@@ -907,6 +907,13 @@ function t_reversal(array $G, int $i, int $sg): ?string {
     if ($rg($i) <= 0) return null;
     $sb = 0.0; $sr = 0.0; $m = 0; for ($k = max(0, $i - 10); $k < $i; $k++) { $sb += $bd($k); $sr += $rg($k); $m++; }
     $avgB = $m ? ($sb > 0 ? $sb / $m : 0.5 * $sr / $m) : $bd($i);
+    // QUALITY GATE (4 Nov 2026): the pattern candle must be meaningfully sized (>= 0.6 x average range of the
+    // previous 10 bars) and must come AFTER a move against the signal (close of i-1 vs close of i-4).
+    // Without this, tiny doji/hammer-like candles produced constant 5m and 10m false reversal ticks.
+    $avgR = $m ? $sr / $m : $rg($i);
+    if ($rg($i) < 0.6 * $avgR || $i < 4) return null;
+    $pm = $C($i - 1) - $C($i - 4);
+    if ($sg > 0 ? !($pm < 0) : !($pm > 0)) return null;
     $bull = $sg > 0;
     if ($i >= 2 && $rg($i - 1) > 0 && $rg($i - 2) > 0) {   // three-bar
         $a = $i - 2; $b = $i - 1;
