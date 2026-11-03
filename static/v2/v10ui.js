@@ -1,22 +1,23 @@
-/* ChartPulse v10 UI (owner PDF "Final Setup", 19 Oct 2026). Loaded after cp.js and before torus.js on the
-   scanner, and on tier2.html. Wraps CP.flowChip and replaces CP.byTier; cp.js and tier2.js are unchanged.
+/* ChartPulse v10 UI (owner PDF "Final Setup", 19 Oct 2026; updated 3 Nov 2026). Loaded after cp.js and
+   before torus.js on the scanner, and on tier2.html. Wraps CP.flowChip and replaces CP.byTier; cp.js and
+   tier2.js are unchanged.
 
    What this file shows, and where it comes from:
      - the gate ladder, identical on Tier 1 and Tier 2, straight off the row's ph[] array:
-       a diamond for the gate, then 3 entry ticks (x/3) -- Early Entry, Entry A, Double Confirm
+       a diamond for the gate, then 4 entry ticks (x/4) -- Early Entry, Entry A, Reversal Pat, Double Confirm
+       GATE is now 10m (was 30m). Tick 3 = 5m reversal pattern + next 5m candle confirm. Tick 4 = FLY.
      - the gate remark: "Liquidity Sweep" / "BB Sweep" / "Sweep + BB" (row.t0), both setups
      - the Strong Zone remark, or the single level standing at the zone (row.zg / row.zlv)
      - the dark RETEST ++ chip (row.pw)
-     - the status ladder APPROACHING / APPROACHING AGAIN / SIGNAL / FLY / GATE CLOSE
+     - the status ladder APPROACHING / APPROACHING AGAIN / TICK 1 / TICK 2 / TICK 3 / FLY / GATE CLOSE
 
-   Sort (owner PDF S9.1, 19 Oct 2026) -- this REPLACES the 13 Oct "retest first" order:
-     zone group first, status second. A Strong Zone APPROACHING row sits ABOVE a one-level FLY row.
-     Inside a group: FLY, then SIGNAL, then APPROACHING, then GATE CLOSE; then retest/sweep; then score.
+   Sort (3 Nov 2026): tick count descending -- TICK 4 (FLY) > TICK 3 > TICK 2 > TICK 1 > GATE OPEN > APPROACHING.
+     Score is the tiebreaker within the same tick level. Zone group is secondary to tick count.
 
    Owner, 12 Oct 2026: the Recent-winners summary line stays hidden on Tier 1.
-   Ladder (owner, 20 Oct 2026): row.lad === 10 means the gate ladder - ph[0] is the GATE (a diamond, never an
-   entry) and ph[1..3] are Early Entry / Entry A / Double Confirm, so the counter reads x/3. lad 8 is the old
-   phase row an earlier engine stored. The Supertrend-flip tick is gone. */
+   Ladder (updated 3 Nov 2026): row.lad === 10 means the gate ladder - ph[0] is the GATE (a diamond, never an
+   entry) and ph[1..4] are Early Entry / Entry A / Reversal Pat / Double Confirm, so the counter reads x/4.
+   lad 8 is the old phase row an earlier engine stored. ph.length===4 is back-compat for pre-3Nov rows. */
 (() => {
   "use strict";
   const CP = window.CP;
@@ -35,19 +36,26 @@
     + ".tgt-chip{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:5px;font:700 10px/1.3 var(--mono,monospace);letter-spacing:.04em;vertical-align:middle;border:1px solid}"
     + ".tgt-mid{color:#5B9BD5;border-color:rgba(91,155,213,.55);background:rgba(91,155,213,.08)}"
     + ".pb5tick{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:5px;font:700 10px/1.3 var(--mono,monospace);letter-spacing:.04em;vertical-align:middle;border:1px solid;color:#A78BFA;border-color:rgba(167,139,250,.55);background:rgba(167,139,250,.1)}"
-    + ".pb5tick.put{color:#F7525F;border-color:rgba(247,82,95,.55);background:rgba(247,82,95,.08)}";
+    + ".pb5tick.put{color:#F7525F;border-color:rgba(247,82,95,.55);background:rgba(247,82,95,.08)}"
+    + ".flow.tick-1,.flow.tick-2,.flow.tick-3,.flow.tick-4{background:rgba(91,155,213,.1)!important;color:#5B9BD5!important;border-color:rgba(91,155,213,.5)!important}"
+    + ".flow.tick-3{background:rgba(244,183,64,.08)!important;color:#F4B740!important;border-color:rgba(244,183,64,.5)!important}"
+    + ".flow.tick-4{background:rgba(34,171,148,.1)!important;color:#22AB94!important;border-color:rgba(34,171,148,.5)!important}";
   try {
     if (!document.getElementById("cpV10Css")) { const s = document.createElement("style"); s.id = "cpV10Css"; s.textContent = css; document.head.appendChild(s); }
   } catch (e) {}
 
   // ---- labels -------------------------------------------------------------
-  // Tick 0's label is whatever actually fired on 30m, so the chip and the dot tooltip always agree.
-  const GATE = ["Gate Open", "Early Entry", "Entry A", "Double Confirm"];
-  const OLD4 = ["Gap Zone", "Entry A", "Early Entry", "Double Confirm"];
-  const isGate = r => r && r.lad === 10 && Array.isArray(r.ph) && r.ph.length === 4;
+  // Tick 0's label is whatever actually fired on 10m, so the chip and the dot tooltip always agree.
+  // ph.length===5: Gate + 4 ticks (Early Entry, Entry A, Reversal Pat, Double Confirm)
+  // ph.length===4: back-compat pre-3Nov rows (Gate + 3 ticks)
+  const GATE5 = ["Gate Open", "Early Entry", "Entry A", "Reversal Pat", "Double Confirm"];
+  const GATE4 = ["Gate Open", "Early Entry", "Entry A", "Double Confirm"];
+  const OLD4  = ["Gap Zone", "Entry A", "Early Entry", "Double Confirm"];
+  const isGate = r => r && r.lad === 10 && Array.isArray(r.ph) && (r.ph.length === 5 || r.ph.length === 4);
   const tkLabels = r => {
     if (!isGate(r)) return OLD4;
-    const L = GATE.slice();
+    const base = r.ph.length === 5 ? GATE5 : GATE4;
+    const L = base.slice();
     if (r.t0) L[0] = r.t0;        // the gate names whichever sweep actually fired
     return L;
   };
@@ -55,6 +63,10 @@
   const TIP = {
     "GATE OPEN": "GATE OPEN: the zone was swept, waiting for the first entry tick",
     SIGNAL: "SIGNAL: entry ticks are coming in",
+    "TICK 1": "TICK 1: Early Entry confirmed",
+    "TICK 2": "TICK 2: Entry A confirmed",
+    "TICK 3": "TICK 3: Reversal Pattern confirmed",
+    "TICK 4": "TICK 4: Double Confirm — all ticks in",
     "GATE CLOSE": "GATE CLOSE: price has left the entry range, this signal ends in a few minutes",
     "APPROACHING AGAIN": "the zone moved and the setup is building again here — this signal was not cancelled"
   };
@@ -92,8 +104,13 @@
     if (!Array.isArray(r.ph) || !r.ph.length) return null;
     if (r.ph[flyIdx(r)]) return "FLY";
     if (!isGate(r)) return r.ph.some(Boolean) ? "SIGNAL" : "APPROACHING";
-    // Gate ladder: an entry needs one of ticks 1-3; the gate alone is GATE OPEN, never a signal.
-    if (r.ph.slice(1).some(Boolean)) return "SIGNAL";
+    // Gate ladder: gate alone = GATE OPEN; any entry tick = TICK N (highest tick confirmed)
+    const ticks = r.ph.slice(1);
+    if (ticks.some(Boolean)) {
+      for (let i = ticks.length - 1; i >= 0; i--) {
+        if (ticks[i]) return "TICK " + (i + 1);
+      }
+    }
     return r.ph[0] ? (r.flow === "GATE CLOSE" ? "GATE CLOSE" : "GATE OPEN") : "APPROACHING";
   };
   const stateChip = (r, state) => {
@@ -135,17 +152,34 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
       return h + decorate(r);
     };
 
-    // Sort: status first (FLY at top), then zone group, then retest/sweep, then high-conviction, then score. (owner, 1 Nov 2026)
-    const STATUS_RANK = { FLY: 0, SIGNAL: 1, RUNWAY: 1, "GATE OPEN": 2, APPROACHING: 3, "APPROACHING AGAIN": 3, "GATE CLOSE": 4 };
+    // Sort (3 Nov 2026): tick count descending — TICK 4 (FLY) > TICK 3 > TICK 2 > TICK 1 > GATE OPEN > APPROACHING.
+    // tickCountRank: 0=4 ticks, 1=3 ticks, 2=2 ticks, 3=1 tick, 4=gate only, 5=approaching, 6=gate-close
     const statusOf = r => tkState(r) || (r && r.flow) || null;
+    const tickCountRank = r => {
+      if (!r || !Array.isArray(r.ph)) return 5;
+      const st = statusOf(r);
+      if (st === "GATE CLOSE") return 6;
+      if (st === "FLY") return 0;
+      // "TICK N" state: rank = 4 - N (TICK 4→0, TICK 3→1, TICK 2→2, TICK 1→3)
+      const tm = st && st.match(/^TICK (\d+)$/);
+      if (tm) return Math.max(0, 4 - parseInt(tm[1], 10));
+      if (st === "GATE OPEN") return 4;
+      if (!isGate(r)) {
+        const cnt = r.ph.filter(Boolean).length;
+        return cnt ? 4 - cnt : 5;
+      }
+      const ticks = r.ph.slice(1);
+      const cnt = ticks.filter(Boolean).length;
+      if (cnt === 0) return r.ph[0] ? 4 : 5;
+      return 4 - cnt;
+    };
     const sortRank = r => {
       if (!r) return [9, 9, 9, 9, 9, 0];
       const out = r.tier1 === "out" ? 1 : 0;
-      const zg = typeof r.zg === "number" ? r.zg : 2;   // 0 Strong Zone, 1 one level, 2 the rest
-      const st = STATUS_RANK[statusOf(r)] ?? 4;
+      const tc = tickCountRank(r);              // tick count descending (fewer rank = more ticks)
       const pw = 2 - (r.pw || 0);
       const hc = r.hc ? 0 : 1;
-      return [out, st, zg, pw, hc, -(r.strength || 0)];  // st before zg: FLY always beats APPROACHING regardless of zone strength
+      return [out, tc, pw, hc, -(r.strength || 0)];
     };
     CP.byTier = (a, b) => {
       const ra = sortRank(a), rb = sortRank(b);
@@ -178,19 +212,30 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
   // FLY on Tier 1 could still read "Watching the Pulse zone..." here. Rather than rewrite tier2.js, the live
   // Tier-1 state is written over that line (and over the copy in the Trade plan panel). APPROACHING is left
   // alone, because there the page's own wording is already correct.
-  const T2_STATUS = {
-    FLY: "FLY · entry confirmed",
-    SIGNAL: "SIGNAL · entry ticks coming in",
-    "GATE OPEN": "GATE OPEN · zone swept, waiting for the entry tick",
-    "GATE CLOSE": "GATE CLOSE · this signal is ending"
+  // T2_STATUS: show actual tick level, not just generic FLY/SIGNAL labels.
+  // For SIGNAL states, we show TICK N (how many ticks are confirmed).
+  const t2StatusLabel = r => {
+    if (!r) return null;
+    const st = tkState(r) || r.flow || null;
+    if (!st) return null;
+    if (st === "FLY") return "FLY · entry confirmed";
+    if (st === "GATE CLOSE") return "GATE CLOSE · this signal is ending";
+    if (st === "GATE OPEN") return "GATE OPEN · zone swept, waiting for entry tick";
+    if (st === "APPROACHING" || st === "APPROACHING AGAIN") return null;  // leave page's own wording
+    // "TICK N" state from tkState: enrich with label name
+    const tm = st && st.match(/^TICK (\d+)$/);
+    if (tm) {
+      const TK = tkLabels(r);
+      const idx = parseInt(tm[1], 10);
+      const name = TK[idx] || st;
+      return `${st} · ${name} confirmed`;
+    }
+    return "SIGNAL · entry ticks coming in";
   };
   const t2SyncStatus = r => {
     if (!r) return;
-    const st = tkState(r) || r.flow || null;
-    if (!st || !T2_STATUS[st]) return;
-    const T = Array.isArray(r.ph) ? (isGate(r) ? r.ph.slice(1) : r.ph) : null;
-    const n = T ? (st === "GATE OPEN" ? "" : " · " + T.filter(Boolean).length + "/" + T.length) : "";
-    const want = T2_STATUS[st] + n;
+    const want = t2StatusLabel(r);
+    if (!want) return;
     try {
       document.querySelectorAll("#t2Status b, .t2-status b").forEach(el => {
         if (el.textContent !== want) el.textContent = want;
@@ -220,9 +265,11 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
       : r.pw === 1 ? '<span class="rtest sw" title="Sweep at the Pulse zone">+</span>' : "";
     const row = (tag, name, on) => `<div class="sd-ph-r ${on ? "done" : ""}"><small>${tag}</small>${name}<span class="ck">✓</span></div>`;
     const pb5Row = r.pb5 && r.setup !== 'mid' ? `<div class="sd-ph-r done pb5-row" title="Structure shift on 5m + Pullback to 5 EMA + Rejection candle"><small>INFO</small><span class="pb5tick ${(r.signal||r.bias||'').toUpperCase()==='PUT'?'put':''}">PB+5EMA ✓</span><span class="ck">✓</span></div>` : "";
-    box.innerHTML = `<div class="sd-sync-h"><span>Entry ladder${pw}</span><b>${P.slice(1).filter(Boolean).length}/3</b></div>`
+    const tickCount = P.length - 1;  // 4 for new rows (5-element ph), 3 for back-compat (4-element ph)
+    const tickIdxs = Array.from({ length: tickCount }, (_, i) => i + 1);
+    box.innerHTML = `<div class="sd-sync-h"><span>Entry ladder${pw}</span><b>${P.slice(1).filter(Boolean).length}/${tickCount}</b></div>`
       + row("GATE", TK[0], P[0])
-      + [1, 2, 3].map(i => row("TICK " + i, TK[i], P[i])).join("")
+      + tickIdxs.map(i => row("TICK " + i, TK[i], P[i])).join("")
       + pb5Row;
   };
 
