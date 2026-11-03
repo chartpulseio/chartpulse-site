@@ -48,4 +48,6 @@ foreach ([1,2,3,4] as $i) {
         'avg_r' => $n ? round($s['r_sum'] / $n, 2) : null,
     ];
 }
+$out['raw_count'] = count($items);
+$out['sample'] = array_slice($items, -3);
 echo json_encode($out, JSON_PRETTY_PRINT);
