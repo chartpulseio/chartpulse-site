@@ -276,18 +276,24 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
     if (!isGate(r)) return;
     const box = document.querySelector("#sdCard .sd-ph");
     if (!box) return;
-    const TK = tkLabels(r), P = r.ph;
+    const TK = tkLabels(r), P = r.ph, PT = r.pht || [];
     const pw = r.pw === 2 ? '<span class="rtest" title="Retest at the Pulse zone">RETEST ++</span>'
       : r.pw === 1 ? '<span class="rtest sw" title="Sweep at the Pulse zone">+</span>' : "";
-    const row = (tag, name, on) => `<div class="sd-ph-r ${on ? "done" : ""}"><small>${tag}</small>${name}<span class="ck">✓</span></div>`;
+    // Show exactly when a tick fired (IST) next to it, so a checked tick is never just an opaque claim —
+    // the time is the evidence (owner, 4 Nov 2026: repeat reports that a tick "looked checked but never happened").
+    const fireTime = ts => ts ? new Date(ts * 1000).toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' }) : '';
+    const row = (tag, name, on, idx) => {
+      const t = on && PT[idx] ? `<small class="tick-at">${fireTime(PT[idx])}</small>` : '';
+      return `<div class="sd-ph-r ${on ? "done" : ""}"><small>${tag}</small>${name}${t}<span class="ck">✓</span></div>`;
+    };
     const pb5Row = r.pb5 && r.setup !== 'mid' ? `<div class="sd-ph-r done pb5-row" title="Structure shift on 5m + Pullback to 5 EMA + Rejection candle"><small>INFO</small><span class="pb5tick ${(r.signal||r.bias||'').toUpperCase()==='PUT'?'put':''}">PB+5EMA ✓</span><span class="ck">✓</span></div>` : "";
     const ema5Row = r.ema5 && r.setup !== 'mid' ? `<div class="sd-ph-r done ema5-row" title="5-minute candle closed beyond its 5 EMA — extra layer confirmation"><small>INFO</small><span class="pb5tick ema5tick ${(r.signal||r.bias||'').toUpperCase()==='PUT'?'put':''}">5 EMA ✓</span><span class="ck">✓</span></div>` : "";
     const st5Row = r.st5 && r.setup !== 'mid' ? `<div class="sd-ph-r done st5-row" title="5-minute Supertrend (short settings: period 7, mult 2.0) matches bias — extra layer confirmation"><small>INFO</small><span class="pb5tick st5tick ${(r.signal||r.bias||'').toUpperCase()==='PUT'?'put':''}">ST (5m) ✓</span><span class="ck">✓</span></div>` : "";
     const tickCount = P.length - 1;  // 4 for new rows (5-element ph), 3 for back-compat (4-element ph)
     const tickIdxs = Array.from({ length: tickCount }, (_, i) => i + 1);
     box.innerHTML = `<div class="sd-sync-h"><span>Entry ladder${pw}</span><b>${P.slice(1).filter(Boolean).length}/${tickCount}</b></div>`
-      + row("GATE", TK[0], P[0])
-      + tickIdxs.map(i => row("TICK " + i, TK[i], P[i])).join("")
+      + row("GATE", TK[0], P[0], 0)
+      + tickIdxs.map(i => row("TICK " + i, TK[i], P[i], i)).join("")
       + pb5Row + ema5Row + st5Row;
   };
 

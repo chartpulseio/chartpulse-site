@@ -673,7 +673,7 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
         'refly' => $isV10 && !empty($v10['refly']) ? 1 : 0,   // Re-Fly (owner, 4 Nov 2026): fresh entry after a retest
         // v9 (owner, 6 Oct 2026): high-conviction = trend FLY with a sweep + reclaim; public as a bare flag (bright FLY chip + bolt), never the reason
         'hc' => !$isV10 && $setup === 'trend' && ($flow['state'] ?? null) === 'FLY' && $swX ? 1 : 0,
-        'tk' => $isV10 ? $v10['tk'] : ($isRt ? $rt['tk'] : null), 'pw' => $isV10 ? (int)$v10['pw'] : ($isRt ? (int)$rt['pw'] : 0),
+        'tk' => $isV10 ? $v10['tk'] : ($isRt ? $rt['tk'] : null), 'tk_at' => $isV10 ? ($v10['tk_at'] ?? null) : ($isRt ? ($rt['tk_at'] ?? null) : null), 'pw' => $isV10 ? (int)$v10['pw'] : ($isRt ? (int)$rt['pw'] : 0),
         'al5' => $v10['al5'] ?? null, 'v10' => ($isV10 || $isRt) ? 1 : 0,
         'lad' => ($isV10 || $isRt) ? 10 : 8, 'sl_wide' => $isV10 ? (int)($v10['sl_wide'] ?? 0) : ($isRt ? (int)($rt['sl_wide'] ?? 0) : 0),
         'go' => $isV10 ? (int)($v10['go'] ?? 0) : ($isRt ? (int)$rt['go'] : ((!empty($swX) || ($flow['runway_type'] ?? null) === 'bb') ? 1 : 0)),
@@ -781,10 +781,26 @@ function t_ph_build(array $r): array {
     $rt = $r['runway_type'] ?? null; $gr = $r['grade'] ?? null; $fl = $r['flow'] ?? null; $fvgOn = !empty($r['fvg']) ? 1 : 0;
     return $live ? [$fvgOn, ($rt === 'ema' || $gr === 'A') ? 1 : 0, ($rt === 'bb' || $gr === 'A+') ? 1 : 0, $fl === 'FLY' ? 1 : 0] : [0, 0, 0, 0];
 }
+/**
+ * The unix timestamp each tick in t_ph_build() actually fired at (0 = not fired), so the UI can show "when"
+ * next to a checked tick instead of asking the user to trust an opaque checkmark (owner, 4 Nov 2026 -- repeat
+ * user reports that a tick looked "checked but never happened"; this makes the evidence visible, not the logic).
+ * Only meaningful for v10 rows, since the older 4-tick branch never stored per-tick timestamps.
+ */
+function t_ph_times(array $r): array {
+    $live = ($r['signal'] ?? 'WAIT') !== 'WAIT';
+    if (!empty($r['v10']) && $live && is_array($r['tk_at'] ?? null)) {
+        $t = array_map('intval', $r['tk_at']);
+        while (count($t) < 5) $t[] = 0;
+        return $t;
+    }
+    return [0, 0, 0, 0, 0];
+}
 function t_public(array $r): array {
     // owner, 5 Oct 2026: entry phases shown on Tier 2 as ticks only (Phase 1 / 2 / 3), never the rule behind them
     $live = ($r['signal'] ?? 'WAIT') !== 'WAIT';
     $r['ph'] = t_ph_build($r);
+    $r['pht'] = t_ph_times($r);
     $r['lad'] = !empty($r['v10']) ? 10 : 8;
     $r['sl_wide'] = $live ? (int)($r['sl_wide'] ?? 0) : 0;
     $r['pw'] = $live ? (int)($r['pw'] ?? 0) : 0;
@@ -1247,16 +1263,16 @@ function t_sticky_apply(string $s, array $row, int $now): array {
     if (!isset($S['_gc']) || !is_array($S['_gc'])) $S['_gc'] = [];
     $gcSet = function (array $r) use (&$S, $s, $now, &$changed): array {
         $S['_gc'][$s] = ['until' => $now + T10_GATE_HOLD, 'signal' => $r['signal'], 'setup' => 'trend', 'remark' => $r['remark'] ?? 'Long target',
-            'tk' => $r['tk'] ?? null, 'pw' => (int)($r['pw'] ?? 0), 'flow_at' => $r['flow_at'] ?? $now];
+            'tk' => $r['tk'] ?? null, 'tk_at' => $r['tk_at'] ?? null, 'pw' => (int)($r['pw'] ?? 0), 'flow_at' => $r['flow_at'] ?? $now];
         $changed = true; return $r;
     };
     $gcShow = function (array $r) use (&$S, $s, $now): array {
         $g = $S['_gc'][$s] ?? null; if (!$g || $now > (int)$g['until']) return $r;
-        foreach (['signal', 'setup', 'remark', 'tk', 'pw', 'flow_at'] as $f) $r[$f] = $g[$f];
+        foreach (['signal', 'setup', 'remark', 'tk', 'tk_at', 'pw', 'flow_at'] as $f) $r[$f] = $g[$f];
         $r['flow'] = 'GATE CLOSE'; $r['v10'] = 1; $r['grade'] = null; $r['gc_until'] = (int)$g['until']; return $r;
     };
     $rx = t10_recent_exit($s, $now);   // Tier-2 trend trade exited (10m flip / reverse pattern / SL) in the last 4 min
-    if ($rx && !isset($S['_gc'][$s])) { $gcSet(['signal' => $rx['sig'], 'remark' => 'Long target', 'tk' => $row['tk'] ?? [0, 0, 0, 0, 1], 'pw' => $row['pw'] ?? 0, 'flow_at' => $rx['entry_time']]); $S['_gc'][$s]['until'] = (int)$rx['exit_time'] + T10_GATE_HOLD; }
+    if ($rx && !isset($S['_gc'][$s])) { $gcSet(['signal' => $rx['sig'], 'remark' => 'Long target', 'tk' => $row['tk'] ?? [0, 0, 0, 0, 1], 'tk_at' => $row['tk_at'] ?? null, 'pw' => $row['pw'] ?? 0, 'flow_at' => $rx['entry_time']]); $S['_gc'][$s]['until'] = (int)$rx['exit_time'] + T10_GATE_HOLD; }
     $endIt = function (string $sig, float $ext) use (&$S, $s, $now, &$changed) { $S['_end'][$s] = ['sig' => $sig, 'ext' => $ext, 'at' => $now]; unset($S[$s]); $changed = true; };
     // an ended cycle: only a new Day High (PUT) / Day Low (CALL) beyond the old one re-opens it
     $E = $S['_end'][$s] ?? null;
@@ -1308,7 +1324,7 @@ function t_sticky_apply(string $s, array $row, int $now): array {
     } elseif ($live) {
         $S[$s] = ['signal' => $row['signal'], 'setup' => $row['setup'], 'remark' => $row['remark'] ?? null, 'flow' => $row['flow'], 'flow_at' => (int)($row['flow_at'] ?? $now),
             'grade' => $row['grade'] ?? null, 'runway_type' => $row['runway_type'] ?? null, 'sl' => isset($row['flow_sl']) ? (float)$row['flow_sl'] : null,
-            'ext' => $zs($row['signal']), 'a5' => $a5, 'seen' => $now, 'tk' => $row['tk'] ?? null, 'pw' => (int)($row['pw'] ?? 0), 'v10' => (int)($row['v10'] ?? 0)];
+            'ext' => $zs($row['signal']), 'a5' => $a5, 'seen' => $now, 'tk' => $row['tk'] ?? null, 'tk_at' => $row['tk_at'] ?? null, 'pw' => (int)($row['pw'] ?? 0), 'v10' => (int)($row['v10'] ?? 0)];
         $changed = true;
     } elseif (isset($S[$s])) {
         $k = $S[$s]; $sg = $k['signal'] === 'CALL' ? 1 : -1;
@@ -1320,7 +1336,7 @@ function t_sticky_apply(string $s, array $row, int $now): array {
             $endIt((string)$k['signal'], (float)($k['ext'] ?? $zs($k['signal'])));
         }
         elseif (($row['signal'] ?? 'WAIT') === 'WAIT' || empty($row['flow'])) {
-            foreach (['signal', 'setup', 'remark', 'flow', 'flow_at', 'grade', 'runway_type', 'tk', 'pw', 'v10'] as $f) $row[$f] = $k[$f] ?? null;
+            foreach (['signal', 'setup', 'remark', 'flow', 'flow_at', 'grade', 'runway_type', 'tk', 'tk_at', 'pw', 'v10'] as $f) $row[$f] = $k[$f] ?? null;
             $row['sticky'] = 'hold';
         }
     }

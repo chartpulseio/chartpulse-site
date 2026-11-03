@@ -536,6 +536,7 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     [$score, $parts] = t10_score(['wantUp' => $wantUp, 'zone' => $zone, 'atr5' => $a5, 'pdX' => $pdX, 'fibs' => $fibs,
         'pw' => $cy['pw'] ?? 0, 'bb' => $cy['bb'] ?? false, 'stoch' => $s30, 'rsi5' => $rsi5, 'adx' => $ax, 'pdi' => $pd, 'mdi' => $md, 'al5' => $al5]);
     $tk = $cy ? array_map(fn($t) => $t === null ? 0 : 1, $cy['ticks']) : [0, 0, 0, 0, 0];
+    $tkAt = $cy ? array_map(fn($t) => $t === null ? 0 : (int)$t, $cy['ticks']) : [0, 0, 0, 0, 0];   // raw fire times, for the UI to show "when" next to a checked tick
     $entryAt = $cy['first'] ?? null; $ticksFired = $entryAt !== null;
     // bug fix (13 Oct 2026): a fired tick must stay shown while price is still in range (runbook v10 S6: "FLY ... stays
     // shown; it does not disappear"). Before, $valid was score-gated only, so a tick already ON could vanish from the
@@ -552,7 +553,7 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     // Tier-1 zone group + remark (owner PDF, 19 Oct 2026). Pivot and PDC count here only, never in the score.
     [$zg, $zlv] = t10_zone_group($zone, (float)($ctx['near'] ?? 0) > 0 ? (float)$ctx['near'] : (float)$ctx['band'],
         ['fibs' => $fibs, 'pivots' => $ctx['pivots'] ?? [], 'pdh' => $pdh, 'pdl' => $pdl, 'pdc' => $ctx['pdc'] ?? null]);
-    return $base + ['valid' => $valid, 'strength' => round($score, 2), 'parts' => $parts, 'flow' => $flow, 'refly' => !empty($cy['refly']), 'tk' => $tk, 'go' => $go,
+    return $base + ['valid' => $valid, 'strength' => round($score, 2), 'parts' => $parts, 'flow' => $flow, 'refly' => !empty($cy['refly']), 'tk' => $tk, 'tk_at' => $tkAt, 'go' => $go,
         't0' => $cy['t0'] ?? null, 'zg' => $zg, 'zlv' => $zlv, 'lad' => 10,
         'gate_lv' => $cy['gate_level'] ?? null, 'sl_wide' => !empty($cy['wide']) ? 1 : 0,
         'pw' => (int)($cy['pw'] ?? 0), 'flow_at' => $entryAt, 'flow_sl' => $cy['sl'] ?? null,
@@ -721,6 +722,7 @@ function t_rt_eval(string $sym, array $fr, array $ctx): ?array {
         'locFull' => (bool)$ctx['locFull'], 'locHalf' => (bool)$ctx['locHalf'], 'conf' => (bool)$ctx['conf'],
         'stoch30' => $s30, 'adx30' => $ax, 'alignment' => (int)$ctx['alignment']]);
     $tk = $cy ? array_map(fn($t) => $t === null ? 0 : 1, $cy['ticks']) : [0, 0, 0, 0, 0];
+    $tkAt = $cy ? array_map(fn($t) => $t === null ? 0 : (int)$t, $cy['ticks']) : [0, 0, 0, 0, 0];   // raw fire times, for the UI to show "when" next to a checked tick
     // Retracement entry (owner, 20 Oct 2026): the gate HAS to be open first, and the 5 EMA alone is confirm
     // only -- so the entry is the first Early Entry / Reversal Pat / Double Confirm at or after the gate.
     $entryAt = $cy['first_rt'] ?? null; $ticksFired = $entryAt !== null;
@@ -733,7 +735,7 @@ function t_rt_eval(string $sym, array $fr, array $ctx): ?array {
     [$zg, $zlv] = t10_zone_group($zone, (float)($ctx['near'] ?? 0) > 0 ? (float)$ctx['near'] : (float)$ctx['band'],
         ['fibs' => $ctx['fibs'] ?? [], 'pivots' => $ctx['pivots'] ?? [], 'pdh' => $ctx['pdh'] ?? null,
          'pdl' => $ctx['pdl'] ?? null, 'pdc' => $ctx['pdc'] ?? null]);
-    return ['valid' => $valid, 'strength' => round($score, 2), 'parts' => $parts, 'flow' => $flow, 'tk' => $tk,
+    return ['valid' => $valid, 'strength' => round($score, 2), 'parts' => $parts, 'flow' => $flow, 'tk' => $tk, 'tk_at' => $tkAt,
         'go' => $go, 't0' => $cy['t0'] ?? null, 'zg' => $zg, 'zlv' => $zlv, 'pw' => (int)($cy['pw'] ?? 0),
         'lad' => 10, 'gate_lv' => $cy['gate_level'] ?? null, 'sl_wide' => !empty($cy['wide_rt']) ? 1 : 0,
         'flow_at' => $entryAt, 'flow_sl' => $cy['sl_rt'] ?? null,
