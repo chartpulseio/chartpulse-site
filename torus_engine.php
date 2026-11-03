@@ -1364,6 +1364,105 @@ function &t_siglog(): array {
     if ($L === null) { $L = t_read_json(T_DATA . '/signals.json', ['items' => []]); $L['_dirty'] = false; if (!isset($L['items']) || !is_array($L['items'])) $L['items'] = []; }
     return $L;
 }
+
+/* ---- Telegram broadcast helpers (3 Nov 2026) ---- */
+
+/** Send one message to all subscribers in data/tg_subscribers.json. Fire-and-forget (curl async). */
+function tg_broadcast(string $html): void {
+    $tok = trim((string)t_cfg('telegram_bot_token', ''));
+    if ($tok === '') return;
+    $sub_file = T_DATA . '/tg_subscribers.json';
+    if (!is_file($sub_file)) return;
+    $subs = json_decode((string)file_get_contents($sub_file), true);
+    if (!is_array($subs) || empty($subs)) return;
+    foreach ($subs as $chat_id => $_) {
+        $ch = curl_init('https://api.telegram.org/bot' . $tok . '/sendMessage');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST           => true,
+            CURLOPT_TIMEOUT        => 6,
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+            CURLOPT_POSTFIELDS     => json_encode([
+                'chat_id'                  => (string)$chat_id,
+                'text'                     => $html,
+                'parse_mode'               => 'HTML',
+                'disable_web_page_preview' => true,
+            ]),
+        ]);
+        curl_exec($ch);
+        curl_close($ch);
+        usleep(50000);   // 50ms between sends — Telegram rate limit safe
+    }
+}
+
+/** Track per-symbol last-notified flow so we only alert on state UPGRADES. Stored in data/tg_flow_state.json. */
+function &tg_flow_state(): array {
+    static $S = null;
+    if ($S === null) { $f = T_DATA . '/tg_flow_state.json'; $S = is_file($f) ? (array)json_decode((string)file_get_contents($f), true) : []; }
+    return $S;
+}
+function tg_flow_state_save(): void {
+    $S = &tg_flow_state();
+    file_put_contents(T_DATA . '/tg_flow_state.json', json_encode($S, JSON_UNESCAPED_UNICODE));
+}
+
+/** Flow upgrade order — higher = stronger signal. Only alert when moving forward. */
+const TG_FLOW_RANK = ['APPROACHING' => 1, 'GATE OPEN' => 2, 'GATE CLOSE' => 2,
+    'TICK 1' => 3, 'TICK 2' => 4, 'TICK 3' => 5, 'SIGNAL' => 4, 'FLY' => 6];
+
+/** Called from t_siglog_track() — check if this row has a new/upgraded flow and broadcast. */
+function tg_maybe_notify(string $sym, array $row): void {
+    $flow  = $row['flow']   ?? null;
+    $sig   = $row['signal'] ?? null;
+    $setup = $row['setup']  ?? null;
+    if (!$flow || !$sig || !$setup) return;
+    if (!in_array($flow, ['GATE OPEN', 'SIGNAL', 'TICK 1', 'TICK 2', 'TICK 3', 'FLY'], true)) return;
+
+    $S     = &tg_flow_state();
+    $prev  = $S[$sym] ?? null;
+    $rank  = TG_FLOW_RANK[$flow]       ?? 0;
+    $prevR = TG_FLOW_RANK[$prev ?? ''] ?? 0;
+    // Only notify if: no previous state, OR flow rank increased
+    if ($prev === $flow) return;
+    if ($prevR > 0 && $rank <= $prevR) return;
+
+    // Update state
+    $S[$sym] = $flow;
+    tg_flow_state_save();
+
+    // Build message
+    $name  = $row['name']     ?? $sym;
+    $price = isset($row['price'])    ? '₹' . number_format((float)$row['price'], 2)    : '';
+    $str   = isset($row['strength']) ? round((float)$row['strength']) . ' pts'          : '';
+    $emoji = match($flow) {
+        'GATE OPEN'         => '🟡',
+        'SIGNAL', 'TICK 1' => '🟢',
+        'TICK 2'            => '🔵',
+        'TICK 3'            => '🟣',
+        'FLY'               => '✈️',
+        default             => '🔔',
+    };
+    $setupLabel = match($setup) {
+        'trend'      => 'Trend',
+        'retracement'=> 'Retracement',
+        'midtrend'   => 'Mid-Trend',
+        default      => ucfirst($setup),
+    };
+    $lines = [
+        "$emoji <b>$flow — $sig</b>",
+        "<b>$name</b>" . ($price ? "  ·  $price" : ''),
+        "Setup: $setupLabel" . ($str ? "  ·  Score: $str" : ''),
+        '📊 <a href="https://chartpulse.io/scanner.html">Open ChartPulse</a>',
+        '<i>Not investment advice.</i>',
+    ];
+    tg_broadcast(implode("\n", $lines));
+}
+
+/** Reset flow state when a signal ends (so re-entry gets a fresh notification). */
+function tg_clear_flow(string $sym): void {
+    $S = &tg_flow_state();
+    if (isset($S[$sym])) { unset($S[$sym]); tg_flow_state_save(); }
+}
 function t_siglog_track(string $s, array $row, int $now): void {
     $L = &t_siglog(); $it = &$L['items'];
     $live = t_status($s, $row, $now)['live'];
@@ -1372,6 +1471,7 @@ function t_siglog_track(string $s, array $row, int $now): void {
     foreach ($it as $k => $e) if ($e['symbol'] === $s && empty($e['end'])) { $open = $k; break; }
     if ($open !== null && (!$sig || $it[$open]['signal'] !== $sig)) {
         $it[$open]['end'] = min($now, (int)$it[$open]['last'] + 300); $it[$open]['exit'] = $row['price'] ?? null; $open = null; $L['_dirty'] = true;
+        tg_clear_flow($s);   // signal ended — reset so re-entry notifies fresh
     }
     if ($sig && $open === null) {
         $it[] = ['id' => substr(md5($s . $sig . $now), 0, 10), 'symbol' => $s, 'name' => $row['name'] ?? $s, 'market' => $row['market'] ?? '', 'signal' => $sig,
@@ -1379,6 +1479,8 @@ function t_siglog_track(string $s, array $row, int $now): void {
             'alignment' => $row['alignment'] ?? null, 'start' => $now, 'last' => $now, 'end' => null, 'exit' => null];
         $L['_dirty'] = true;
     } elseif ($sig) { $it[$open]['last'] = $now; $it[$open]['last_price'] = $row['price'] ?? null; $L['_dirty'] = true; }
+    // Telegram: notify on new / upgraded flow state (fire-and-forget, non-blocking)
+    if ($live && $sig) tg_maybe_notify($s, $row);
 }
 function t_siglog_flush(int $now): void {
     $L = &t_siglog(); if (empty($L['_dirty'])) return;
