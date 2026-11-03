@@ -1208,3 +1208,7 @@ h1,h2,h3{letter-spacing:-.012em}
 .dk-ai-sec{border-top:1px dashed var(--line);padding:8px 0}.dk-ai-sec summary{cursor:pointer;font-weight:600;font-size:13px}
 .dk-ai-sec div{font-size:12.5px;line-height:1.6;color:var(--ink2);margin-top:8px;max-height:420px;overflow:auto}
 .dk-ai .btn{margin-top:10px}
+
+/* live dot for tier2 chart */
+.t2-live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#22AB94;margin-right:6px;vertical-align:middle;position:relative;top:-1px;box-shadow:0 0 0 0 rgba(34,171,148,.6);animation:t2LivePulse 1.8s ease-out infinite}
+@keyframes t2LivePulse{0%{box-shadow:0 0 0 0 rgba(34,171,148,.7)}70%{box-shadow:0 0 0 7px rgba(34,171,148,0)}100%{box-shadow:0 0 0 0 rgba(34,171,148,0)}}
