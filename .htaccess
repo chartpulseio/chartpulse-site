@@ -2,6 +2,14 @@
 SetEnv TORUS_CONFIG /home/u330623605/domains/chartpulse.io/cp_secrets/cp-config.php
 # ===== ChartPulse .htaccess =====
 Options -Indexes -MultiViews
+
+# --- Force UTF-8 charset on all HTML responses (fixes Â·, â¦ garbage in browser)
+AddDefaultCharset UTF-8
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|htm|php)$">
+    Header always set Content-Type "text/html; charset=utf-8"
+  </FilesMatch>
+</IfModule>
 ErrorDocument 404 /404.html
 ErrorDocument 500 /500.html
 

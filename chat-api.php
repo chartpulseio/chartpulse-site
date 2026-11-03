@@ -285,7 +285,7 @@ function cp_kb(): array
          "The Daily Bottom Reversal Scanner looks for a bottom zone plus 2 of 3 sweep signals (liquidity sweep, BB sweep, CHoCH), "
          . "then a reversal candle, then confirmation from the next closed candle. Stages: GATE means bottom plus 2 of 3 signals with no candle yet; "
          . "PATTERN means the candle formed and the next candle decides; ENTRY means the reversal candle was confirmed. "
-         . "It runs on closed daily candles, so it does not repaint. See [Bottom Reversal](/dashboard.html)."],
+         . "It runs on closed daily candles, so it does not repaint. See [Bottom Reversal](/scanners/bottom-reversal/)."],
 
         ['pulse-sync', 'Pulse Sync meaning, confluence, score out of 4',
          "Pulse Sync is ChartPulse's agreement score: how many of the engine's independent checks are pointing the same way at that moment. "
@@ -315,7 +315,7 @@ function cp_kb(): array
 
         ['backtesting', 'backtesting, historical, test ideas',
          "Backtesting lets you test a rule set against historical data so you can see how it behaved in the past. "
-         . "Past behaviour is not a promise about the future. See [Backtesting](/pro-backtesting)."],
+         . "Past behaviour is not a promise about the future. See [Backtesting](/backtesting/)."],
 
         ['scanner-queue', 'under process queue, watching, how to read the scanner',
          "The under-process queue is the ranked list of instruments the engine is still working through, ordered by current strength. "

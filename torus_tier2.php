@@ -459,6 +459,64 @@ function t2_build(string $sym, string $bias): array {
     }
     // --- end pb5 ---
 
+    // --- st5: 5-minute Supertrend tick (period=7, multiplier=2.0) ---
+    // Fires when the latest confirmed 5m bar's Supertrend direction matches the bias:
+    //   CALL → ST bullish (close > ST upper band → price above ST line)
+    //   PUT  → ST bearish (close < ST lower band → price below ST line)
+    $st5 = 0;
+    {
+        $stN = count($f5['t']);
+        $stPeriod = 7; $stMult = 2.0;
+        // Need at least period+2 bars (skip live unconfirmed bar at end)
+        $stEnd = $stN - 2; // last confirmed bar index
+        if ($stEnd >= $stPeriod) {
+            // Compute ATR(7) using Wilder's smoothing on True Range
+            // True Range = max(H-L, |H-prevC|, |L-prevC|)
+            $tr = [];
+            for ($i = 1; $i <= $stEnd; $i++) {
+                $h = (float)$f5['h'][$i]; $l = (float)$f5['l'][$i]; $pc = (float)$f5['c'][$i - 1];
+                $tr[] = max($h - $l, abs($h - $pc), abs($l - $pc));
+            }
+            // Wilder smooth: first ATR = simple avg of first $stPeriod TRs
+            $atr = array_sum(array_slice($tr, 0, $stPeriod)) / $stPeriod;
+            $atrArr = [$atr];
+            for ($i = $stPeriod; $i < count($tr); $i++) {
+                $atr = ($atr * ($stPeriod - 1) + $tr[$i]) / $stPeriod;
+                $atrArr[] = $atr;
+            }
+            // $atrArr[k] corresponds to candle index k+1 (since TR starts at index 1)
+            // Supertrend: upper = (H+L)/2 + mult*ATR, lower = (H+L)/2 - mult*ATR
+            // Direction tracks using previous direction:
+            $stDir = 1; // 1=bullish, -1=bearish
+            $stLine = 0.0;
+            $prevUpper = 0.0; $prevLower = 0.0;
+            for ($i = 0; $i < count($atrArr); $i++) {
+                $ci = $i + 1; // candle index in f5 arrays
+                $hl2 = ((float)$f5['h'][$ci] + (float)$f5['l'][$ci]) / 2;
+                $upper = $hl2 + $stMult * $atrArr[$i];
+                $lower = $hl2 - $stMult * $atrArr[$i];
+                // Adjust bands: lower never decreases in bullish run, upper never increases in bearish run
+                if ($i > 0) {
+                    if ($prevLower > 0 && $lower < $prevLower && (float)$f5['c'][$ci - 1] > $prevLower) $lower = $prevLower;
+                    if ($prevUpper > 0 && $upper > $prevUpper && (float)$f5['c'][$ci - 1] < $prevUpper) $upper = $prevUpper;
+                }
+                $c = (float)$f5['c'][$ci];
+                if ($stDir === 1) {
+                    $stLine = $lower;
+                    if ($c < $lower) { $stDir = -1; $stLine = $upper; }
+                } else {
+                    $stLine = $upper;
+                    if ($c > $upper) { $stDir = 1; $stLine = $lower; }
+                }
+                $prevUpper = $upper; $prevLower = $lower;
+            }
+            // $stDir now reflects the confirmed bar at $stEnd
+            if ($bias === 'CALL' && $stDir === 1) $st5 = 1;
+            if ($bias === 'PUT'  && $stDir === -1) $st5 = 1;
+        }
+    }
+    // --- end st5 ---
+
     // 10-minute chart
     $f10 = $g10; $n10 = count($f10['t']); $s0 = max(0, $n10 - 150);
     $candles = [];
@@ -539,6 +597,7 @@ function t2_build(string $sym, string $bias): array {
         'grade' => $open['grade'] ?? (($t1 && !empty($t1['live']) && ($t1['flow'] ?? null) === 'FLY') ? ($t1['grade'] ?? null) : null),
         'trade' => $open ?: $last, 'trades' => $R['trades'], 'pending' => $R['pending'], 'pip' => t2_pip($sym, $px),
         'pb5' => $pb5,
+        'st5' => $st5,
         'candles' => $candles, 'cset' => $cset, 'confluence' => $conf, 'news' => $news, 'generated_at' => $now,
     ];
 }
@@ -610,6 +669,7 @@ function t2_public(array $d): array {
         'trade' => t2_pub_trade($live), 'trades' => array_map(fn($t) => t2_pub_trade($t), $d['trades'] ?? []),
         'pending' => $p ? ['stage' => 'setup', 'sig' => $p['sig'], 'time' => $p['time']] : null,
         'pb5' => (int)($d['pb5'] ?? 0),
+        'st5' => (int)($d['st5'] ?? 0),
         'pip' => $d['pip'], 'candles' => $d['candles'], 'cset' => $d['cset'] ?? null, 'confluence' => $d['confluence'], 'news' => $d['news'], 'generated_at' => $d['generated_at'],
     ];
 }

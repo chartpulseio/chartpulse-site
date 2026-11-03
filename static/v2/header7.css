@@ -136,11 +136,21 @@
   color: transparent;
 }
 
+.cp-hero7 .h7-what{
+  margin: 0 0 10px;
+  max-width: 60ch;
+  color: var(--h7-ink);
+  font-size: clamp(15px, 1.55vw, 17.5px);
+  font-weight: 500;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.cp-hero7 .h7-what b{ font-weight: 700; }
 .cp-hero7 .h7-sub{
   margin: 0 0 clamp(20px, 3vw, 30px);
   max-width: 56ch;
   color: var(--h7-ink2);
-  font-size: clamp(14px, 1.45vw, 16.5px);
+  font-size: clamp(13px, 1.3vw, 15px);
   line-height: 1.6;
   text-wrap: pretty;
 }
