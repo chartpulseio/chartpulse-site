@@ -219,9 +219,11 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
     const pw = r.pw === 2 ? '<span class="rtest" title="Retest at the Pulse zone">RETEST ++</span>'
       : r.pw === 1 ? '<span class="rtest sw" title="Sweep at the Pulse zone">+</span>' : "";
     const row = (tag, name, on) => `<div class="sd-ph-r ${on ? "done" : ""}"><small>${tag}</small>${name}<span class="ck">✓</span></div>`;
+    const pb5Row = r.pb5 && r.setup !== 'mid' ? `<div class="sd-ph-r done pb5-row" title="Structure shift on 5m + Pullback to 5 EMA + Rejection candle"><small>INFO</small><span class="pb5tick ${(r.signal||r.bias||'').toUpperCase()==='PUT'?'put':''}">PB+5EMA ✓</span><span class="ck">✓</span></div>` : "";
     box.innerHTML = `<div class="sd-sync-h"><span>Entry ladder${pw}</span><b>${P.slice(1).filter(Boolean).length}/3</b></div>`
       + row("GATE", TK[0], P[0])
-      + [1, 2, 3].map(i => row("TICK " + i, TK[i], P[i])).join("");
+      + [1, 2, 3].map(i => row("TICK " + i, TK[i], P[i])).join("")
+      + pb5Row;
   };
 
   let t2Last = null;
