@@ -94,10 +94,14 @@
         <article class="card t2-plan" id="t2Plan"></article>
         <article class="card t2-tg">
           <header class="p-head"><div><h2>Send to Telegram</h2><p class="p-sub">This trade plan, to your own chat</p></div></header>
-          <label class="field"><span>Your Telegram chat ID</span><input id="t2Chat" inputmode="numeric" placeholder="e.g. 123456789" maxlength="40"></label>
+          <input id="t2Chat" type="hidden">
+          <div class="t2-link" id="t2Link">
+            <button type="button" class="btn" id="t2LinkBtn">Connect Telegram</button>
+            <span class="t2-link-state" id="t2LinkState">Not connected</span>
+          </div>
           <label class="t2-auto"><input type="checkbox" id="t2Auto" checked><span>Send an alert automatically when an entry fires</span></label>
           <button type="button" class="btn t2-tg-btn" id="t2TgBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 4-18 7 6 2 2 6 3-4 5 4z"/><path d="m9 13 12-9"/></svg>Send to Telegram</button>
-          <p class="t2-tg-note" id="t2TgNote">Open the ChartPulse bot on Telegram and press Start once, then paste your chat ID here. Automatic alerts go out while this page is open.</p>
+          <p class="t2-tg-note" id="t2TgNote">Press Connect Telegram, then press Start in the bot. No chat ID needed. FLY signals are sent to your Telegram automatically.</p>
         </article>
       </div>
     </section>
@@ -138,6 +142,7 @@
 <script src="/static/v2/odds.js?v=3"></script>
 <script src="/static/v2/scenario.js?v=4"></script>
 <script src="/static/v2/t2dash.js?v=9"></script>
+<script src="/static/v2/tg-connect.js?v=1"></script>
 <script defer src="/static/v2/cp-launcher.js?v=1"></script>
 </body>
 </html>

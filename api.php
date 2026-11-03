@@ -118,7 +118,7 @@ if ($r === 'scan') {
     usort($rows, 't_row_cmp');   // v8: signal > queue > out; inside signals FLY A+ > A > B > RUNWAY > APPROACHING; then score
     $T1 = ['signal' => 'SIGNAL', 'queue' => 'UNDER PROCESS', 'out' => 'NOT IN SCANNER'];
     header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename=chartpulse_signals.csv');
+    header('Content-Disposition: attachment; filename=torus_signals.csv');
     $out = fopen('php://output', 'w');
     fputcsv($out, ['Symbol','Name','Market','Exchange','Status','Tier-1','Signal','Strength','Bias','Pulse Sync','Price','Change %','ATR %','Pulse zone','Pulse level','Updated IST'], ',', '"', '\\');
     foreach ($rows as $x) fputcsv($out, [$x['symbol'],$x['name'],$x['market'],$x['exchange'],$x['status'],$T1[$x['tier1']] ?? '',$x['signal'],$x['strength'],$x['bias'],$x['alignment'] . '/4',
@@ -157,6 +157,17 @@ if ($r === 'scan') {
     $d = t2_cached($sym, $bias);
     if (isset($d['error'])) { t_sorry('t2 ' . $sym, (string)$d['error']); exit; }
     t_json(t2_public($d));
+} elseif ($r === 'tg_link') {   // Connect Telegram: returns a one-time bot deep link
+    require __DIR__ . '/torus_access.php'; require __DIR__ . '/torus_tier2.php'; require __DIR__ . '/torus_tg_link.php';
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') { http_response_code(405); t_json(['ok' => false, 'error' => 'POST only']); exit; }
+    $a = ta_current(); $acc = (string)($a['id'] ?? '');
+    if ($acc === '' || (t2_paywall() && !ta_has('tier2'))) { http_response_code(402); t_json(['ok' => false, 'error' => 'Tier 2 access required']); exit; }
+    $bot = (string)t_cfg('telegram_bot_username', 'Chartpulseio_bot');
+    t_json(['ok' => true, 'url' => 'https://t.me/' . $bot . '?start=' . tgl_create($acc)]);
+} elseif ($r === 'tg_link_status') {   // is this account linked to a Telegram chat?
+    require __DIR__ . '/torus_access.php'; require __DIR__ . '/torus_tg_link.php';
+    $a = ta_current(); $chat = $a ? tgl_chat((string)($a['id'] ?? '')) : '';
+    t_json(['ok' => true, 'linked' => $chat !== '', 'chat' => $chat]);
 } elseif ($r === 't2tg') {
     require __DIR__ . '/torus_access.php'; require __DIR__ . '/torus_tier2.php';
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') { http_response_code(405); t_json(['ok' => false, 'error' => 'POST only']); exit; }

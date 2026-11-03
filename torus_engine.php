@@ -1416,7 +1416,7 @@ function tg_maybe_notify(string $sym, array $row): void {
     $sig   = $row['signal'] ?? null;
     $setup = $row['setup']  ?? null;
     if (!$flow || !$sig || !$setup) return;
-    if (!in_array($flow, ['GATE OPEN', 'SIGNAL', 'TICK 1', 'TICK 2', 'TICK 3', 'FLY'], true)) return;
+    if ($flow !== 'FLY') return;   // Telegram alerts: FLY only (owner, 4 Nov 2026)
 
     $S     = &tg_flow_state();
     $prev  = $S[$sym] ?? null;

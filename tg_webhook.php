@@ -13,6 +13,7 @@
  */
 declare(strict_types=1);
 require __DIR__ . '/torus_upstox.php';   // loads t_cfg()
+require __DIR__ . '/torus_tg_link.php';  // website account <-> chat linking
 
 // ── Security: only Telegram's IPs should call this ───────────────────────────
 // (Optional hard gate — comment out if it causes issues on Hostinger)
@@ -67,6 +68,29 @@ function tg_send(string $tok, string $chat, string $html): void {
 
 $subs = tg_load_subs($sub_file);
 $cmd  = strtolower(strtok($text, ' @'));   // /start, /stop, /status (strip bot mention)
+
+// ── Website link: "/start <token>" from the Connect Telegram button ──────────
+if ($cmd === '/start' && preg_match('/^\/start\s+([a-f0-9]{24})$/i', $text, $m)) {
+    $acc = tgl_consume(strtolower($m[1]), $chat_id);
+    if ($acc !== null) {
+        $subs[$chat_id] = ['name' => $fname, 'chat_id' => $chat_id, 'joined' => date('Y-m-d H:i:s')];
+        tg_save_subs($sub_file, $subs);
+        tg_send($tok, $chat_id,
+            "✅ <b>Connected to ChartPulse, $fname!</b>\n\n" .
+            "You'll get a message here when a <b>FLY</b> signal fires.\n\n" .
+            "Use /stop to unsubscribe anytime.\n" .
+            "<i>Not investment advice.</i>"
+        );
+    } else {
+        tg_send($tok, $chat_id,
+            "⚠️ This connect link has expired or was already used.\n\n" .
+            "Go back to chartpulse.io and press <b>Connect Telegram</b> again."
+        );
+    }
+    http_response_code(200);
+    echo 'ok';
+    exit;
+}
 
 // ── Handle commands ───────────────────────────────────────────────────────────
 if ($cmd === '/start') {
