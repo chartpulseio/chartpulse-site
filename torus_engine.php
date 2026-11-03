@@ -612,125 +612,7 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
         $mt = t_mt_eval($sym, $fr, array_map(fn($v) => (int)$v['dir'], $tfs), $mtctx);
         $isMt = $mt && !empty($mt['valid']);
     }
-    if ($setup === 'retrace' || $setup === 'midtrend') $bonus4 = 0.0;   // owner, 5 Oct 2026 11:37 IST: 4/4 Pulse Sync bonus only for trend setups
-    // Mid-trend setup (2 Nov 2026): MTF-aligned signal at a major key zone (PDH/PDL/PDC/Wk H+L/1H EMA 20/50/200)
-    // when price is NOT at Day Low/High (would be trend/retrace). CALL above Day Low, PUT below Day High.
-    $midZone = null; $midSetup = false;
-    if ($signal === 'WAIT' && $bias !== 'NEUTRAL') {
-        $mtTol = t_exchange($sym) === 'FX' ? 0.0015 : ($price * 0.003);   // FX=15 pips, others=0.3%
-        $pdc  = (float)($D['c'][$n - 2] ?? 0);
-        $midZone = t_midtrend_zone($price, $pdh, $pdl, $pdc, $fr['1W'], $fr['1H'], $mtTol);
-        if ($midZone) {
-            // CALL: MTF bullish + price above today's Day Low (not at it) + near major zone
-            // PUT:  MTF bearish + price below today's Day High (not at it) + near major zone
-            $mtCall = $bias === 'UP'   && $price > $atrLow  + $band && !$atLow;
-            $mtPut  = $bias === 'DOWN' && $price < $atrHigh - $band && !$atHigh;
-            if ($mtCall || $mtPut) {
-                $signal   = $mtCall ? 'CALL' : 'PUT';
-                $setup    = 'midtrend';
-                $wantUp   = $mtCall;
-                $midSetup = true;
-            }
-        }
-    }
-    // Bounce + Liquidity-Sweep setup (2 Nov 2026): 3/4 MTF where 1H flipped bullish (PUT side) or bearish (CALL side)
-    // against the 4H+1D trend. Price bouncing toward Day High (PUT) or Day Low (CALL) to sweep liquidity.
-    // Stage 1 BOUNCE: label "bounce chal raha hai", no entry yet.
-    // Stage 2 SWEEP TRIGGERED: price swept day high on 10M + bearish 10M close below sweep high → PUT signal.
-    // Stage 3 CANCELLED: 2 consecutive 10M closes above sweep high → real breakout → check for Retracement CALL.
-    $bounceSetup = false; $sweepTriggered = false; $sweepCancelled = false;
-    $sweepHigh = null; $bounceLabel = null; $st1H = $tfs['1H']['st'] ?? null;
-    // Detect 3/4 bounce: alignment=3, 1W bullish, 1H bullish (just flipped), 4H+1D bearish → PUT bounce
-    $is3of4PutBounce = $alignment === 3
-        && ($tfs['1W']['dir'] ?? 0) === 1
-        && ($tfs['1H']['dir'] ?? 0) === 1
-        && ($tfs['4H']['dir'] ?? 0) === -1
-        && ($tfs['1D']['dir'] ?? 0) === -1
-        && $signal === 'WAIT';   // not already a trend/retrace signal
-    // Detect 3/4 bounce: 1W bearish, 1H bearish (just flipped), 4H+1D bullish → CALL bounce (symmetric)
-    $is3of4CallBounce = $alignment === 3
-        && ($tfs['1W']['dir'] ?? 0) === -1
-        && ($tfs['1H']['dir'] ?? 0) === -1
-        && ($tfs['4H']['dir'] ?? 0) === 1
-        && ($tfs['1D']['dir'] ?? 0) === 1
-        && $signal === 'WAIT';
-    if (($is3of4PutBounce || $is3of4CallBounce) && $F5 && $bars) {
-        $bounceSetup = true;
-        $bounceDir   = $is3of4PutBounce ? -1 : 1;   // -1 = expecting PUT sweep, +1 = expecting CALL sweep
-        $sweepLevel  = $bounceDir === -1 ? $atrHigh : $atrLow;   // Day High for PUT bounce, Day Low for CALL bounce
-        // Build 10M bars from today's 5M data
-        $bars10 = t_ten($F5, $dayTs);
-        $n10    = count($bars10['t'] ?? []);
-        if ($n10 >= 2) {
-            // Find most recent 10M candle that pierced the sweep level
-            $swIdx = null;
-            for ($i = $n10 - 1; $i >= max(0, $n10 - 20); $i--) {
-                $pierced = $bounceDir === -1
-                    ? ($bars10['h'][$i] > $sweepLevel)   // PUT: candle went above day high
-                    : ($bars10['l'][$i] < $sweepLevel);  // CALL: candle went below day low
-                if ($pierced) { $swIdx = $i; break; }
-            }
-            if ($swIdx !== null) {
-                $sweepHigh = $bounceDir === -1 ? max($bars10['h'][$swIdx], $bars10['h'][$n10 - 1] ?? 0) : min($bars10['l'][$swIdx], $bars10['l'][$n10 - 1] ?? PHP_FLOAT_MAX);
-                // Check cancellation: 2 consecutive 10M closes above sweep high (real breakout)
-                $aboveCount = 0;
-                for ($i = $swIdx; $i < $n10; $i++) {
-                    $broke = $bounceDir === -1
-                        ? ($bars10['c'][$i] > $sweepHigh)
-                        : ($bars10['c'][$i] < $sweepHigh);
-                    if ($broke) $aboveCount++; else $aboveCount = 0;
-                    if ($aboveCount >= 2) { $sweepCancelled = true; break; }
-                }
-                if (!$sweepCancelled) {
-                    // Check trigger: candle at/after sweep that closed bearish (PUT) or bullish (CALL) and BELOW/ABOVE sweep high
-                    for ($i = $swIdx; $i < $n10; $i++) {
-                        $bearClose = $bounceDir === -1
-                            ? ($bars10['c'][$i] < $bars10['o'][$i] && $bars10['c'][$i] < $sweepLevel)
-                            : ($bars10['c'][$i] > $bars10['o'][$i] && $bars10['c'][$i] > $sweepLevel);
-                        if ($bearClose) {
-                            $sweepTriggered = true;
-                            $signal  = $bounceDir === -1 ? 'PUT' : 'CALL';
-                            $setup   = 'sweep_' . ($bounceDir === -1 ? 'put' : 'call');
-                            $wantUp  = $bounceDir === 1;
-                            $bonus4  = 0.0;
-                            $bounceLabel = $bounceDir === -1 ? 'Sweep PUT — liquidity trap' : 'Sweep CALL — liquidity trap';
-                            break;
-                        }
-                    }
-                } else {
-                    // Cancelled: check if 5M 5-EMA confirms breakout → convert to Retracement
-                    $f5c = $F5['c'] ?? [];
-                    $nf5 = count($f5c);
-                    if ($nf5 >= 5) {
-                        $ema5on5m = t_ema($f5c, 5)[$nf5 - 1];
-                        $breakoutCall = $bounceDir === -1 && $price > ($ema5on5m ?? 0) && $price > $sweepHigh;
-                        $breakoutPut  = $bounceDir === 1  && $price < ($ema5on5m ?? PHP_FLOAT_MAX) && $price < $sweepHigh;
-                        // Also need a bullish/bearish 10M candle pattern at the retest zone
-                        $patDir = $bounceDir === -1 ? 1 : -1;   // sweep was PUT bounce, breakout → looking for CALL
-                        $pat10 = null;
-                        if ($n10 >= 3) $pat10 = t_reversal($bars10, $n10 - 1, $patDir);
-                        $hasPattern = $pat10 !== null;
-                        if (($breakoutCall || $breakoutPut) && $hasPattern) {
-                            $signal  = $bounceDir === -1 ? 'CALL' : 'PUT';
-                            $setup   = 'retrace';   // reuse retracement setup for breakout-retest
-                            $wantUp  = $bounceDir === -1;
-                            $bonus4  = 0.0;
-                            $sweepCancelled = false;   // upgraded to signal
-                            $bounceLabel = $bounceDir === -1 ? 'Breakout retest CALL' : 'Breakout retest PUT';
-                        } else {
-                            $bounceLabel = 'bounce chal raha hai';   // breakout confirmed but no retest yet
-                        }
-                    } else {
-                        $bounceLabel = 'bounce chal raha hai';
-                    }
-                }
-            } else {
-                $bounceLabel = 'bounce chal raha hai';   // Stage 1: no sweep yet
-            }
-        } else {
-            $bounceLabel = 'bounce chal raha hai';
-        }
-    }
+    if ($setup === 'retrace') $bonus4 = 0.0;   // owner, 5 Oct 2026 11:37 IST: 4/4 Pulse Sync bonus only for trend setups
     // Retracement / short target (owner, 5 Oct 2026, 07:05 IST): mirror of trend. Entry, RUNWAY and FLY already follow the trade side
     // ($wantUp), RSI 10m scoring stays by trade side (PUT at the Day High scores RSI > 70, CALL at the Day Low RSI < 30).
     // ADX 1H is inverted: weak trend favours the counter-move. 0 at ADX >= 25 -> 10 at ADX <= 10.
@@ -773,9 +655,9 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
     // The 13 Oct retracement SL buffer is gone: both setups now use 1.5% from the position line (owner, 19 Oct 2026).
     return [
         'symbol' => $sym, 'name' => t_name($sym), 'market' => t_symbols()[$sym] ?? 'Other', 'signal' => $signal, 'rule' => 5, 'setup' => $setup,
-        'remark' => $setup === 'trend' ? 'Long target' : ($setup === 'retrace' ? ($bounceLabel ?? 'Small target') : ($setup === 'midtrend' ? 'Mid target' : ($setup === 'sweep_put' || $setup === 'sweep_call' ? ($bounceLabel ?? 'Sweep trap') : ($bounceSetup ? ($bounceLabel ?? 'bounce chal raha hai') : null)))),
+        'remark' => $setup === 'trend' ? 'Long target' : ($setup === 'retrace' ? 'Small target' : null),
         'strength' => round($strength, 2), 'bias' => $bias, 'alignment' => $alignment, 'tf' => $tfs,
-        'zone_touch' => $inZone, 'zone_near' => $midSetup ? ($midZone['label'] ?? $zoneSide) : $zoneSide, 'overextended' => $overext, 'confluence' => $conf >= 5, 'mid_zone' => $midSetup ? $midZone : null,
+        'zone_touch' => $inZone, 'zone_near' => $zoneSide, 'overextended' => $overext, 'confluence' => $conf >= 5,
         'components' => ['alignment' => round($trendPts, 2), 'alignment_max' => 30.0, 'bonus4' => $bonus4,
             'pdhl' => round($pdhlPts, 2), 'fib' => round($fibPts, 2), 'confluence' => round($conf, 2),
             'adx' => round($adxPts, 2), 'rsi' => round($rsiPts, 2), 'grade' => $gradePts, 'adx_state' => $adxState, 'score_v' => $scoreV,
@@ -785,7 +667,6 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
             'rt' => $isRt ? $rt['parts'] + ['stoch30' => $rt['stoch30'], 'adx30' => $rt['adx30']] : null],
         'flow' => $flow['state'] ?? null, 'flow_at' => $flow['time'] ?? null, 'flow_sl' => $flow['sl'] ?? null,
         // v9 (owner, 6 Oct 2026): high-conviction = trend FLY with a sweep + reclaim; public as a bare flag (bright FLY chip + bolt), never the reason
-        'bounce' => $bounceSetup, 'bounce_label' => $bounceLabel, 'sweep_high' => $sweepHigh, 'sweep_triggered' => $sweepTriggered, 'sweep_cancelled' => $sweepCancelled,
         'hc' => !$isV10 && $setup === 'trend' && ($flow['state'] ?? null) === 'FLY' && $swX ? 1 : 0,
         'tk' => $isV10 ? $v10['tk'] : ($isRt ? $rt['tk'] : null), 'pw' => $isV10 ? (int)$v10['pw'] : ($isRt ? (int)$rt['pw'] : 0),
         'al5' => $v10['al5'] ?? null, 'v10' => ($isV10 || $isRt) ? 1 : 0,
@@ -850,35 +731,6 @@ function t_fp($p): string {
 /** Public names (owner, 29 Sep 2026): the rule's building blocks never appear under their technical names outside the server. */
 const T_PULSE = ['ATR Low' => 'Pulse Floor', 'ATR High' => 'Pulse Ceiling'];
 function t_pub_zone(?string $z): ?string { return $z === null ? null : (T_PULSE[$z] ?? $z); }
-/** Mid-trend major zones: PDH, PDL, PDC, Weekly High, Weekly Low, 1H EMA-20, 1H EMA-50, 1H EMA-200.
- *  Returns the nearest zone level and its label if price is within $tol of any zone, else null.
- *  Used to qualify Mid-target setups: CALL when price is above Day Low near a major zone (MTF bullish),
- *  PUT when price is below Day High near a major zone (MTF bearish). (2 Nov 2026) */
-function t_midtrend_zone(float $price, float $pdh, float $pdl, float $pdc, array $fr1W, array $fr1H, float $tol): ?array {
-    $wN = count($fr1W['c']); $hN = count($fr1H['c']);
-    $wkH = $wN >= 2 ? (float)$fr1W['h'][$wN - 2] : 0.0;   // previous completed week high
-    $wkL = $wN >= 2 ? (float)$fr1W['l'][$wN - 2] : 0.0;   // previous completed week low
-    // 1H EMA-20, 50, 200
-    $ema20 = $hN >= 20 ? t_ema($fr1H['c'], 20)[$hN - 1] : 0.0;
-    $ema50 = $hN >= 50 ? t_ema($fr1H['c'], 50)[$hN - 1] : 0.0;
-    $ema200 = $hN >= 200 ? t_ema($fr1H['c'], 200)[$hN - 1] : 0.0;
-    $zones = array_filter([
-        'PDH'     => $pdh    > 0 ? $pdh    : null,
-        'PDL'     => $pdl    > 0 ? $pdl    : null,
-        'PDC'     => $pdc    > 0 ? $pdc    : null,
-        'Wk High' => $wkH   > 0 ? $wkH   : null,
-        'Wk Low'  => $wkL   > 0 ? $wkL   : null,
-        'EMA20'   => $ema20  > 0 ? $ema20  : null,
-        'EMA50'   => $ema50  > 0 ? $ema50  : null,
-        'EMA200'  => $ema200 > 0 ? $ema200 : null,
-    ], fn($v) => $v !== null);
-    $best = null; $bestDist = INF;
-    foreach ($zones as $lbl => $lvl) {
-        $dist = abs($price - $lvl);
-        if ($dist <= $tol && $dist < $bestDist) { $bestDist = $dist; $best = ['label' => $lbl, 'level' => $lvl, 'dist' => $dist]; }
-    }
-    return $best;
-}
 function t_pub_setup(?string $s): ?string { return $s === null ? null : ($s === 'trend' ? 'long' : ($s === 'midtrend' ? 'midtrend' : 'short')); }
 function t_pub_level(string $k): string { return $k === 'PP' ? 'P0' : (str_starts_with($k, 'R') ? 'U' . substr($k, 1) : (str_starts_with($k, 'S') ? 'D' . substr($k, 1) : $k)); }
 /** Public symbol brief: describes the state, never the rule's formulas or weights. */
@@ -913,10 +765,14 @@ function t_symbol_brief(array $r, ?array $s): array {
  */
 function t_ph_build(array $r): array {
     $live = ($r['signal'] ?? 'WAIT') !== 'WAIT';
-    // Owner, 20 Oct 2026: the ladder is one gate + 3 ticks, so the array is 4 long -- [gate, Early Entry,
-    // Entry A, Double Confirm]. Rows the pre-v10 engine stored also carry 4 entries, which is why the row
-    // publishes 'lad' (10 = the gate ladder, 8 = the old phases) instead of relying on the length.
-    if (!empty($r['v10'])) return $live && is_array($r['tk'] ?? null) ? array_map('intval', $r['tk']) : [0, 0, 0, 0];
+    // Owner, 20 Oct 2026 (updated 3 Nov 2026: 5 elements): one gate + 4 ticks -- [gate, Early Entry,
+    // Entry A, Reversal Pat (5m), Double Confirm (10m/FLY)]. Pre-3Nov rows have 4 elements; pad with 0.
+    if (!empty($r['v10'])) {
+        if (!$live || !is_array($r['tk'] ?? null)) return [0, 0, 0, 0, 0];
+        $t = array_map('intval', $r['tk']);
+        while (count($t) < 5) $t[] = 0;   // back-compat: old 4-element rows get a zero tick4
+        return $t;
+    }
     $rt = $r['runway_type'] ?? null; $gr = $r['grade'] ?? null; $fl = $r['flow'] ?? null; $fvgOn = !empty($r['fvg']) ? 1 : 0;
     return $live ? [$fvgOn, ($rt === 'ema' || $gr === 'A') ? 1 : 0, ($rt === 'bb' || $gr === 'A+') ? 1 : 0, $fl === 'FLY' ? 1 : 0] : [0, 0, 0, 0];
 }
@@ -1283,7 +1139,7 @@ function t_ensure_dirs(): void { if (!is_dir(T_FRAMES)) @mkdir(T_FRAMES, 0755, t
 
 function t_slim(array $r, array $st): array {
     $o = [];
-    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','al5','v10','go','t0','zg','zlv','lad','sl_wide','bounce','bounce_label','sweep_high','sweep_triggered','sweep_cancelled','mid_zone','prev_fly'] as $k) $o[$k] = $r[$k] ?? null;
+    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','al5','v10','go','t0','zg','zlv','lad','sl_wide'] as $k) $o[$k] = $r[$k] ?? null;
     $o['tf'] = array_map(fn($v) => $v['dir'], $r['tf']);
     foreach (['spark', 'ret_1w', 'ret_1m', 'ret_3m', 'ret_1y', 'vol_20d', 'from_hi_pct', 'from_lo_pct', 'hi_52w', 'lo_52w'] as $k) $o[$k] = $st[$k];
     return $o;
@@ -1388,7 +1244,7 @@ function t_sticky_apply(string $s, array $row, int $now): array {
         $r['flow'] = 'GATE CLOSE'; $r['v10'] = 1; $r['grade'] = null; $r['gc_until'] = (int)$g['until']; return $r;
     };
     $rx = t10_recent_exit($s, $now);   // Tier-2 trend trade exited (10m flip / reverse pattern / SL) in the last 4 min
-    if ($rx && !isset($S['_gc'][$s])) { $gcSet(['signal' => $rx['sig'], 'remark' => 'Long target', 'tk' => $row['tk'] ?? [0, 0, 0, 1], 'pw' => $row['pw'] ?? 0, 'flow_at' => $rx['entry_time']]); $S['_gc'][$s]['until'] = (int)$rx['exit_time'] + T10_GATE_HOLD; }
+    if ($rx && !isset($S['_gc'][$s])) { $gcSet(['signal' => $rx['sig'], 'remark' => 'Long target', 'tk' => $row['tk'] ?? [0, 0, 0, 0, 1], 'pw' => $row['pw'] ?? 0, 'flow_at' => $rx['entry_time']]); $S['_gc'][$s]['until'] = (int)$rx['exit_time'] + T10_GATE_HOLD; }
     $endIt = function (string $sig, float $ext) use (&$S, $s, $now, &$changed) { $S['_end'][$s] = ['sig' => $sig, 'ext' => $ext, 'at' => $now]; unset($S[$s]); $changed = true; };
     // an ended cycle: only a new Day High (PUT) / Day Low (CALL) beyond the old one re-opens it
     $E = $S['_end'][$s] ?? null;
