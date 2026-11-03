@@ -278,6 +278,9 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
       + pb5Row;
   };
 
+  // t2dash.js rebuilds #sdCard (including the now-empty .sd-ph shell) on its own DOM-mutation watch; it calls
+  // this hook right after, so the ladder is refilled from the same tick with no empty flash in between.
+  CP.__t2Ladder = () => { if (t2Last) t2Ladder(t2Last); };
   let t2Last = null;
   const t2Paint = async () => {
     const box = t2Mount(); const sym = t2Sym();
