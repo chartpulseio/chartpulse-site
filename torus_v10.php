@@ -432,7 +432,7 @@ function t10_score(array $x): array {
     $up = $x['wantUp']; $z = $x['zone']; $a5 = max(1e-12, (float)$x['atr5']);
     $dP = abs($x['pdX'] - $z); $dF = INF; $fN = null; foreach ($x['fibs'] as $f) if (abs($f - $z) < $dF) { $dF = abs($f - $z); $fN = $f; }
     $best = min($dP, $dF);
-    $loc = $best <= 0.4 * $a5 ? 20.0 : ($best <= $a5 ? 10.0 : 0.0);
+    $loc = $best <= 1.5 * $a5 ? 20.0 : 0.0;
     $locB = ($dP <= $a5 && $dF <= $a5 && $fN !== null && abs($x['pdX'] - $fN) <= $a5) ? 10.0 : 0.0;
     $rev = $x['pw'] === 2 ? 27.0 : ($x['pw'] === 1 ? 16.0 : 0.0);
     $bb = $x['bb'] ? 8.0 : 0.0;
@@ -487,6 +487,19 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     $s30 = t10_stoch_k($m30);
     $c5 = t10_closed($F5, 300, $now); $rsi5 = count($c5['c']) >= 20 ? t_rsi_last(array_map('floatval', array_slice($c5['c'], -200)), 14) : null;
     [$ax, $pd, $md] = $m30 ? t_adx($m30, 14) : [0.0, 0.0, 0.0];
+    // Find nearest major zone to $zone for Tier-2 chart line
+    $mjCandidates = ['PDH' => $pdh, 'PDL' => $pdl];
+    if ($ctx['pdc'] ?? null) $mjCandidates['PDC'] = (float)$ctx['pdc'];
+    // nearest fib
+    $fNear = null; foreach ($fibs as $f) if ($fNear === null || abs($f - $zone) < abs($fNear - $zone)) $fNear = $f;
+    if ($fNear !== null) $mjCandidates['Fib'] = $fNear;
+    // nearest pivot
+    $pvNear = null; foreach (($ctx['pivots'] ?? []) as $k => $v) if ($pvNear === null || abs((float)$v - $zone) < abs($pvNear - $zone)) { $pvNear = (float)$v; $pvNearLabel = $k; }
+    if ($pvNear !== null) $mjCandidates['Pivot'] = $pvNear;
+    $mjLabel = null; $mjPrice = null;
+    foreach ($mjCandidates as $lbl => $price) {
+        if ($mjPrice === null || abs($price - $zone) < abs($mjPrice - $zone)) { $mjPrice = $price; $mjLabel = $lbl; }
+    }
     [$score, $parts] = t10_score(['wantUp' => $wantUp, 'zone' => $zone, 'atr5' => $a5, 'pdX' => $pdX, 'fibs' => $fibs,
         'pw' => $cy['pw'] ?? 0, 'bb' => $cy['bb'] ?? false, 'stoch' => $s30, 'rsi5' => $rsi5, 'adx' => $ax, 'pdi' => $pd, 'mdi' => $md, 'al5' => $al5]);
     $tk = $cy ? array_map(fn($t) => $t === null ? 0 : 1, $cy['ticks']) : [0, 0, 0, 0, 0];
@@ -510,7 +523,8 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
         't0' => $cy['t0'] ?? null, 'zg' => $zg, 'zlv' => $zlv, 'lad' => 10,
         'gate_lv' => $cy['gate_level'] ?? null, 'sl_wide' => !empty($cy['wide']) ? 1 : 0,
         'pw' => (int)($cy['pw'] ?? 0), 'flow_at' => $entryAt, 'flow_sl' => $cy['sl'] ?? null,
-        'stoch30' => $s30 === null ? null : round($s30, 1), 'rsi5' => $rsi5 === null ? null : round($rsi5, 1), 'adx30' => round($ax, 1)];
+        'stoch30' => $s30 === null ? null : round($s30, 1), 'rsi5' => $rsi5 === null ? null : round($rsi5, 1), 'adx30' => round($ax, 1),
+        'mzp' => $mjPrice !== null ? round($mjPrice, 4) : null, 'mzl' => $mjLabel];
 }
 
 /** Next $n Fibonacci daily pivots beyond $px in the trade direction: [[label, price], ...]. */
