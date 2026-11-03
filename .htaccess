@@ -1,3 +1,5 @@
+# Point t_cfg() to secrets file outside web root
+SetEnv TORUS_CONFIG /home/u330623605/domains/chartpulse.io/cp_secrets/cp-config.php
 # ===== ChartPulse .htaccess =====
 Options -Indexes -MultiViews
 ErrorDocument 404 /404.html
