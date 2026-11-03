@@ -763,7 +763,7 @@ const T_MT_MIN_SCORE = 30.0;
  */
 function t_mt_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     if (!T10_ON) return null;
-    if (empty($ctx['mt_active'])) return null;   // retracement TP1 must have fired first
+    if (empty($ctx['mt_active'])) return null;   // engine sets this when ATR band is cleared
     $F5 = $fr['5m'] ?? null; $now = t_now();
     $bars = $ctx['bars']; $a5 = (float)$ctx['atr5'];
     if (!$F5 || !$bars || $a5 <= 0) return null;
@@ -774,10 +774,30 @@ function t_mt_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     // 4H+1D alignment gate (both must agree with bias direction)
     $d4h = $tfDirs['4h'] ?? 0; $d1d = $tfDirs['1d'] ?? 0;
     if ($d4h !== $sg || $d1d !== $sg) return null;
-    // Zone anchor: Day Low (CALL) or Day High (PUT), same as Trend
-    $zone = $wantUp ? $ctx['atr_low'] : $ctx['atr_high'];
-    $price = (float)$ctx['price'];
-    if (abs($price - $zone) > 2.0 * $a5) return null;
+    // Zone anchor: nearest strong zone BEYOND the ATR band (3 Nov 2026 redesign).
+    // Price has already cleared the ATR band (gate in engine). Find the closest pivot/fib/PDH/PDL/PDC
+    // that is: (a) on the far side of the band (below atr_low for CALL, above atr_high for PUT),
+    // and (b) within 1.0×ATR5 of current price.
+    $price    = (float)$ctx['price'];
+    $atrLow   = (float)($ctx['atr_low']  ?? 0);
+    $atrHigh  = (float)($ctx['atr_high'] ?? 0);
+    $lvAll    = array_merge(
+        array_values($ctx['pivots'] ?? []),
+        array_values($ctx['fibs']   ?? []),
+        array_filter([(float)($ctx['pdh'] ?? 0), (float)($ctx['pdl'] ?? 0), (float)($ctx['pdc'] ?? 0)])
+    );
+    $zone = null; $bestDist = PHP_FLOAT_MAX;
+    foreach ($lvAll as $lv) {
+        $lv = (float)$lv;
+        if ($lv <= 0) continue;
+        // Must be beyond the ATR band in the trade direction
+        if ($wantUp && $lv >= $atrLow)  continue;   // CALL: zone must be below atr_low
+        if (!$wantUp && $lv <= $atrHigh) continue;  // PUT: zone must be above atr_high
+        $dist = abs($price - $lv);
+        if ($dist < $bestDist) { $bestDist = $dist; $zone = $lv; }
+    }
+    if ($zone === null) return null;                 // no strong zone found beyond band
+    if (abs($price - $zone) > 1.0 * $a5) return null; // zone must be within 1×ATR5
     // Count qualifying levels within 0.35xATR5 of zone (STRONG_ZONE gate)
     $tol = 0.35 * $a5;
     $lvArr = array_merge(
