@@ -29,17 +29,18 @@ const T10_GATE_HOLD = 240;   // GATE CLOSE stays 4 min, then the signal is remov
 const T10_ADR_PCT = 0.30;    // owner, 19 Oct 2026: ticks start once today's range reaches 30% of ADR (was 50%)
 const T10_SL_PCT = 0.015;    // owner, 19 Oct 2026: SL = 1.5% from the position line, both setups
 
-// ---- Zone Entry Gates ladder (owner, 20 Oct 2026) ------------------------------------------------------
-// ONE gate (diamond) + 3 entry ticks. This replaces the 19 Oct "tick 0 + 4 ticks": the 5m Supertrend-flip
-// tick is gone, and the sweep is no longer a tick at all -- it only opens the gate.
+// ---- Zone Entry Gates ladder (owner, 20 Oct 2026; updated 3 Nov 2026) ---------------------------------
+// ONE gate (diamond) + 4 entry ticks. Gate is now 10m (was 30m). Tick 3 = 5m reversal pattern + next
+// candle confirm. Old tick 3 (Double Confirm / FLY) is now tick 4.
 //   GATE OPEN (not an entry):
-//     Liquidity Sweep -- a 30m wick past the Day extreme OR past a zone-group level (Prev Low / Prev High,
+//     Liquidity Sweep -- a 10m wick past the Day extreme OR past a zone-group level (Prev Low / Prev High,
 //       a Fib level, the Fibonacci daily pivot), candle closing back on the right side of it. Depth has to
 //       be more than T10_GATE_MIN_ATR x ATR5 (otherwise it is noise, not a sweep) and less than
 //       T10_GATE_MAX_ATR x ATR5 (deeper is a breakdown). A Strong-Zone level swept is the best arming.
 //     BB Sweep -- the fallback gate: exhaustion, not liquidity. A 5m wick past the outer Bollinger band
 //       with the candle closing back inside. Both on the same candle = ONE gate, labelled "Sweep + BB".
-//   1 Early Entry (5m CHoCH)  2 Entry A (5m 5 EMA)  3 Double Confirm (10m pattern + next candle) = FLY
+//   1 Early Entry (5m CHoCH)  2 Entry A (5m 5 EMA)  3 Reversal Pat (5m pattern + next 5m confirm)
+//   4 Double Confirm (10m pattern + next 10m candle) = FLY
 //   TREND: the first tick is the entry, gate or no gate (without a gate the diamond stays empty).
 //   RETRACEMENT: ticks are only counted once the gate is open, and the 5 EMA alone is never an entry --
 //     it only raises the grade. This is what stops "entry first, sweep afterwards" (the stop-hunt case).
@@ -51,7 +52,7 @@ const T10_SL_PCT = 0.015;    // owner, 19 Oct 2026: SL = 1.5% from the position 
 //     and bias flips no longer touch the row -- only the SL, a target or the 8m exit can end it.
 const T10_GATE_MIN_ATR = 0.1;    // a wick shallower than this is noise, not a sweep
 const T10_GATE_MAX_ATR = 2.0;    // deeper than this is a breakdown, not a sweep
-const T10_GATE_AGE = 5400;       // 3 x 30m candles: an unused gate expires
+const T10_GATE_AGE = 1800;       // 3 x 10m candles: an unused gate expires
 const T10_CHOCH_BUF = 0.1;       // x ATR5 buffer over the swing level (body close, not a wick)
 const T10_CHOCH_BARS = 3;        // at least 3 candles after the Day-extreme / sweep candle
 const T10_SL_BUF_ATR = 0.1;      // x ATR5 buffer under the sweep wick
@@ -62,12 +63,14 @@ function t10_closed(array $f, int $sec, int $now): array {
     $o = []; foreach ($f as $k => $v) $o[$k] = is_array($v) ? array_slice($v, 0, $n) : $v;
     return $o;
 }
-/** 30m bars from 5m bars, closed only. */
-function t10_m30(?array $F5, int $now): ?array {
-    if (!$F5 || count($F5['t'] ?? []) < 60) return null;
-    $f = t10_closed(t_resample($F5 + ['v' => array_fill(0, count($F5['t']), 0)], 1800), 1800, $now);
-    return count($f['c']) >= 20 ? $f : null;
+/** 10m bars from 5m bars, closed only. (Gate changed from 30m → 10m, 3 Nov 2026.) */
+function t10_m10(?array $F5, int $now): ?array {
+    if (!$F5 || count($F5['t'] ?? []) < 20) return null;
+    $f = t10_closed(t_resample($F5 + ['v' => array_fill(0, count($F5['t']), 0)], 600), 600, $now);
+    return count($f['c']) >= 6 ? $f : null;
 }
+/** @deprecated Back-compat alias — callers updated to t10_m10, kept for torus_v10 internal use. */
+function t10_m30(?array $F5, int $now): ?array { return t10_m10($F5, $now); }
 /** Supertrend (10,3) direction of the last bar, or null. */
 function t10_st_last(?array $f): ?int {
     if (!$f || count($f['c'] ?? []) < 12) return null;
@@ -94,22 +97,23 @@ function t10_bias(array $tfDirs, ?array $m30): array {
 }
 
 /**
- * The gate, part 1 -- Liquidity Sweep on 30m, confirmed on the 30m close (owner, 20 Oct 2026). The wick has to
- * go past a real level and the candle has to close back on the right side of it. Levels: the running Day
- * extreme and every zone-group level passed in $lv (Prev Low / Prev High, Fib, Fibonacci daily pivot) -- a
- * Strong-Zone level swept is the strongest arming there is. Depth has to sit between T10_GATE_MIN_ATR and
- * T10_GATE_MAX_ATR x ATR5: shallower is noise, deeper is a breakdown.
+ * The gate, part 1 -- Liquidity Sweep on 10m (was 30m; changed 3 Nov 2026), confirmed on the 10m close.
+ * The wick has to go past a real level and the candle has to close back on the right side of it. Levels:
+ * the running Day extreme and every zone-group level passed in $lv (Prev Low / Prev High, Fib, pivot) --
+ * a Strong-Zone level swept is the strongest arming there is. Depth has to sit between T10_GATE_MIN_ATR
+ * and T10_GATE_MAX_ATR x ATR5: shallower is noise, deeper is a breakdown.
  * Returns [close time, close price, 'liq', wick extreme, level name, depth] of the first one in the window.
  */
 function t10_gate30(array $M30, int $sg, int $dayTs, int $from, int $to, float $a5, array $lv): ?array {
+    $barSec = 600;   // 10m bars (was 1800 / 30m)
     $n = count($M30['t'] ?? []); if ($n < 2 || $a5 <= 0) return null;
     $dLo = T10_GATE_MIN_ATR * $a5; $dHi = T10_GATE_MAX_ATR * $a5;
     $ext = $sg > 0 ? INF : -INF; $prev = null;
     for ($i = 0; $i < $n; $i++) {
         $t = (int)$M30['t'][$i]; if ($t < $dayTs) continue;
         $l = (float)$M30['l'][$i]; $h = (float)$M30['h'][$i]; $c = (float)$M30['c'][$i];
-        $w = $sg > 0 ? $l : $h; $tc = $t + 1800;
-        if ($tc > $from && $tc <= $to + 1800) {
+        $w = $sg > 0 ? $l : $h; $tc = $t + $barSec;
+        if ($tc > $from && $tc <= $to + $barSec) {
             $L = []; if ($prev !== null) $L['Pulse zone'] = (float)$prev;
             foreach ($lv as $k => $p) if ($p !== null) $L[(string)$k] = (float)$p;
             foreach ($L as $k => $p) {
@@ -297,12 +301,13 @@ function t10_cycle_eval(array $F, int $a, int $cs, int $ce, int $sg, array $A5, 
         $gl = $M30 ? t10_gate30($M30, $sg, $dayTs, $tkTcs, $tce, $a5, $lv) : null;
         $gb = t10_gate_bb($F, $tkA, $ce, $sg, $BBlo, $BBup, $tkTcs, $tce);
         $g = ($gl && $gb) ? ($gb[0] <= $gl[0] ? $gb : $gl) : ($gl ?: $gb);
-        // Both on the same 30m candle: ONE gate, not two -- it is only graded "double" (owner, 20 Oct 2026).
-        if ($gl && $gb && abs($gl[0] - $gb[0]) <= 1800) { $g = $gl; $g[2] = 'both'; }
+        // Both on the same 10m candle: ONE gate, not two -- it is only graded "double" (owner, 20 Oct 2026).
+        if ($gl && $gb && abs($gl[0] - $gb[0]) <= 600) { $g = $gl; $g[2] = 'both'; }
     }
     $gateAt = $g[0] ?? null; $swWick = $g[3] ?? null;
-    $tk = [$gateAt, null, null, null]; $tp = [$g[1] ?? null, null, null, null];
-    // ---- ticks 1 and 2 on 5m ------------------------------------------------------------------------------
+    // 5 elements: [gate, tick1, tick2, tick3(5m pat), tick4(Double Confirm/FLY)]
+    $tk = [$gateAt, null, null, null, null]; $tp = [$g[1] ?? null, null, null, null, null];
+    // ---- ticks 1 and 2 on 5m, tick 3 = 5m reversal pattern + next 5m candle confirm ------------------
     if ($ticksOn) {
         $Fs = []; foreach (['t', 'o', 'h', 'l', 'c'] as $kk) $Fs[$kk] = array_slice($F[$kk], 0, $ce + 1);
         $E5 = t_ema(array_map('floatval', $Fs['c']), 5);
@@ -327,11 +332,25 @@ function t10_cycle_eval(array $F, int $a, int $cs, int $ce, int $sg, array $A5, 
                 && ($sg > 0 ? $c > $piv + $buf : $c < $piv - $buf)) { $tk[1] = $tc; $tp[1] = $c; }
             // 2 Entry A: a 5m candle closes beyond the 5 EMA.
             if ($tk[2] === null && $E5[$i] !== null && ($sg > 0 ? $c > $E5[$i] : $c < $E5[$i])) { $tk[2] = $tc; $tp[2] = $c; }
+            // 3 Reversal Pat: a major 5m reversal pattern + the NEXT 5m candle closes beyond pattern close
+            // in the signal direction. Patterns: Engulfing / Harami / Hammer / Pin bar / Shooting Star /
+            // Morning-Evening Star / Inverted Hammer / Tweezer / Dark Cloud / Piercing / Abandoned Baby /
+            // Three White Soldiers / Three Black Crows (all detected by t_reversal). (3 Nov 2026)
+            if ($tk[3] === null && $i + 1 <= $ce) {
+                $pat = t_reversal($Fs, $i, $sg);
+                if ($pat !== null) {
+                    // next 5m candle must close in the signal direction beyond the pattern candle's close
+                    $nc = (float)$F['c'][$i + 1];
+                    if ($sg > 0 ? ($nc > $c && $nc > (float)$F['o'][$i + 1]) : ($nc < $c && $nc < (float)$F['o'][$i + 1])) {
+                        $tk[3] = (int)$F['t'][$i + 1] + 300; $tp[3] = $nc;
+                    }
+                }
+            }
         }
     }
-    // 3 Double Confirm: a 10m reversal pattern confirmed by the NEXT 10m candle -> FLY
+    // 4 Double Confirm: a 10m reversal pattern confirmed by the NEXT 10m candle -> FLY (was tick 3)
     $fly = null;
-    if ($ticksOn) foreach ($flyEv as $e) if ((int)$e['pattern_time'] >= $tkTcs + 600 && (int)$e['time'] <= $tce + 600) { $fly = $e; $tk[3] = (int)$e['time']; $tp[3] = (float)$e['price']; break; }
+    if ($ticksOn) foreach ($flyEv as $e) if ((int)$e['pattern_time'] >= $tkTcs + 600 && (int)$e['time'] <= $tce + 600) { $fly = $e; $tk[4] = (int)$e['time']; $tp[4] = (float)$e['price']; break; }
     // ---- entries -----------------------------------------------------------------------------------------
     $pick = function (array $idx, bool $arm) use ($tk, $tp, $gateAt) {
         $t = null; $p = null;
@@ -342,9 +361,9 @@ function t10_cycle_eval(array $F, int $a, int $cs, int $ce, int $sg, array $A5, 
         }
         return [$t, $p];
     };
-    [$first, $fpx] = $pick([1, 2, 3], false);        // trend: first tick wins, gate or no gate
-    [$firstRt, $fpxRt] = $pick([1, 3], true);        // retracement: gate first, and never the 5 EMA alone
-    // The gate expires unused after 3 x 30m candles (and the caller's band / zone rules), but never after an entry.
+    [$first, $fpx] = $pick([1, 2, 3, 4], false);        // trend: first tick wins, gate or no gate
+    [$firstRt, $fpxRt] = $pick([1, 3, 4], true);        // retracement: gate first, never 5 EMA alone
+    // The gate expires unused after 3 x 10m candles (and the caller's band / zone rules), but never after an entry.
     $gateExp = $gateAt !== null && $first === null && $now > 0 && $now - $gateAt > T10_GATE_AGE;
     // ---- SL: the sweep wick is the anchor, 1.5% is the cap -----------------------------------------------
     $mk = function (?float $px) use ($sg, $swWick, $a5) {
@@ -470,18 +489,18 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     [$ax, $pd, $md] = $m30 ? t_adx($m30, 14) : [0.0, 0.0, 0.0];
     [$score, $parts] = t10_score(['wantUp' => $wantUp, 'zone' => $zone, 'atr5' => $a5, 'pdX' => $pdX, 'fibs' => $fibs,
         'pw' => $cy['pw'] ?? 0, 'bb' => $cy['bb'] ?? false, 'stoch' => $s30, 'rsi5' => $rsi5, 'adx' => $ax, 'pdi' => $pd, 'mdi' => $md, 'al5' => $al5]);
-    $tk = $cy ? array_map(fn($t) => $t === null ? 0 : 1, $cy['ticks']) : [0, 0, 0, 0];
+    $tk = $cy ? array_map(fn($t) => $t === null ? 0 : 1, $cy['ticks']) : [0, 0, 0, 0, 0];
     $entryAt = $cy['first'] ?? null; $ticksFired = $entryAt !== null;
     // bug fix (13 Oct 2026): a fired tick must stay shown while price is still in range (runbook v10 S6: "FLY ... stays
     // shown; it does not disappear"). Before, $valid was score-gated only, so a tick already ON could vanish from the
     // scanner the instant a later bar's score dipped under 33 -- the cycle's own ticks are sticky, so entry status
     // should be too. Score still gates a *fresh* APPROACHING/SIGNAL; it no longer hides an entry already in progress.
     $valid = ($score >= T10_MIN_SCORE && $parts['loc'] > 0) || $ticksFired;
-    // Status ladder (owner, 20 Oct 2026): APPROACHING -> GATE OPEN -> SIGNAL 1/3, 2/3 -> FLY, and GATE CLOSE
-    // only when no entry was ever taken and the gate expired unused.
+    // Status ladder: APPROACHING -> GATE OPEN -> TICK 1/2/3 (SIGNAL) -> TICK 4 (FLY), and GATE CLOSE
+    // only when no entry was ever taken and the gate expired unused. Tick 4 = Double Confirm = FLY.
     $gateOn = ($cy['gate'] ?? null) !== null;
     $flow = !$valid ? null
-        : ($tk[3] ? 'FLY' : ($ticksFired ? 'SIGNAL'
+        : ($tk[4] ? 'FLY' : ($ticksFired ? 'SIGNAL'
         : ($gateOn ? (!empty($cy['gate_exp']) ? 'GATE CLOSE' : 'GATE OPEN') : 'APPROACHING')));
     $go = $gateOn ? 1 : 0;
     // Tier-1 zone group + remark (owner PDF, 19 Oct 2026). Pivot and PDC count here only, never in the score.
@@ -495,10 +514,9 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
 }
 
 /** Next $n Fibonacci daily pivots beyond $px in the trade direction: [[label, price], ...]. */
-function t10_targets(?array $P, float $px, int $sg, int $n = 3, float $minD = 0.0): array {
+function t10_targets(?array $P, float $px, int $sg, int $n = 3): array {
     if (!$P) return [];
-    // owner, 2 Nov 2026: a key zone sitting inside 1 x ATR5 of entry is ignored, it is not a target
-    $L = []; foreach ($P as $k => $v) { $d = ((float)$v - $px) * $sg; if ($d > $minD) $L[$k] = $d; }
+    $L = []; foreach ($P as $k => $v) { $d = ((float)$v - $px) * $sg; if ($d > 0) $L[$k] = $d; }
     asort($L); $o = [];
     foreach ($L as $k => $d) { if (count($o) >= $n) break; $o[] = ['label' => $k, 'price' => $px + $sg * $d]; }
     return $o;
@@ -530,7 +548,6 @@ function t10_replay(array $F, ?array $M1, int $a, int $b, callable $epFor, ?arra
     $G8 = t10_eight($M1, $dayTs, $now);   // owner, 19 Oct 2026: exit moved from 10m to 8m (built from 1m bars)
     $first = function (array $t, int $x): int { $lo = 0; $hi = count($t) - 1; $r = count($t); while ($lo <= $hi) { $m = intdiv($lo + $hi, 2); if ($t[$m] >= $x) { $r = $m; $hi = $m - 1; } else $lo = $m + 1; } return $r; };
     $busy = 0;
-    $atrArrV = t_atr($F, 14); $a5L = $atrArrV ? (float)end($atrArrV) : 0.0;
     foreach (['CALL' => 1, 'PUT' => -1] as $sig => $sg) {
         $lvP = []; foreach (($P ?? []) as $pk => $pv) $lvP[(string)$pk] = (float)$pv;
         foreach (t10_session($F, $a, $b, $sg, $M1, T2_ZB, $now, null, $lvP, false) as $cy) {
@@ -546,20 +563,14 @@ function t10_replay(array $F, ?array $M1, int $a, int $b, callable $epFor, ?arra
             $sl = $slC !== null ? (float)$slC : ($sg > 0 ? $pe * (1 - T10_SL_PCT) : $pe * (1 + T10_SL_PCT));
             $risk = abs($pe - $sl);
             if ($risk <= 1e-12 || ($pe - $sl) * $sg <= 0) continue;
-            $tg = t10_targets($P, $pe, $sg, $isTrend ? 3 : 1, $a5L); $tp1 = $tg[0]['price'] ?? $pe + $sg * $risk;
+            $tg = t10_targets($P, $pe, $sg, $isTrend ? 3 : 1); $tp1 = $tg[0]['price'] ?? $pe + $sg * $risk;
             $ex = null; $exT = null; $why = null; $touched = false; $tgT = null; $hit = [];
-            // owner, 2 Nov 2026: trend exits at the 2nd major key point beyond entry, or 1:5 RR, whichever comes first.
-            // It replaces the 8m exit for trend. Retracement keeps its own exit.
-            $exitPx = null;
-            if ($isTrend) { $k2 = count($tg) >= 3 ? (float)$tg[2]['price'] : ($tg ? (float)end($tg)['price'] : null);
-                $rr5 = $pe + $sg * 5 * $risk; $exitPx = $k2 === null ? $rr5 : ($sg > 0 ? min($k2, $rr5) : max($k2, $rr5)); }
-            $x10 = $isTrend ? null : t10_exit_8m($G8, $te, $sg, $now);
+            $x10 = t10_exit_8m($G8, $te, $sg, $now);
             for ($x = $first($M1['t'], $te); $x < $n1 && $M1['t'][$x] < $endTs; $x++) {
                 $tx = (int)$M1['t'][$x] + 60; if ($tx > $now) break;
                 if ($x10 && $tx > $x10[0]) { [$exT, $ex, $why] = $x10; break; }
                 $l = (float)$M1['l'][$x]; $h = (float)$M1['h'][$x];
                 if ($sg > 0 ? $l <= $sl : $h >= $sl) { $ex = $sl; $exT = $tx; $why = 'Stop-loss'; break; }
-                if ($exitPx !== null && ($sg > 0 ? $h >= $exitPx : $l <= $exitPx)) { $ex = $exitPx; $exT = $tx; $why = 'Key level / 1:5 RR'; break; }
                 foreach ($tg as $q => $t) if (!isset($hit[$q]) && ($sg > 0 ? $h >= $t['price'] : $l <= $t['price'])) $hit[$q] = $tx;
                 if (!$touched && isset($hit[0])) { $touched = true; $tgT = $hit[0];
                     // owner PDF, 19 Oct 2026: retracement has ONE target and the trade ends there. Trend's
@@ -662,14 +673,14 @@ function t_rt_eval(string $sym, array $fr, array $ctx): ?array {
     [$score, $parts] = t_rt_score(['wantUp' => $wantUp, 'zone' => $zone, 'atr5' => $a5, 'pdX' => (float)$ctx['pdX'],
         'locFull' => (bool)$ctx['locFull'], 'locHalf' => (bool)$ctx['locHalf'], 'conf' => (bool)$ctx['conf'],
         'stoch30' => $s30, 'adx30' => $ax, 'alignment' => (int)$ctx['alignment']]);
-    $tk = $cy ? array_map(fn($t) => $t === null ? 0 : 1, $cy['ticks']) : [0, 0, 0, 0];
+    $tk = $cy ? array_map(fn($t) => $t === null ? 0 : 1, $cy['ticks']) : [0, 0, 0, 0, 0];
     // Retracement entry (owner, 20 Oct 2026): the gate HAS to be open first, and the 5 EMA alone is confirm
-    // only -- so the entry is the first Early Entry / Double Confirm at or after the gate.
+    // only -- so the entry is the first Early Entry / Reversal Pat / Double Confirm at or after the gate.
     $entryAt = $cy['first_rt'] ?? null; $ticksFired = $entryAt !== null;
     $valid = ($score >= T_RT_MIN_SCORE && !empty($ctx['locHalf'])) || $ticksFired;
     $gateOn = ($cy['gate'] ?? null) !== null;
     $flow = !$valid ? null
-        : ($tk[3] && $ticksFired ? 'FLY' : ($ticksFired ? 'SIGNAL'
+        : ($tk[4] && $ticksFired ? 'FLY' : ($ticksFired ? 'SIGNAL'
         : ($gateOn ? (!empty($cy['gate_exp']) ? 'GATE CLOSE' : 'GATE OPEN') : 'APPROACHING')));
     $go = $gateOn ? 1 : 0;
     [$zg, $zlv] = t10_zone_group($zone, (float)($ctx['near'] ?? 0) > 0 ? (float)$ctx['near'] : (float)$ctx['band'],
@@ -773,12 +784,12 @@ function t_mt_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     $s30 = t10_stoch_k($m30);
     [$ax] = $m30 ? t_adx($m30, 14) : [0.0, 0.0, 0.0];
     [$score, $parts] = t_mt_score(['wantUp' => $wantUp, 'zoneLvCount' => $cnt, 'stoch30' => $s30, 'adx30' => $ax, 'al5' => $al5]);
-    $tk = $cy ? array_map(fn($t) => $t === null ? 0 : 1, $cy['ticks']) : [0, 0, 0, 0];
+    $tk = $cy ? array_map(fn($t) => $t === null ? 0 : 1, $cy['ticks']) : [0, 0, 0, 0, 0];
     $entryAt = $cy['first'] ?? null; $ticksFired = $entryAt !== null;
     $valid = ($score >= T_MT_MIN_SCORE && $cnt >= 2) || $ticksFired;
     $gateOn = ($cy['gate'] ?? null) !== null;
     $flow = !$valid ? null
-        : ($tk[3] ? 'FLY' : ($ticksFired ? 'SIGNAL'
+        : ($tk[4] ? 'FLY' : ($ticksFired ? 'SIGNAL'
         : ($gateOn ? (!empty($cy['gate_exp']) ? 'GATE CLOSE' : 'GATE OPEN') : 'APPROACHING')));
     $go = $gateOn ? 1 : 0;
     [$zg, $zlv] = t10_zone_group($zone, $tol,
