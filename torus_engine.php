@@ -602,9 +602,13 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
         $isRt = $rt && !empty($rt['valid']);
         if (!$isRt) { $signal = 'WAIT'; $setup = null; }   // a retracement entry now needs the v10 rules too
     }
-    // Mid-Trend: fires when Retracement TP1 tick has hit ($rt['tk'][1] === 1).
+    // Mid-Trend: fires when price has cleared the Day Low/High ATR band (3 Nov 2026).
+    // OLD gate: Retracement TP1 tick had to fire. NEW gate: price simply beyond the ATR band —
+    // CALL when price < atr_low (band cleared to downside), PUT when price > atr_high.
+    // No Retracement row required; standalone setup on any strong zone within 1×ATR5.
     $mt = null; $isMt = false;
-    if ($isRt && !empty($rt['tk'][1])) {
+    $mtBandCleared = $wantUp ? ($price < $atrLow) : ($price > $atrHigh);
+    if ($mtBandCleared) {
         $mtctx = $v10ctx + ['mt_active' => true, 'zone' => $zone, 'wantUp' => $wantUp,
             'bars' => $bars, 'atr5' => $atr5, 'atr_low' => $atrLow, 'atr_high' => $atrHigh,
             'pivots' => $pivR ?: [], 'fibs' => array_map(fn($f) => $f['price'], $fibs),
