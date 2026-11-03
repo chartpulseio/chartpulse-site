@@ -1259,6 +1259,11 @@ function t_sticky_apply(string $s, array $row, int $now): array {
         if ($changed) t_sticky_save($S, $now);
         return $row;
     }
+    // Task G (3 Nov 2026): fresh cycle after GATE CLOSE — add "Zone retested · fly hua tha" remark so user knows
+    // this zone already fired once today. Apply only when the row has a live signal and the old end matches direction.
+    if ($E && !empty($E['open']) && ($row['signal'] ?? 'WAIT') === ($E['sig'] ?? '') && !empty($row['flow'])) {
+        $row['remark'] = 'Zone retested · fly hua tha';
+    }
     $T = t_t2_open_map()[$s] ?? null;
     if ($T && !$blocked((string)$T['sig'], (int)($T['pattern_time'] ?? $T['entry_time']))) {   // Tier 2 is in a trade: Tier 1 mirrors it while an entry is possible
         $sg = ($T['sig'] ?? '') === 'CALL' ? 1 : -1; $ta = $a5 > 0 ? $a5 : (float)($T['atr5'] ?? 0);
