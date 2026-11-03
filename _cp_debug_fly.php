@@ -35,4 +35,14 @@ if ($f5) {
     }
     $out['last_5m'] = $last;
 }
+$sticky = t_read_json(T_DATA . '/t1sticky.json', []);
+$out['sticky_live'] = $sticky[$sym] ?? null;
+if (isset($out['sticky_live']['flow_at'])) $out['sticky_live']['flow_at_ist'] = t_ist((int)$out['sticky_live']['flow_at'], 'H:i:s');
+if (isset($out['sticky_live']['tk']) && is_array($out['sticky_live']['tk'])) $out['sticky_live']['tk_ist'] = array_map(fn($x) => $x ? t_ist((int)$x, 'H:i:s') : null, $out['sticky_live']['tk']);
+$out['sticky_end'] = $sticky['_end'][$sym] ?? null;
+if (isset($out['sticky_end']['at'])) $out['sticky_end']['at_ist'] = t_ist((int)$out['sticky_end']['at'], 'H:i:s');
+$out['sticky_gc'] = $sticky['_gc'][$sym] ?? null;
+if (isset($out['sticky_gc']['until'])) $out['sticky_gc']['until_ist'] = t_ist((int)$out['sticky_gc']['until'], 'H:i:s');
+if (isset($out['sticky_gc']['flow_at'])) $out['sticky_gc']['flow_at_ist'] = t_ist((int)$out['sticky_gc']['flow_at'], 'H:i:s');
+if (isset($out['sticky_gc']['tk']) && is_array($out['sticky_gc']['tk'])) $out['sticky_gc']['tk_ist'] = array_map(fn($x) => $x ? t_ist((int)$x, 'H:i:s') : null, $out['sticky_gc']['tk']);
 echo json_encode($out, JSON_PRETTY_PRINT);
