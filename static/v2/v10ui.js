@@ -140,8 +140,13 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
   if (CP && CP.flowChip) {
     const orig = CP.flowChip;
     CP.flowChip = r => {
-      let h = orig(r);
       const isSignalTier = r && r.tier1 === "signal";
+      // For signal-tier rows, always derive status from ph[] — server r.flow can be stale/generic.
+      if (isSignalTier && Array.isArray(r.ph) && r.ph.length) {
+        const st = tkState(r);
+        if (st) return stateChip(r, st) + decorate(r);
+      }
+      let h = orig(r);
       if (r && r.flow === "GATE CLOSE") h = h.replace('class="flow gate close ', 'class="flow gate-close ');
       if (r && TIP[r.flow]) h = h.replace(/title="/, `title="${TIP[r.flow]}`);
       if (h.indexOf("flow none") >= 0 && isSignalTier) {
