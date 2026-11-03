@@ -338,7 +338,9 @@ function t10_cycle_eval(array $F, int $a, int $cs, int $ce, int $sg, array $A5, 
             // in the signal direction. Patterns: Engulfing / Harami / Hammer / Pin bar / Shooting Star /
             // Morning-Evening Star / Inverted Hammer / Tweezer / Dark Cloud / Piercing / Abandoned Baby /
             // Three White Soldiers / Three Black Crows (all detected by t_reversal). (3 Nov 2026)
-            if ($tk[3] === null && $i + 1 <= $ce) {
+            // ZONE (4 Nov 2026): the pattern candle must sit near the Day/sweep extreme (within zb x ATR5), same as tick 4.
+            $zBand = $zb * (float)$A5[$i]; $inZone = $sg > 0 ? ((float)$F['l'][$i] - $RX[$i] <= $zBand) : ($RX[$i] - (float)$F['h'][$i] <= $zBand);
+            if ($tk[3] === null && $i + 1 <= $ce && $inZone) {
                 $pat = t_reversal($Fs, $i, $sg);
                 if ($pat !== null) {
                     // next 5m candle must close in the signal direction beyond the pattern candle's close
