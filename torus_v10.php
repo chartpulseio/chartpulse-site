@@ -276,7 +276,7 @@ function t10_cycles(array $F, int $a, int $b, int $sg, array $A5, array $RX, flo
  *   gate, gate_px, gate_type ('liq' / 'bb' / 'both'), gate_level, gate_exp, sw_wick
  *   pw / bb / t0 / fly / ext / retest  (score inputs and remarks, unchanged)
  */
-function t10_cycle_eval(array $F, int $a, int $cs, int $ce, int $sg, array $A5, array $RX, array $BBlo, array $BBup, float $zb, ?array $M30, array $flyEv, ?int $gateIdx = null, array $lv = [], int $now = 0): array {
+function t10_cycle_eval(array $F, int $a, int $cs, int $ce, int $sg, array $A5, array $RX, array $BBlo, array $BBup, float $zb, ?array $M30, array $flyEv, ?int $gateIdx = null, array $lv = [], int $now = 0, ?int $fromIdx = null): array {
     $dayTs = (int)$F['t'][$a]; $tce = (int)$F['t'][$ce] + 300;
     // retest / sweep / BB touch on 5m -- score inputs only (unchanged)
     $pw = 0; $bb = false; $touch = false; $bounce = false; $retestAt = null;
@@ -293,6 +293,8 @@ function t10_cycle_eval(array $F, int $a, int $cs, int $ce, int $sg, array $A5, 
     // A confirmed retest (pw=2) restarts the tick search inside the same cycle (owner, 13 Oct 2026); a plain
     // sweep does not. The ADR gate (30% of ADR, owner 19 Oct 2026) is the other start condition.
     $tkA0 = $retestAt ?? $cs; $ticksOn = true;
+    // Re-Fly (owner, 4 Nov 2026): a retest after an entry that was already frozen restarts the tick search from there.
+    if ($fromIdx !== null) $tkA0 = $fromIdx;
     if ($gateIdx !== null) { if ($gateIdx > $ce) $ticksOn = false; else $tkA0 = max($tkA0, $gateIdx); }
     $tkA = min($tkA0, $ce); $tkTcs = (int)$F['t'][$tkA]; $a5 = (float)$A5[$ce];
     // ---- the gate (not a tick, not an entry) --------------------------------------------------------------
@@ -384,6 +386,24 @@ function t10_cycle_eval(array $F, int $a, int $cs, int $ce, int $sg, array $A5, 
         'fly' => $fly, 'ext' => $RX[$ce], 'retest' => $retestAt !== null];
 }
 /**
+ * Bars where a confirmed retest happens inside one cycle: touch the zone, bounce, come back and reclaim
+ * (same rule as t10_cycle_eval, pw = 2). Used for Re-Fly (owner, 4 Nov 2026). Returns bar indices in order.
+ */
+function t10_retest_idx(array $F, int $cs, int $ce, int $sg, array $A5, array $RX, float $zb): array {
+    $touch = false; $bounce = false; $out = [];
+    for ($i = $cs; $i <= $ce; $i++) {
+        $l = (float)$F['l'][$i]; $h = (float)$F['h'][$i]; $c = (float)$F['c'][$i];
+        $band = $zb * (float)$A5[$i]; $rx = $RX[$i];
+        $near = $sg > 0 ? $l - $rx <= $band : $rx - $h <= $band;
+        if (!$touch) { $touch = $near; continue; }
+        if (!$bounce) { $bounce = $sg > 0 ? $c >= $rx + 2 * $band : $c <= $rx - 2 * $band; continue; }
+        $noNew = $i > $cs && $RX[$i] == $RX[$i - 1];
+        if ($near && $noNew && ($sg > 0 ? $c > $rx + $band : $c < $rx - $band)) $out[] = $i;
+    }
+    return $out;
+}
+
+/**
  * All cycles of a session with their evaluation. $M1 = 1m bars or null, $adr = ADR for the tick gate,
  * $lv = zone-group levels for the Liquidity Sweep, $arm = retracement rules (used only to decide which
  * entry freezes a cycle). Owner, 20 Oct 2026: once a cycle has an entry it is re-run to the end of the
@@ -398,14 +418,25 @@ function t10_session(array $F, int $a, int $b, int $sg, ?array $M1, float $zb, i
     $gate = t10_adr_gate($F, $a, $b, $adr);
     $fly = t_fly_events($F, $a, $b, $sg, $M1, $zb, $now)['events'];
     $key = $arm ? 'first_rt' : 'first';
-    $out = [];
+    $out = []; $last = null;
     foreach (t10_cycles($F, $a, $b, $sg, $A5, $RX, $zb) as [$cs, $ce]) {
         $ev = t10_cycle_eval($F, $a, $cs, $ce, $sg, $A5, $RX, $Lo, $U, $zb, $M30, $fly, $gate, $lv, $now);
         if (($ev[$key] ?? null) !== null && $ce < $b) {
             $ev = t10_cycle_eval($F, $a, $cs, $b, $sg, $A5, $RX, $Lo, $U, $zb, $M30, $fly, $gate, $lv, $now);
             $ev['frozen'] = true;
         }
-        $out[] = $ev;
+        $out[] = $ev; $last = [$cs, $ev];
+    }
+    // Re-Fly (owner, 4 Nov 2026): after the entry is frozen, the first confirmed retest that comes later restarts
+    // the tick search. If that gives a new entry it is a separate cycle marked 'refly' (shown as "Re-Fly" on Tier 1).
+    if ($last !== null && ($last[1][$key] ?? null) !== null) {
+        [$cs0, $ev0] = $last;
+        foreach (t10_retest_idx($F, $cs0, $b, $sg, $A5, $RX, $zb) as $r) {
+            if ((int)$F['t'][$r] + 300 <= (int)$ev0[$key]) continue;   // a retest before the entry does not count
+            $re = t10_cycle_eval($F, $a, $cs0, $b, $sg, $A5, $RX, $Lo, $U, $zb, $M30, $fly, $gate, $lv, $now, $r);
+            if (($re[$key] ?? null) !== null) { $re['refly'] = true; $re['frozen'] = false; $out[] = $re; }
+            break;   // only the first retest after the entry is considered
+        }
     }
     return $out;
 }
@@ -519,7 +550,7 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     // Tier-1 zone group + remark (owner PDF, 19 Oct 2026). Pivot and PDC count here only, never in the score.
     [$zg, $zlv] = t10_zone_group($zone, (float)($ctx['near'] ?? 0) > 0 ? (float)$ctx['near'] : (float)$ctx['band'],
         ['fibs' => $fibs, 'pivots' => $ctx['pivots'] ?? [], 'pdh' => $pdh, 'pdl' => $pdl, 'pdc' => $ctx['pdc'] ?? null]);
-    return $base + ['valid' => $valid, 'strength' => round($score, 2), 'parts' => $parts, 'flow' => $flow, 'tk' => $tk, 'go' => $go,
+    return $base + ['valid' => $valid, 'strength' => round($score, 2), 'parts' => $parts, 'flow' => $flow, 'refly' => !empty($cy['refly']), 'tk' => $tk, 'go' => $go,
         't0' => $cy['t0'] ?? null, 'zg' => $zg, 'zlv' => $zlv, 'lad' => 10,
         'gate_lv' => $cy['gate_level'] ?? null, 'sl_wide' => !empty($cy['wide']) ? 1 : 0,
         'pw' => (int)($cy['pw'] ?? 0), 'flow_at' => $entryAt, 'flow_sl' => $cy['sl'] ?? null,

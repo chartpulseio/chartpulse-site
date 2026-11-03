@@ -116,7 +116,7 @@
   const stateChip = (r, state) => {
     const side = r.signal === "PUT" ? "put" : r.signal === "CALL" ? "call" : "";
     const hc = state === "FLY" && r.hc;
-    return `<span class="flow ${state.toLowerCase().replace(/\s+/g, "-")} ${side}${hc ? " hc" : ""}" title="${hc ? "High-conviction entry · " : ""}${TIP[state] || ""}">${state === "FLY" ? "✈ " : ""}${state}${hc ? " ⚡" : ""}</span>`;
+    return `<span class="flow ${state.toLowerCase().replace(/\s+/g, "-")} ${side}${hc ? " hc" : ""}" title="${hc ? "High-conviction entry · " : ""}${TIP[state] || ""}">${state === "FLY" ? "✈ " : ""}${state === "FLY" && r.refly ? "Re-Fly" : state}${hc ? " ⚡" : ""}</span>`;
   };
   // Mid Target badge (midtrend). Long/Small target already show via the server remark field.
 // Appears on Tier 1 and Tier 2 rows via decorate(). Server-side setup field stays private.

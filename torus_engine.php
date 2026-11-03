@@ -670,6 +670,7 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
             'v10' => $isV10 ? $v10['parts'] + ['stoch30' => $v10['stoch30'], 'rsi5' => $v10['rsi5'], 'adx30' => $v10['adx30'], 'al5' => $v10['al5']] : null,
             'rt' => $isRt ? $rt['parts'] + ['stoch30' => $rt['stoch30'], 'adx30' => $rt['adx30']] : null],
         'flow' => $flow['state'] ?? null, 'flow_at' => $flow['time'] ?? null, 'flow_sl' => $flow['sl'] ?? null,
+        'refly' => $isV10 && !empty($v10['refly']) ? 1 : 0,   // Re-Fly (owner, 4 Nov 2026): fresh entry after a retest
         // v9 (owner, 6 Oct 2026): high-conviction = trend FLY with a sweep + reclaim; public as a bare flag (bright FLY chip + bolt), never the reason
         'hc' => !$isV10 && $setup === 'trend' && ($flow['state'] ?? null) === 'FLY' && $swX ? 1 : 0,
         'tk' => $isV10 ? $v10['tk'] : ($isRt ? $rt['tk'] : null), 'pw' => $isV10 ? (int)$v10['pw'] : ($isRt ? (int)$rt['pw'] : 0),
@@ -798,7 +799,7 @@ function t_public(array $r): array {
     $r['zlv'] = $live ? ($r['zlv'] ?? null) : null;
     foreach (['components', 'rule', 'zone_touch', 'zone_band_px', 'zone_dist_atr', 'pdhl_near', 'pdhl_prox', 'fib_prox', 'fib_levels', 'swing_high', 'swing_low',
         'ema', 'ema_span', 'atr5', 'di_plus', 'di_minus', 'di_ok', 'adx_1h', 'adx_1h_peak', 'overextended', 'confluence', 'atr', 'mig', 'full', 'day_ok', 'cs', 'ce', 'rmt', 'time_ist', 'ukey',
-        'adx_value', 'rsi', 'rsi_10m', 'flow_sl', 'sticky', 'al5', 'tk', 'gc_until', 'runway_type', 'day_high', 'day_low', 'today_open', 'today_high', 'today_low', 'bar_date', 'fvg'] as $k) unset($r[$k]);
+        'adx_value', 'rsi', 'rsi_10m', 'flow_sl', 'refly', 'sticky', 'al5', 'tk', 'gc_until', 'runway_type', 'day_high', 'day_low', 'today_open', 'today_high', 'today_low', 'bar_date', 'fvg'] as $k) unset($r[$k]);
     if (array_key_exists('atr_low', $r)) { $r['floor'] = $r['atr_low']; unset($r['atr_low']); }
     if (array_key_exists('atr_high', $r)) { $r['ceiling'] = $r['atr_high']; unset($r['atr_high']); }
     if (isset($r['zone_near'])) $r['zone_near'] = t_pub_zone($r['zone_near']);
