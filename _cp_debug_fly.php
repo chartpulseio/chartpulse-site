@@ -8,10 +8,9 @@ require_once __DIR__ . '/torus_tier2.php';
 header('Content-Type: application/json');
 
 $sym = $_GET['s'] ?? 'DAL';
-$raw = t_read_json(T_DATA . '/t2trades.json', []);
-$list = $raw['items'] ?? $raw['rows'] ?? $raw;
-$mine = [];
-foreach ((is_array($list) ? $list : []) as $t) {
-    if (($t['symbol'] ?? $t['sym'] ?? null) === $sym) $mine[] = $t;
-}
-echo json_encode(['count' => count($mine), 'trades' => array_slice($mine, -5), 'raw_keys' => array_keys($raw)], JSON_PRETTY_PRINT);
+$bias = $_GET['bias'] ?? 'CALL';
+$d = t2_build($sym, $bias);
+$out = ['status' => $d['status'] ?? null, 'ph' => $d['ph'] ?? null, 'flow' => $d['flow'] ?? null,
+    'trade' => $d['trade'] ?? null, 'trades' => $d['trades'] ?? null, 'pending' => $d['pending'] ?? null,
+    'zone' => $d['zone'] ?? null, 'last_bar' => $d['last_bar'] ?? null];
+echo json_encode($out, JSON_PRETTY_PRINT);
