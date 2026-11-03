@@ -19,7 +19,7 @@
 //  5 EMA. 8m candles are built from 1m bars anchored to the session open; without 1m bars there is no 8m exit.
 
 const T10_ON = true;
-const T10_MIN_SCORE = 33.0;
+const T10_MIN_SCORE = 30.0;
 const T10_ENTRY_ATR = 2.0;   // entry range from the Day Low / High (owner, 19 Oct 2026: 1.0 -> 2.0).
 // Why: 1 x ATR5 was so tight on low-ATR symbols that a signal died in 2-3 candles. Live example CRV-USD:
 // ATR5 was ~0.22% of price, so a 0.5% bounce off the Day Low already put price 2.2 x ATR5 away and the
@@ -656,7 +656,7 @@ function t_rt_score(array $x): array {
     $parts = ['loc' => $loc, 'loc_bonus' => $locB, 'exhaustion' => $exh, 'adx30_inv' => $adxInv, 'mtf4_inv' => $mtfInv];
     return [min(100.0, array_sum($parts)), $parts];
 }
-const T_RT_MIN_SCORE = 33.0;   // owner, 19 Oct 2026 (was 50): the 30m sweep is no longer a gate, so the score alone decides
+const T_RT_MIN_SCORE = 30.0;   // owner, 3 Nov 2026 (was 33): lowered to 30 for more visibility on Tier 1
 
 /**
  * Retracement v10 (owner PDF "Final Setup", 19 Oct 2026). The retracement setup now runs the SAME cycle machinery
@@ -750,7 +750,7 @@ function t_mt_score(array $x): array {
     $parts = ['loc' => $loc, 'exhaustion' => $exh, 'trend_align' => $trend];
     return [min(100.0, array_sum($parts)), $parts];
 }
-const T_MT_MIN_SCORE = 33.0;
+const T_MT_MIN_SCORE = 30.0;
 
 /**
  * Mid-Trend v1 (owner PDF 23 Oct 2026). Same cycle machinery as Trend/Retracement.
