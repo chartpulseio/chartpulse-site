@@ -459,6 +459,24 @@ function t2_build(string $sym, string $bias): array {
     }
     // --- end pb5 ---
 
+    // --- ema5tick: plain 5-minute 5 EMA tick (separate from the pb5 compound pullback+rejection check) ---
+    // Fires when the latest confirmed 5m candle's close is beyond its own 5 EMA in the bias direction.
+    $ema5tick = 0;
+    {
+        $e5n = count($f5['t']);
+        $e5i = $e5n - 2; // last confirmed closed bar (skip the still-forming live one, same convention as st5)
+        if ($e5i >= 5) {
+            $e5arr = t_ema(array_map('floatval', array_slice($f5['c'], 0, $e5i + 1)), 5);
+            $ev = end($e5arr);
+            if ($ev !== false && $ev !== null) {
+                $c = (float)$f5['c'][$e5i];
+                if ($bias === 'CALL' && $c > $ev) $ema5tick = 1;
+                if ($bias === 'PUT' && $c < $ev) $ema5tick = 1;
+            }
+        }
+    }
+    // --- end ema5tick ---
+
     // --- st5: 5-minute Supertrend tick (period=7, multiplier=2.0) ---
     // Fires when the latest confirmed 5m bar's Supertrend direction matches the bias:
     //   CALL → ST bullish (close > ST upper band → price above ST line)
@@ -598,6 +616,7 @@ function t2_build(string $sym, string $bias): array {
         'trade' => $open ?: $last, 'trades' => $R['trades'], 'pending' => $R['pending'], 'pip' => t2_pip($sym, $px),
         'pb5' => $pb5,
         'st5' => $st5,
+        'ema5' => $ema5tick,
         'candles' => $candles, 'cset' => $cset, 'confluence' => $conf, 'news' => $news, 'generated_at' => $now,
     ];
 }
@@ -670,6 +689,7 @@ function t2_public(array $d): array {
         'pending' => $p ? ['stage' => 'setup', 'sig' => $p['sig'], 'time' => $p['time']] : null,
         'pb5' => (int)($d['pb5'] ?? 0),
         'st5' => (int)($d['st5'] ?? 0),
+        'ema5' => (int)($d['ema5'] ?? 0),
         'pip' => $d['pip'], 'candles' => $d['candles'], 'cset' => $d['cset'] ?? null, 'confluence' => $d['confluence'], 'news' => $d['news'], 'generated_at' => $d['generated_at'],
     ];
 }

@@ -134,7 +134,18 @@ const pb5Chip = r => {
     const side = (r.signal === 'PUT' || r.bias === 'PUT') ? 'put' : 'call';
     return `<span class="pb5tick ${side}" title="Structure shift on 5m + Pullback to 5 EMA + Rejection candle — Pullback+5EMA combined">PB+5EMA ✓</span>`;
 };
-const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(r) + slwChip(r) + pwChip(r);
+// Extra-layer confirmation ticks — simple 5m 5-EMA close, and 5m Supertrend (short settings) — informational only
+const ema5Chip = r => {
+    if (!r || !r.ema5 || r.mt) return '';
+    const side = (r.signal === 'PUT' || r.bias === 'PUT') ? 'put' : 'call';
+    return `<span class="pb5tick ema5tick ${side}" title="5-minute candle closed beyond its 5 EMA — extra layer confirmation">5 EMA ✓</span>`;
+};
+const st5Chip = r => {
+    if (!r || !r.st5 || r.mt) return '';
+    const side = (r.signal === 'PUT' || r.bias === 'PUT') ? 'put' : 'call';
+    return `<span class="pb5tick st5tick ${side}" title="5-minute Supertrend (short settings: period 7, mult 2.0) matches bias — extra layer confirmation">ST (5m) ✓</span>`;
+};
+const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(r) + ema5Chip(r) + st5Chip(r) + slwChip(r) + pwChip(r);
 
   // ---- Tier 1 -------------------------------------------------------------
   if (CP && CP.flowChip) {
@@ -270,12 +281,14 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
       : r.pw === 1 ? '<span class="rtest sw" title="Sweep at the Pulse zone">+</span>' : "";
     const row = (tag, name, on) => `<div class="sd-ph-r ${on ? "done" : ""}"><small>${tag}</small>${name}<span class="ck">✓</span></div>`;
     const pb5Row = r.pb5 && r.setup !== 'mid' ? `<div class="sd-ph-r done pb5-row" title="Structure shift on 5m + Pullback to 5 EMA + Rejection candle"><small>INFO</small><span class="pb5tick ${(r.signal||r.bias||'').toUpperCase()==='PUT'?'put':''}">PB+5EMA ✓</span><span class="ck">✓</span></div>` : "";
+    const ema5Row = r.ema5 && r.setup !== 'mid' ? `<div class="sd-ph-r done ema5-row" title="5-minute candle closed beyond its 5 EMA — extra layer confirmation"><small>INFO</small><span class="pb5tick ema5tick ${(r.signal||r.bias||'').toUpperCase()==='PUT'?'put':''}">5 EMA ✓</span><span class="ck">✓</span></div>` : "";
+    const st5Row = r.st5 && r.setup !== 'mid' ? `<div class="sd-ph-r done st5-row" title="5-minute Supertrend (short settings: period 7, mult 2.0) matches bias — extra layer confirmation"><small>INFO</small><span class="pb5tick st5tick ${(r.signal||r.bias||'').toUpperCase()==='PUT'?'put':''}">ST (5m) ✓</span><span class="ck">✓</span></div>` : "";
     const tickCount = P.length - 1;  // 4 for new rows (5-element ph), 3 for back-compat (4-element ph)
     const tickIdxs = Array.from({ length: tickCount }, (_, i) => i + 1);
     box.innerHTML = `<div class="sd-sync-h"><span>Entry ladder${pw}</span><b>${P.slice(1).filter(Boolean).length}/${tickCount}</b></div>`
       + row("GATE", TK[0], P[0])
       + tickIdxs.map(i => row("TICK " + i, TK[i], P[i])).join("")
-      + pb5Row;
+      + pb5Row + ema5Row + st5Row;
   };
 
   // t2dash.js rebuilds #sdCard (including the now-empty .sd-ph shell) on its own DOM-mutation watch; it calls
