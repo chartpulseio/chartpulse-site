@@ -289,12 +289,16 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
     const pb5Row = r.pb5 && r.setup !== 'mid' ? `<div class="sd-ph-r done pb5-row" title="Structure shift on 5m + Pullback to 5 EMA + Rejection candle"><small>INFO</small><span class="pb5tick ${(r.signal||r.bias||'').toUpperCase()==='PUT'?'put':''}">PB+5EMA ✓</span><span class="ck">✓</span></div>` : "";
     const ema5Row = r.ema5 && r.setup !== 'mid' ? `<div class="sd-ph-r done ema5-row" title="5-minute candle closed beyond its 5 EMA — extra layer confirmation"><small>INFO</small><span class="pb5tick ema5tick ${(r.signal||r.bias||'').toUpperCase()==='PUT'?'put':''}">5 EMA ✓</span><span class="ck">✓</span></div>` : "";
     const st5Row = r.st5 && r.setup !== 'mid' ? `<div class="sd-ph-r done st5-row" title="5-minute Supertrend (short settings: period 7, mult 2.0) matches bias — extra layer confirmation"><small>INFO</small><span class="pb5tick st5tick ${(r.signal||r.bias||'').toUpperCase()==='PUT'?'put':''}">ST (5m) ✓</span><span class="ck">✓</span></div>` : "";
+    // owner, 4 Nov 2026: last row in the ladder — the gate opened (liquidity swept) but the entry never came and
+    // the window has now expired. Shown as a spent/exhausted tick, not a live bearish/bullish one: it marks the
+    // cycle as over, not a new signal.
+    const gcRow = r.flow === 'GATE CLOSE' ? `<div class="sd-ph-r done gc-row" title="Gate opened (liquidity swept) but no entry came — the window has expired"><small>INFO</small><span class="pb5tick gctick">GATE CLOSE ✓</span><span class="ck">✓</span></div>` : "";
     const tickCount = P.length - 1;  // 4 for new rows (5-element ph), 3 for back-compat (4-element ph)
     const tickIdxs = Array.from({ length: tickCount }, (_, i) => i + 1);
     box.innerHTML = `<div class="sd-sync-h"><span>Entry ladder${pw}</span><b>${P.slice(1).filter(Boolean).length}/${tickCount}</b></div>`
       + row("GATE", TK[0], P[0], 0)
       + tickIdxs.map(i => row("TICK " + i, TK[i], P[i], i)).join("")
-      + pb5Row + ema5Row + st5Row;
+      + pb5Row + ema5Row + st5Row + gcRow;
   };
 
   // t2dash.js rebuilds #sdCard (including the now-empty .sd-ph shell) on its own DOM-mutation watch; it calls
