@@ -689,6 +689,10 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
         'hc' => !$isV10 && $setup === 'trend' && ($flow['state'] ?? null) === 'FLY' && $swX ? 1 : 0,
         'tk' => $isV10 ? $v10['tk'] : ($isRt ? $rt['tk'] : ($isMt ? $mt['tk'] : null)), 'tk_at' => $isV10 ? ($v10['tk_at'] ?? null) : ($isRt ? ($rt['tk_at'] ?? null) : null), 'pw' => $isV10 ? (int)$v10['pw'] : ($isRt ? (int)$rt['pw'] : ($isMt ? (int)$mt['pw'] : 0)),
         'al5' => $v10['al5'] ?? ($mt['al5'] ?? null), 'v10' => ($isV10 || $isRt || $isMt) ? 1 : 0,
+        // Exceptional 2/4 split (owner, 4 Nov 2026): 1H+4H clean-blocked against 1D+1W. Backtest-validated --
+        // lets this specific split rank on Tier-1 even though alignment is only 2/4 (t_tier1() below allows it
+        // through). Frontend shows a distinct "2/4" badge on these rows so they're never mistaken for a normal 3/4+.
+        'split24' => $isV10 && !empty($v10['split24']) ? 1 : 0,
         'lad' => ($isV10 || $isRt || $isMt) ? 10 : 8, 'sl_wide' => $isV10 ? (int)($v10['sl_wide'] ?? 0) : ($isRt ? (int)($rt['sl_wide'] ?? 0) : ($isMt ? (int)($mt['sl_wide'] ?? 0) : 0)),
         'go' => $isV10 ? (int)($v10['go'] ?? 0) : ($isRt ? (int)$rt['go'] : ($isMt ? (int)($mt['go'] ?? 0) : ((!empty($swX) || ($flow['runway_type'] ?? null) === 'bb') ? 1 : 0))),
         'mt' => $isMt ? ['strength' => $mt['strength'], 'sig' => $mt['sig'], 'flow' => $mt['flow'],
@@ -1183,7 +1187,7 @@ function t_slim(array $r, array $st): array {
     $o = [];
     // owner, 4 Nov 2026 fix: 'mt' was missing here, so it never survived to the stored scan row -- the frontend's
     // Mid Target badge and the pb5/ema5/st5 "not for mid-trend" exclusions (all keyed on r.mt) never fired either.
-    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','al5','v10','go','t0','zg','zlv','lad','sl_wide','mt'] as $k) $o[$k] = $r[$k] ?? null;
+    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','al5','v10','go','t0','zg','zlv','lad','sl_wide','mt','split24'] as $k) $o[$k] = $r[$k] ?? null;
     $o['tf'] = array_map(fn($v) => $v['dir'], $r['tf']);
     foreach (['spark', 'ret_1w', 'ret_1m', 'ret_3m', 'ret_1y', 'vol_20d', 'from_hi_pct', 'from_lo_pct', 'hi_52w', 'lo_52w'] as $k) $o[$k] = $st[$k];
     return $o;
@@ -1213,7 +1217,7 @@ function t_due(array $scan, int $now): array {
             $traded = (int)$r['rmt'] >= (int)$r['ts'] - T_FRESH;
             $inCtp = empty($r['cs']) || ($now >= $r['cs'] - 300 && $now < $r['ce'] + 300);
             if ($traded && $inCtp && ($r['day_ok'] ?? true)) {
-                $lim = (abs((float)($r['zone_dist_atr'] ?? 9)) <= 0.75 || (int)($r['alignment'] ?? 0) >= 3) ? T_REFRESH_HOT : T_REFRESH;
+                $lim = (abs((float)($r['zone_dist_atr'] ?? 9)) <= 0.75 || (int)($r['alignment'] ?? 0) >= 3 || !empty($r['split24'])) ? T_REFRESH_HOT : T_REFRESH;
                 if ($age >= $lim || ($force > $r['ts'] && $age >= 45)) $pri[$sym] = [2, -$age];
             } elseif ($age >= 60 && ($r['ts'] < $ss['since'] || (!empty($r['ce']) && $now >= $r['ce'] && $r['ts'] < $r['ce']))) {
                 $pri[$sym] = [1, -$age];                                    // session just started / trading period rolled over
@@ -1687,7 +1691,9 @@ function t_scan_step(bool $force = false, int $chunk = T_CHUNK): bool {
 function t_tier1(array $r): string {
     if (!empty($r['choppy'])) return 'out';   // disturbed (flat-line) chart
     $al = !empty($r['v10']) && isset($r['al5']) ? (int)$r['al5'] : (int)($r['alignment'] ?? 0);   // v10 trend: 3/5 timeframes
-    if ($al < 3 || !in_array($r['bias'] ?? '', ['UP', 'DOWN'], true)) return 'out';
+    // Exceptional 2/4 split (owner, 4 Nov 2026): backtest-validated, so it ranks on Tier-1 despite al=2 --
+    // every other 2/4 (or any alignment below 3) still stays out.
+    if (($al < 3 && empty($r['split24'])) || !in_array($r['bias'] ?? '', ['UP', 'DOWN'], true)) return 'out';
     if (empty($r['live'])) return 'out';
     return ($r['signal'] ?? 'WAIT') !== 'WAIT' ? 'signal' : 'queue';
 }

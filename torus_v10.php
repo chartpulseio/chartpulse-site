@@ -97,6 +97,20 @@ function t10_bias(array $tfDirs, ?array $m30): array {
 }
 
 /**
+ * Exceptional 2/4 split (owner, 4 Nov 2026 -- backtest-validated: near-term 1H+4H temporarily against the
+ * 1D+1W trend, both pairs clean-blocked). Only this specific block pattern counts, not any other 2/2 mix
+ * (e.g. 1H+1D vs 4H+1W does NOT qualify -- that is not "near-term vs far-term", it's noise). Bias follows
+ * the 1D+1W side (the broader trend is expected to pull the near-term block back into line). Returns
+ * 'UP'/'DOWN' when the exact block pattern is present, else null -- caller falls back to normal t10_bias().
+ */
+function t10_split_bias(array $tfDirs): ?string {
+    $h1 = $tfDirs['1H'] ?? 0; $h4 = $tfDirs['4H'] ?? 0; $d1 = $tfDirs['1D'] ?? 0; $w1 = $tfDirs['1W'] ?? 0;
+    if ($h1 === 1 && $h4 === 1 && $d1 === -1 && $w1 === -1) return 'DOWN';   // near-term bull, broad bear -> follow bear
+    if ($h1 === -1 && $h4 === -1 && $d1 === 1 && $w1 === 1) return 'UP';    // near-term bear, broad bull -> follow bull
+    return null;
+}
+
+/**
  * The gate, part 1 -- Liquidity Sweep on 10m (was 30m; changed 3 Nov 2026), confirmed on the 10m close.
  * The wick has to go past a real level and the candle has to close back on the right side of it. Levels:
  * the running Day extreme and every zone-group level passed in $lv (Prev Low / Prev High, Fib, pivot) --
@@ -493,10 +507,15 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     $F5 = $fr['5m'] ?? null; $now = t_now();
     $m30 = t10_m30($F5, $now);
     [$bias, $al5] = t10_bias($tfDirs, $m30);
-    if ($bias === 'NEUTRAL') return ['al5' => $al5, 'bias5' => $bias, 'trend' => false];
+    $split24 = false;
+    if ($bias === 'NEUTRAL') {
+        $sb = t10_split_bias($tfDirs);
+        if ($sb === null) return ['al5' => $al5, 'bias5' => $bias, 'trend' => false];
+        $bias = $sb; $al5 = 2; $split24 = true;   // owner, 4 Nov 2026: exceptional 1H+4H vs 1D+1W block
+    }
     $wantUp = $bias === 'UP'; $sg = $wantUp ? 1 : -1;
     $zone = $wantUp ? $ctx['atr_low'] : $ctx['atr_high'];
-    $base = ['al5' => $al5, 'bias5' => $bias, 'trend' => true, 'sig' => $wantUp ? 'CALL' : 'PUT', 'zone10' => $zone];
+    $base = ['al5' => $al5, 'bias5' => $bias, 'trend' => true, 'sig' => $wantUp ? 'CALL' : 'PUT', 'zone10' => $zone, 'split24' => $split24];
     $bars = $ctx['bars']; $a5 = (float)$ctx['atr5'];
     if (!$bars || $a5 <= 0) return $base + ['valid' => false];
     $price = (float)$ctx['price'];
