@@ -4,9 +4,12 @@ require_once __DIR__.'/torus_tier2.php';
 ini_set('display_errors', '1'); error_reporting(E_ALL);
 header('Content-Type: application/json');
 
-$j = t_read_json(T_DATA . '/t2trades.json', ['items' => []]);
+$path = T_DATA . '/t2trades.json';
+$diag = ['path' => $path, 'exists' => file_exists($path), 'size' => file_exists($path) ? filesize($path) : null, 'readable' => is_readable($path)];
+$j = t_read_json($path, ['items' => []]);
 $items = $j['items'] ?? [];
 $now = time();
+if (count($items) === 0) { echo json_encode(['diag' => $diag, 'raw_keys' => array_keys($j)]); exit; }
 
 $trend = []; $retrace = [];
 foreach ($items as $t) {
