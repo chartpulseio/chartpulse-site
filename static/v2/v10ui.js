@@ -273,9 +273,12 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
   // Rather than ship a second copy of that file, the panel is relabelled here from the same payload: one
   // GATE row plus the 3 entry ticks.
   const t2Ladder = r => {
-    if (!isGate(r)) return;
     const box = document.querySelector("#sdCard .sd-ph");
     if (!box) return;
+    // owner, 4 Nov 2026: a cycle that resets to WATCH (gate close expired, cycle ended, exhausted outside
+    // ATR range) must clear the ladder, not leave the previous cycle's checked ticks frozen on screen —
+    // the backend state is the truth; a stale DOM that never got told the cycle ended is not.
+    if (!isGate(r)) { box.innerHTML = `<div class="sd-sync-h"><span>Entry ladder</span><b>Watching</b></div>`; return; }
     const TK = tkLabels(r), P = r.ph, PT = r.pht || [];
     const pw = r.pw === 2 ? '<span class="rtest" title="Retest at the Pulse zone">RETEST ++</span>'
       : r.pw === 1 ? '<span class="rtest sw" title="Sweep at the Pulse zone">+</span>' : "";

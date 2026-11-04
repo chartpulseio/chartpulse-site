@@ -1317,7 +1317,12 @@ function t_sticky_apply(string $s, array $row, int $now): array {
     // Owner, 20 Oct 2026: after an entry everything freezes. A row whose entry tick has fired is not ended by
     // the band / zone rules any more -- only the SL, a target or the 8m exit closes it (Tier 2 reports that,
     // and t10_recent_exit then turns it into GATE CLOSE).
-    $hasEntry = !empty($row['v10']) && is_array($row['tk'] ?? null) && array_sum(array_slice(array_map('intval', $row['tk']), 1)) > 0;
+    // Owner, 4 Nov 2026 fix: "entry" means the LAST tick (Double Confirm / FLY) only -- not any of Tick 1-3.
+    // The old check froze invalidation the moment Tick 1 fired, so a setup that got Tick1-3 but never Tick4
+    // (no real entry) could run far outside its ATR entry range and never GATE CLOSE -- stale ticks stayed
+    // checked indefinitely. Only a genuine entry (last tick) should stop the exhaustion check below.
+    $tkArr = is_array($row['tk'] ?? null) ? array_map('intval', $row['tk']) : [];
+    $hasEntry = !empty($row['v10']) && !empty($tkArr) && !empty($tkArr[count($tkArr) - 1]);
     if (isset($S['_gc'][$s]) && $now <= (int)$S['_gc'][$s]['until'] && !($live && (int)($row['flow_at'] ?? 0) > (int)($S['_gc'][$s]['flow_at'] ?? 0))) {
         $row = $gcShow($clear($row)); if ($changed) t_sticky_save($S, $now); return $row;   // GATE CLOSE is showing; a newer cycle replaces it
     }
@@ -1336,7 +1341,9 @@ function t_sticky_apply(string $s, array $row, int $now): array {
         $changed = true;
     } elseif (isset($S[$s])) {
         $k = $S[$s]; $sg = $k['signal'] === 'CALL' ? 1 : -1;
-        $kEntry = !empty($k['v10']) && is_array($k['tk'] ?? null) && array_sum(array_slice(array_map('intval', $k['tk']), 1)) > 0;
+        // owner, 4 Nov 2026: same fix as $hasEntry above -- last tick (Double Confirm) only, not any of Tick 1-3.
+        $kTk = is_array($k['tk'] ?? null) ? array_map('intval', $k['tk']) : [];
+        $kEntry = !empty($k['v10']) && !empty($kTk) && !empty($kTk[count($kTk) - 1]);
         $ok = $now - (int)$k['flow_at'] <= 28800 && ($kEntry || t_entry_ok($px, $sg, (float)($k['ext'] ?? 0), $a5 > 0 ? $a5 : (float)($k['a5'] ?? 0), $k['sl']));
         $flip = ($row['signal'] ?? 'WAIT') !== 'WAIT' && $row['signal'] !== $k['signal'];
         if (!$ok || $flip) {
