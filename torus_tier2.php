@@ -383,7 +383,11 @@ function t2_build(string $sym, string $bias): array {
     $PV = t_fib_pivots($f5, (int)$f5['t'][$a]);
     // owner, 4 Nov 2026: Previous Day Close, the one major zone PDH/PDL/Fib-Pivot didn't already cover -- for
     // drawing every major key zone on the Tier-2 chart (same set the score's location bonus already uses).
-    $pdcDaily = $fr['1D']['c'] ?? null; $pdc = $pdcDaily && count($pdcDaily) >= 2 ? (float)$pdcDaily[count($pdcDaily) - 2] : null;
+    // Owner, 4 Nov 2026 fix: reading this off $fr (the Tier-1 frame cache) made it null whenever that cache
+    // was momentarily stale for this symbol (same reason tier1 itself comes back null sometimes) -- PDH/PDL
+    // never had this problem because they're read straight off Tier-2's own $f5/$ses, so PDC now is too:
+    // the previous session's last close.
+    $pdc = count($ses) >= 2 ? (float)$f5['c'][$ses[count($ses) - 2][1]] : null;
     $atrH = isset($t1['atr_high']) ? (float)$t1['atr_high'] : null; $atrL = isset($t1['atr_low']) ? (float)$t1['atr_low'] : null;
     $off = (int)$f5['t'][$a] % 600; $g10 = t_group($f5, fn($t) => intdiv($t - $off, 600)); $a5 = t_atr($f5, 14);
 
