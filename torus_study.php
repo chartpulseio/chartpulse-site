@@ -107,8 +107,21 @@ function ts_conclude(array $T): array {
     if ($RE['studied']) $L[] = 'Retracements: the single target was touched before the stop-loss in ' . $RE['t1'] . '% (median ' . ($RE['t1_min'] ?? '–') . ' min after entry); stop-loss came first in ' . $RE['sl_first'] . '%.';
     if ($all['left_r'] > 0) $L[] = 'Winning trades left +' . $all['left_r'] . 'R on the table versus their best move before any stop-loss.';
     $small = array_filter($M, fn($s) => $s['studied'] > 0 && $s['studied'] < 5); if ($small) $L[] = 'Too few trades to judge: ' . implode(', ', array_keys($small)) . '.';
+    // Entry zone-group and entry tick-stage (owner, 4 Nov 2026): same "best / weakest" ranking as markets above,
+    // answering "which strong zone works best" and "which tick trigger works best".
+    $rank = function (array $g): array { uasort($g, fn($a, $b) => [$b['studied'] >= 5, $b['t1'] ?? -1, $b['best_sl_r'] ?? -1] <=> [$a['studied'] >= 5, $a['t1'] ?? -1, $a['best_sl_r'] ?? -1]); return $g; };
+    $zn = []; foreach ($T as $x) $zn[$x['zlv'] ?? 'Day extreme only'][] = $x;
+    $Z = $rank(array_map('ts_stats', $zn)); $okZ = array_filter($Z, fn($s) => $s['studied'] >= 5);
+    if ($okZ) { $k = array_key_first($okZ); $w = array_key_last($okZ);
+        $L[] = "Strongest entry zone: $k (T1 before stop-loss " . $okZ[$k]['t1'] . '%, median best move +' . $okZ[$k]['best_sl_r'] . 'R, ' . $okZ[$k]['studied'] . ' trades).';
+        if ($w !== $k) $L[] = "Weakest entry zone: $w (T1 before stop-loss " . $okZ[$w]['t1'] . '%, net ' . ($okZ[$w]['net_r'] > 0 ? '+' : '') . $okZ[$w]['net_r'] . 'R).'; }
+    $tkk = []; foreach ($T as $x) $tkk[tr_tick_stage($x) ?? 'Unknown'][] = $x;
+    $TK = $rank(array_map('ts_stats', $tkk)); $okTK = array_filter($TK, fn($s) => $s['studied'] >= 5);
+    if ($okTK) { $k = array_key_first($okTK); $w = array_key_last($okTK);
+        $L[] = "Best entry tick: $k (T1 before stop-loss " . $okTK[$k]['t1'] . '%, median best move +' . $okTK[$k]['best_sl_r'] . 'R, ' . $okTK[$k]['studied'] . ' trades).';
+        if ($w !== $k) $L[] = "Weakest entry tick: $w (T1 before stop-loss " . $okTK[$w]['t1'] . '%, net ' . ($okTK[$w]['net_r'] > 0 ? '+' : '') . $okTK[$w]['net_r'] . 'R).'; }
     return ['all' => $all, 'trend' => $TR, 'retrace' => $RE, 'market' => $M, 'trend_market' => $trM, 'retrace_market' => $reM, 'lines' => $L,
-        'trend_depth' => $dp, 'retrace_depth' => ts_depth($re), 'sl' => ts_sl($T)];
+        'trend_depth' => $dp, 'retrace_depth' => ts_depth($re), 'sl' => ts_sl($T), 'zone' => $Z, 'tick' => $TK];
 }
 /** How far trades get before any stop-loss (48 h study): share whose furthest level is none / T1 / T2 / T3+. */
 function ts_depth(array $T): array {

@@ -78,11 +78,24 @@ function tr_summary(array $T): array {
     };
     $by = function (callable $key) use ($T, $one): array { $g = []; foreach ($T as $x) $g[$key($x)][] = $x; ksort($g); return array_map($one, $g); };
     return ['all' => $one($T), 'setup' => $by(fn($x) => tr_setup($x)), 'market' => $by(fn($x) => $x['market'] ?: 'Other'), 'pattern' => $by(fn($x) => $x['pattern'] ?? '?'),
-        'side' => $by(fn($x) => $x['sig']), 'exit' => $by(fn($x) => $x['reason'] ?? 'Open'), 'hour' => $by(fn($x) => t_ist((int)$x['entry_time'], 'H') . ':00')];
+        'side' => $by(fn($x) => $x['sig']), 'exit' => $by(fn($x) => $x['reason'] ?? 'Open'), 'hour' => $by(fn($x) => t_ist((int)$x['entry_time'], 'H') . ':00'),
+        // owner, 4 Nov 2026: entry zone-group (zlv -- recorded on the trade at build time, v10 trades only) and
+        // entry tick-stage (derived from 'ticks' + 'entry_time', works on every v10 trade already saved).
+        'zone' => $by(fn($x) => $x['zlv'] ?? 'Day extreme only'), 'tick' => $by(fn($x) => tr_tick_stage($x) ?? 'Unknown')];
 }
 function tr_setup(array $x): string {
     $s = strtolower((string)($x['setup'] ?? '')); $r = (string)($x['remark'] ?? '');
     return $s === 'trend' || $r === 'Long target' ? 'Trend' : ($s === 'retrace' || $r === 'Small target' ? 'Retracement' : 'Unknown');
+}
+/** Which of the 4 ticks actually triggered this trade's entry (owner, 4 Nov 2026). $x['ticks'] = [gate, Early
+ *  Entry, Entry A, Reversal Pattern, Double Confirm] timestamps (torus_v10.php t10_cycle_eval); entry_time
+ *  equals whichever one fired first. Null for a trade with no 'ticks' (pre-v10). */
+function tr_tick_stage(array $x): ?string {
+    $tk = $x['ticks'] ?? null; if (!$tk) return null;
+    $te = (int)($x['entry_time'] ?? 0);
+    $lbl = [1 => 'Early Entry (CHoCH)', 2 => 'Entry A (5-EMA)', 3 => 'Reversal Pattern', 4 => 'Double Confirm (FLY)'];
+    foreach ([1, 2, 3, 4] as $j) if (($tk[$j] ?? null) === $te) return $lbl[$j];
+    return null;
 }
 
 /** Build (or rebuild) the report of IST day $d and save it. */

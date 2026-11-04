@@ -258,6 +258,16 @@ function t10_exit_8m(?array $G8, int $te, int $sg, int $now): ?array {
  * Pivot and PDC are used only here and in the remark -- they do not change the score (owner PDF S12 Q4).
  * Returns [group, public label or null].
  */
+/** Previous trading day's High/Low/Close from 5m bars (owner, 4 Nov 2026: same window t_fib_pivots uses,
+ *  kept separate here so the Tier-2 backtest replay -- which only has the 5m frame -- can classify each
+ *  trade's entry zone the same way the live Tier-1 scanner does). Null if there is not a full prior day yet. */
+function t10_pdhl(array $F5, int $dayTs): ?array {
+    $pe = -1; foreach ($F5['t'] as $i => $t) { if ($t < $dayTs) $pe = $i; else break; }
+    if ($pe < 0) return null;
+    $from = (int)$F5['t'][$pe] - 86400 + 300; $h = -INF; $l = INF;
+    for ($i = $pe; $i >= 0 && $F5['t'][$i] >= $from; $i--) { $h = max($h, (float)$F5['h'][$i]); $l = min($l, (float)$F5['l'][$i]); }
+    return is_finite($h) && is_finite($l) ? ['pdh' => $h, 'pdl' => $l, 'pdc' => (float)$F5['c'][$pe]] : null;
+}
 function t10_zone_group(float $zone, float $tol, array $lv): array {
     if ($tol <= 0) return [2, null];
     $near = fn($p) => $p !== null && abs((float)$p - $zone) <= $tol;
@@ -636,6 +646,8 @@ function t10_replay(array $F, ?array $M1, int $a, int $b, callable $epFor, ?arra
     $n1 = count($M1['t']); if ($n1 < 30) return $out;
     $dayTs = (int)$F['t'][$a]; $endTs = (int)$F['t'][$b] + 300;
     $G8 = t10_eight($M1, $dayTs, $now);   // owner, 19 Oct 2026: exit moved from 10m to 8m (built from 1m bars)
+    $A5 = t_atr($F, 14);                   // owner, 4 Nov 2026: for the entry zone-group tolerance band
+    $pdhl = t10_pdhl($F, $dayTs);          // owner, 4 Nov 2026: previous-day H/L/C for the zone-group classification
     $first = function (array $t, int $x): int { $lo = 0; $hi = count($t) - 1; $r = count($t); while ($lo <= $hi) { $m = intdiv($lo + $hi, 2); if ($t[$m] >= $x) { $r = $m; $hi = $m - 1; } else $lo = $m + 1; } return $r; };
     $busy = 0;
     foreach (['CALL' => 1, 'PUT' => -1] as $sig => $sg) {
@@ -676,7 +688,15 @@ function t10_replay(array $F, ?array $M1, int $a, int $b, callable $epFor, ?arra
                 $mae = max($mae, $sg > 0 ? $pe - (float)$M1['l'][$x] : (float)$M1['h'][$x] - $pe);
             }
             $R = fn($v) => round($v / $risk, 2); $P2 = fn($v) => round($v / $pe * 100, 4);
+            // Entry zone-group (owner, 4 Nov 2026): same classification t10_zone_group() gives the live Tier-1
+            // scanner -- STRONG ZONE confluence (Fib + Pivot + PDH/PDL together) vs a single level vs none --
+            // recorded on the trade so the admin report can conclude which zone type actually performs best.
+            $zone = (float)$cy['ext']; $fiA = max(0, $first($F['t'], $te) - 1);
+            $a5e = (float)($A5[$fiA] ?? (end($A5) ?: 0));
+            $fibsZ = []; if ($pdhl) { $rgZ = $pdhl['pdh'] - $pdhl['pdl']; if ($rgZ > 0) foreach ([0.618, 0.705, 0.786] as $lvv) $fibsZ[] = $sg > 0 ? $pdhl['pdh'] - $rgZ * $lvv : $pdhl['pdl'] + $rgZ * $lvv; }
+            [$zg, $zlv] = t10_zone_group($zone, 0.5 * $a5e, ['fibs' => $fibsZ, 'pivots' => array_values($lvP), 'pdh' => $pdhl['pdh'] ?? null, 'pdl' => $pdhl['pdl'] ?? null, 'pdc' => $pdhl['pdc'] ?? null]);
             $out[] = ['sig' => $sig, 'pattern' => 'Ticks', 'pattern_time' => $te, 'entry_time' => $te, 'entry' => t_r($pe), 'sl0' => t_r($sl), 'sl' => t_r($sl),
+                'zg' => $zg, 'zlv' => $zlv,
                 'target' => t_r($tp1), 'target_label' => $tg[0]['label'] ?? '1R',
                 'targets_more' => array_map(fn($t) => ['label' => $t['label'], 'price' => t_r($t['price'])], array_slice($tg, 1)),
                 'targets_hit' => array_map(fn($q) => $hit[$q] ?? null, array_keys($tg)),

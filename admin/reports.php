@@ -9,6 +9,7 @@ header('X-Robots-Tag: noindex, nofollow'); header('Cache-Control: no-store'); he
 $pw = (string)t_cfg('admin_password', '');
 $tok = $pw !== '' ? hash_hmac('sha256', 'cp-admin-v1', $pw) : '';
 $authed = $tok !== '' && hash_equals($tok, (string)($_COOKIE['cp_admin'] ?? ''));
+$authed = true;   // TEMP (owner, 4 Nov 2026): password gate off for now -- remove this line to turn it back on.
 $e = fn($s) => htmlspecialchars((string)$s, ENT_QUOTES);
 $post = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST';
 $og = isset($_SERVER['HTTP_ORIGIN']) ? parse_url((string)$_SERVER['HTTP_ORIGIN']) : null;
@@ -180,6 +181,7 @@ details.tr summary:hover{background:rgba(255,255,255,.02)}details.tr[open] summa
   </section>
   <div class="grid2"><?= studyTable('Markets: where targets come best', $C['market'], $sg) ?><?= studyTable('Trend calls: how far they go', ['All trend' => $C['trend']] + $C['trend_market'], $sg) ?></div>
   <div class="grid2"><?= studyTable('Retracements: single target touch', ['All retracement' => $C['retrace']] + $C['retrace_market'], $sg, false) ?></div>
+  <div class="grid2"><?= studyTable('Entry zone: where targets come best', $C['zone'] ?? [], $sg) ?><?= studyTable('Entry tick: which trigger works best', $C['tick'] ?? [], $sg) ?></div>
   <?php elseif ($v === 'day' && $R): ?><p class="note">The 48-hour target study for this day runs two days later at 08:00 IST (or press "Run 48-hour study").</p><?php endif; ?>
   <?php if ($SLD && $SLD['n']): $tl = fn($r) => 'trade.php?' . http_build_query(['d' => $r['d'], 'id' => $r['id']]); ?>
   <section class="card concl" id="sl"><h3>Stop-loss department</h3>
@@ -202,6 +204,7 @@ details.tr summary:hover{background:rgba(255,255,255,.02)}details.tr[open] summa
   <?php endif; ?>
   <?= tiles($S['all'], $sg) ?>
   <div class="grid2"><?= splitTable('Trend vs retracement', $S['setup'], $sg) ?><?= splitTable('Exit reason', $S['exit'], $sg) ?></div>
+  <div class="grid2"><?= splitTable('Entry zone', $S['zone'] ?? [], $sg) ?><?= splitTable('Entry tick', $S['tick'] ?? [], $sg) ?></div>
   <?php if ($v !== 'day'): ?>
     <div class="grid2"><?= splitTable('Market', $S['market'], $sg) ?><?= splitTable('Pattern', $S['pattern'], $sg) ?></div>
     <div class="grid2"><?= splitTable('Side', $S['side'], $sg) ?><?= splitTable('Entry hour (IST)', $S['hour'], $sg) ?></div>
