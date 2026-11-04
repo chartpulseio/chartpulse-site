@@ -693,6 +693,11 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
         // lets this specific split rank on Tier-1 even though alignment is only 2/4 (t_tier1() below allows it
         // through). Frontend shows a distinct "2/4" badge on these rows so they're never mistaken for a normal 3/4+.
         'split24' => $isV10 && !empty($v10['split24']) ? 1 : 0,
+        // Background 30m power check (owner, 4 Nov 2026): on the NORMAL 3/4-or-4/4 trend setup, when the 30m
+        // Supertrend is still running counter to the bias at the Day extreme, backtest shows that's a stronger
+        // entry. Pure background signal -- the 30m value itself is never shown, only this flag (same "POWER"
+        // badge as split24, but split24 rows never also carry pw30 -- see t10_eval()).
+        'pw30' => $isV10 && !empty($v10['pw30']) ? 1 : 0,
         'lad' => ($isV10 || $isRt || $isMt) ? 10 : 8, 'sl_wide' => $isV10 ? (int)($v10['sl_wide'] ?? 0) : ($isRt ? (int)($rt['sl_wide'] ?? 0) : ($isMt ? (int)($mt['sl_wide'] ?? 0) : 0)),
         'go' => $isV10 ? (int)($v10['go'] ?? 0) : ($isRt ? (int)$rt['go'] : ($isMt ? (int)($mt['go'] ?? 0) : ((!empty($swX) || ($flow['runway_type'] ?? null) === 'bb') ? 1 : 0))),
         'mt' => $isMt ? ['strength' => $mt['strength'], 'sig' => $mt['sig'], 'flow' => $mt['flow'],
@@ -1187,7 +1192,7 @@ function t_slim(array $r, array $st): array {
     $o = [];
     // owner, 4 Nov 2026 fix: 'mt' was missing here, so it never survived to the stored scan row -- the frontend's
     // Mid Target badge and the pb5/ema5/st5 "not for mid-trend" exclusions (all keyed on r.mt) never fired either.
-    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','al5','v10','go','t0','zg','zlv','lad','sl_wide','mt','split24'] as $k) $o[$k] = $r[$k] ?? null;
+    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','al5','v10','go','t0','zg','zlv','lad','sl_wide','mt','split24','pw30'] as $k) $o[$k] = $r[$k] ?? null;
     $o['tf'] = array_map(fn($v) => $v['dir'], $r['tf']);
     foreach (['spark', 'ret_1w', 'ret_1m', 'ret_3m', 'ret_1y', 'vol_20d', 'from_hi_pct', 'from_lo_pct', 'hi_52w', 'lo_52w'] as $k) $o[$k] = $st[$k];
     return $o;

@@ -109,6 +109,20 @@ function t10_split_bias(array $tfDirs): ?string {
     if ($h1 === -1 && $h4 === -1 && $d1 === 1 && $w1 === 1) return 'UP';    // near-term bear, broad bull -> follow bull
     return null;
 }
+/**
+ * Background 30m Supertrend(10,3) direction (owner, 4 Nov 2026 -- backtest-validated: in the normal 3/4-or-4/4
+ * trend setup, when price is at the Day extreme but the 30m Supertrend is STILL running counter to the bias,
+ * that is an early tell the near-term is about to flip back in line -- a stronger entry). Closed 30m bars only,
+ * built fresh from 5m (independent of the 10m gate frame). Purely a background check -- the 30m value itself is
+ * never surfaced on screen, only the resulting power flag. Returns 1 / -1 / null (not enough 5m history yet).
+ */
+function t10_bg30_dir(?array $F5, int $now): ?int {
+    if (!$F5 || count($F5['t'] ?? []) < 80) return null;
+    $f = t10_closed(t_resample($F5 + ['v' => array_fill(0, count($F5['t']), 0)], 1800), 1800, $now);
+    if (count($f['c'] ?? []) < 12) return null;
+    [$d] = t_supertrend($f, 10, 3.0);
+    return (int)end($d);
+}
 
 /**
  * The gate, part 1 -- Liquidity Sweep on 10m (was 30m; changed 3 Nov 2026), confirmed on the 10m close.
@@ -515,7 +529,11 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     }
     $wantUp = $bias === 'UP'; $sg = $wantUp ? 1 : -1;
     $zone = $wantUp ? $ctx['atr_low'] : $ctx['atr_high'];
-    $base = ['al5' => $al5, 'bias5' => $bias, 'trend' => true, 'sig' => $wantUp ? 'CALL' : 'PUT', 'zone10' => $zone, 'split24' => $split24];
+    // owner, 4 Nov 2026: background-only 30m power check (never shown on screen) -- only meaningful on the
+    // normal 3/4-or-4/4 setup; the exceptional split24 setup already has its own "power" reason.
+    $bg30 = $split24 ? null : t10_bg30_dir($F5, $now);
+    $pw30 = $bg30 !== null && (($wantUp && $bg30 === -1) || (!$wantUp && $bg30 === 1));
+    $base = ['al5' => $al5, 'bias5' => $bias, 'trend' => true, 'sig' => $wantUp ? 'CALL' : 'PUT', 'zone10' => $zone, 'split24' => $split24, 'pw30' => $pw30];
     $bars = $ctx['bars']; $a5 = (float)$ctx['atr5'];
     if (!$bars || $a5 <= 0) return $base + ['valid' => false];
     $price = (float)$ctx['price'];
