@@ -191,13 +191,19 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
     };
     const zgRank = r => r.zg == null ? 2 : r.zg;  // 0 = STRONG ZONE (Fib+Pivot+PDH/PDL), 1 = one level, 2 = none
     const sortRank = r => {
-      if (!r) return [9, 9, 9, 9, 9, 9, 0];
+      if (!r) return [9, 9, 9, 9, 9, 9, 0, 0];
       const out = r.tier1 === "out" ? 1 : 0;
       const zg = zgRank(r);
       const tc = tickCountRank(r);              // tick count descending (fewer rank = more ticks)
       const pw = 2 - (r.pw || 0);
       const hc = r.hc ? 0 : 1;
-      return [out, zg, tc, pw, hc, -(r.strength || 0)];
+      // Owner, 4 Nov 2026: among setups that are otherwise tied (same zone/tick-state/power/strength),
+      // prefer the one with more thrust behind it right now. Uses move_atr (the latest bar's move in
+      // ATR units), not raw change_pct -- change_pct isn't comparable across markets (a 0.03% FX move
+      // can be huge relative to its own ATR while a 3% equity move can be average); move_atr already
+      // normalizes for that. This is a tie-breaker only, after strength, not a primary sort key --
+      // a setup that is simply "further along" (zone/tick/power/strength) still always ranks first.
+      return [out, zg, tc, pw, hc, -(r.strength || 0), -(r.move_atr || 0)];
     };
     CP.byTier = (a, b) => {
       const ra = sortRank(a), rb = sortRank(b);
