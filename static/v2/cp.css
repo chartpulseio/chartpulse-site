@@ -916,6 +916,7 @@ h1,h2,h3{letter-spacing:-.012em}
 .rmk.long{color:#22AB94;border-color:rgba(34,171,148,.4);background:rgba(34,171,148,.08)}
 .rmk.short{color:#F4B740;border-color:rgba(244,183,64,.4);background:rgba(244,183,64,.08)}
 .rmk.none{border:0;color:var(--muted);padding:0}
+.rmk.watch{color:#9D8CFF;border-color:rgba(157,140,255,.4);background:rgba(157,140,255,.08)}
 .meta-chip .rmk{padding:3px 6px}
 .setup .s-meta .rmk{font-size:9px;padding:3px 5px}
 .queue-panel .p-head{align-items:flex-end}
