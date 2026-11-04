@@ -1279,6 +1279,14 @@ function t_entry_ok(float $px, int $sg, float $ext, float $a5, ?float $sl): bool
     if ($sl !== null && $sl > 0 && ($px - $sl) * $sg <= 0) return false;
     return ($px - $ext) * $sg <= T10_ENTRY_ATR * $a5;
 }
+/** Has price now reached/crossed the stop on the adverse side? Owner, 4 Nov 2026: a setup whose last tick
+ *  (Double Confirm / FLY) already fired was being treated as permanently valid below -- the ticks stayed
+ *  checked on screen even after price ran all the way to the stop-loss, because only a logged Tier-2 trade
+ *  exit (t10_recent_exit) ever cleared it, and a FLY that never became a tracked trade has no such exit event.
+ *  This check runs even for an already-entered row, so price crossing its own stop always ends the cycle. */
+function t_sl_crossed(float $px, int $sg, ?float $sl): bool {
+    return $sl !== null && $sl > 0 && ($px - $sl) * $sg <= 0;
+}
 function t_sticky_apply(string $s, array $row, int $now): array {
     static $S = null; if ($S === null) { $S = t_read_json(T_DATA . '/t1sticky.json', []); if (!isset($S['_end']) || !is_array($S['_end'])) $S['_end'] = []; }
     $px = (float)($row['price'] ?? 0); $a5 = (float)($row['atr5'] ?? 0); $zone = (float)($row['zone'] ?? 0); $changed = false;
@@ -1348,7 +1356,12 @@ function t_sticky_apply(string $s, array $row, int $now): array {
         foreach (['flow', 'flow_at', 'grade', 'runway_type'] as $f) $row[$f] = null;
         $live = false;
     }
-    if ($live && !$hasEntry && $a5 > 0 && $zs($row['signal']) > 0 && !t_entry_ok($px, $row['signal'] === 'CALL' ? 1 : -1, $zs($row['signal']), $a5, isset($row['flow_sl']) ? (float)$row['flow_sl'] : null)) {
+    $rowSl = isset($row['flow_sl']) ? (float)$row['flow_sl'] : null;
+    $rowSg = ($row['signal'] ?? 'WAIT') === 'CALL' ? 1 : -1;
+    // Owner, 4 Nov 2026 fix: an entered row (hasEntry true) used to skip this whole check and freeze forever --
+    // it should still end the moment price crosses ITS OWN stop, entry or no entry. The ATR/zone distance test
+    // stays entry-only (that's what decides whether the setup is still "in range" before an entry exists).
+    if ($live && (($hasEntry && t_sl_crossed($px, $rowSg, $rowSl)) || (!$hasEntry && $a5 > 0 && $zs($row['signal']) > 0 && !t_entry_ok($px, $rowSg, $zs($row['signal']), $a5, $rowSl)))) {
         $wasV10 = !empty($row['v10']); if ($wasV10) $gcSet($row);
         $endIt((string)$row['signal'], $zs($row['signal'])); $row = $wasV10 ? $gcShow($clear($row)) : $clear($row);   // left the entry range or crossed the stop
     } elseif ($live) {
@@ -1361,7 +1374,10 @@ function t_sticky_apply(string $s, array $row, int $now): array {
         // owner, 4 Nov 2026: same fix as $hasEntry above -- last tick (Double Confirm) only, not any of Tick 1-3.
         $kTk = is_array($k['tk'] ?? null) ? array_map('intval', $k['tk']) : [];
         $kEntry = !empty($k['v10']) && !empty($kTk) && !empty($kTk[count($kTk) - 1]);
-        $ok = $now - (int)$k['flow_at'] <= 28800 && ($kEntry || t_entry_ok($px, $sg, (float)($k['ext'] ?? 0), $a5 > 0 ? $a5 : (float)($k['a5'] ?? 0), $k['sl']));
+        // Owner, 4 Nov 2026 fix: same as above -- an entered ($kEntry) setup used to count as "ok" no matter
+        // where price went for up to 8 hours. Now its own stop still ends it; only being inside the stop keeps
+        // an entered row sticky past the ATR/zone-distance test (which only makes sense pre-entry).
+        $ok = $now - (int)$k['flow_at'] <= 28800 && !t_sl_crossed($px, $sg, $k['sl']) && ($kEntry || t_entry_ok($px, $sg, (float)($k['ext'] ?? 0), $a5 > 0 ? $a5 : (float)($k['a5'] ?? 0), $k['sl']));
         $flip = ($row['signal'] ?? 'WAIT') !== 'WAIT' && $row['signal'] !== $k['signal'];
         if (!$ok || $flip) {
             if (!empty($k['v10'])) { $gcSet($k); $row = $gcShow($row); }
