@@ -764,42 +764,23 @@ function t_rt_exit_8m(array $F5, int $te, int $sg, int $now): ?array {
 }
 
 /* ============================================================================
-   Mid-Trend setup (owner PDF "Major Support / Resi: Complete Strategy", 23 Oct 2026).
-   Fires AFTER a Retracement TP1 hit. Entry at a fresh Major Support (CALL) or
-   Major Resistance (PUT) zone that qualifies as STRONG_ZONE or better.
+   Mid-Trend setup v2 (owner, 4 Nov 2026 redesign -- "final setup, forget the old one").
+   Fires after a Trend breakout clears the ATR band, OR after a Retracement, whenever
+   price HOLDS at or RETESTS a strong zone (Fib/Pivot/PDC/PDH/PDL) beyond the band, in
+   the direction of the MTF bias. No GATE / Tick-1 requirement -- scoring reuses t10_score()
+   (the same formula as Trend) instead of a separate scorer, and ATR tolerances are a
+   little wider than the superseded v1 above (zone search 1.0->1.5x ATR5, STRONG_ZONE
+   cluster + hold/retest tolerance 0.35->0.5x ATR5).
    ============================================================================ */
+const T_MT_ZONE_RADIUS = 1.5;   // x ATR5 -- how far beyond the band we search for a strong zone
+const T_MT_ZONE_TOL    = 0.5;   // x ATR5 -- STRONG_ZONE clustering AND hold/retest tolerance
 
 /**
- * Mid-Trend score. $x: wantUp, zoneLvCount, stoch30, adx30, al5.
- * Location: STRONG_ZONE+ (3+ levels within 0.35xATR5) = 30 pts; STRONG_ZONE (2+ levels) = 20 pts.
- * Exhaustion: 30m Stochastic graded toward exhaustion side, 0-15 pts.
- * Trend align: al5 4/4 = 15 pts; 3/4 = 8 pts.
- * Minimum T_MT_MIN_SCORE (33) to be valid (STRONG_ZONE alone satisfies it).
- */
-function t_mt_score(array $x): array {
-    $up = $x['wantUp'];
-    $cnt = (int)($x['zoneLvCount'] ?? 0);
-    $loc = $cnt >= 3 ? 30.0 : ($cnt >= 2 ? 20.0 : 0.0);
-    $k = $x['stoch30'] ?? null; $exh = 0.0;
-    if ($k !== null) {
-        $g = $up ? (100 - $k) : $k;
-        $exh = $g >= 80 ? 15.0 : ($g >= 60 ? 10.0 : ($g >= 40 ? 5.0 : 0.0));
-    }
-    $al5 = (int)($x['al5'] ?? 0);
-    $trend = $al5 >= 4 ? 15.0 : ($al5 >= 3 ? 8.0 : 0.0);
-    $parts = ['loc' => $loc, 'exhaustion' => $exh, 'trend_align' => $trend];
-    return [min(100.0, array_sum($parts)), $parts];
-}
-const T_MT_MIN_SCORE = 30.0;
-
-/**
- * Mid-Trend v1 (owner PDF 23 Oct 2026). Same cycle machinery as Trend/Retracement.
- * Gate: $ctx['mt_active'] = true (engine sets this when Retracement TP1 fires).
- * Zone: nearest major zone with STRONG_ZONE (2+ levels within 0.35xATR5).
- * Bias: 4H+1D both aligned -- checked via $tfDirs['4h'] and $tfDirs['1d'].
- * Tick system: identical to Trend (gate + 3 entry ticks, lad=10).
- * setup = 'midtrend'; signal = "Major Support" (CALL) / "Major Resistance" (PUT).
- * Returns same field structure as t_rt_eval. Returns null when gate not active or zone not found.
+ * Mid-Trend v2. $ctx['mt_active'] (engine: ATR band cleared, bias aligned) gates entry.
+ * No gate/Tick-1 needed -- flow opens straight at SIGNAL once a strong zone is held/retested
+ * and the (trend) score clears T10_MIN_SCORE, and promotes to FLY once price shows a confirmed
+ * reversal candle back toward the trend direction. Returns null when gate not active or no
+ * qualifying zone is currently held.
  */
 function t_mt_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     if (!T10_ON) return null;
@@ -811,70 +792,64 @@ function t_mt_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     [$bias, $al5] = t10_bias($tfDirs, $m30);
     if ($bias === 'NEUTRAL') return null;
     $wantUp = $bias === 'UP'; $sg = $wantUp ? 1 : -1;
-    // 4H+1D alignment gate (both must agree with bias direction)
+    // 4H+1D alignment gate (both must agree with bias direction) -- Mid-Trend is always MTF-aligned,
+    // whether it arose as a trend-breakout continuation or a post-retracement bounce (owner, 4 Nov 2026).
     $d4h = $tfDirs['4h'] ?? 0; $d1d = $tfDirs['1d'] ?? 0;
     if ($d4h !== $sg || $d1d !== $sg) return null;
-    // Zone anchor: nearest strong zone BEYOND the ATR band (3 Nov 2026 redesign).
-    // Price has already cleared the ATR band (gate in engine). Find the closest pivot/fib/PDH/PDL/PDC
-    // that is: (a) on the far side of the band (below atr_low for CALL, above atr_high for PUT),
-    // and (b) within 1.0×ATR5 of current price.
-    $price    = (float)$ctx['price'];
-    $atrLow   = (float)($ctx['atr_low']  ?? 0);
-    $atrHigh  = (float)($ctx['atr_high'] ?? 0);
-    $lvAll    = array_merge(
-        array_values($ctx['pivots'] ?? []),
-        array_values($ctx['fibs']   ?? []),
-        array_filter([(float)($ctx['pdh'] ?? 0), (float)($ctx['pdl'] ?? 0), (float)($ctx['pdc'] ?? 0)])
-    );
+    $price   = (float)$ctx['price'];
+    $atrLow  = (float)($ctx['atr_low']  ?? 0);
+    $atrHigh = (float)($ctx['atr_high'] ?? 0);
+    $pdh = (float)($ctx['pdh'] ?? 0); $pdl = (float)($ctx['pdl'] ?? 0); $pdc = (float)($ctx['pdc'] ?? 0);
+    // Zone anchor: nearest strong zone beyond the ATR band, within T_MT_ZONE_RADIUS x ATR5 of price.
+    $lvAll = array_merge(array_values($ctx['pivots'] ?? []), array_values($ctx['fibs'] ?? []),
+        array_filter([$pdh, $pdl, $pdc]));
     $zone = null; $bestDist = PHP_FLOAT_MAX;
     foreach ($lvAll as $lv) {
-        $lv = (float)$lv;
-        if ($lv <= 0) continue;
-        // Must be beyond the ATR band in the trade direction
+        $lv = (float)$lv; if ($lv <= 0) continue;
         if ($wantUp && $lv >= $atrLow)  continue;   // CALL: zone must be below atr_low
         if (!$wantUp && $lv <= $atrHigh) continue;  // PUT: zone must be above atr_high
         $dist = abs($price - $lv);
         if ($dist < $bestDist) { $bestDist = $dist; $zone = $lv; }
     }
-    if ($zone === null) return null;                 // no strong zone found beyond band
-    if (abs($price - $zone) > 1.0 * $a5) return null; // zone must be within 1×ATR5
-    // Count qualifying levels within 0.35xATR5 of zone (STRONG_ZONE gate)
-    $tol = 0.35 * $a5;
-    $lvArr = array_merge(
-        array_values($ctx['pivots'] ?? []),
-        array_values($ctx['fibs']   ?? []),
-        array_filter([$ctx['pdh'] ?? null, $ctx['pdl'] ?? null, $ctx['pdc'] ?? null])
-    );
+    if ($zone === null) return null;                              // no strong zone found beyond band
+    if (abs($price - $zone) > T_MT_ZONE_RADIUS * $a5) return null; // zone must be within 1.5xATR5
+    $tol = T_MT_ZONE_TOL * $a5;
+    // STRONG_ZONE confluence: >=2 qualifying levels clustered within $tol of the found zone.
     $cnt = 0; $glv = [];
-    foreach ($lvArr as $lv) {
-        if ((float)$lv <= 0) continue;
-        if (abs((float)$lv - $zone) <= $tol) { $cnt++; $glv[] = (float)$lv; }
-    }
-    if ($cnt < 2) return null;   // STRONG_ZONE requires at least 2 levels
-    $M1 = $fr['1m'] ?? t_m1_get($sym);
-    $glvMap = []; foreach ($glv as $i => $v) $glvMap['ML' . ($i + 1)] = $v;
-    $C = t10_session($F5, $bars[0], $bars[count($bars) - 1], $sg, $M1, (float)$ctx['zb'], $now, $ctx['adr'] ?? null, $glvMap, false);
-    $cy = t10_pick($C, $sym, false);
+    foreach ($lvAll as $lv) { if (abs((float)$lv - $zone) <= $tol) { $cnt++; $glv[] = (float)$lv; } }
+    if ($cnt < 2) return null;
+    // Hold / retest: price must currently be sitting back at the zone (within the same tolerance) --
+    // this is what makes it "hold" or "retest" rather than just having passed through it once.
+    if (abs($price - $zone) > $tol) return null;
+    $pdX = abs($pdh - $zone) <= abs($pdl - $zone) ? $pdh : $pdl;
+    $c5 = t10_closed($F5, 300, $now);
+    $rsi5 = count($c5['c']) >= 20 ? t_rsi_last(array_map('floatval', array_slice($c5['c'], -200)), 14) : null;
     $s30 = t10_stoch_k($m30);
-    [$ax] = $m30 ? t_adx($m30, 14) : [0.0, 0.0, 0.0];
-    [$score, $parts] = t_mt_score(['wantUp' => $wantUp, 'zoneLvCount' => $cnt, 'stoch30' => $s30, 'adx30' => $ax, 'al5' => $al5]);
-    $tk = $cy ? array_map(fn($t) => $t === null ? 0 : 1, $cy['ticks']) : [0, 0, 0, 0, 0];
-    $entryAt = $cy['first'] ?? null; $ticksFired = $entryAt !== null;
-    $valid = ($score >= T_MT_MIN_SCORE && $cnt >= 2) || $ticksFired;
-    $gateOn = ($cy['gate'] ?? null) !== null;
-    $flow = !$valid ? null
-        : ($tk[4] && $ticksFired ? 'FLY' : ($ticksFired ? 'SIGNAL'
-        : ($gateOn ? (!empty($cy['gate_exp']) ? 'GATE CLOSE' : 'GATE OPEN') : 'APPROACHING')));
-    $go = $gateOn ? 1 : 0;
+    [$ax, $pd, $md] = $m30 ? t_adx($m30, 14) : [0.0, 0.0, 0.0];
+    // Scoring: identical formula to Trend (t10_score) -- "scoring same trend wali chalegi" (owner, 4 Nov 2026).
+    // No liquidity-sweep/BB context without the gate cycle, so those two sub-scores are neutral (0).
+    [$score, $parts] = t10_score(['wantUp' => $wantUp, 'zone' => $zone, 'atr5' => $a5, 'pdX' => $pdX,
+        'fibs' => array_values($ctx['fibs'] ?? []), 'pivots' => array_values($ctx['pivots'] ?? []), 'pdc' => $pdc,
+        'pw' => 0, 'bb' => false, 'stoch' => $s30, 'rsi5' => $rsi5, 'adx' => $ax, 'pdi' => $pd, 'mdi' => $md, 'al5' => $al5]);
+    $valid = $score >= T10_MIN_SCORE;
+    if (!$valid) return null;
+    // No GATE / Tick-1 needed -- those two rungs are treated as already satisfied. Confirmation (Tick 2-4,
+    // bundled) is a closed 5m reversal candle back toward the trend direction, confirmed by the next close.
+    $G5 = t10_closed($F5, 300, $now); $n5 = count($G5['c'] ?? []);
+    $confirmed = false; $confirmAt = null;
+    for ($j = max(1, $n5 - 12); $j < $n5 - 1; $j++) {
+        if (t_reversal($G5, $j, $sg) && t_fly_confirm($G5, $j, $sg)) { $confirmed = true; $confirmAt = (int)$G5['t'][$j + 1] + 300; }
+    }
+    $flow = $confirmed ? 'FLY' : 'SIGNAL';
+    $tk = $confirmed ? [1, 1, 1, 1, 1] : [1, 1, 0, 0, 0];
+    $entryAt = $confirmAt ?? (int)($bars ? $bars[count($bars) - 1] : $now);
     [$zg, $zlv] = t10_zone_group($zone, $tol,
-        ['fibs' => $ctx['fibs'] ?? [], 'pivots' => $ctx['pivots'] ?? [],
-         'pdh' => $ctx['pdh'] ?? null, 'pdl' => $ctx['pdl'] ?? null, 'pdc' => $ctx['pdc'] ?? null]);
+        ['fibs' => $ctx['fibs'] ?? [], 'pivots' => $ctx['pivots'] ?? [], 'pdh' => $pdh, 'pdl' => $pdl, 'pdc' => $pdc]);
     return ['valid' => $valid, 'strength' => round($score, 2), 'parts' => $parts,
-        'flow' => $flow, 'tk' => $tk, 'go' => $go,
-        't0' => $cy['t0'] ?? null, 'zg' => $zg, 'zlv' => $zlv,
-        'pw' => (int)($cy['pw'] ?? 0), 'lad' => 10,
-        'gate_lv' => $cy['gate_level'] ?? null, 'sl_wide' => !empty($cy['wide']) ? 1 : 0,
-        'flow_at' => $entryAt, 'flow_sl' => $cy['sl'] ?? null,
+        'flow' => $flow, 'tk' => $tk, 'go' => 1,
+        't0' => null, 'zg' => $zg, 'zlv' => $zlv,
+        'pw' => 0, 'lad' => 10, 'gate_lv' => null, 'sl_wide' => 0,
+        'flow_at' => $entryAt, 'flow_sl' => null,
         'stoch30' => $s30 === null ? null : round($s30, 1), 'adx30' => round($ax, 1),
         'setup' => 'midtrend', 'sig' => $wantUp ? 'CALL' : 'PUT', 'al5' => $al5,
         'mt_zone_cnt' => $cnt];
