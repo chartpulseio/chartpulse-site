@@ -189,13 +189,15 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
       if (cnt === 0) return r.ph[0] ? 4 : 5;
       return 4 - cnt;
     };
+    const zgRank = r => r.zg == null ? 2 : r.zg;  // 0 = STRONG ZONE (Fib+Pivot+PDH/PDL), 1 = one level, 2 = none
     const sortRank = r => {
-      if (!r) return [9, 9, 9, 9, 9, 0];
+      if (!r) return [9, 9, 9, 9, 9, 9, 0];
       const out = r.tier1 === "out" ? 1 : 0;
+      const zg = zgRank(r);
       const tc = tickCountRank(r);              // tick count descending (fewer rank = more ticks)
       const pw = 2 - (r.pw || 0);
       const hc = r.hc ? 0 : 1;
-      return [out, tc, pw, hc, -(r.strength || 0)];
+      return [out, zg, tc, pw, hc, -(r.strength || 0)];
     };
     CP.byTier = (a, b) => {
       const ra = sortRank(a), rb = sortRank(b);
@@ -203,7 +205,8 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
       return 0;
     };
     CP.tkDots = tkDots; CP.pwChip = pwChip; CP.tkState = tkState; CP.zChip = zChip;
-    /* 1 Nov 2026: sort fix — status beats zone group; FLY always at top */
+    /* 4 Nov 2026 (owner): strong-zone confluence (zg) restored as the #2 sort key, right after the
+       out-of-Tier-1 check and ahead of tick-status/power/strength -- "jitna strong zone utna upar". */
     document.body.classList.add("v10-ready");
   }
 
