@@ -1377,7 +1377,11 @@ function t_sticky_apply(string $s, array $row, int $now): array {
         // Owner, 4 Nov 2026 fix: same as above -- an entered ($kEntry) setup used to count as "ok" no matter
         // where price went for up to 8 hours. Now its own stop still ends it; only being inside the stop keeps
         // an entered row sticky past the ATR/zone-distance test (which only makes sense pre-entry).
-        $ok = $now - (int)$k['flow_at'] <= 28800 && !t_sl_crossed($px, $sg, $k['sl']) && ($kEntry || t_entry_ok($px, $sg, (float)($k['ext'] ?? 0), $a5 > 0 ? $a5 : (float)($k['a5'] ?? 0), $k['sl']));
+        // Owner, 4 Nov 2026 (2nd fix): dropped the 8-hour hard time cap entirely -- owner wants this PRICE-ONLY.
+        // A cycle now stays alive purely on: own SL not crossed, AND (already entered OR still inside entry-ATR
+        // range of the zone). Time no longer ends a cycle by itself; only price does (SL cross, or -- pre-entry --
+        // moving outside the ATR entry window, which is what trips GATE CLOSE below).
+        $ok = !t_sl_crossed($px, $sg, $k['sl']) && ($kEntry || t_entry_ok($px, $sg, (float)($k['ext'] ?? 0), $a5 > 0 ? $a5 : (float)($k['a5'] ?? 0), $k['sl']));
         $flip = ($row['signal'] ?? 'WAIT') !== 'WAIT' && $row['signal'] !== $k['signal'];
         if (!$ok || $flip) {
             if (!empty($k['v10'])) { $gcSet($k); $row = $gcShow($row); }
