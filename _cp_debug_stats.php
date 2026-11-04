@@ -9,7 +9,12 @@ $diag = ['path' => $path, 'exists' => file_exists($path), 'size' => file_exists(
 $j = t_read_json($path, ['items' => []]);
 $items = $j['items'] ?? [];
 $now = time();
-if (count($items) === 0) { echo json_encode(['diag' => $diag, 'raw_keys' => array_keys($j)]); exit; }
+if (count($items) === 0) {
+    $cronLast = @file_get_contents(T_DATA . '/cron_last.txt');
+    $dataFiles = is_dir(T_DATA) ? array_values(array_diff(scandir(T_DATA), ['.', '..'])) : null;
+    echo json_encode(['diag' => $diag, 'raw_keys' => array_keys($j), 'cron_last' => $cronLast, 'data_dir_files' => $dataFiles]);
+    exit;
+}
 
 $trend = []; $retrace = [];
 foreach ($items as $t) {
