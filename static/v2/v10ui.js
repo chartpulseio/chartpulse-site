@@ -300,7 +300,14 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
     // cycle as over, not a new signal.
     const gcRow = r.flow === 'GATE CLOSE' ? `<div class="sd-ph-r done gc-row" title="Gate opened (liquidity swept) but no entry came — the window has expired"><small>INFO</small><span class="pb5tick gctick">GATE CLOSE ✓</span><span class="ck">✓</span></div>` : "";
     const tickCount = P.length - 1;  // 4 for new rows (5-element ph), 3 for back-compat (4-element ph)
-    const tickIdxs = Array.from({ length: tickCount }, (_, i) => i + 1);
+    // Owner, 4 Nov 2026: the 4 ticks are independent triggers (CHoCH / 5-EMA / pattern / 10m Double Confirm),
+    // each on its own detection path -- they do NOT necessarily fire in 1-2-3-4 order (Tick 1's structural CHoCH
+    // can mature well after Tick 4's Double Confirm already got the entry). Showing them in their fixed numeric
+    // slots made an already-checked Tick 1 display a LATER time than Tick 4 above it -- looked broken, wasn't.
+    // Sort the rows by when each tick actually fired, so the ladder reads top-to-bottom in real time order;
+    // the TICK N label still names which trigger it is, it just no longer dictates row position.
+    const tickIdxs = Array.from({ length: tickCount }, (_, i) => i + 1)
+      .sort((a, b) => ((P[a] && PT[a]) || Infinity) - ((P[b] && PT[b]) || Infinity) || a - b);
     box.innerHTML = `<div class="sd-sync-h"><span>Entry ladder${pw}</span><b>${P.slice(1).filter(Boolean).length}/${tickCount}</b></div>`
       + row("GATE", TK[0], P[0], 0)
       + tickIdxs.map(i => row("TICK " + i, TK[i], P[i], i)).join("")
