@@ -381,6 +381,9 @@ function t2_build(string $sym, string $bias): array {
     if ($t1sig) $bias = $t1sig;   // Tier 2 always follows the live Tier-1 signal
     elseif ($bias !== 'CALL' && $bias !== 'PUT') $bias = ($t1['zone_near'] ?? '') === 'ATR High' ? 'PUT' : (($t1['bias'] ?? 'UP') === 'DOWN' ? 'PUT' : 'CALL');
     $PV = t_fib_pivots($f5, (int)$f5['t'][$a]);
+    // owner, 4 Nov 2026: Previous Day Close, the one major zone PDH/PDL/Fib-Pivot didn't already cover -- for
+    // drawing every major key zone on the Tier-2 chart (same set the score's location bonus already uses).
+    $pdcDaily = $fr['1D']['c'] ?? null; $pdc = $pdcDaily && count($pdcDaily) >= 2 ? (float)$pdcDaily[count($pdcDaily) - 2] : null;
     $atrH = isset($t1['atr_high']) ? (float)$t1['atr_high'] : null; $atrL = isset($t1['atr_low']) ? (float)$t1['atr_low'] : null;
     $off = (int)$f5['t'][$a] % 600; $g10 = t_group($f5, fn($t) => intdiv($t - $off, 600)); $a5 = t_atr($f5, 14);
 
@@ -591,7 +594,7 @@ function t2_build(string $sym, string $bias): array {
         'action_price' => $r6($act), 'action_time' => $actT, 'target' => $r6($tgt), 'sl' => $r6($sl), 'rr_ratio' => $rr, 'last_bar' => (int)end($f5['t']),
         'setup' => $setup, 'remark' => $setup === 'trend' ? 'Long target' : 'Small target',
         'targets' => array_map(fn($x) => ['label' => $x['label'], 'price' => $r6($x['price']), 'fib' => $x['fib'], 'rr' => $x['rr']], $targets),
-        'zone' => ['from' => (int)$f5['t'][$a], 'day_low' => $r6($dayL), 'day_high' => $r6($dayH),
+        'zone' => ['from' => (int)$f5['t'][$a], 'day_low' => $r6($dayL), 'day_high' => $r6($dayH), 'pdc' => $r6($pdc),
             'low_band' => [$r6($dayL), $r6($dayL + $tolNow)], 'high_band' => [$r6($dayH - $tolNow), $r6($dayH)],
             'pivots' => $PV ? t_pivot_view($PV, $dayL, $dayH) : []],
         'tier1' => $t1 ? ['tier' => $t1['tier1'] ?? 'out', 'signal' => $t1['signal'] ?? 'WAIT', 'bias' => $t1['bias'] ?? null, 'alignment' => $t1['alignment'] ?? null,
@@ -661,7 +664,7 @@ function t2_public(array $d): array {
         'signal_id' => $live['id'] ?? ($live ? substr(md5($d['symbol'] . '|' . $live['sig'] . '|' . $live['entry_time']), 0, 12) : null),
         'last_bar' => $d['last_bar'], 'setup' => t_pub_setup($d['setup'] ?? null), 'remark' => $d['remark'],
         // only the zone the position is built from: CALL = Pulse Floor (day low), PUT = Pulse Ceiling (day high) (owner, 5 Oct 2026)
-        'zone' => $z ? ['from' => $z['from'], 'pivots' => $z['pivots']] + (function () use ($z, $p, $live, $d) {
+        'zone' => $z ? ['from' => $z['from'], 'pivots' => $z['pivots'], 'pdc' => $z['pdc'] ?? null] + (function () use ($z, $p, $live, $d) {
             $s = $live['sig'] ?? ($p['sig'] ?? ($d['bias'] ?? null));
             if ($s === 'CALL' && isset($z['day_low'])) return ['side' => 'floor', 'level' => $z['day_low']];
             if ($s === 'PUT' && isset($z['day_high'])) return ['side' => 'ceiling', 'level' => $z['day_high']];

@@ -29,7 +29,7 @@ $TFS = ['10M', '1H', '4H', '1D', '1W'];
 
 // Rate limits per visitor per minute (owner, 29 Sep 2026). Pages poll every 3-20 s, so normal use stays far below these.
 $r = is_string($r) ? substr(preg_replace('/[^a-z0-9]/', '', strtolower($r)), 0, 16) : 'scan';
-$RL = ['scan' => 120, 'symbol' => 60, 'bias' => 40, 't2' => 60, 'trades' => 40, 'news' => 30, 'refresh' => 6, 'export' => 6, 'plans' => 30, 'access' => 60, 'health' => 20, 'desk' => 30, 'deskai' => 3, 'desklive' => 12, 'mlfeed' => 20, 'mlpush' => 20];
+$RL = ['scan' => 120, 'symbol' => 60, 'bias' => 40, 't2' => 60, 't2price' => 90, 'trades' => 40, 'news' => 30, 'refresh' => 6, 'export' => 6, 'plans' => 30, 'access' => 60, 'health' => 20, 'desk' => 30, 'deskai' => 3, 'desklive' => 12, 'mlfeed' => 20, 'mlpush' => 20];
 if (!t_rl('api', 300) || !t_rl('r:' . $r, $RL[$r] ?? 30)) {
     http_response_code(429); header('Retry-After: 30'); t_json(['error' => 'Too many requests. Please wait a few seconds and try again.']); exit;
 }
@@ -157,6 +157,18 @@ if ($r === 'scan') {
     $d = t2_cached($sym, $bias);
     if (isset($d['error'])) { t_sorry('t2 ' . $sym, (string)$d['error']); exit; }
     t_json(t2_public($d));
+} elseif ($r === 't2price') {
+    // owner, 4 Nov 2026: a TradingView-style "live ticking candle" on the Tier-2 chart -- polled every
+    // second from the browser, so it must stay cheap. Reuses the same 20s-cached t2_build() result as
+    // r=t2 (no extra work), returns only the current price so the chart's live bar can be nudged between
+    // the real 6s full refreshes.
+    require __DIR__ . '/torus_access.php'; require __DIR__ . '/torus_tier2.php';
+    $sym = (string)($_GET['s'] ?? ''); $bias = strtoupper((string)($_GET['bias'] ?? ''));
+    if (!isset(t_symbols()[$sym])) { http_response_code(404); t_json(['error' => 'Unknown symbol']); exit; }
+    if (t2_paywall() && !ta_has('tier2')) { http_response_code(402); t_json(['error' => 'locked']); exit; }
+    $d = t2_cached($sym, $bias);
+    if (isset($d['error'])) { t_json(['price' => null]); exit; }
+    t_json(['price' => $d['current_price'] ?? null, 'time' => $d['last_bar'] ?? null]);
 } elseif ($r === 'tg_link') {   // Connect Telegram: returns a one-time bot deep link
     require __DIR__ . '/torus_access.php'; require __DIR__ . '/torus_tier2.php'; require __DIR__ . '/torus_tg_link.php';
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') { http_response_code(405); t_json(['ok' => false, 'error' => 'POST only']); exit; }
