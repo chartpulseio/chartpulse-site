@@ -654,6 +654,12 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
         $adxState = ((float)$rt['adx30']) >= 25 ? 'strong-30m' : 'weak-30m';
     }
     if ($isV10) { $strength = (float)$v10['strength']; $flow = ['state' => $v10['flow'], 'time' => $v10['flow_at'], 'sl' => $v10['flow_sl']]; $grade = null; $swX = null; }
+    // owner, 4 Nov 2026 fix: t_mt_eval() already builds a full standalone signal (sig/strength/flow/ticks/zone
+    // group, same shape as v10/rt above) but nothing ever promoted it into $signal/$setup/$strength -- it only
+    // ever reached the row as the auxiliary 'mt' field, which t_apply_status/t_view_rows never treat as a live
+    // signal (requires $signal !== 'WAIT'). Result: Mid-Trend never ranked or showed on Tier-1 at all, no
+    // matter how strong. Wiring it in exactly like v10/rt do, now that it has independently qualified ($isMt).
+    if ($isMt) { $signal = $mt['sig']; $setup = 'midtrend'; $strength = (float)$mt['strength']; $flow = ['state' => $mt['flow'], 'time' => $mt['flow_at'], 'sl' => $mt['flow_sl']]; $grade = null; $swX = null; }
     // v9 logging: the same score with the old near rule, and whether the 40 cut-off flipped
     $fibOld = 0.0; foreach ($fibs as $fx) $fibOld = max($fibOld, $pbT($fx['price'], $zone, $zTolOld));
     $cTolO = $zTolOld > 0 ? $zTolOld : 0.5 * $atr5; $fibInO = false; foreach ($fibs as $fx) if (abs($fx['price'] - $zone) <= $cTolO) { $fibInO = true; break; }
@@ -667,7 +673,7 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
     // The 13 Oct retracement SL buffer is gone: both setups now use 1.5% from the position line (owner, 19 Oct 2026).
     return [
         'symbol' => $sym, 'name' => t_name($sym), 'market' => t_symbols()[$sym] ?? 'Other', 'signal' => $signal, 'rule' => 5, 'setup' => $setup,
-        'remark' => $setup === 'trend' ? 'Long target' : ($setup === 'retrace' ? 'Small target' : null),
+        'remark' => $setup === 'trend' ? 'Long target' : ($setup === 'retrace' ? 'Small target' : ($setup === 'midtrend' ? 'Mid-trend target' : null)),
         'strength' => round($strength, 2), 'bias' => $bias, 'alignment' => $alignment, 'tf' => $tfs,
         'zone_touch' => $inZone, 'zone_near' => $zoneSide, 'overextended' => $overext, 'confluence' => $conf >= 5,
         'components' => ['alignment' => round($trendPts, 2), 'alignment_max' => 30.0, 'bonus4' => $bonus4,
@@ -681,17 +687,17 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
         'refly' => $isV10 && !empty($v10['refly']) ? 1 : 0,   // Re-Fly (owner, 4 Nov 2026): fresh entry after a retest
         // v9 (owner, 6 Oct 2026): high-conviction = trend FLY with a sweep + reclaim; public as a bare flag (bright FLY chip + bolt), never the reason
         'hc' => !$isV10 && $setup === 'trend' && ($flow['state'] ?? null) === 'FLY' && $swX ? 1 : 0,
-        'tk' => $isV10 ? $v10['tk'] : ($isRt ? $rt['tk'] : null), 'tk_at' => $isV10 ? ($v10['tk_at'] ?? null) : ($isRt ? ($rt['tk_at'] ?? null) : null), 'pw' => $isV10 ? (int)$v10['pw'] : ($isRt ? (int)$rt['pw'] : 0),
-        'al5' => $v10['al5'] ?? null, 'v10' => ($isV10 || $isRt) ? 1 : 0,
-        'lad' => ($isV10 || $isRt) ? 10 : 8, 'sl_wide' => $isV10 ? (int)($v10['sl_wide'] ?? 0) : ($isRt ? (int)($rt['sl_wide'] ?? 0) : 0),
-        'go' => $isV10 ? (int)($v10['go'] ?? 0) : ($isRt ? (int)$rt['go'] : ((!empty($swX) || ($flow['runway_type'] ?? null) === 'bb') ? 1 : 0)),
+        'tk' => $isV10 ? $v10['tk'] : ($isRt ? $rt['tk'] : ($isMt ? $mt['tk'] : null)), 'tk_at' => $isV10 ? ($v10['tk_at'] ?? null) : ($isRt ? ($rt['tk_at'] ?? null) : null), 'pw' => $isV10 ? (int)$v10['pw'] : ($isRt ? (int)$rt['pw'] : ($isMt ? (int)$mt['pw'] : 0)),
+        'al5' => $v10['al5'] ?? ($mt['al5'] ?? null), 'v10' => ($isV10 || $isRt || $isMt) ? 1 : 0,
+        'lad' => ($isV10 || $isRt || $isMt) ? 10 : 8, 'sl_wide' => $isV10 ? (int)($v10['sl_wide'] ?? 0) : ($isRt ? (int)($rt['sl_wide'] ?? 0) : ($isMt ? (int)($mt['sl_wide'] ?? 0) : 0)),
+        'go' => $isV10 ? (int)($v10['go'] ?? 0) : ($isRt ? (int)$rt['go'] : ($isMt ? (int)($mt['go'] ?? 0) : ((!empty($swX) || ($flow['runway_type'] ?? null) === 'bb') ? 1 : 0))),
         'mt' => $isMt ? ['strength' => $mt['strength'], 'sig' => $mt['sig'], 'flow' => $mt['flow'],
             'tk' => $mt['tk'], 'go' => (int)($mt['go'] ?? 0), 'mt_zone_cnt' => $mt['mt_zone_cnt'],
             'parts' => $mt['parts'], 'al5' => $mt['al5']] : null,
         // tick-0 remark ('liq' / 'bb' in trend, GATE OPEN in retracement) and the Tier-1 zone group + its label
-        't0' => $isV10 ? ($v10['t0'] ?? null) : ($isRt ? ($rt['t0'] ?? null) : null),
-        'zg' => $isV10 ? (int)($v10['zg'] ?? 2) : ($isRt ? (int)($rt['zg'] ?? 2) : 2),
-        'zlv' => $isV10 ? ($v10['zlv'] ?? null) : ($isRt ? ($rt['zlv'] ?? null) : null),
+        't0' => $isV10 ? ($v10['t0'] ?? null) : ($isRt ? ($rt['t0'] ?? null) : ($isMt ? ($mt['t0'] ?? null) : null)),
+        'zg' => $isV10 ? (int)($v10['zg'] ?? 2) : ($isRt ? (int)($rt['zg'] ?? 2) : ($isMt ? (int)($mt['zg'] ?? 2) : 2)),
+        'zlv' => $isV10 ? ($v10['zlv'] ?? null) : ($isRt ? ($rt['zlv'] ?? null) : ($isMt ? ($mt['zlv'] ?? null) : null)),
         'grade' => $grade, 'runway_type' => $flow['runway_type'] ?? null, 'rsi_10m' => $rsi10 === null ? null : round($rsi10, 2),
         'adx_value' => round($ax, 2), 'di_plus' => round($pdi, 2), 'di_minus' => round($mdi, 2), 'di_ok' => $diOk,
         'adx_1h' => round($ax1, 2), 'adx_1h_peak' => round((float)$pk1, 2),
@@ -1175,7 +1181,9 @@ function t_ensure_dirs(): void { if (!is_dir(T_FRAMES)) @mkdir(T_FRAMES, 0755, t
 
 function t_slim(array $r, array $st): array {
     $o = [];
-    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','al5','v10','go','t0','zg','zlv','lad','sl_wide'] as $k) $o[$k] = $r[$k] ?? null;
+    // owner, 4 Nov 2026 fix: 'mt' was missing here, so it never survived to the stored scan row -- the frontend's
+    // Mid Target badge and the pb5/ema5/st5 "not for mid-trend" exclusions (all keyed on r.mt) never fired either.
+    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','al5','v10','go','t0','zg','zlv','lad','sl_wide','mt'] as $k) $o[$k] = $r[$k] ?? null;
     $o['tf'] = array_map(fn($v) => $v['dir'], $r['tf']);
     foreach (['spark', 'ret_1w', 'ret_1m', 'ret_3m', 'ret_1y', 'vol_20d', 'from_hi_pct', 'from_lo_pct', 'hi_52w', 'lo_52w'] as $k) $o[$k] = $st[$k];
     return $o;
