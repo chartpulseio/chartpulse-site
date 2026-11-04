@@ -460,11 +460,15 @@ function t10_fvg_zone(array $F, int $a, int $b, int $sg, array $A5, float $zone,
     }
     return $found;
 }
-/** v10 score (trend). $x: wantUp, zone, atr5, pdX, fibs[] (prices), pw, bb, stoch, rsi5, adx, pdi, mdi, al5. */
+/** v10 score (trend). $x: wantUp, zone, atr5, pdX, fibs[] (prices), pivots[] (prices), pdc, pw, bb, stoch, rsi5, adx, pdi, mdi, al5. */
 function t10_score(array $x): array {
     $up = $x['wantUp']; $z = $x['zone']; $a5 = max(1e-12, (float)$x['atr5']);
     $dP = abs($x['pdX'] - $z); $dF = INF; $fN = null; foreach ($x['fibs'] as $f) if (abs($f - $z) < $dF) { $dF = abs($f - $z); $fN = $f; }
-    $best = min($dP, $dF);
+    // owner, 4 Nov 2026: the location bonus now covers EVERY major strong zone we treat as "major" elsewhere
+    // (same set as the Tier-2 Key Zone line) -- PDH/PDL, Fib, Pivot, PDC -- not PDH/PDL + Fib alone.
+    $dPv = INF; foreach (($x['pivots'] ?? []) as $pv) { $d = abs((float)$pv - $z); if ($d < $dPv) $dPv = $d; }
+    $dC = !empty($x['pdc']) ? abs((float)$x['pdc'] - $z) : INF;
+    $best = min($dP, $dF, $dPv, $dC);
     $loc = $best <= 1.5 * $a5 ? 20.0 : 0.0;
     $locB = ($dP <= $a5 && $dF <= $a5 && $fN !== null && abs($x['pdX'] - $fN) <= $a5) ? 10.0 : 0.0;
     $rev = $x['pw'] === 2 ? 27.0 : ($x['pw'] === 1 ? 16.0 : 0.0);
@@ -534,6 +538,7 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
         if ($mjPrice === null || abs($price - $zone) < abs($mjPrice - $zone)) { $mjPrice = $price; $mjLabel = $lbl; }
     }
     [$score, $parts] = t10_score(['wantUp' => $wantUp, 'zone' => $zone, 'atr5' => $a5, 'pdX' => $pdX, 'fibs' => $fibs,
+        'pivots' => array_values($ctx['pivots'] ?? []), 'pdc' => $ctx['pdc'] ?? null,
         'pw' => $cy['pw'] ?? 0, 'bb' => $cy['bb'] ?? false, 'stoch' => $s30, 'rsi5' => $rsi5, 'adx' => $ax, 'pdi' => $pd, 'mdi' => $md, 'al5' => $al5]);
     $tk = $cy ? array_map(fn($t) => $t === null ? 0 : 1, $cy['ticks']) : [0, 0, 0, 0, 0];
     $tkAt = $cy ? array_map(fn($t) => $t === null ? 0 : (int)$t, $cy['ticks']) : [0, 0, 0, 0, 0];   // raw fire times, for the UI to show "when" next to a checked tick

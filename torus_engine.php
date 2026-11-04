@@ -596,8 +596,16 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
     // against the MTF bias. Replaces the old v8 RUNWAY / FLY path. See t_rt_eval() in torus_v10.php.
     $rt = null; $isRt = false;
     if ($setup === 'retrace') {
+        // owner, 4 Nov 2026: the location bonus now covers EVERY major strong zone (same set as the Tier-2 Key
+        // Zone line) -- PDH/PDL, Fib, Pivot, PDC -- not PDH/PDL alone.
+        $majProx = $pdhlProx;
+        $fibNearR = null; foreach ($fibs as $fx) if ($fibNearR === null || abs($fx['price'] - $zone) < abs($fibNearR - $zone)) $fibNearR = $fx['price'];
+        if ($fibNearR !== null) $majProx = max($majProx, $pb($fibNearR, $zone));
+        $pivNearR = null; foreach (($pivR ?: []) as $pv) if ($pivNearR === null || abs((float)$pv - $zone) < abs($pivNearR - $zone)) $pivNearR = (float)$pv;
+        if ($pivNearR !== null) $majProx = max($majProx, $pb($pivNearR, $zone));
+        if (!empty($pdc)) $majProx = max($majProx, $pb($pdc, $zone));
         $rt = t_rt_eval($sym, $fr, $v10ctx + ['zone' => $zone, 'wantUp' => $wantUp, 'pdX' => $pdX,
-            'locFull' => $pdhlProx >= 100.0, 'locHalf' => $pdhlProx > 0, 'conf' => $conf >= 5,
+            'locFull' => $majProx >= 100.0, 'locHalf' => $majProx > 0, 'conf' => $conf >= 5,
             'alignment' => $alignment, 'fibs' => array_map(fn($f) => $f['price'], $fibs)]);
         $isRt = $rt && !empty($rt['valid']);
         if (!$isRt) { $signal = 'WAIT'; $setup = null; }   // a retracement entry now needs the v10 rules too
