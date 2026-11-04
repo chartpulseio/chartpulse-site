@@ -12,7 +12,9 @@ $now = time();
 if (count($items) === 0) {
     $cronLast = @file_get_contents(T_DATA . '/cron_last.txt');
     $dataFiles = is_dir(T_DATA) ? array_values(array_diff(scandir(T_DATA), ['.', '..'])) : null;
-    echo json_encode(['diag' => $diag, 'raw_keys' => array_keys($j), 'cron_last' => $cronLast, 'data_dir_files' => $dataFiles]);
+    $sub = [];
+    foreach (['frames', 'm1', 't2', 'rl'] as $d) { $p = T_DATA . '/' . $d; $sub[$d] = is_dir($p) ? array_slice(array_values(array_diff(scandir($p), ['.', '..'])), 0, 10) : null; }
+    echo json_encode(['diag' => $diag, 'raw_keys' => array_keys($j), 'cron_last' => $cronLast, 'data_dir_files' => $dataFiles, 'sub' => $sub]);
     exit;
 }
 
