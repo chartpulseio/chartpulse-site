@@ -1385,6 +1385,10 @@ function t_sticky_apply(string $s, array $row, int $now): array {
         }
         elseif (($row['signal'] ?? 'WAIT') === 'WAIT' || empty($row['flow'])) {
             foreach (['signal', 'setup', 'remark', 'flow', 'flow_at', 'grade', 'runway_type', 'tk', 'tk_at', 'pw', 'v10'] as $f) $row[$f] = $k[$f] ?? null;
+            // Owner, 4 Nov 2026 fix: flow_sl (stored here as 'sl') was missing from this restore list, so a row
+            // held sticky from the saved snapshot showed its real ticks/flow but a null stop-loss publicly --
+            // the SL-cross check above reads the correct $k['sl'] internally, but the API/UI never saw the number.
+            $row['flow_sl'] = $k['sl'] ?? null;
             $row['sticky'] = 'hold';
         }
     }
