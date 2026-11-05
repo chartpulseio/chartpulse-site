@@ -391,6 +391,11 @@ body.scanner .views{padding:24px 28px}
   .mkt-pick{overflow-x:visible!important;flex-wrap:wrap!important;padding-bottom:4px}
   /* Owner, 5 Nov 2026: panel-header count line wraps instead of forcing the whole header wider than the screen. */
   .q-count{white-space:normal!important}
+  /* Owner, 5 Nov 2026: news source-filter tabs wrap instead of scrolling sideways. */
+  .x-tabs{overflow-x:visible!important;flex-wrap:wrap!important;padding-bottom:4px}
+  /* Owner, 5 Nov 2026: world-markets strip wraps into rows instead of scrolling sideways. */
+  .world{display:flex!important;flex-wrap:wrap!important;overflow-x:visible!important;mask-image:none!important;-webkit-mask-image:none!important}
+  .world .xchip{flex:1 1 140px!important}
   .site-head{padding:0 16px;gap:12px}
   .wrap{padding:0 16px}
   body.scanner .rail{top:auto;height:auto}
