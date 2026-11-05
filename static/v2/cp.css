@@ -376,12 +376,17 @@ body.scanner .views{padding:24px 28px}
   .steps,.features{grid-template-columns:repeat(2,minmax(0,1fr))}
   .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
-@media (max-width:900px){
+/* Owner, 5 Nov 2026: on pages with a wider head-right (scanner/tier2's clock+live pill+buttons), the
+   full nav + logo + head-right row no longer fits between roughly 900px and 1700px; collapse to the
+   hamburger menu in that whole range instead of only below 900px, so nothing overflows the header. */
+@media (max-width:1700px){
   .site-nav{position:fixed;top:var(--head-h);left:0;right:0;flex-direction:column;align-items:stretch;gap:2px;padding:10px 14px 16px;
     background:rgba(9,9,11,.97);backdrop-filter:blur(18px);border-bottom:1px solid var(--line);display:none}
   .site-nav.open{display:flex}
   .site-nav a{padding:12px}
   .nav-toggle{display:grid}
+}
+@media (max-width:900px){
   .head-right .btn,.clock{display:none}
   .g2{grid-template-columns:minmax(0,1fr)}
   .foot-grid{grid-template-columns:1fr 1fr}
