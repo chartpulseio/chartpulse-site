@@ -375,8 +375,8 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:8px 0 2px}
   .tbl-wrap .tbl thead,.mini thead{display:none}
   .tbl-wrap .tbl,.tbl-wrap .tbl tbody,.mini,.mini tbody{display:block;width:100%}
   .tbl-wrap .tbl tr,.mini tr{display:block;padding:13px 2px;border-bottom:1px solid var(--line)}
-  .tbl-wrap .tbl td,.mini td{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:3px 2px;border:0;white-space:normal;text-align:right}
-  .tbl-wrap .tbl td::before,.mini td::before{content:attr(data-th);flex:none;font:600 10px var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:left}
+  .tbl-wrap .tbl td,.mini td{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:4px 14px;padding:3px 2px;border:0;white-space:normal;text-align:right}
+  .tbl-wrap .tbl td::before,.mini td::before{content:attr(data-th);flex:1 0 auto;font:600 10px var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:left}
   .tbl-wrap .tbl td:empty,.mini td:empty{display:none}
   .tbl-wrap .tbl td.rk{display:none}
   .tbl-wrap .tbl td.sym-cell,.mini td.sym-cell{display:block;text-align:left;padding:0 2px 8px;font-size:15px}
