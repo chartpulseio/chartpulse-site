@@ -383,10 +383,61 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:8px 0 2px}
   .tbl-wrap .tbl td.sym-cell::before,.mini td.sym-cell::before{content:none}
   .tbl-wrap .tbl td.sym-cell small,.mini td.sym-cell small{display:block;margin-top:2px;white-space:normal;word-break:break-word}
   .tbl-wrap .tbl td .sbar{min-width:0;flex:1;justify-content:flex-end}
-  /* Screener has 13 columns -- on a phone, keep the ones that matter for a glance and drop the rest
-     (still reachable on desktop/tablet where the table renders normally). */
-  #scrTable td[data-th="Market"],#scrTable td[data-th="Entry"],#scrTable td[data-th="1W"],
-  #scrTable td[data-th="1M"],#scrTable td[data-th="ATR %"],#scrTable td[data-th="Updated"]{display:none}
+  /* Owner, 5 Nov 2026 (v2): Tier-1 queue stays a real dense table on mobile, not stacked cards --
+     matches the desktop "professional dashboard" look, just fit to the narrower screen. table-layout:
+     fixed with per-column % widths keeps it inside the viewport regardless of content length (ellipsis
+     where it doesn't fit) instead of the browser auto-sizing columns to the longest row. Drops the
+     Remark column and the v10 ladder/zone/retest detail chips (still visible on desktop); the main
+     signal state (FLY/TICK N/etc) and Strength number stay. Tap a row for the full picture. */
+  #topTable{display:table!important;table-layout:fixed!important;width:100%!important}
+  #topTable thead{display:table-header-group!important}
+  #topTable tbody{display:table-row-group!important}
+  #topTable tr{display:table-row!important;border-bottom:1px solid var(--line)}
+  #topTable th,#topTable td{display:table-cell!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;padding:8px 3px!important;font-size:10.5px!important;text-align:left!important;vertical-align:middle!important}
+  #topTable th::before,#topTable td::before{content:none!important}
+  #topTable th:first-child,#topTable td.rk{display:none!important;width:0!important;padding:0!important}
+  #topTable th:nth-child(4),#topTable td[data-th="Remark"]{display:none!important;width:0!important;padding:0!important}
+  #topTable th.num,#topTable td.num{text-align:right!important;width:18%!important}
+  #topTable .sym-cell{display:table-cell!important;padding:8px 3px!important;width:32%!important;white-space:normal!important}
+  #topTable .sym-cell b{display:block;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #topTable .sym-cell small{display:block;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  #topTable th:nth-child(3),#topTable td[data-th="Status"]{width:15%!important}
+  #topTable th:nth-child(5),#topTable td[data-th="Strength"]{width:13%!important}
+  #topTable th:nth-child(6),#topTable td[data-th="Entry"]{width:22%!important}
+  #topTable .sbar{gap:3px;min-width:0!important}
+  #topTable .sbar i{display:none}
+  #topTable td[data-th="Entry"] .tgt-chip,#topTable td[data-th="Entry"] .gopen,
+  #topTable td[data-th="Entry"] .zstrong,#topTable td[data-th="Entry"] .zlvl,
+  #topTable td[data-th="Entry"] .tks,#topTable td[data-th="Entry"] .pb5tick,
+  #topTable td[data-th="Entry"] .slw,#topTable td[data-th="Entry"] .rtest,
+  #topTable td[data-th="Entry"] .flow-prev-fly{display:none!important}
+  #topTable .sig,#topTable .flow{font-size:9px!important;padding:2px 5px!important;white-space:nowrap}
+  /* Owner, 5 Nov 2026 (v2): same dense-table fit for Recent, Trades and Screener -- drop the
+     secondary columns on a phone (still there on desktop/tablet) and let the rest fit the width. */
+  #recentTable,#tradesTable,#scrTable{display:table!important;table-layout:fixed!important;width:100%!important}
+  #recentTable thead,#tradesTable thead,#scrTable thead{display:table-header-group!important}
+  #recentTable tbody,#tradesTable tbody,#scrTable tbody{display:table-row-group!important}
+  #recentTable tr,#tradesTable tr,#scrTable tr{display:table-row!important;border-bottom:1px solid var(--line)}
+  #recentTable th,#recentTable td,#tradesTable th,#tradesTable td,#scrTable th,#scrTable td{display:table-cell!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;padding:8px 3px!important;font-size:10.5px!important;text-align:left!important;vertical-align:middle!important}
+  #recentTable th::before,#recentTable td::before,#tradesTable th::before,#tradesTable td::before,#scrTable th::before,#scrTable td::before{content:none!important}
+  #recentTable th.num,#recentTable td.num,#tradesTable th.num,#tradesTable td.num,#scrTable th.num,#scrTable td.num{text-align:right!important}
+  #recentTable .sym-cell,#tradesTable .sym-cell,#scrTable .sym-cell{display:table-cell!important;padding:8px 3px!important;width:34%!important;white-space:normal!important}
+  #recentTable .sym-cell b,#tradesTable .sym-cell b,#scrTable .sym-cell b{display:block;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #recentTable .sym-cell small,#tradesTable .sym-cell small,#scrTable .sym-cell small{display:block;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  #recentTable td[data-th="Time"],#recentTable td[data-th="Remark"],#recentTable td[data-th="At signal"],
+  #recentTable th:nth-child(1),#recentTable th:nth-child(4),#recentTable th:nth-child(5){display:none!important;width:0!important;padding:0!important}
+  #tradesTable td[data-th="Grade"],#tradesTable td[data-th="SL"],#tradesTable td[data-th="TP1"],
+  #tradesTable th:nth-child(4),#tradesTable th:nth-child(5),#tradesTable th:nth-child(6){display:none!important;width:0!important;padding:0!important}
+  #scrTable td[data-th="Remark"],#scrTable th:nth-child(4),
+  #scrTable td[data-th="Market"],#scrTable th:nth-child(2),
+  #scrTable td[data-th="Entry"],#scrTable th:nth-child(6),
+  #scrTable td[data-th="1W"],#scrTable th:nth-child(9),
+  #scrTable td[data-th="1M"],#scrTable th:nth-child(10),
+  #scrTable td[data-th="ATR %"],#scrTable th:nth-child(11),
+  #scrTable td[data-th="Updated"],#scrTable th:nth-child(13){display:none!important;width:0!important;padding:0!important}
+  #recentTable .sig,#tradesTable .sig,#scrTable .sig,#recentTable .rc-st,#tradesTable .rc-st{font-size:9px!important;padding:2px 5px!important;white-space:nowrap}
+  #scrTable .sbar{gap:3px;min-width:0!important}
+  #scrTable .sbar i{display:none}
 }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
