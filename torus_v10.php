@@ -44,8 +44,8 @@ const T10_SL_PCT = 0.015;    // owner, 19 Oct 2026: SL = 1.5% from the position 
 //   TREND: the first tick is the entry, gate or no gate (without a gate the diamond stays empty).
 //   RETRACEMENT: ticks are only counted once the gate is open, and the 5 EMA alone is never an entry --
 //     it only raises the grade. This is what stops "entry first, sweep afterwards" (the stop-hunt case).
-//   SL: the sweep wick is the anchor -- sweep extreme -/+ T10_SL_BUF_ATR x ATR5, capped at 1.5%. A
-//     structural SL wider than 1.5% is flagged WIDE (the trade itself uses the cap).
+//   SL (owner, 5 Nov 2026): the exact sweep wick price itself -- no buffer, no 1.5% cap. The candle that
+//     fired the gate is the line; the moment price closes past it, the cycle ends and the ticks refresh.
 //   Gate expiry BEFORE an entry: price more than T10_ENTRY_ATR x ATR5 outside the band, a 5m close beyond
 //     the zone (cycle reset -> APPROACHING AGAIN), or the gate going older than T10_GATE_AGE.
 //   AFTER an entry everything freezes: setup, position line, SL, targets. Band exits, zone shifts, retests
@@ -55,7 +55,7 @@ const T10_GATE_MAX_ATR = 2.0;    // deeper than this is a breakdown, not a sweep
 const T10_GATE_AGE = 1800;       // 3 x 10m candles: an unused gate expires
 const T10_CHOCH_BUF = 0.1;       // x ATR5 buffer over the swing level (body close, not a wick)
 const T10_CHOCH_BARS = 3;        // at least 3 candles after the Day-extreme / sweep candle
-const T10_SL_BUF_ATR = 0.1;      // x ATR5 buffer under the sweep wick
+const T10_SL_BUF_ATR = 0.1;      // unused since 5 Nov 2026 (SL is now the sweep wick itself, no buffer) -- kept for history
 
 function t10_closed(array $f, int $sec, int $now): array {
     $n = count($f['t']); while ($n > 0 && (int)$f['t'][$n - 1] + $sec > $now) $n--;
@@ -407,15 +407,14 @@ function t10_cycle_eval(array $F, int $a, int $cs, int $ce, int $sg, array $A5, 
     [$firstRt, $fpxRt] = $pick([1, 3, 4], true);        // retracement: gate first, never 5 EMA alone
     // The gate expires unused after 3 x 10m candles (and the caller's band / zone rules), but never after an entry.
     $gateExp = $gateAt !== null && $first === null && $now > 0 && $now - $gateAt > T10_GATE_AGE;
-    // ---- SL: the sweep wick is the anchor, 1.5% is the cap -----------------------------------------------
+    // ---- SL (owner, 5 Nov 2026): SL is now literally the BB Sweep / Liquidity Sweep price line itself --
+    // the exact wick (high for a PUT, low for a CALL) of the candle that fired the gate. No buffer, no
+    // 1.5% cap any more -- the moment price closes past that exact sweep level, the cycle ends and every
+    // tick on screen refreshes fresh (t_sticky_apply()'s existing endIt()+clear() already does that part).
     $mk = function (?float $px) use ($sg, $swWick, $a5) {
         if ($px === null) return [null, false];
-        $cap = $sg > 0 ? $px * (1 - T10_SL_PCT) : $px * (1 + T10_SL_PCT);
-        if ($swWick === null || $a5 <= 0) return [$cap, false];
-        $st = $sg > 0 ? $swWick - T10_SL_BUF_ATR * $a5 : $swWick + T10_SL_BUF_ATR * $a5;
-        if (($px - $st) * $sg <= 0) return [$cap, false];                  // the wick is the wrong side of entry
-        $wide = ($px - $st) * $sg > $px * T10_SL_PCT;                      // structure wants more than 1.5%
-        return [$wide ? $cap : $st, $wide];
+        if ($swWick === null) { $cap = $sg > 0 ? $px * (1 - T10_SL_PCT) : $px * (1 + T10_SL_PCT); return [$cap, false]; }
+        return [$swWick, false];
     };
     [$sl, $wide] = $mk($fpx); [$slRt, $wideRt] = $mk($fpxRt);
     return ['cs' => $tkTcs, 'ce' => $tce, 'ticks' => $tk, 'tick_px' => $tp,
