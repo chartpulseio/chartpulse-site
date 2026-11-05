@@ -610,6 +610,7 @@ function t2_build(string $sym, string $bias): array {
         // does it, from the same $t1 row, so Tier 1 and Tier 2 can never disagree on what ticks are showing.
         'ph' => $t1 ? t_ph_build($t1) : null, 'pht' => $t1 ? t_ph_times($t1) : null, 'lad' => ($t1 && !empty($t1['v10'])) ? 10 : 8,
         'pw' => ($t1 && !empty($t1['live'])) ? (int)($t1['pw'] ?? 0) : 0,
+        'pw_n' => ($t1 && !empty($t1['live'])) ? (int)($t1['pw_n'] ?? 0) : 0,
         'go' => ($t1 && !empty($t1['live'])) ? (int)($t1['go'] ?? 0) : 0,
         // owner, 19 Oct 2026: the tick-0 remark and the Strong Zone group come from the SAME Tier-1 row, so the
         // two pages can never show different remarks for the same symbol.
@@ -683,7 +684,7 @@ function t2_public(array $d): array {
         })() : null,
         'targets' => array_map(fn($x) => ['label' => $x['label'], 'price' => $x['price'], 'level' => t_pub_level((string)$x['fib'])], $d['targets'] ?? []),
         'flow' => $d['flow'] ?? null, 'hc' => !empty($d['hc']) ? 1 : 0,
-        'ph' => $d['ph'] ?? null, 'pht' => $d['pht'] ?? null, 'pw' => (int)($d['pw'] ?? 0), 'go' => (int)($d['go'] ?? 0),
+        'ph' => $d['ph'] ?? null, 'pht' => $d['pht'] ?? null, 'pw' => (int)($d['pw'] ?? 0), 'pw_n' => (int)($d['pw_n'] ?? 0), 'go' => (int)($d['go'] ?? 0),
         // Owner, 20 Oct 2026: both setups name the gate that fired; 'both' = one gate with a double grade.
         't0' => $d['t0'] === null ? null : ($d['t0'] === 'bb' ? 'BB Sweep' : ($d['t0'] === 'both' ? 'Sweep + BB' : 'Liquidity Sweep')),
         'lad' => (int)($d['lad'] ?? (!empty($d['v10']) ? 10 : 8)), 'sl_wide' => (int)($d['sl_wide'] ?? 0),

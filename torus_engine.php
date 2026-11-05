@@ -1192,7 +1192,7 @@ function t_slim(array $r, array $st): array {
     $o = [];
     // owner, 4 Nov 2026 fix: 'mt' was missing here, so it never survived to the stored scan row -- the frontend's
     // Mid Target badge and the pb5/ema5/st5 "not for mid-trend" exclusions (all keyed on r.mt) never fired either.
-    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','al5','v10','go','t0','zg','zlv','lad','sl_wide','mt','split24','pw30'] as $k) $o[$k] = $r[$k] ?? null;
+    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','pw_n','al5','v10','go','t0','zg','zlv','lad','sl_wide','mt','split24','pw30'] as $k) $o[$k] = $r[$k] ?? null;
     $o['tf'] = array_map(fn($v) => $v['dir'], $r['tf']);
     foreach (['spark', 'ret_1w', 'ret_1m', 'ret_3m', 'ret_1y', 'vol_20d', 'from_hi_pct', 'from_lo_pct', 'hi_52w', 'lo_52w'] as $k) $o[$k] = $st[$k];
     return $o;
@@ -1291,17 +1291,17 @@ function t_sticky_apply(string $s, array $row, int $now): array {
     static $S = null; if ($S === null) { $S = t_read_json(T_DATA . '/t1sticky.json', []); if (!isset($S['_end']) || !is_array($S['_end'])) $S['_end'] = []; }
     $px = (float)($row['price'] ?? 0); $a5 = (float)($row['atr5'] ?? 0); $zone = (float)($row['zone'] ?? 0); $changed = false;
     $zs = fn(string $sig): float => (float)($row[$sig === 'CALL' ? 'atr_low' : 'atr_high'] ?? 0) ?: $zone;   // the signal's own zone: Day Low for CALL, Day High for PUT
-    $clear = function (array $r): array { foreach (['setup', 'remark', 'flow', 'flow_at', 'grade', 'runway_type', 'tk'] as $f) $r[$f] = null; $r['signal'] = 'WAIT'; $r['pw'] = 0; $r['v10'] = 0; return $r; };
+    $clear = function (array $r): array { foreach (['setup', 'remark', 'flow', 'flow_at', 'grade', 'runway_type', 'tk'] as $f) $r[$f] = null; $r['signal'] = 'WAIT'; $r['pw'] = 0; $r['pw_n'] = 0; $r['v10'] = 0; return $r; };
     // v10 (owner, 11 Oct 2026): a trend signal that ends shows GATE CLOSE for 4 minutes, then disappears
     if (!isset($S['_gc']) || !is_array($S['_gc'])) $S['_gc'] = [];
     $gcSet = function (array $r) use (&$S, $s, $now, &$changed): array {
         $S['_gc'][$s] = ['until' => $now + T10_GATE_HOLD, 'signal' => $r['signal'], 'setup' => 'trend', 'remark' => $r['remark'] ?? 'Long target',
-            'tk' => $r['tk'] ?? null, 'tk_at' => $r['tk_at'] ?? null, 'pw' => (int)($r['pw'] ?? 0), 'flow_at' => $r['flow_at'] ?? $now];
+            'tk' => $r['tk'] ?? null, 'tk_at' => $r['tk_at'] ?? null, 'pw' => (int)($r['pw'] ?? 0), 'pw_n' => (int)($r['pw_n'] ?? 0), 'flow_at' => $r['flow_at'] ?? $now];
         $changed = true; return $r;
     };
     $gcShow = function (array $r) use (&$S, $s, $now): array {
         $g = $S['_gc'][$s] ?? null; if (!$g || $now > (int)$g['until']) return $r;
-        foreach (['signal', 'setup', 'remark', 'tk', 'tk_at', 'pw', 'flow_at'] as $f) $r[$f] = $g[$f];
+        foreach (['signal', 'setup', 'remark', 'tk', 'tk_at', 'pw', 'pw_n', 'flow_at'] as $f) $r[$f] = $g[$f] ?? ($f === 'pw_n' ? 0 : null);
         $r['flow'] = 'GATE CLOSE'; $r['v10'] = 1; $r['grade'] = null; $r['gc_until'] = (int)$g['until']; return $r;
     };
     $rx = t10_recent_exit($s, $now);   // Tier-2 trend trade exited (10m flip / reverse pattern / SL) in the last 4 min
@@ -1320,10 +1320,14 @@ function t_sticky_apply(string $s, array $row, int $now): array {
         if ($changed) t_sticky_save($S, $now);
         return $row;
     }
-    // Task G (3 Nov 2026): fresh cycle after GATE CLOSE — add "Zone retested · fly hua tha" remark so user knows
-    // this zone already fired once today. Apply only when the row has a live signal and the old end matches direction.
+    // Task G (3 Nov 2026): fresh cycle after GATE CLOSE — add a "zone retested" note so the user knows this
+    // zone already fired once today. Apply only when the row has a live signal and the old end matches direction.
+    // Owner, 5 Nov 2026 fix: this used to REPLACE the remark with the Hindi "Zone retested · fly hua tha",
+    // wiping out "Long target" / "Small target" / "Mid-trend target" -- the Remark column then gave no clue
+    // which kind of target this was. Now it appends the English note onto whatever target wording was
+    // already there, so both are visible together.
     if ($E && !empty($E['open']) && ($row['signal'] ?? 'WAIT') === ($E['sig'] ?? '') && !empty($row['flow'])) {
-        $row['remark'] = 'Zone retested · fly hua tha';
+        $row['remark'] = ($row['remark'] ?? null) ? $row['remark'] . ' · zone retested' : 'Zone retested';
     }
     $T = t_t2_open_map()[$s] ?? null;
     if ($T && !$blocked((string)$T['sig'], (int)($T['pattern_time'] ?? $T['entry_time']))) {   // Tier 2 is in a trade: Tier 1 mirrors it while an entry is possible
@@ -1365,9 +1369,16 @@ function t_sticky_apply(string $s, array $row, int $now): array {
         $wasV10 = !empty($row['v10']); if ($wasV10) $gcSet($row);
         $endIt((string)$row['signal'], $zs($row['signal'])); $row = $wasV10 ? $gcShow($clear($row)) : $clear($row);   // left the entry range or crossed the stop
     } elseif ($live) {
+        // Owner, 5 Nov 2026: the RETEST chip showed a fixed "++" no matter how many times the zone was
+        // actually retested this cycle. pw_n counts real retest EVENTS (pw rising to 2 from something
+        // else) across the whole cycle, carried forward scan to scan in the same sticky state pw already
+        // lives in -- so it naturally resets to 0 whenever $endIt() unsets $S[$s] and a fresh cycle starts.
+        $prevPw = (int)($S[$s]['pw'] ?? 0); $prevPwN = (int)($S[$s]['pw_n'] ?? 0); $curPw = (int)($row['pw'] ?? 0);
+        $pwN = ($curPw === 2 && $prevPw !== 2) ? $prevPwN + 1 : $prevPwN;
+        $row['pw_n'] = $pwN;
         $S[$s] = ['signal' => $row['signal'], 'setup' => $row['setup'], 'remark' => $row['remark'] ?? null, 'flow' => $row['flow'], 'flow_at' => (int)($row['flow_at'] ?? $now),
             'grade' => $row['grade'] ?? null, 'runway_type' => $row['runway_type'] ?? null, 'sl' => isset($row['flow_sl']) ? (float)$row['flow_sl'] : null,
-            'ext' => $zs($row['signal']), 'a5' => $a5, 'seen' => $now, 'tk' => $row['tk'] ?? null, 'tk_at' => $row['tk_at'] ?? null, 'pw' => (int)($row['pw'] ?? 0), 'v10' => (int)($row['v10'] ?? 0)];
+            'ext' => $zs($row['signal']), 'a5' => $a5, 'seen' => $now, 'tk' => $row['tk'] ?? null, 'tk_at' => $row['tk_at'] ?? null, 'pw' => $curPw, 'pw_n' => $pwN, 'v10' => (int)($row['v10'] ?? 0)];
         $changed = true;
     } elseif (isset($S[$s])) {
         $k = $S[$s]; $sg = $k['signal'] === 'CALL' ? 1 : -1;
@@ -1388,7 +1399,7 @@ function t_sticky_apply(string $s, array $row, int $now): array {
             $endIt((string)$k['signal'], (float)($k['ext'] ?? $zs($k['signal'])));
         }
         elseif (($row['signal'] ?? 'WAIT') === 'WAIT' || empty($row['flow'])) {
-            foreach (['signal', 'setup', 'remark', 'flow', 'flow_at', 'grade', 'runway_type', 'tk', 'tk_at', 'pw', 'v10'] as $f) $row[$f] = $k[$f] ?? null;
+            foreach (['signal', 'setup', 'remark', 'flow', 'flow_at', 'grade', 'runway_type', 'tk', 'tk_at', 'pw', 'pw_n', 'v10'] as $f) $row[$f] = $k[$f] ?? ($f === 'pw_n' ? 0 : null);
             // Owner, 4 Nov 2026 fix: flow_sl (stored here as 'sl') was missing from this restore list, so a row
             // held sticky from the saved snapshot showed its real ticks/flow but a null stop-loss publicly --
             // the SL-cross check above reads the correct $k['sl'] internally, but the API/UI never saw the number.

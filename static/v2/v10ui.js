@@ -83,8 +83,10 @@
   };
   // A structural stop wider than 1.5% is capped and flagged, so the risk on screen is the real one.
   const slwChip = r => (r && r.sl_wide ? '<span class="slw" title="Structure stop is wider than 1.5% - capped">WIDE</span>' : "");
+  // Owner, 5 Nov 2026: the "+" count now reflects how many times the zone has actually been retested
+  // this cycle (r.pw_n, kept by the server), not a fixed "++" regardless of count.
   const pwChip = r => r.pw === 2
-    ? '<span class="rtest" title="Retest at the Pulse zone">RETEST ++</span>'
+    ? `<span class="rtest" title="Retested ${Math.max(1, r.pw_n || 1)}× at the Pulse zone this cycle">RETEST ${"+".repeat(Math.min(6, Math.max(1, r.pw_n || 1)))}</span>`
     : r.pw === 1 ? '<span class="rtest sw" title="Sweep at the Pulse zone">+</span>' : "";
   // Tick-0 remark. The server already words it: "Liquidity Sweep" / "BB Sweep" in trend, "GATE OPEN" in
   // retracement. The older `go` flag is the fallback for rows stored before 19 Oct 2026.
@@ -289,7 +291,7 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
     // the backend state is the truth; a stale DOM that never got told the cycle ended is not.
     if (!isGate(r)) { box.innerHTML = `<div class="sd-sync-h"><span>Entry ladder</span><b>Watching</b></div>`; return; }
     const TK = tkLabels(r), P = r.ph, PT = r.pht || [];
-    const pw = r.pw === 2 ? '<span class="rtest" title="Retest at the Pulse zone">RETEST ++</span>'
+    const pw = r.pw === 2 ? `<span class="rtest" title="Retested ${Math.max(1, r.pw_n || 1)}× at the Pulse zone this cycle">RETEST ${"+".repeat(Math.min(6, Math.max(1, r.pw_n || 1)))}</span>`
       : r.pw === 1 ? '<span class="rtest sw" title="Sweep at the Pulse zone">+</span>' : "";
     // Show exactly when a tick fired (IST) next to it, so a checked tick is never just an opaque claim —
     // the time is the evidence (owner, 4 Nov 2026: repeat reports that a tick "looked checked but never happened").
