@@ -387,6 +387,8 @@ body.scanner .views{padding:24px 28px}
   .foot-grid{grid-template-columns:1fr 1fr}
 }
 @media (max-width:720px){
+  /* Owner, 5 Nov 2026: market-filter chips wrap to a second line on mobile instead of scrolling sideways. */
+  .mkt-pick{overflow-x:visible;flex-wrap:wrap;padding-bottom:4px}
   .site-head{padding:0 16px;gap:12px}
   .wrap{padding:0 16px}
   body.scanner .rail{top:auto;height:auto}

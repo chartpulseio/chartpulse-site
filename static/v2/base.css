@@ -166,7 +166,7 @@ svg{flex:none}
 .i-call{background:var(--call-fill)}.i-put{background:var(--put-fill)}.i-wait{background:#26262C}
 
 /* ---------- tables ---------- */
-.tbl-wrap{overflow-x:auto;max-width:100%}
+.tbl-wrap{overflow-x:auto;max-width:100%;overscroll-behavior-x:contain}
 .tbl{width:100%;border-collapse:collapse;font-size:13.5px}
 .tbl th{font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;background:rgba(255,255,255,.015)}
 .tbl td{padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -218,7 +218,7 @@ svg{flex:none}
 
 /* ---------- setups ---------- */
 .setups{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
-.setup{background:var(--card-bg);border:1px solid var(--line);border-radius:12px;padding:14px 15px;cursor:pointer;transition:border-color .2s,transform .2s,box-shadow .2s;position:relative;overflow:hidden;text-align:left}
+.setup{min-width:0;background:var(--card-bg);border:1px solid var(--line);border-radius:12px;padding:14px 15px;cursor:pointer;transition:border-color .2s,transform .2s,box-shadow .2s;position:relative;overflow:hidden;text-align:left}
 .setup:hover{border-color:var(--line3);transform:translateY(-2px);box-shadow:0 18px 40px -24px rgba(0,0,0,.9)}
 .setup.CALL{background:radial-gradient(260px 120px at 0 0,rgba(34,171,148,.10),transparent 70%),var(--card-bg)}.setup.PUT{background:radial-gradient(260px 120px at 0 0,rgba(247,82,95,.10),transparent 70%),var(--card-bg)}
 .setup .s-top{display:flex;justify-content:space-between;align-items:center;gap:6px}
@@ -226,7 +226,7 @@ svg{flex:none}
 .setup .s-mid{display:flex;justify-content:space-between;align-items:flex-end;margin-top:10px}
 .setup .s-str{font:600 28px/1 var(--f-disp);letter-spacing:-.04em}
 .setup .s-str small{font-size:12px;color:var(--muted);font-family:var(--f-mono)}
-.setup .s-meta{font:11.5px var(--f-mono);color:var(--muted);margin-top:8px;display:flex;justify-content:space-between}
+.setup .s-meta{font:11.5px var(--f-mono);color:var(--muted);margin-top:8px;display:flex;flex-wrap:wrap;gap:4px 10px;justify-content:space-between}
 .empty{color:var(--muted);font-size:13px;padding:22px 18px;text-align:center;border:1px dashed var(--line2);border-radius:12px;background:rgba(255,255,255,.012)}
 
 /* ---------- filters ---------- */
@@ -365,6 +365,28 @@ input[type=range]{width:100%;accent-color:var(--accent);margin:8px 0 2px}
   .hm-scale{margin-left:0}
   .range52{grid-column:auto}
   .matrix{grid-template-columns:repeat(2,1fr)}
+
+  /* Owner, 5 Nov 2026: no left-right scrolling on mobile anywhere -- up/down is fine, sideways is not.
+     Every data table (Tier-1 queue, Recent, Trades, Screener) turns into a stacked card per row instead
+     of a side-scrolling grid; each value is labelled from its own column header (data-th, set in torus.js)
+     so nothing is lost, just re-flowed vertically. */
+  .tbl-wrap{overflow-x:hidden}
+  .tbl-wrap .tbl,.mini{width:100%}
+  .tbl-wrap .tbl thead,.mini thead{display:none}
+  .tbl-wrap .tbl,.tbl-wrap .tbl tbody,.mini,.mini tbody{display:block;width:100%}
+  .tbl-wrap .tbl tr,.mini tr{display:block;padding:13px 2px;border-bottom:1px solid var(--line)}
+  .tbl-wrap .tbl td,.mini td{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:3px 2px;border:0;white-space:normal;text-align:right}
+  .tbl-wrap .tbl td::before,.mini td::before{content:attr(data-th);flex:none;font:600 10px var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-align:left}
+  .tbl-wrap .tbl td:empty,.mini td:empty{display:none}
+  .tbl-wrap .tbl td.rk{display:none}
+  .tbl-wrap .tbl td.sym-cell,.mini td.sym-cell{display:block;text-align:left;padding:0 2px 8px;font-size:15px}
+  .tbl-wrap .tbl td.sym-cell::before,.mini td.sym-cell::before{content:none}
+  .tbl-wrap .tbl td.sym-cell small,.mini td.sym-cell small{display:block;margin-top:2px;white-space:normal;word-break:break-word}
+  .tbl-wrap .tbl td .sbar{min-width:0;flex:1;justify-content:flex-end}
+  /* Screener has 13 columns -- on a phone, keep the ones that matter for a glance and drop the rest
+     (still reachable on desktop/tablet where the table renders normally). */
+  #scrTable td[data-th="Market"],#scrTable td[data-th="Entry"],#scrTable td[data-th="1W"],
+  #scrTable td[data-th="1M"],#scrTable td[data-th="ATR %"],#scrTable td[data-th="Updated"]{display:none}
 }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
