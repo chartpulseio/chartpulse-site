@@ -28,6 +28,7 @@ const T_DEFAULT_KNOBS = [
 ];
 
 require_once __DIR__ . '/torus_upstox.php';
+require_once __DIR__ . '/torus_alpaca.php';  // Alpaca (owner, 5 Nov 2026): real-time US stocks + the crypto coins Alpaca lists
 require_once __DIR__ . '/torus_sweep.php';   // v9 (owner, 6 Oct 2026): ADR near + sweep/reclaim, shared by Tier 1 and Tier 2
 require_once __DIR__ . '/torus_v10.php';     // v10 (owner, 11 Oct 2026): trend setup from the owner's PDF v3
 
@@ -1217,7 +1218,8 @@ function t_due(array $scan, int $now): array {
         if ($f && $now < (int)$f['at'] + min(86400, 300 * 2 ** min((int)$f['n'] - 1, 9))) continue;   // back off after failures
         if (!$r || !empty($r['mig'])) { $pri[$sym] = [$ss['open'] ? 0 : 3, 0]; continue; }
         $age = $now - (int)$r['ts'];
-        if ((t_up_key($sym) ? 'upstox' : 'yahoo') !== ($r['src'] ?? 'yahoo') && $age >= 30) { $pri[$sym] = [$ss['open'] ? 1 : 3, -$age]; continue; }   // data source switched
+        $wantSrc = t_up_key($sym) ? 'upstox' : (t_alp_key($sym) ? 'alpaca' : 'yahoo');
+        if ($wantSrc !== ($r['src'] ?? 'yahoo') && $age >= 30) { $pri[$sym] = [$ss['open'] ? 1 : 3, -$age]; continue; }   // data source switched
         if ($ss['open']) {
             $traded = (int)$r['rmt'] >= (int)$r['ts'] - T_FRESH;
             $inCtp = empty($r['cs']) || ($now >= $r['cs'] - 300 && $now < $r['ce'] + 300);
@@ -1247,10 +1249,15 @@ function t_day_index(array $D, int $cs, int $ce): ?int {
 /** 5-minute bars are fetched for symbols that can signal (3/4+ aligned) or have no row yet. */
 function t_want5(?array $r): bool { return !$r || !empty($r['mig']) || (int)($r['alignment'] ?? 0) >= 2; }   // v10: 3/5 can come from 2/4 + 30m
 function t_process(array $syms, array &$scan, int $now): void {
-    $up = []; $yh = [];
-    foreach ($syms as $s) { if (t_up_key($s)) $up[] = $s; else $yh[] = $s; }
+    $up = []; $al = []; $yh = [];
+    foreach ($syms as $s) {
+        if (t_up_key($s)) $up[] = $s;          // NSE / MCX via Upstox, unchanged
+        elseif (t_alp_key($s)) $al[] = $s;     // US stocks + Alpaca's own crypto list
+        else $yh[] = $s;                       // everything else stays on Yahoo
+    }
     if ($yh) t_process_yahoo($yh, $scan, $now);
     if ($up) t_process_upstox($up, $scan, $now);
+    if ($al) t_process_alpaca($al, $scan, $now);
 }
 function t_needs_full(?array $fr, ?array $r, int $now, string $src, string $ukey = ''): bool {
     return !$fr || !$r || !empty($r['mig']) || ($r['src'] ?? 'yahoo') !== $src || ($r['ukey'] ?? '') !== $ukey
