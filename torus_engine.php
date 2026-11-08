@@ -611,20 +611,34 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
         $isRt = $rt && !empty($rt['valid']);
         if (!$isRt) { $signal = 'WAIT'; $setup = null; }   // a retracement entry now needs the v10 rules too
     }
-    // Mid-Trend: fires when price has cleared the Day Low/High ATR band (3 Nov 2026).
-    // OLD gate: Retracement TP1 tick had to fire. NEW gate: price simply beyond the ATR band —
-    // CALL when price < atr_low (band cleared to downside), PUT when price > atr_high.
-    // No Retracement row required; standalone setup on any strong zone within 1×ATR5.
-    $mt = null; $isMt = false;
-    $mtBandCleared = $wantUp ? ($price < $atrLow) : ($price > $atrHigh);
-    if ($mtBandCleared) {
-        $mtctx = $v10ctx + ['mt_active' => true, 'zone' => $zone, 'wantUp' => $wantUp,
-            'bars' => $bars, 'atr5' => $atr5, 'atr_low' => $atrLow, 'atr_high' => $atrHigh,
-            'pivots' => $pivR ?: [], 'fibs' => array_map(fn($f) => $f['price'], $fibs),
-            'pdh' => $pdh, 'pdl' => $pdl, 'pdc' => $pdc];
-        $mt = t_mt_eval($sym, $fr, array_map(fn($v) => (int)$v['dir'], $tfs), $mtctx);
-        $isMt = $mt && !empty($mt['valid']);
+    // Mid-Trend v3 (owner, 8 Nov 2026 redesign -- "our easiest strategy, but it never fires").
+    // OLD gate (v2, 3 Nov): price first had to clear the Day Low/High ATR band, AND the qualifying zone
+    // itself had to sit beyond that band -- two rare conditions stacked on top of the 4h+1d MTF-alignment
+    // check and a >=2-level confluence cluster. That compound AND-chain is why it never fired even once.
+    // NEW gate: just the owner's own words -- whenever price sits inside the range of a 1H Fibonacci
+    // retracement level, PDH/PDL/PDC, a classic pivot level, the weekly high/low or the monthly high/low,
+    // in the direction the MTF bias (4h+1d) already favours, that's the alert. No band-clear requirement,
+    // no "zone must be beyond the band", no multi-level clustering -- one level within tolerance is enough.
+    $wkFrom = max(0, $n - 6); $wkSlH = array_slice($D['h'], $wkFrom, max(0, $n - 1 - $wkFrom)); $wkSlL = array_slice($D['l'], $wkFrom, max(0, $n - 1 - $wkFrom));
+    $wH = $wkSlH ? max($wkSlH) : $pdh; $wL = $wkSlL ? min($wkSlL) : $pdl;
+    $moFrom = max(0, $n - 22); $moSlH = array_slice($D['h'], $moFrom, max(0, $n - 1 - $moFrom)); $moSlL = array_slice($D['l'], $moFrom, max(0, $n - 1 - $moFrom));
+    $mH = $moSlH ? max($moSlH) : $pdh; $mL = $moSlL ? min($moSlL) : $pdl;
+    // 1H Fibonacci retracement -- swing high/low of the last 60 CLOSED 1H candles, standard ratios from both ends
+    // (which end is "the" swing depends on which way price last moved; keeping both avoids guessing that here).
+    $H1 = $fr['1H'] ?? null; $h1n = $H1 ? count($H1['c'] ?? []) : 0; $fibs1h = [];
+    if ($h1n > 10) {
+        $w0 = max(0, $h1n - 61); $len = $h1n - 1 - $w0;   // excludes the still-forming last 1H candle
+        if ($len > 1) {
+            $sw1hH = max(array_slice($H1['h'], $w0, $len)); $sw1hL = min(array_slice($H1['l'], $w0, $len));
+            if ($sw1hH > $sw1hL) { $rg1h = $sw1hH - $sw1hL; foreach ([0.382, 0.5, 0.618, 0.705, 0.786] as $lv) { $fibs1h[] = $sw1hH - $rg1h * $lv; $fibs1h[] = $sw1hL + $rg1h * $lv; } }
+        }
     }
+    $mtctx = $v10ctx + ['mt_active' => true, 'zone' => $zone, 'wantUp' => $wantUp,
+        'bars' => $bars, 'atr5' => $atr5, 'atr_low' => $atrLow, 'atr_high' => $atrHigh,
+        'pivots' => $pivR ?: [], 'fibs' => array_merge(array_map(fn($f) => $f['price'], $fibs), $fibs1h),
+        'pdh' => $pdh, 'pdl' => $pdl, 'pdc' => $pdc, 'wh' => $wH, 'wl' => $wL, 'mh' => $mH, 'ml' => $mL];
+    $mt = t_mt_eval($sym, $fr, array_map(fn($v) => (int)$v['dir'], $tfs), $mtctx);
+    $isMt = $mt && !empty($mt['valid']);
     if ($setup === 'retrace') $bonus4 = 0.0;   // owner, 5 Oct 2026 11:37 IST: 4/4 Pulse Sync bonus only for trend setups
     // Retracement / short target (owner, 5 Oct 2026, 07:05 IST): mirror of trend. Entry, RUNWAY and FLY already follow the trade side
     // ($wantUp), RSI 10m scoring stays by trade side (PUT at the Day High scores RSI > 70, CALL at the Day Low RSI < 30).

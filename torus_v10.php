@@ -820,27 +820,24 @@ function t_rt_exit_8m(array $F5, int $te, int $sg, int $now): ?array {
 }
 
 /* ============================================================================
-   Mid-Trend setup v2 (owner, 4 Nov 2026 redesign -- "final setup, forget the old one").
-   Fires after a Trend breakout clears the ATR band, OR after a Retracement, whenever
-   price HOLDS at or RETESTS a strong zone (Fib/Pivot/PDC/PDH/PDL) beyond the band, in
-   the direction of the MTF bias. No GATE / Tick-1 requirement -- scoring reuses t10_score()
-   (the same formula as Trend) instead of a separate scorer, and ATR tolerances are a
-   little wider than the superseded v1 above (zone search 1.0->1.5x ATR5, STRONG_ZONE
-   cluster + hold/retest tolerance 0.35->0.5x ATR5).
+   Mid-Trend setup v3 (owner, 8 Nov 2026 redesign -- "our easiest strategy, should never be this rare").
+   v2 required price to first clear the Day ATR band AND the qualifying zone to sit beyond that band AND
+   >=2 levels to cluster there -- three rare conditions stacked together, so it never fired even once.
+   v3 drops all three: whenever price simply sits within tolerance of ANY one qualifying level -- a 1H
+   Fibonacci retracement level, PDH/PDL/PDC, a classic pivot, the weekly high/low or the monthly high/low
+   -- in the direction the MTF bias (4h+1d) already favours, that's the alert. Scoring still reuses
+   t10_score() (same formula as Trend) so the strength number stays meaningful.
    ============================================================================ */
-const T_MT_ZONE_RADIUS = 1.5;   // x ATR5 -- how far beyond the band we search for a strong zone
-const T_MT_ZONE_TOL    = 0.5;   // x ATR5 -- STRONG_ZONE clustering AND hold/retest tolerance
+const T_MT_ZONE_TOL = 0.5;   // x ATR5 -- how close price must be to a level to count as "in its range"
 
 /**
- * Mid-Trend v2. $ctx['mt_active'] (engine: ATR band cleared, bias aligned) gates entry.
- * No gate/Tick-1 needed -- flow opens straight at SIGNAL once a strong zone is held/retested
- * and the (trend) score clears T10_MIN_SCORE, and promotes to FLY once price shows a confirmed
- * reversal candle back toward the trend direction. Returns null when gate not active or no
- * qualifying zone is currently held.
+ * Mid-Trend v3. No band-clear pre-gate any more -- called on every symbol once bias is known; the
+ * 4h+1d MTF-alignment check below is the only direction gate. Flow opens straight at SIGNAL once price
+ * is within tolerance of any qualifying level and the (trend) score clears T10_MIN_SCORE, and promotes
+ * to FLY once price shows a confirmed reversal candle back toward the trend direction.
  */
 function t_mt_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     if (!T10_ON) return null;
-    if (empty($ctx['mt_active'])) return null;   // engine sets this when ATR band is cleared
     $F5 = $fr['5m'] ?? null; $now = t_now();
     $bars = $ctx['bars']; $a5 = (float)$ctx['atr5'];
     if (!$F5 || !$bars || $a5 <= 0) return null;
@@ -848,35 +845,27 @@ function t_mt_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     [$bias, $al5] = t10_bias($tfDirs, $m30);
     if ($bias === 'NEUTRAL') return null;
     $wantUp = $bias === 'UP'; $sg = $wantUp ? 1 : -1;
-    // 4H+1D alignment gate (both must agree with bias direction) -- Mid-Trend is always MTF-aligned,
-    // whether it arose as a trend-breakout continuation or a post-retracement bounce (owner, 4 Nov 2026).
+    // 4H+1D alignment gate (both must agree with bias direction) -- "MTF ke favour mein" (owner, 8 Nov 2026).
     $d4h = $tfDirs['4h'] ?? 0; $d1d = $tfDirs['1d'] ?? 0;
     if ($d4h !== $sg || $d1d !== $sg) return null;
     $price   = (float)$ctx['price'];
-    $atrLow  = (float)($ctx['atr_low']  ?? 0);
-    $atrHigh = (float)($ctx['atr_high'] ?? 0);
     $pdh = (float)($ctx['pdh'] ?? 0); $pdl = (float)($ctx['pdl'] ?? 0); $pdc = (float)($ctx['pdc'] ?? 0);
-    // Zone anchor: nearest strong zone beyond the ATR band, within T_MT_ZONE_RADIUS x ATR5 of price.
+    $wh = (float)($ctx['wh'] ?? 0); $wl = (float)($ctx['wl'] ?? 0); $mh = (float)($ctx['mh'] ?? 0); $ml = (float)($ctx['ml'] ?? 0);
+    // Every qualifying level: pivots, 1H fib + prev-day fib (both merged into $ctx['fibs'] by the engine),
+    // PDH/PDL/PDC, weekly high/low, monthly high/low.
     $lvAll = array_merge(array_values($ctx['pivots'] ?? []), array_values($ctx['fibs'] ?? []),
-        array_filter([$pdh, $pdl, $pdc]));
-    $zone = null; $bestDist = PHP_FLOAT_MAX;
+        array_filter([$pdh, $pdl, $pdc, $wh, $wl, $mh, $ml]));
+    $tol = T_MT_ZONE_TOL * $a5;
+    // Nearest qualifying level to current price, whichever side it's on -- no "beyond the band" restriction.
+    $zone = null; $bestDist = PHP_FLOAT_MAX; $cnt = 0;
     foreach ($lvAll as $lv) {
         $lv = (float)$lv; if ($lv <= 0) continue;
-        if ($wantUp && $lv >= $atrLow)  continue;   // CALL: zone must be below atr_low
-        if (!$wantUp && $lv <= $atrHigh) continue;  // PUT: zone must be above atr_high
         $dist = abs($price - $lv);
         if ($dist < $bestDist) { $bestDist = $dist; $zone = $lv; }
     }
-    if ($zone === null) return null;                              // no strong zone found beyond band
-    if (abs($price - $zone) > T_MT_ZONE_RADIUS * $a5) return null; // zone must be within 1.5xATR5
-    $tol = T_MT_ZONE_TOL * $a5;
-    // STRONG_ZONE confluence: >=2 qualifying levels clustered within $tol of the found zone.
-    $cnt = 0; $glv = [];
-    foreach ($lvAll as $lv) { if (abs((float)$lv - $zone) <= $tol) { $cnt++; $glv[] = (float)$lv; } }
-    if ($cnt < 2) return null;
-    // Hold / retest: price must currently be sitting back at the zone (within the same tolerance) --
-    // this is what makes it "hold" or "retest" rather than just having passed through it once.
-    if (abs($price - $zone) > $tol) return null;
+    if ($zone === null) return null;
+    if (abs($price - $zone) > $tol) return null;   // price must actually be IN the level's range right now
+    foreach ($lvAll as $lv) if (abs((float)$lv - $zone) <= $tol) $cnt++;   // how many levels are stacked here (shown as strength context only)
     $pdX = abs($pdh - $zone) <= abs($pdl - $zone) ? $pdh : $pdl;
     $c5 = t10_closed($F5, 300, $now);
     $rsi5 = count($c5['c']) >= 20 ? t_rsi_last(array_map('floatval', array_slice($c5['c'], -200)), 14) : null;
