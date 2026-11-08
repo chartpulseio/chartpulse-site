@@ -404,6 +404,30 @@ function t2_build(string $sym, string $bias): array {
     t2_trades_merge($sym, $R['trades'], $t1);
     $last = $R['trades'] ? $R['trades'][count($R['trades']) - 1] : null;
     $open = $last && $last['status'] === 'open' ? $last : null;
+    // owner, 8 Nov 2026: same runbook rule already applied to ticks/ph/pw below ("Tier 1 and Tier 2 must
+    // always show the same signals") now extended to the open-trade/status itself. Tier-2 runs its own
+    // independent candle-replay for entries, which can stay un-triggered for days after Tier-1's own ladder
+    // has already confirmed FLY -- that showed up live as "FLY - entry confirmed" up top while this page's
+    // own status stayed stuck on WATCH/SCANNING underneath (BTC-USD, reported 8 Nov 2026). When Tier-1 is
+    // already live + FLY on this same bias and Tier-2's replay hasn't opened anything of its own, mirror
+    // Tier-1's entry here too: SL = Tier-1's own flow_sl (the sweep-wick SL), target = the nearest fib pivot
+    // beyond the current price in the trade's direction (same pivots this page already draws).
+    if (!$open && $t1 && !empty($t1['live']) && ($t1['flow'] ?? null) === 'FLY' && ($t1['signal'] ?? null) === $bias) {
+        $slT1 = isset($t1['flow_sl']) ? (float)$t1['flow_sl'] : null;
+        if ($slT1 !== null && $PV) {
+            $sg = $bias === 'CALL' ? 1 : -1;
+            $cands = [];
+            foreach (($sg > 0 ? ['R1', 'R2', 'R3'] : ['S1', 'S2', 'S3']) as $k)
+                if (isset($PV[$k]) && ((float)$PV[$k] - $px) * $sg > 0) $cands[] = ['label' => $k, 'price' => (float)$PV[$k]];
+            usort($cands, fn($x, $y) => (($x['price'] - $px) * $sg) <=> (($y['price'] - $px) * $sg));
+            $tgtLevel = $cands ? $cands[0]['price'] : $px + $sg * abs($px - $slT1);
+            $more = array_slice($cands, 1, 2);
+            $open = ['sig' => $bias, 'pattern' => 'Tier-1 ladder', 'pattern_time' => (int)($t1['flow_at'] ?? $now), 'entry_time' => (int)($t1['flow_at'] ?? $now),
+                'entry' => t_r($px), 'sl0' => t_r($slT1), 'sl' => t_r($slT1), 'target' => t_r($tgtLevel), 'target_label' => $cands ? t_pub_level($cands[0]['label']) : null,
+                'targets_more' => array_map(fn($x) => ['label' => t_pub_level($x['label']), 'price' => t_r($x['price'])], $more),
+                'status' => 'open', 'grade' => $t1['grade'] ?? null];
+        }
+    }
     $status = $open ? 'ACTION_TRIGGERED' : ($R['pending'] ? 'PATTERN' : 'WAITING_FOR_TRIGGER');
     if ($open) $bias = $open['sig'];
     $act = $open['entry'] ?? null; $actT = $open['entry_time'] ?? null; $sl = $open['sl'] ?? null; $tgt = $open['target'] ?? null; $rr = null; $targets = [];
