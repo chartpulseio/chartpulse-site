@@ -845,9 +845,8 @@ function t_mt_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     [$bias, $al5] = t10_bias($tfDirs, $m30);
     if ($bias === 'NEUTRAL') return null;
     $wantUp = $bias === 'UP'; $sg = $wantUp ? 1 : -1;
-    // 4H+1D alignment gate (both must agree with bias direction) -- "MTF ke favour mein" (owner, 8 Nov 2026).
-    $d4h = $tfDirs['4h'] ?? 0; $d1d = $tfDirs['1d'] ?? 0;
-    if ($d4h !== $sg || $d1d !== $sg) return null;
+    // MTF gate: same Pulse Sync rule Trend uses (3/4 or 4/4 alignment via t10_bias above) --
+    // no extra per-TF requirement on top (owner, 9 Nov 2026: "same mtf logic jo trend main use krte hain").
     $price   = (float)$ctx['price'];
     $pdh = (float)($ctx['pdh'] ?? 0); $pdl = (float)($ctx['pdl'] ?? 0); $pdc = (float)($ctx['pdc'] ?? 0);
     $wh = (float)($ctx['wh'] ?? 0); $wl = (float)($ctx['wl'] ?? 0); $mh = (float)($ctx['mh'] ?? 0); $ml = (float)($ctx['ml'] ?? 0);
