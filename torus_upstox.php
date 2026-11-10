@@ -25,7 +25,15 @@ const T_UP_INDEX = [
 
 function t_cfg(string $k, $def = null) {
     static $c = null;
-    if ($c === null) { $p = getenv('TORUS_CONFIG') ?: __DIR__ . '/config.php'; $c = is_file($p) ? (array)(include $p) : []; }
+    if ($c === null) {
+        // The web server gets the config path from .htaccess (SetEnv TORUS_CONFIG). The cron job runs from the
+        // command line, where that variable does not exist, so it fell back to a config.php that is not there and
+        // ran with NO settings: no Alpaca (it scanned those symbols through Yahoo while the website asked for
+        // Alpaca), no Telegram, no admin password. Same file for both now (10 Nov 2026).
+        $p = getenv('TORUS_CONFIG') ?: '';
+        if ($p === '' || !is_file($p)) { $alt = dirname(__DIR__) . '/cp_secrets/cp-config.php'; $p = @is_file($alt) ? $alt : __DIR__ . '/config.php'; }
+        $c = is_file($p) ? (array)(include $p) : [];
+    }
     return $c[$k] ?? $def;
 }
 function t_up_token(): string { return trim((string)t_cfg('upstox_token', 'eyJ0eXAiOiJKV1QiLCJrZXlfaWQiOiJza192MS4wIiwiYWxnIjoiSFMyNTYifQ.eyJzdWIiOiI3NEI4NjQiLCJqdGkiOiI2YWFkNDhhNjE0Yjg3NTA1NWQyY2VkNmEiLCJpc011bHRpQ2xpZW50IjpmYWxzZSwiaXNQbHVzUGxhbiI6dHJ1ZSwiaXNFeHRlbmRlZCI6dHJ1ZSwiaWF0IjoxNzg5NzQxMjIyLCJpc3MiOiJ1ZGFwaS1nYXRld2F5LXNlcnZpY2UiLCJleHAiOjE4MjEzMDQ4MDB9.ccHeAW27YUOPYf3cAnhWxl53Alg4sXbKcUQ2kfBKfo4')); }

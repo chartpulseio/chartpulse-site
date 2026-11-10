@@ -1432,7 +1432,8 @@ function t_sticky_apply(string $s, array $row, int $now): array {
         // moving outside the ATR entry window, which is what trips GATE CLOSE below).
         $ok = !t_sl_crossed($px, $sg, $k['sl']) && ($kEntry || t_entry_ok($px, $sg, (float)($k['ext'] ?? 0), $a5 > 0 ? $a5 : (float)($k['a5'] ?? 0), $k['sl']));
         $flip = ($row['signal'] ?? 'WAIT') !== 'WAIT' && $row['signal'] !== $k['signal'];
-        if (!empty($k['v10']) && ($k['setup'] ?? '') === 'trend' && $past((string)$k['signal'], (float)($k['ext'] ?? 0))) {
+        $gateOff = isset($row['mv']) && (float)$row['mv'] < T10_MOVE_MIN * 100;   // day-move gate not met: nothing trend-side is held
+        if (!empty($k['v10']) && ($k['setup'] ?? '') === 'trend' && ($gateOff || $past((string)$k['signal'], (float)($k['ext'] ?? 0)))) {
             unset($S[$s]); $changed = true;   // new extreme: drop the old snapshot quietly, the row shows the fresh cycle
         }
         elseif (!$ok || $flip) {
