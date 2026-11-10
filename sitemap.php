@@ -17,6 +17,7 @@ $U = [
     ['/scanners/', $mt('scanners.html')],
     ['/scanner.html', $mt('scanner.html')],
     ['/backtesting/', $mt('pro-backtesting.html')],
+    ['/desk/', $mt('desk.html')],
     ['/news.html', $mt('news.html')],
     ['/insights.html', $mt('insights.html')],
     ['/pricing.html', $mt('pricing.html')],

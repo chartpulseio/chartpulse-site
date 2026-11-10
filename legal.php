@@ -6,7 +6,7 @@ $biz = t_cfg('business_name', 'ChartPulse'); $mail = t_cfg('support_email', '');
 $sebi = t_cfg('sebi_registration', ''); $upd = t_cfg('legal_updated', '25 September 2026');
 $pages = ['terms' => 'Terms & Conditions', 'privacy' => 'Privacy Policy', 'refund' => 'Refund & Cancellation', 'contact' => 'Contact us', 'disclaimer' => 'Risk disclaimer'];
 $p = $_GET['p'] ?? 'terms'; if (!isset($pages[$p])) $p = 'terms';
-$title = $pages[$p] . ' Â· ' . $biz;
+$title = $pages[$p] . ' · ' . $biz;
 ?><!doctype html>
 <html lang="en">
 <head>
@@ -18,9 +18,9 @@ $title = $pages[$p] . ' Â· ' . $biz;
 <meta property="og:title" content="<?= $e($title) ?>">
 <meta property="og:description" content="<?= $e($pages[$p]) ?> for <?= $e($biz) ?>">
 <meta property="og:type" content="website">
-<link rel="canonical" href="https://chartpulse.io/legal.php?p=<?= $e($p) ?>">
+<link rel="canonical" href="https://chartpulse.io<?= $p === 'contact' ? '/contact/' : '/legal/' . $e($p) ?>">
 <meta property="og:site_name" content="ChartPulse">
-<meta property="og:url" content="https://chartpulse.io/legal.php?p=<?= $e($p) ?>">
+<meta property="og:url" content="https://chartpulse.io<?= $p === 'contact' ? '/contact/' : '/legal/' . $e($p) ?>">
 <meta property="og:image" content="https://chartpulse.io/static/og.jpg">
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -37,7 +37,7 @@ $title = $pages[$p] . ' Â· ' . $biz;
 </head>
 <body class="site legal-page" data-page="legal">
 <header class="site-head">
-  <a class="logo" href="./" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
+  <a class="logo" href="/" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
   <nav class="site-nav" id="siteNav" aria-label="Site">
 <style>
 .site-nav .nav-dd{position:relative;display:inline-block}
@@ -67,27 +67,27 @@ $title = $pages[$p] . ' Â· ' . $biz;
 <a href="/pricing.html" data-p="pricing-cta">Get access</a>
 </nav>
   <div class="head-right">
-    <button class="cmdk-trigger" type="button" data-cmdk aria-label="Search markets"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search marketsâ¦</span><kbd>âK</kbd></button>
-    <span class="live-pill" id="hdrLive" title="Instruments trading right now"><span class="ldot off"></span><b>â</b> live</span>
+    <button class="cmdk-trigger" type="button" data-cmdk aria-label="Search markets"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search markets…</span><kbd>⌘K</kbd></button>
+    <span class="live-pill" id="hdrLive" title="Instruments trading right now"><span class="ldot off"></span><b>–</b> live</span>
     <span class="clock" id="cpClock" title="Times on this site are shown in your own time zone"></span>
-    <a class="btn primary" href="pricing.html">Get access</a>
+    <a class="btn primary" href="/pricing.html">Get access</a>
     <button class="nav-toggle" type="button" aria-label="Menu" aria-controls="siteNav" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
   </div>
 </header>
 <main class="page wrap legal" id="main">
-  <nav class="legal-nav" aria-label="Policies"><?php foreach ($pages as $k => $v): ?><a href="legal.php?p=<?= $k ?>" class="<?= $k === $p ? 'on' : '' ?>"><?= $e($v) ?></a><?php endforeach; ?></nav>
+  <nav class="legal-nav" aria-label="Policies"><?php foreach ($pages as $k => $v): ?><a href="<?= $k === 'contact' ? '/contact/' : '/legal/' . $k ?>" class="<?= $k === $p ? 'on' : '' ?>"><?= $e($v) ?></a><?php endforeach; ?></nav>
   <div><h1><?= $e($pages[$p]) ?></h1><p class="upd">Last updated: <?= $e($upd) ?></p></div>
 <?php if ($p === 'terms'): ?>
   <p>These terms govern your use of the website and services of <b><?= $e($biz) ?></b> ("we", "us"). By using the site or buying a plan you agree to them.</p>
   <h2>1. The service</h2><p>We provide market data dashboards, rule-based scanners (including the Tier-1 scanner), charts and analytics for stocks, indices, futures, currencies and crypto assets. Features differ by plan and may change as the product develops.</p>
-  <h2>2. Not investment advice</h2><p>All content, signals, scores and levels are generated by software from third-party market data. They are informational and educational only and are not a recommendation to buy, sell or hold any instrument. You alone are responsible for your trading decisions and their results. See the <a href="legal.php?p=disclaimer">Risk disclaimer</a>.</p>
+  <h2>2. Not investment advice</h2><p>All content, signals, scores and levels are generated by software from third-party market data. They are informational and educational only and are not a recommendation to buy, sell or hold any instrument. You alone are responsible for your trading decisions and their results. See the <a href="/legal/disclaimer">Risk disclaimer</a>.</p>
   <h2>3. Eligibility and access</h2><p>You must be at least 18 years old and able to form a binding contract. Access is personal to the buyer; sharing, reselling or redistributing access, signals or data is not allowed and may lead to termination without refund.</p>
   <h2>4. Plans and payment</h2><p>Plan prices are shown on the Pricing page in Indian Rupees and include applicable taxes unless stated otherwise. Payments are processed by Razorpay; we do not see or store your card, UPI or bank details. A plan covers the period shown at checkout.</p>
   <h2>5. Data sources and availability</h2><p>Prices come from third parties (such as Yahoo Finance and Upstox) and may be delayed, incomplete or wrong. The service may be interrupted for maintenance or reasons outside our control. We do not guarantee uninterrupted or error-free operation.</p>
   <h2>6. Acceptable use</h2><p>Do not scrape, overload, reverse-engineer or attack the service, and do not use it for unlawful purposes.</p>
   <h2>7. Intellectual property</h2><p>The site, software, scoring method, design and content belong to <?= $e($biz) ?>. Charts are provided by TradingView under their terms.</p>
   <h2>8. Limitation of liability</h2><p>To the extent permitted by law, we are not liable for any trading losses or indirect, incidental or consequential damages. Our total liability for any claim is limited to the amount you paid us in the three months before the claim.</p>
-  <h2>9. Termination</h2><p>We may suspend or end access for breach of these terms. You may stop using the service at any time; refunds follow the <a href="legal.php?p=refund">Refund &amp; Cancellation policy</a>.</p>
+  <h2>9. Termination</h2><p>We may suspend or end access for breach of these terms. You may stop using the service at any time; refunds follow the <a href="/legal/refund">Refund &amp; Cancellation policy</a>.</p>
   <h2>10. Governing law</h2><p>These terms are governed by the laws of India. Courts at the place of our registered office have exclusive jurisdiction.</p>
   <h2>11. Contact</h2><p>Questions about these terms: <?= $mail ? '<a href="mailto:' . $e($mail) . '">' . $e($mail) . '</a>' : 'see the Contact page' ?>.</p>
 <?php elseif ($p === 'privacy'): ?>
@@ -121,7 +121,7 @@ sent together with your IP address, access code or payment details.</p>
 or buy/sell recommendations.</p>
 <?php elseif ($p === 'refund'): ?>
   <p>This policy applies to all paid plans of <b><?= $e($biz) ?></b>.</p>
-  <h2>Delivery of the service</h2><p>Plans are digital services and no physical goods are shipped. Access starts immediately after a successful payment: the browser used for checkout is unlocked and a personal access code is shown on screen for your other devices. If the page closes before you see the code, recover it on the <a href="pricing.html#recover">Pricing page</a> with your payment ID and checkout email, or write to support.</p>
+  <h2>Delivery of the service</h2><p>Plans are digital services and no physical goods are shipped. Access starts immediately after a successful payment: the browser used for checkout is unlocked and a personal access code is shown on screen for your other devices. If the page closes before you see the code, recover it on the <a href="/pricing.html#recover">Pricing page</a> with your payment ID and checkout email, or write to support.</p>
   <h2>Cancellation</h2><p>You can cancel future renewals at any time by writing to support. The current paid period continues until it ends.</p>
   <h2>Refunds</h2><ul><li>Duplicate or excess payments are refunded in full.</li><li>If we fail to deliver access within 7 days of payment and cannot fix it, the payment is refunded in full.</li><li>Once access has been delivered, fees for the running period are not refundable, because the service is consumed immediately.</li></ul>
   <h2>How refunds are paid</h2><p>Approved refunds are made to the original payment method through Razorpay, usually within 5 to 7 working days of approval.</p>
@@ -129,10 +129,10 @@ or buy/sell recommendations.</p>
 <?php elseif ($p === 'contact'): ?>
   <p>We usually reply within one working day.</p>
   <div class="g2" style="margin-top:10px">
-    <div class="card spot"><h2>Email</h2><p style="font-size:16px"><?= $mail ? '<a href="mailto:' . $e($mail) . '">' . $e($mail) . '</a>' : 'â' ?></p></div>
-    <div class="card spot"><h2>Phone</h2><p style="font-size:16px"><?= $tel ? '<a href="tel:' . $e(preg_replace('/\s+/', '', $tel)) . '">' . $e($tel) . '</a>' : 'â' ?></p></div>
+    <div class="card spot"><h2>Email</h2><p style="font-size:16px"><?= $mail ? '<a href="mailto:' . $e($mail) . '">' . $e($mail) . '</a>' : '—' ?></p></div>
+    <div class="card spot"><h2>Phone</h2><p style="font-size:16px"><?= $tel ? '<a href="tel:' . $e(preg_replace('/\s+/', '', $tel)) . '">' . $e($tel) . '</a>' : '—' ?></p></div>
     <div class="card spot"><h2>Business</h2><p style="font-size:16px"><?= $e($biz) ?></p></div>
-    <div class="card spot"><h2>Address</h2><p style="font-size:16px;white-space:pre-line"><?= $addr ? $e($addr) : 'â' ?></p></div>
+    <div class="card spot"><h2>Address</h2><p style="font-size:16px;white-space:pre-line"><?= $addr ? $e($addr) : '—' ?></p></div>
   </div>
 <?php else: ?>
   <p><b><?= $e($biz) ?></b> provides market data analytics and rule-based scanning tools for education and research.</p>
@@ -146,15 +146,15 @@ or buy/sell recommendations.</p>
 <footer class="site-foot">
   <div class="foot-grid wrap">
     <div>
-      <a class="logo" href="./" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
+      <a class="logo" href="/" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
       <p>Multi-market Tier-1 scanner for stocks, indices, futures, forex and crypto. Market data from Yahoo Finance and Upstox (India). Charts by TradingView.</p>
       <span class="foot-status"><span class="ldot"></span>Signals only for markets that are live</span>
     </div>
-    <div><h4>Product</h4><a href="./">Overview</a><a href="scanner.html">Tier-1 Scanner</a><a href="insights.html">Market Insights</a><a href="news.html">News &amp; Impact</a><a href="pricing.html">Pricing</a></div>
-    <div><h4>Company</h4><a href="legal.php?p=contact">Contact us</a><a href="legal.php?p=terms">Terms &amp; Conditions</a><a href="legal.php?p=privacy">Privacy Policy</a><a href="legal.php?p=refund">Refund &amp; Cancellation</a></div>
-    <div><h4>Resources</h4><a href="legal.php?p=disclaimer">Risk disclaimer</a><a href="/api.php?r=export">Signals CSV</a><a href="#" data-cmdk>Search <kbd>âK</kbd></a></div>
+    <div><h4>Product</h4><a href="/">Overview</a><a href="/scanner.html">Tier-1 Scanner</a><a href="/insights.html">Market Insights</a><a href="/news.html">News &amp; Impact</a><a href="/pricing.html">Pricing</a></div>
+    <div><h4>Company</h4><a href="/contact/">Contact us</a><a href="/legal/terms">Terms &amp; Conditions</a><a href="/legal/privacy">Privacy Policy</a><a href="/legal/refund">Refund &amp; Cancellation</a></div>
+    <div><h4>Resources</h4><a href="/legal/disclaimer">Risk disclaimer</a><a href="/api.php?r=export">Signals CSV</a><a href="#" data-cmdk>Search <kbd>⌘K</kbd></a></div>
   </div>
-  <div class="disclaimer wrap"><b>Risk disclaimer:</b> ChartPulse provides market data analytics and rule-based scanning tools for education and research. Nothing on this website is investment advice or a recommendation to buy or sell any security, derivative, currency or crypto asset. Trading involves substantial risk of loss. Signals are model output based on delayed or real-time third-party data that may be inaccurate. Consult a SEBI-registered adviser before acting. Â© <span data-year></span> ChartPulse.</div>
+  <div class="disclaimer wrap"><b>Risk disclaimer:</b> ChartPulse provides market data analytics and rule-based scanning tools for education and research. Nothing on this website is investment advice or a recommendation to buy or sell any security, derivative, currency or crypto asset. Trading involves substantial risk of loss. Signals are model output based on delayed or real-time third-party data that may be inaccurate. Consult a SEBI-registered adviser before acting. © <span data-year></span> ChartPulse.</div>
 </footer>
 <script defer src="/static/v2/cp.js?v=12"></script>
 </body>

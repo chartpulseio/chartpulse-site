@@ -362,6 +362,9 @@ function t2_trades_view(int $max = 120): array {
 }
 
 /** Build the Tier-2 payload. Returns ['error' => ...] when data is missing. */
+const T2_T1_FRESH = 180;   // s -- how old the stored Tier-1 row may be and still be the one Tier 2 mirrors
+const T2_T1_KEYS = ['signal', 'setup', 'remark', 'flow', 'flow_at', 'flow_sl', 'grade', 'runway_type', 'hc', 'tk', 'tk_at', 'pw', 'pw_n', 'go', 't0', 'zg', 'zlv',
+    'sl_wide', 'strength', 'bias', 'alignment', 'al5', 'v10', 'lad', 'mt', 'split24', 'pw30', 'zone_near', 'mv'];
 function t2_build(string $sym, string $bias): array {
     if (!isset(t_symbols()[$sym])) return ['error' => 'Unknown symbol'];
     $now = t_now();
@@ -376,7 +379,17 @@ function t2_build(string $sym, string $bias): array {
     // Tier-1 context (bias, ATR day zone) from the engine's own frames
     $row = t_scan_load()['rows'][$sym] ?? null; $t1 = null;
     $fr = t_load_frames($sym);
-    if ($fr) { $fr['5m'] = $f5; $fr['1m'] = $f1; $t1 = t_apply_status($sym, t_evaluate($sym, $fr), $row, $now); }
+    if ($fr) {
+        $fr['5m'] = $f5; $fr['1m'] = $f1; $ev = t_evaluate($sym, $fr);
+        // owner, 10 Nov 2026 ("tier 1 and 2 ki connectivity theek kro"): the Tier-1 list shows the scanner's STORED row,
+        // which has been through t_sticky_apply() (held entries, GATE CLOSE, cycle resets). A fresh t_evaluate() here
+        // skips all of that, so Tier 2 could show another side / setup / entry status / ticks than the row the user
+        // just clicked. While the stored row is fresh (the shortlist is rescanned every minute) Tier 2 now shows
+        // exactly that row's signal state; the fresh evaluation still supplies prices and levels.
+        if ($row && empty($row['mig']) && $now - (int)($row['ts'] ?? 0) <= T2_T1_FRESH)
+            foreach (T2_T1_KEYS as $k) if (array_key_exists($k, $row)) $ev[$k] = $row[$k];
+        $t1 = t_apply_status($sym, $ev, $row, $now);
+    }
     $t1sig = ($t1 && !empty($t1['live']) && in_array($t1['signal'] ?? '', ['CALL', 'PUT'], true)) ? $t1['signal'] : null;
     if ($t1sig) $bias = $t1sig;   // Tier 2 always follows the live Tier-1 signal
     elseif ($bias !== 'CALL' && $bias !== 'PUT') $bias = ($t1['zone_near'] ?? '') === 'ATR High' ? 'PUT' : (($t1['bias'] ?? 'UP') === 'DOWN' ? 'PUT' : 'CALL');
@@ -620,7 +633,9 @@ function t2_build(string $sym, string $bias): array {
         'symbol' => $sym, 'name' => t_name($sym), 'market' => t_symbols()[$sym], 'bias' => $bias, 'status' => $status,
         'current_price' => $r6($px), 'atr_high' => $r6($atrH), 'atr_low' => $r6($atrL),
         'action_price' => $r6($act), 'action_time' => $actT, 'target' => $r6($tgt), 'sl' => $r6($sl), 'rr_ratio' => $rr, 'last_bar' => (int)end($f5['t']),
-        'setup' => $setup, 'remark' => $setup === 'trend' ? 'Long target' : 'Small target',
+        // the setup Tier 1 is showing (incl. Mid-Trend, which the trend/retrace split above cannot tell apart)
+        'setup' => $t1sig && !empty($t1['setup']) ? $t1['setup'] : $setup,
+        'remark' => $t1sig && !empty($t1['remark']) ? $t1['remark'] : ($setup === 'trend' ? 'Long target' : 'Small target'),
         'targets' => array_map(fn($x) => ['label' => $x['label'], 'price' => $r6($x['price']), 'fib' => $x['fib'], 'rr' => $x['rr']], $targets),
         'zone' => ['from' => (int)$f5['t'][$a], 'day_low' => $r6($dayL), 'day_high' => $r6($dayH), 'pdc' => $r6($pdc),
             'low_band' => [$r6($dayL), $r6($dayL + $tolNow)], 'high_band' => [$r6($dayH - $tolNow), $r6($dayH)],

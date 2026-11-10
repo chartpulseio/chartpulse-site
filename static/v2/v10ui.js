@@ -192,21 +192,33 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
       return 4 - cnt;
     };
     const zgRank = r => r.zg == null ? 2 : r.zg;  // 0 = STRONG ZONE (Fib+Pivot+PDH/PDL), 1 = one level, 2 = none
-    const sortRank = r => {
-      if (!r) return [9, 9, 9, 9, 9, 9, 0, 0];
-      const out = r.tier1 === "out" ? 1 : 0;
-      const zg = zgRank(r);
-      const tc = tickCountRank(r);              // tick count descending (fewer rank = more ticks)
-      const pw = 2 - (r.pw || 0);
-      const hc = r.hc ? 0 : 1;
-      // Owner, 4 Nov 2026: among setups that are otherwise tied (same zone/tick-state/power/strength),
-      // prefer the one with more thrust behind it right now. Uses move_atr (the latest bar's move in
-      // ATR units), not raw change_pct -- change_pct isn't comparable across markets (a 0.03% FX move
-      // can be huge relative to its own ATR while a 3% equity move can be average); move_atr already
-      // normalizes for that. This is a tie-breaker only, after strength, not a primary sort key --
-      // a setup that is simply "further along" (zone/tick/power/strength) still always ranks first.
-      return [out, zg, tc, pw, hc, -(r.strength || 0), -(r.move_atr || 0)];
+    // Quality sort (owner, 10 Nov 2026: "tier 1 ka best sort -- quality sabse upar, descending by quality setups").
+    // The old order was lexicographic (zone group, then ticks, then power, then strength), so a single factor
+    // could put a weak setup above a much better all-round one -- e.g. an APPROACHING row on a strong zone with
+    // a score of 30 ranked above a confirmed FLY with a score of 80. Now every row gets ONE quality number and
+    // the list is simply that number, highest first:
+    //   (live signals always come before the watch queue)
+    //   strength (the 0-100 setup score)            x 0.5   -> up to 50
+    //   entry stage  FLY 25 | 3 ticks 19 | 2 ticks 13 | 1 tick 8 | gate open 4 | approaching 0
+    //   zone group   strong zone 12 | one major level 6 | none 0
+    //   retest / sweep power (pw)  3 each, up to 6   + Power setup (bolt) 4   + high-conviction 2
+    //   day move     100%+ of the daily ATR used 5 | 70%+ 2
+    // Ties: higher strength, then more thrust right now (move_atr).
+    const STAGE_PTS = [25, 19, 13, 8, 4, 0, -30];   // last = GATE CLOSE: the entry is gone, it sinks
+    const quality = r => {
+      if (!r) return -1;
+      const stage = STAGE_PTS[Math.max(0, Math.min(6, tickCountRank(r)))];
+      const zone = [12, 6, 0][Math.max(0, Math.min(2, zgRank(r)))];
+      const power = Math.min(2, r.pw || 0) * 3 + ((r.split24 || r.pw30) ? 4 : 0) + (r.hc ? 2 : 0);
+      const move = r.mv == null ? 0 : r.mv >= 100 ? 5 : r.mv >= 70 ? 2 : 0;
+      return (r.strength || 0) * 0.5 + stage + zone + power + move;
     };
+    const sortRank = r => {
+      if (!r) return [9, 0, 0, 0];
+      // live signals first, then the watch queue, then everything outside Tier 1; quality decides inside each
+      return [r.tier1 === "signal" ? 0 : r.tier1 === "out" ? 2 : 1, -quality(r), -(r.strength || 0), -(r.move_atr || 0)];
+    };
+    CP.quality = quality;
     CP.byTier = (a, b) => {
       const ra = sortRank(a), rb = sortRank(b);
       for (let i = 0; i < ra.length; i++) if (ra[i] !== rb[i]) return ra[i] - rb[i];
