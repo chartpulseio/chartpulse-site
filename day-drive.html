@@ -2,460 +2,339 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="robots" content="noindex">
-<title>Day Drive Scanner — ChartPulse</title>
-<meta name="description" content="A volume-free institutional day-drive model: weekly and daily structure, 4H/1H trend with KAMA and Supertrend, then a 15m change of character — with every input labelled real or estimated.">
-<style>
-:root{
-  --void:#060A10; --panel:#0C121B; --panel-2:#111926; --raised:#16202E;
-  --rule:#1B2534; --rule-soft:#131C28;
-  --ink:#DDE6F2; --ink-dim:#8A9AB0; --ink-faint:#5A6B82;
-  --live:#2DD4AA; --s1c:#3987e5; --s2c:#BE8524;
-  --up:#27A567; --down:#D4504A;
-  --mono:ui-monospace,"SF Mono","JetBrains Mono","Roboto Mono",Menlo,Consolas,monospace;
-  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0}
-body{background:var(--void);color:var(--ink);font:13.5px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
-.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
-a{color:var(--s1c);text-decoration:none}
-a:hover{text-decoration:underline}
-
-.rail{display:flex;align-items:center;gap:16px;height:46px;padding:0 18px;border-bottom:1px solid var(--rule);
-  background:var(--panel);position:sticky;top:0;z-index:30;overflow-x:auto}
-.mark{font:600 13px/1 var(--mono);letter-spacing:.14em;white-space:nowrap}
-.mark b{color:var(--live)}
-.slug{font:12px/1 var(--mono);color:var(--ink-faint);white-space:nowrap}
-.rail .sp{flex:1}
-.rail nav{display:flex;gap:14px}
-.rail nav a{font:12px/1 var(--mono);color:var(--ink-dim);white-space:nowrap}
-
-.head{padding:22px 18px 0;max-width:1480px;margin:0 auto}
-.head h1{margin:0 0 7px;font:600 20px/1.2 var(--sans);letter-spacing:-.01em}
-.head p{margin:0 0 4px;color:var(--ink-dim);max-width:80ch}
-.wrap{max-width:1480px;margin:0 auto;padding:18px}
-
-.steps{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 0;padding:0;list-style:none}
-.steps li{background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:7px 11px;
-  font:11.5px/1 var(--mono);color:var(--ink-dim)}
-.steps b{color:var(--ink);font-weight:500}
-
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--rule);
-  border:1px solid var(--rule);border-radius:3px;overflow:hidden;margin:18px 0}
-.kpi{background:var(--panel);padding:12px 14px}
-.kpi span{display:block;font:11px/1.3 var(--mono);color:var(--ink-faint);margin-bottom:5px}
-.kpi b{font:500 19px/1 var(--mono);font-variant-numeric:tabular-nums}
-.kpi.k-d b{color:var(--live)}
-.kpi.k-a b{color:var(--s2c)}
-
-.ctl{display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap;padding:14px 0 16px;border-bottom:1px solid var(--rule)}
-.grp{display:flex;flex-direction:column;gap:6px}
-.grp>span{font:11px/1 var(--mono);color:var(--ink-faint)}
-.chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{background:var(--panel-2);border:1px solid var(--rule);color:var(--ink-dim);border-radius:2px;
-  padding:6px 11px;font:12px/1 var(--mono);cursor:pointer}
-.chip:hover{color:var(--ink);border-color:#27364a}
-.chip[aria-pressed=true]{background:var(--raised);border-color:var(--s1c);color:var(--ink)}
-.btn{background:var(--s1c);border:0;color:#fff;border-radius:2px;padding:8px 15px;font:12px/1 var(--mono);cursor:pointer}
-.btn:disabled{opacity:.5;cursor:default}
-
-.tbl{width:100%;border-collapse:collapse;margin-top:14px}
-.tbl th{text-align:left;font:11px/1 var(--mono);color:var(--ink-faint);font-weight:400;
-  padding:0 10px 9px;border-bottom:1px solid var(--rule);white-space:nowrap}
-.tbl td{padding:11px 10px;border-bottom:1px solid var(--rule-soft);vertical-align:top}
-.tbl tbody tr.r{cursor:pointer}
-.tbl tbody tr.r:hover{background:var(--panel)}
-.tbl th.r,.tbl td.r{text-align:right}
-.sym{font:500 13px/1.3 var(--mono)}
-.sub{font:11px/1.4 var(--sans);color:var(--ink-faint)}
-.tv{font:10.5px/1 var(--mono);color:var(--ink-faint);cursor:pointer;border:1px solid var(--rule-soft);
-  border-radius:2px;padding:2px 5px;display:inline-block;margin-top:4px}
-.tv:hover{color:var(--ink-dim);border-color:var(--rule)}
-.side{font:600 11px/1 var(--mono);padding:4px 7px;border-radius:2px;display:inline-block}
-.side.PUT{background:rgba(212,80,74,.14);color:var(--down)}
-.side.CALL{background:rgba(39,165,103,.14);color:var(--up)}
-.st{font:600 10.5px/1 var(--mono);letter-spacing:.04em;padding:5px 8px;border-radius:2px;display:inline-block;white-space:nowrap}
-.st.DRIVE{background:rgba(45,212,170,.16);color:var(--live);box-shadow:0 0 0 1px rgba(45,212,170,.3)}
-.st.ARMED{background:rgba(190,133,36,.16);color:var(--s2c)}
-.st.TRENDOK,.st.STRUCTUREOK{background:var(--raised);color:var(--ink-dim)}
-.st.WATCH,.st.OFFHOURS{background:var(--panel-2);color:var(--ink-faint)}
-.bars{display:flex;gap:2px;margin-top:5px}
-.bars i{height:5px;border-radius:2px;background:var(--rule)}
-.bars i.f1{width:26px}.bars i.f2{width:19px}.bars i.f3{width:30px}
-.bars i.on{background:var(--s1c)}
-.bars i.full{background:var(--live)}
-
-.det td{background:#080D14;padding:0 10px 18px}
-.dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(252px,1fr));gap:16px;padding-top:4px}
-.card{background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:13px 14px}
-.card h3{margin:0 0 11px;font:500 11px/1.4 var(--mono);color:var(--ink-faint);letter-spacing:.03em}
-.card h3 em{font-style:normal;color:var(--ink)}
-.lad{display:grid;gap:7px}
-.lad>div{display:flex;gap:9px;align-items:flex-start;font:12px/1.45 var(--sans)}
-.tick{width:13px;flex:0 0 13px;font:11px/1.45 var(--mono);text-align:center}
-.tick.y{color:var(--live)}
-.tick.n{color:var(--ink-faint)}
-.lad b{font-weight:500;color:var(--ink)}
-.lad em{font-style:normal;color:var(--ink-faint);font-size:11.5px}
-.warn{color:var(--s2c)}
-.est{font:9.5px/1 var(--mono);background:rgba(190,133,36,.16);color:var(--s2c);padding:3px 4px;
-  border-radius:2px;margin-left:5px;vertical-align:1px}
-.tg{display:grid;gap:5px}
-.tg>div{display:flex;justify-content:space-between;gap:12px;font:12px/1.5 var(--sans)}
-.tg span{color:var(--ink-faint)}
-.tg b{font:500 12px/1.5 var(--mono);font-variant-numeric:tabular-nums}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font:12px/1.5 var(--sans);margin:0}
-.kv dt{color:var(--ink-faint)}
-.kv dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
-
-.avail{margin-top:30px;border-top:1px solid var(--rule);padding-top:20px}
-.avail h2{margin:0 0 4px;font:500 13px/1.3 var(--sans)}
-.avail>p{margin:0 0 14px;color:var(--ink-dim);max-width:80ch}
-.alist{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:3px;overflow:hidden}
-.arow{background:var(--panel);padding:10px 13px;display:grid;grid-template-columns:132px 1fr auto;gap:12px;align-items:baseline}
-.arow .g{font:11px/1.5 var(--mono);color:var(--ink-faint)}
-.arow .i{font:12.5px/1.5 var(--sans);color:var(--ink-dim)}
-.sstate{font:10px/1 var(--mono);padding:4px 7px;border-radius:2px;white-space:nowrap}
-.sstate.real{background:rgba(39,165,103,.15);color:var(--up)}
-.sstate.estimated{background:rgba(190,133,36,.15);color:var(--s2c)}
-.sstate.unavailable{background:rgba(212,80,74,.14);color:var(--down)}
-
-.note{margin-top:24px;padding:13px 15px;border:1px solid var(--rule);border-left:2px solid var(--s2c);
-  border-radius:3px;background:var(--panel);color:var(--ink-dim);font-size:12.5px;max-width:94ch}
-.note b{color:var(--ink)}
-.note+.note{margin-top:10px}
-.msg{padding:30px 10px;text-align:center;color:var(--ink-faint);font:12.5px/1.6 var(--mono)}
-.foot{padding:22px 18px 40px;max-width:1480px;margin:0 auto;color:var(--ink-faint);font-size:11.5px}
-
-@media(max-width:860px){
-  .head h1{font-size:18px}
-  .tbl .hide{display:none}
-  .arow{grid-template-columns:1fr auto;gap:5px}
-  .arow .g{grid-column:1/-1}
-}
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Day Drive Scanner · ChartPulse</title>
+<meta name="description" content="Day Drive Scanner: three checks on every market, from the weekly picture down to the 15-minute entry, explained in plain words. Free, no sign-in.">
+<meta name="theme-color" content="#050506">
 <link rel="canonical" href="https://chartpulse.io/scanners/day-drive/">
-<meta property="og:title" content="Day Drive Scanner — ChartPulse">
-<meta property="og:description" content="A volume-free institutional day-drive model: weekly and daily structure, 4H/1H trend with KAMA and Supertrend, then a 15m change of character — with every input labelled real or estimated.">
+<meta property="og:title" content="Day Drive Scanner · ChartPulse">
+<meta property="og:description" content="Three checks on every market, from the weekly picture down to the 15-minute entry, explained in plain words.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://chartpulse.io/scanners/day-drive/">
 <meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=2">
-<script defer src="/static/v2/sitehead.js?v=2"></script>
+<link rel="stylesheet" href="/static/v2/trendlines.css?v=1">
+<script defer src="/static/v2/sitehead.js?v=3"></script>
+<style>
+:root{--bg:#050506;--card:#0F1014;--card2:#14161B;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#EDEDEF;--dim:#A3A5AF;--mute:#6B6D78;--gold:#E9C46A;--up:#22AB94;--dn:#F7525F;--blue:#6EA8FE;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.dd{max-width:1240px;margin:0 auto;padding:28px 20px 64px}
+.dd-eyebrow{font:600 12px/1 var(--mono);letter-spacing:.16em;color:var(--gold);text-transform:uppercase}
+.dd h1{margin:10px 0 10px;font-size:clamp(28px,4.4vw,44px);line-height:1.1;letter-spacing:-.02em}
+.dd-lede{margin:0;max-width:62ch;color:var(--dim);font-size:17px}
+.dd-back{display:inline-block;margin-bottom:14px;color:var(--dim);font-size:14px;text-decoration:none}
+.dd-back:hover{color:var(--ink)}
+
+/* the three checks */
+.dd-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:26px 0 0;padding:0;list-style:none}
+.dd-steps li{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.dd-steps b{display:block;font-size:15px;margin:6px 0 4px}
+.dd-steps span{font:600 11px/1 var(--mono);letter-spacing:.12em;color:var(--gold)}
+.dd-steps p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.5}
+
+/* counts */
+.dd-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:22px 0 0}
+.dd-tile{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.dd-tile .v{font:600 26px/1.1 var(--mono)}
+.dd-tile .k{margin-top:4px;color:var(--dim);font-size:13px}
+.dd-tile.hot .v{color:var(--up)}.dd-tile.warm .v{color:var(--gold)}
+
+.dd-note{margin:18px 0 0;padding:12px 16px;border:1px solid rgba(233,196,106,.35);border-radius:12px;background:rgba(233,196,106,.06);color:var(--dim);font-size:14px}
+.dd-note b{color:var(--ink)}
+
+/* controls */
+.dd-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:26px 0 12px}
+.dd-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.dd-tabs button,.dd-btn{appearance:none;border:1px solid var(--line2);background:transparent;color:var(--dim);padding:8px 14px;border-radius:999px;font:500 14px/1 var(--sans);cursor:pointer}
+.dd-tabs button.on{background:var(--ink);color:#000;border-color:var(--ink)}
+.dd-tabs button:hover,.dd-btn:hover{color:var(--ink);border-color:var(--ink)}
+.dd-tabs button.on:hover{color:#000}
+.dd-search{flex:1;min-width:180px;max-width:300px;margin-left:auto;padding:9px 14px;border:1px solid var(--line2);border-radius:999px;background:var(--card);color:var(--ink);font:14px var(--sans)}
+.dd-upd{color:var(--mute);font-size:13px}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* list */
+.dd-list{border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden}
+.dd-row{display:grid;grid-template-columns:44px minmax(160px,1.5fr) 92px 132px 150px 70px minmax(200px,2fr) 24px;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid var(--line);text-decoration:none;color:inherit}
+.dd-row:first-child{border-top:0}
+a.dd-row:hover{background:var(--card2)}
+.dd-row.head{color:var(--mute);font:600 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;background:#0B0C0F}
+.dd-rk{color:var(--mute);font:13px var(--mono)}
+.dd-nm b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dd-nm small{color:var(--mute);font:12px var(--mono)}
+.dd-side{display:inline-flex;align-items:center;gap:6px;font:600 13px var(--mono)}
+.dd-side.CALL{color:var(--up)}.dd-side.PUT{color:var(--dn)}
+.dd-pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid var(--line2);font:600 12px/1.3 var(--sans);color:var(--dim);white-space:nowrap}
+.dd-pill.s-drive{background:var(--up);border-color:var(--up);color:#00130f}
+.dd-pill.s-armed{border-color:var(--gold);color:var(--gold)}
+.dd-pill.s-trend,.dd-pill.s-structure{border-color:rgba(110,168,254,.6);color:var(--blue)}
+.dd-prog{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.dd-prog i{display:block;height:6px;border-radius:3px;background:rgba(255,255,255,.08);position:relative;overflow:hidden}
+.dd-prog i::after{content:"";position:absolute;inset:0;width:var(--w,0%);background:var(--gold);border-radius:3px}
+.dd-prog i.done::after{background:var(--up)}
+.dd-prog small{grid-column:1/-1;color:var(--mute);font:11px var(--mono)}
+.dd-sc{font:600 16px var(--mono);text-align:right}
+.dd-sc small{color:var(--mute);font-weight:400;font-size:11px}
+.dd-next{color:var(--dim);font-size:13.5px;line-height:1.45}
+.dd-go{color:var(--mute)}
+.dd-empty{padding:28px 16px;color:var(--dim);text-align:center}
+.dd-more{display:block;margin:14px auto 0}
+
+/* detail */
+.dd-dhead{display:flex;flex-wrap:wrap;gap:18px;justify-content:space-between;align-items:flex-end}
+.dd-dhead h1{margin:6px 0 10px}
+.dd-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dd-score{min-width:150px;padding:14px 18px;border:1px solid var(--line);border-radius:14px;background:var(--card);text-align:right}
+.dd-score .v{font:600 34px/1 var(--mono)}
+.dd-score .k{color:var(--dim);font-size:13px;margin-top:4px}
+.dd-now{margin:20px 0 0;padding:16px 18px;border:1px solid var(--line2);border-radius:14px;background:var(--card);font-size:16px}
+.dd-now b{color:var(--gold)}
+.dd-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
+.dd-card{padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card);min-width:0}
+.dd-card h2{margin:0 0 2px;font-size:16px}
+.dd-card .sub{margin:0 0 12px;color:var(--mute);font-size:13px}
+.dd-card.ok{border-color:rgba(34,171,148,.45)}
+.dd-gate{display:grid;grid-template-columns:22px 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.dd-gate:first-of-type{border-top:0}
+.dd-gate .ic{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 12px/1 var(--sans);margin-top:1px;background:rgba(255,255,255,.07);color:var(--mute)}
+.dd-gate.ok .ic{background:var(--up);color:#00130f}
+.dd-gate b{display:block;font-size:14px;font-weight:600}
+.dd-gate p{margin:2px 0 0;color:var(--dim);font-size:13px;line-height:1.45}
+.dd-gate em{font-style:normal;color:var(--mute);font-size:12px}
+.dd-plan{margin-top:14px}
+.dd-plan table{width:100%;border-collapse:collapse;font-size:14px}
+.dd-plan td{padding:9px 0;border-top:1px solid var(--line)}
+.dd-plan tr:first-child td{border-top:0}
+.dd-plan td:last-child{text-align:right;font-family:var(--mono)}
+.dd-plan td small{display:block;color:var(--mute);font:12px var(--sans)}
+.dd-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.dd-links a{padding:10px 16px;border:1px solid var(--line2);border-radius:999px;text-decoration:none;font-size:14px;color:var(--ink)}
+.dd-links a.pri{background:var(--gold);border-color:var(--gold);color:#1a1300;font-weight:600}
+.dd-links a:hover{border-color:var(--ink)}
+
+/* learn */
+.dd-learn{margin-top:34px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.dd-learn h2{grid-column:1/-1;margin:0;font-size:20px}
+.dd-learn dl{margin:0;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.dd-learn dt{font-weight:600;margin-top:10px}.dd-learn dt:first-child{margin-top:0}
+.dd-learn dd{margin:2px 0 0;color:var(--dim);font-size:14px}
+.dd-foot{margin-top:22px;color:var(--mute);font-size:13px;line-height:1.55}
+
+@media (max-width:980px){
+  .dd-steps{grid-template-columns:repeat(2,1fr)}.dd-tiles{grid-template-columns:repeat(3,1fr)}
+  .dd-row{grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:14px}
+  .dd-row.head{display:none}
+  .dd-rk,.dd-go{display:none}
+  .dd-nm{grid-column:1}.dd-pillc{grid-column:2;grid-row:1;justify-self:end}
+  .dd-sidec{grid-column:1}.dd-sc{grid-column:2;grid-row:2}
+  .dd-progc,.dd-next{grid-column:1/-1}
+  .dd-cols{grid-template-columns:1fr}.dd-learn{grid-template-columns:1fr}
+  .dd-search{max-width:none;margin-left:0;flex-basis:100%}
+}
+@media (max-width:560px){.dd{padding:20px 14px 48px}.dd-steps{grid-template-columns:1fr}.dd-tiles{grid-template-columns:repeat(2,1fr)}.dd-score{text-align:left;width:100%}}
+@media (prefers-reduced-motion:no-preference){.dd-prog i::after{transition:width .5s ease}}
+</style>
 </head>
 <body>
+<main class="dd" id="ddApp"><p class="dd-empty">Loading the Day Drive Scanner…</p></main>
 
-<div class="rail">
-  <span class="mark">CHART<b>PULSE</b></span>
-  <span class="slug">DAY DRIVE SCANNER</span>
-  <span class="sp"></span>
-  <nav class="site-nav" id="siteNav" aria-label="Site">
-<style>
-.site-nav .nav-dd{position:relative;display:inline-block}
-.site-nav .nav-dd>summary{list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:.3em}
-.site-nav .nav-dd>summary::-webkit-details-marker{display:none}
-.site-nav .nav-menu{position:absolute;top:100%;left:0;min-width:210px;display:flex;flex-direction:column;padding:6px;background:#0C0C0F;border:1px solid #26262d;border-radius:8px;z-index:50}
-.site-nav .nav-menu a{white-space:nowrap;padding:6px 10px}
-</style>
-<details class="nav-dd"><summary>Markets</summary><div class="nav-menu">
-<a href="/bias/" data-p="seo">Bias <small>FREE</small></a>
-<a href="/movers/" data-p="movers">Movers</a>
-<a href="/news.html" data-p="news">News &amp; Impact <small>IMPACT</small></a>
-<a href="/insights.html" data-p="insights">Insights</a>
-</div></details>
-<details class="nav-dd"><summary>Scanners</summary><div class="nav-menu">
-<a href="/scanner.html" data-p="scanner">Tier-1 Scanner <small>TIER-1</small></a>
-<a href="/scanners/" data-p="scanners">All scanners <small class="badge-live">15</small></a>
-<a href="/scanners/bottom-reversal/" data-p="bottomreversal">Bottom Reversal <small>FREE</small></a>
-<a href="/scanners/ema-200/" data-p="ema200">200 EMA <small>FREE</small></a>
-<a href="/scanners/day-drive/" data-p="dayDrive">Day Drive <small>FREE</small></a>
-</div></details>
-<details class="nav-dd"><summary>Tools</summary><div class="nav-menu">
-<a href="/backtesting/" data-p="backtest">Backtesting <small>FREE</small></a>
-<a href="/desk" data-p="desk">Bias Desk <small>FREE</small></a>
-</div></details>
-<a href="/pricing.html" data-p="pricing">Pricing</a>
-<a href="/pricing.html" data-p="pricing-cta">Get access</a>
-</nav>
-</div>
-
-<div class="head">
-  <h1>Day Drive Scanner</h1>
-  <p>A volume-free structural model. Weekly and daily structure must agree, then the 4H and 1H trend has to
-     confirm with KAMA and Supertrend, and only then does the 15-minute trigger layer look for a change of
-     character at a swept level. Nothing here needs a volume feed.</p>
-  <ul class="steps">
-    <li><b>1</b> Macro · W/D</li>
-    <li><b>2</b> Trend · 4H/1H</li>
-    <li><b>3</b> Entry · 15M/5M</li>
-    <li><b>4</b> Stop &amp; risk</li>
-    <li><b>5</b> Targets</li>
-  </ul>
-</div>
-
-<div class="wrap">
-
-  <div class="kpis" id="kpis"></div>
-
-  <div class="ctl">
-    <div class="grp">
-      <span>MARKET</span>
-      <div class="chips" id="mkt">
-        <button class="chip" data-v="all" aria-pressed="true">All</button>
-        <button class="chip" data-v="forex" aria-pressed="false">Forex</button>
-        <button class="chip" data-v="crypto" aria-pressed="false">Crypto</button>
-        <button class="chip" data-v="other" aria-pressed="false">Stocks &amp; futures</button>
-      </div>
-    </div>
-    <div class="grp">
-      <span>&nbsp;</span>
-      <button class="btn" id="go">Refresh</button>
-    </div>
-    <div class="grp">
-      <span>&nbsp;</span>
-      <span class="slug num" id="stamp">—</span>
-    </div>
-  </div>
-
-  <div id="out"><div class="msg">Loading…</div></div>
-
-  <div class="avail">
-    <h2>What backs each requirement</h2>
-    <p>The model asks for footprint and order-book reads. This page runs on ordinary bar data, so every
-       requirement is listed with what actually stands behind it — and the one thing that cannot be
-       substituted is marked unavailable rather than guessed.</p>
-    <div class="alist" id="avail"></div>
-  </div>
-
-  <div class="note">
-    <b>The score is a checklist total, not a probability.</b> It adds up which conditions are met, with
-    weights set by hand. A score of 90 does not mean a 90% chance of anything, and this model has not yet
-    been measured on this universe — until it has, treat the score as "how much of the checklist is
-    ticked" and nothing more.
-  </div>
-
-  <div class="note">
-    <b>Not advice.</b> This page shows what a rule set flags, not a recommendation, and nothing here is a
-    promise about the future. Flow figures are estimates from bar shape, not order-flow data. Trade your
-    own plan and your own risk.
-  </div>
-
-</div>
-
-<div class="foot">Day Drive Scanner · volume-free structural model · free, no sign-in</div>
-
+<script src="/static/v2/trendlines.js?v=1"></script>
 <script>
-(function(){
-'use strict';
-var API='dd_api.php', mkt='all', open={}, busy=false, data=null;
+(() => {
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const BASE = "/scanners/day-drive/";
+const app = $("#ddApp");
+const Q = new URLSearchParams(location.search);
 
-function q(s){return document.querySelector(s);}
-function el(t,c,x){var e=document.createElement(t); if(c)e.className=c; if(x!=null)e.textContent=x; return e;}
-function n(v,d){ if(v==null||v===''||isNaN(v))return '—';
-  var a=Math.abs(v); d=(d==null)?(a>=100?2:a>=1?4:6):d; return Number(v).toFixed(d); }
-function sc(v){ return v==null?'—':Number(v).toFixed(0); }
+/* ---- plain words for everything the engine reports ---------------------- */
+const STAGE = {
+  "DRIVE":        { t: "Entry ready",      c: "s-drive",     next: "All three checks passed. The entry, stop and targets are in the trade plan." },
+  "ARMED":        { t: "Get ready",        c: "s-armed",     next: "An entry trigger has appeared. Waiting for the last confirmations before it is a full entry." },
+  "TREND OK":     { t: "Trend agrees",     c: "s-trend",     next: "Big picture and trend both agree. Waiting for an entry trigger on the 15-minute chart." },
+  "STRUCTURE OK": { t: "Big picture ready",c: "s-structure", next: "The weekly and daily charts agree. Waiting for the 4-hour or 1-hour trend to join." },
+  "OFF-HOURS":    { t: "Outside hours",    c: "s-off",       next: "The setup is in place, but this is outside the hours when this market trades well." },
+  "WATCH":        { t: "Watching",         c: "s-watch",     next: "" }
+};
+const STEPS = [
+  { n: 1, title: "Big picture", sub: "Weekly and daily chart", keys: ["weekly", "daily", "block", "vwap", "fractal"], must: "Weekly and daily must both pass." },
+  { n: 2, title: "Trend", sub: "4-hour and 1-hour chart", keys: ["h4", "h1_st", "h1_bb", "h1_delta", "h1_fib"], must: "The 4-hour or the 1-hour trend must pass." },
+  { n: 3, title: "Entry", sub: "15-minute and 5-minute chart", keys: ["choch", "sweep", "foot", "rsi", "time"], must: "Opens only after checks 1 and 2 pass." }
+];
+const GATE = {
+  weekly:   ["Weekly trend agrees", "Price is on the right side of the 20-week average and the last two weeks closed the same way."],
+  daily:    ["Daily candle rejected the edge", "A daily candle poked outside its Bollinger Band and closed back inside, with RSI on the right side."],
+  block:    ["No gap in the way", "No unfilled price gap sits between here and the target."],
+  vwap:     ["Right side of today's average", "Price is on the correct side of VWAP (today's average price) and has tested it at least twice."],
+  fractal:  ["Five-swing pattern at the turn", "The turn was made in a clean five-swing shape."],
+  h4:       ["4-hour trend agrees", "The 4-hour moving averages (EMA and KAMA) point the same way as the idea."],
+  h1_st:    ["1-hour trend agrees", "The 1-hour Supertrend points the same way as the idea."],
+  h1_bb:    ["Market is moving, not stuck", "The 1-hour range is wide enough to travel; a squeezed market is skipped."],
+  h1_delta: ["Pressure agrees", "Buying or selling pressure on the 1-hour chart leans the same way."],
+  h1_fib:   ["Room to run", "There is space to the next Fibonacci target."],
+  choch:    ["Direction change on 15m", "The 15-minute chart broke its last swing (a change of character) in the direction of the idea."],
+  sweep:    ["Stop-hunt at a key level", "Price briefly ran past a well-tested level and came back (a liquidity sweep)."],
+  foot:     ["One-sided candles", "Recent candles closed strongly toward the idea."],
+  rsi:      ["Not overstretched", "5-minute RSI shows the move is not already exhausted."],
+  time:     ["Good trading hours", "This market's active session is open."]
+};
+const SIDE = { CALL: "CALL · looking for a rise", PUT: "PUT · looking for a fall" };
+const fmt = v => v == null ? "–" : Number(v).toLocaleString("en-US", { maximumFractionDigits: Math.abs(v) >= 100 ? 2 : Math.abs(v) >= 1 ? 4 : 6 });
+const ago = t => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); return s < 60 ? `${s}s ago` : `${Math.round(s / 60)} min ago`; };
+const stepOk = (r, st) => st.keys.filter(k => r.gates && r.gates[k] && r.gates[k].ok).length;
+const stepSeen = (r, st) => st.keys.some(k => r.gates && r.gates[k]);
 
-q('#mkt').addEventListener('click',function(e){
-  var b=e.target.closest('.chip'); if(!b)return;
-  mkt=b.dataset.v;
-  [].forEach.call(this.querySelectorAll('.chip'),function(c){
-    c.setAttribute('aria-pressed', c===b?'true':'false');
-  });
-  load();
-});
-q('#go').addEventListener('click',function(){load(true);});
+function nextWords(r) {
+  if (r.status !== "WATCH") return STAGE[r.status] ? STAGE[r.status].next : "";
+  const g = r.gates || {}, miss = [];
+  if (!(g.weekly && g.weekly.ok)) miss.push("the weekly trend");
+  if (!(g.daily && g.daily.ok)) miss.push("a daily rejection candle");
+  return miss.length ? `Waiting for ${miss.join(" and ")}.` : "Waiting for the big picture to firm up.";
+}
+const pill = r => { const s = STAGE[r.status] || STAGE.WATCH; return `<span class="dd-pill ${s.c}">${esc(s.t)}</span>`; };
+const prog = r => `<div class="dd-prog">${STEPS.map(st => { const k = stepOk(r, st); return `<i class="${k === 5 ? "done" : ""}" style="--w:${stepSeen(r, st) ? k * 20 : 0}%" title="Check ${st.n} · ${st.title}: ${k} of 5"></i>`; }).join("")}<small>${STEPS.map(st => stepSeen(r, st) ? stepOk(r, st) + "/5" : "–").join(" · ")}</small></div>`;
 
-function kpis(m){
-  var box=q('#kpis'); box.textContent='';
-  [['DRIVE',m.drive,'k-d'],['ARMED',m.armed,'k-a'],['PAST STEP 1',m.structure,''],
-   ['SCANNED',m.scanned,''],['VIX',m.vix==null?'—':Number(m.vix).toFixed(2),''],
-   ['BTC ATR%',m.btc_atr_pct==null?'—':Number(m.btc_atr_pct).toFixed(2),'']
-  ].forEach(function(it){
-    var k=el('div','kpi '+it[2]);
-    k.appendChild(el('span',null,it[0]));
-    k.appendChild(el('b',null,String(it[1]==null?'—':it[1])));
-    box.appendChild(k);
-  });
+/* ---- list (the Tier-1 style view) --------------------------------------- */
+const L = { rows: [], meta: {}, at: 0, mkt: "all", stage: "all", q: "", show: 60, timer: null };
+function listShell() {
+  document.title = "Day Drive Scanner · ChartPulse";
+  app.innerHTML = `
+  <div class="dd-eyebrow">Free scanner</div>
+  <h1>Day Drive Scanner</h1>
+  <p class="dd-lede">Every market gets three checks, from the weekly chart down to the 15-minute chart. A market shows as <b>Entry ready</b> only when all three agree. Tap any row to see exactly what passed and what is still missing.</p>
+  <ol class="dd-steps">
+    <li><span>CHECK 1</span><b>Big picture</b><p>Do the weekly and daily charts agree on a direction?</p></li>
+    <li><span>CHECK 2</span><b>Trend</b><p>Do the 4-hour and 1-hour trends point the same way?</p></li>
+    <li><span>CHECK 3</span><b>Entry</b><p>Has the 15-minute chart given a trigger to act on?</p></li>
+    <li><span>THEN</span><b>Trade plan</b><p>Entry price, stop-loss and targets, worked out for you.</p></li>
+  </ol>
+  <div class="dd-tiles" id="ddTiles"></div>
+  <div id="ddMsg"></div>
+  <div class="dd-bar">
+    <div class="dd-tabs" id="ddMkt" role="group" aria-label="Market">
+      <button type="button" data-m="all" class="on">All markets</button><button type="button" data-m="forex">Forex</button><button type="button" data-m="crypto">Crypto</button><button type="button" data-m="other">Stocks &amp; futures</button>
+    </div>
+    <input class="dd-search" id="ddQ" type="search" placeholder="Find a market…" aria-label="Find a market">
+  </div>
+  <div class="dd-bar" style="margin-top:0">
+    <div class="dd-tabs" id="ddStage" role="group" aria-label="Stage">
+      <button type="button" data-s="all" class="on">Everything</button><button type="button" data-s="ready">Entry ready / Get ready</button><button type="button" data-s="progress">Passed check 1 or 2</button>
+    </div>
+    <span class="dd-upd" id="ddUpd"></span>
+  </div>
+  <div class="dd-list" id="ddList"><p class="dd-empty">Scanning…</p></div>
+  <button type="button" class="dd-btn dd-more" id="ddMore" hidden>Show more</button>
+  <section class="dd-learn">
+    <h2>Words used on this page</h2>
+    <dl>
+      <dt>CALL / PUT</dt><dd>CALL means the scanner is looking for price to rise. PUT means it is looking for price to fall.</dd>
+      <dt>Score</dt><dd>A checklist total out of 100: check 1 is worth 35, check 2 is 25, check 3 is 40. It is not a win probability and has not been measured as one.</dd>
+      <dt>Stop-loss</dt><dd>The price where the idea is wrong and the trade should be closed.</dd>
+    </dl>
+    <dl>
+      <dt>VWAP</dt><dd>Today's average traded price. Above it buyers are ahead, below it sellers are.</dd>
+      <dt>Liquidity sweep</dt><dd>Price runs just past an obvious level, triggers the stops there, then turns back.</dd>
+      <dt>Change of character (CHoCH)</dt><dd>The first break of a swing against the recent move, an early sign of a turn.</dd>
+    </dl>
+  </section>
+  <p class="dd-foot">Some inputs are estimates and are marked "est." on the detail page: buying and selling pressure and one-sided candles are read from where each candle closes, because order-book data is not available here. This page is for education and demonstration. It is not financial advice.</p>`;
+  $("#ddMkt").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; L.mkt = b.dataset.m; [...$("#ddMkt").children].forEach(x => x.classList.toggle("on", x === b)); L.show = 60; paint(); });
+  $("#ddStage").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; L.stage = b.dataset.s; [...$("#ddStage").children].forEach(x => x.classList.toggle("on", x === b)); L.show = 60; paint(); });
+  $("#ddQ").addEventListener("input", e => { L.q = e.target.value.trim().toLowerCase(); L.show = 60; paint(); });
+  $("#ddMore").addEventListener("click", () => { L.show += 60; paint(); });
+}
+function paint() {
+  const all = L.rows, cnt = s => all.filter(r => r.status === s).length;
+  $("#ddTiles").innerHTML = [
+    ["hot", cnt("DRIVE"), "Entry ready"], ["warm", cnt("ARMED"), "Get ready"], ["", cnt("TREND OK"), "Trend agrees"],
+    ["", cnt("STRUCTURE OK"), "Big picture ready"], ["", all.length, "Markets scanned"]
+  ].map(([c, v, k]) => `<div class="dd-tile ${c}"><div class="v">${v}</div><div class="k">${k}</div></div>`).join("");
+  const through = all.filter(r => r.status !== "WATCH").length;
+  $("#ddMsg").innerHTML = all.length && !through ? `<p class="dd-note"><b>No market has passed check 1 right now.</b> That is normal: the weekly trend and a daily rejection candle rarely line up on the same day. The list below is sorted by how close each market is.</p>` : "";
+  let rows = all.filter(r => L.mkt === "all" || r.class === L.mkt);
+  if (L.stage === "ready") rows = rows.filter(r => r.status === "DRIVE" || r.status === "ARMED");
+  if (L.stage === "progress") rows = rows.filter(r => r.status === "TREND OK" || r.status === "STRUCTURE OK" || r.status === "OFF-HOURS");
+  if (L.q) rows = rows.filter(r => (r.name + " " + r.symbol + " " + (r.tv || "")).toLowerCase().includes(L.q));
+  const head = `<div class="dd-row head"><span>#</span><span>Market</span><span>Idea</span><span>Stage</span><span>Checks 1 · 2 · 3</span><span style="text-align:right">Score</span><span>What it is waiting for</span><span></span></div>`;
+  $("#ddList").innerHTML = rows.length ? head + rows.slice(0, L.show).map((r, i) => `
+    <a class="dd-row" href="${BASE}?s=${encodeURIComponent(r.symbol)}">
+      <span class="dd-rk">${i + 1}</span>
+      <span class="dd-nm"><b>${esc(r.name)}</b><small>${esc(r.tv || r.symbol)} · ${esc(r.market || "")}</small></span>
+      <span class="dd-sidec"><span class="dd-side ${esc(r.side)}">${r.side === "CALL" ? "▲" : "▼"} ${esc(r.side)}</span></span>
+      <span class="dd-pillc">${pill(r)}</span>
+      <span class="dd-progc">${prog(r)}</span>
+      <span class="dd-sc">${Math.round(r.score)}<small>/100</small></span>
+      <span class="dd-next">${esc(nextWords(r))}</span>
+      <span class="dd-go" aria-hidden="true">›</span>
+    </a>`).join("") : `<p class="dd-empty">${L.stage === "all" && !L.q ? "No markets to show yet." : "Nothing matches this filter right now."}</p>`;
+  $("#ddMore").hidden = rows.length <= L.show;
+  $("#ddUpd").textContent = L.at ? `${rows.length} markets · updated ${ago(L.at)}` : "";
+}
+async function loadList() {
+  try {
+    const r = await fetch("/dd_api.php?r=scan", { cache: "no-store" }); const j = await r.json();
+    if (j.error) throw new Error(j.error);
+    L.rows = j.rows || []; L.meta = j.meta || {}; L.at = j.at || 0; paint();
+  } catch (e) { if (!L.rows.length) $("#ddList").innerHTML = `<p class="dd-empty">${esc(e.message || "The scanner could not be reached just now. Please try again in a moment.")}</p>`; }
+  clearTimeout(L.timer); L.timer = setTimeout(loadList, 60000);
 }
 
-function ladder(g,order,names){
-  var d=el('div','lad');
-  order.forEach(function(k){
-    var x=g&&g[k]; if(!x)return;
-    var row=el('div');
-    row.appendChild(el('span','tick '+(x.ok?'y':'n'), x.ok?'✓':'·'));
-    var t=el('span');
-    t.appendChild(el('b',null,names[k]));
-    if(x.estimated) t.appendChild(el('span','est','est'));
-    var why=(x.why||[]).join(' · ');
-    if(why){ t.appendChild(document.createTextNode(' ')); t.appendChild(el('em',null,'— '+why)); }
-    row.appendChild(t); d.appendChild(row);
-  });
-  return d;
+/* ---- one market (the Tier-2 style view) --------------------------------- */
+function gateRow(k, g) {
+  const [t, d] = GATE[k] || [k, ""];
+  return `<div class="dd-gate ${g.ok ? "ok" : ""}"><span class="ic" aria-hidden="true">${g.ok ? "✓" : "·"}</span><div><b>${esc(t)}${g.estimated ? " <em>est.</em>" : ""}</b><p>${esc(d)}</p><p><em>${g.ok ? "Passed" : "Not yet"}: ${esc((g.why || []).join(", "))}</em></p></div></div>`;
+}
+function detail(r) {
+  const st = STAGE[r.status] || STAGE.WATCH, k = r.risk;
+  document.title = `${r.name}: ${st.t} · Day Drive · ChartPulse`;
+  const cards = STEPS.map(s => {
+    const seen = stepSeen(r, s), n = stepOk(r, s);
+    return `<article class="dd-card ${seen && n === 5 ? "ok" : ""}"><h2>Check ${s.n} · ${s.title} <span class="num" style="color:var(--mute);font-size:13px">${seen ? n + "/5" : "locked"}</span></h2><p class="sub">${s.sub}. ${s.must}</p>
+      ${seen ? s.keys.filter(x => r.gates[x]).map(x => gateRow(x, r.gates[x])).join("") : `<p class="dd-next">This check opens once the one before it passes.</p>`}</article>`;
+  }).join("");
+  const plan = k ? `<article class="dd-card dd-plan"><h2>Trade plan</h2><p class="sub">Worked out from the 15-minute chart. Position size is capped so one loss costs at most ${esc(k.max_loss)}% of the account.</p>
+    <table>
+      <tr><td>Entry<small>${esc(r.entry_note || "price at the trigger")}</small></td><td>${fmt(k.entry)}</td></tr>
+      <tr><td>Stop-loss<small>${esc(k.sl_from)}${k.wide ? " · wider than usual for a day trade" : ""} · ${esc(k.risk_pct)}% from entry</small></td><td style="color:var(--dn)">${fmt(k.sl)}</td></tr>
+      ${(k.targets || []).map(t => `<tr><td>${t.label === "P" ? "First take-profit" : t.label === "T1" ? "Target 1" : "Target 2"}<small>${esc(t.note)} · reward ${esc(t.rr)}× the risk</small></td><td style="color:var(--up)">${fmt(t.price)}</td></tr>`).join("")}
+      <tr><td>After the first take-profit<small>${esc(k.trail)}</small></td><td>trail</td></tr>
+      <tr><td>Suggested size<small>share of the account to put at risk</small></td><td>${esc(k.size_pct)}%</td></tr>
+    </table></article>` : `<article class="dd-card dd-plan"><h2>Trade plan</h2><p class="dd-next" style="margin:0">Entry, stop-loss and targets appear here once check 3 opens. Until then there is nothing to act on.</p></article>`;
+  app.innerHTML = `
+  <a class="dd-back" href="${BASE}">‹ Day Drive Scanner</a>
+  <div class="dd-dhead">
+    <div><div class="dd-eyebrow">${esc(r.market || "")} · ${esc(r.tv || r.symbol)}</div>
+      <h1>${esc(r.name)}</h1>
+      <div class="dd-chips"><span class="dd-side ${esc(r.side)}">${r.side === "CALL" ? "▲" : "▼"} ${esc(SIDE[r.side] || r.side)}</span>${pill(r)}<span class="num" style="color:var(--dim)">Price ${fmt(r.price)}</span></div></div>
+    <div class="dd-score"><div class="v">${Math.round(r.score)}<span style="font-size:16px;color:var(--mute)">/100</span></div><div class="k">checklist score</div></div>
+  </div>
+  <p class="dd-now"><b>Right now:</b> ${esc(nextWords(r))}</p>
+  <div class="dd-cols">${cards}</div>
+  ${plan}
+  <div class="dd-links"><a class="pri" href="/desk/?s=${encodeURIComponent(r.symbol)}">Run AI Scan on ${esc(r.name)}</a><a href="/tier2.html?s=${encodeURIComponent(r.symbol)}&bias=${esc(r.side)}">Open in Tier 2</a><a href="${BASE}">Back to the list</a></div>
+  <div id="ddTl"></div>
+  <p class="dd-foot">Market mood: ${esc(r.regime ? r.regime.trend : "–")}, volatility ${esc(r.regime ? r.regime.vol : "–")}. Items marked "est." are estimates, not exchange data. The score is a checklist total, not a probability. Education and demonstration only, not financial advice.</p>`;
+  if (window.CP && CP.trendlines) CP.trendlines.mount($("#ddTl"), r.symbol);
+}
+async function loadDetail(sym) {
+  app.innerHTML = `<a class="dd-back" href="${BASE}">‹ Day Drive Scanner</a><p class="dd-empty">Running the three checks on ${esc(sym)}…</p>`;
+  try {
+    const r = await fetch(`/dd_api.php?r=symbol&s=${encodeURIComponent(sym)}`, { cache: "no-store" }); const j = await r.json();
+    if (!j.row) throw new Error(j.error || "This market could not be read just now.");
+    detail(j.row);
+  } catch (e) { app.innerHTML = `<a class="dd-back" href="${BASE}">‹ Day Drive Scanner</a><p class="dd-empty">${esc(e.message)}</p>`; }
 }
 
-function detail(r){
-  var g=el('div','dgrid');
-
-  var c1=el('div','card');
-  var h1=el('h3'); h1.appendChild(document.createTextNode('STEP 1 · MACRO  '));
-  h1.appendChild(el('em',null,sc(r.s1)+'/35')); c1.appendChild(h1);
-  c1.appendChild(ladder(r.gates,['weekly','daily','block','vwap','fractal'],
-    {weekly:'Weekly', daily:'Daily', block:'Order block', vwap:'VWAP', fractal:'5-wave fractal'}));
-  g.appendChild(c1);
-
-  var c2=el('div','card');
-  var h2=el('h3'); h2.appendChild(document.createTextNode('STEP 2 · TREND  '));
-  h2.appendChild(el('em',null,(r.s2==null?'—':sc(r.s2))+'/25')); c2.appendChild(h2);
-  if(r.s2!=null){
-    c2.appendChild(ladder(r.gates,['h4','h1_st','h1_bb','h1_delta','h1_fib'],
-      {h4:'4H EMA + KAMA', h1_st:'1H Supertrend', h1_bb:'1H not compressed', h1_delta:'1H delta', h1_fib:'Fib extension'}));
-  } else c2.appendChild(el('p','sub','Runs once Step 1 passes.'));
-  g.appendChild(c2);
-
-  var c3=el('div','card');
-  var h3=el('h3'); h3.appendChild(document.createTextNode('STEP 3 · ENTRY  '));
-  h3.appendChild(el('em',null,(r.s3==null?'—':sc(r.s3))+'/40')); c3.appendChild(h3);
-  if(r.s3!=null){
-    c3.appendChild(ladder(r.gates,['choch','sweep','foot','rsi','time'],
-      {choch:'2-bar CHoCH', sweep:'Liquidity sweep', foot:'Footprint', rsi:'RSI / hidden div', time:'Session'}));
-    if(r.entry_note) c3.appendChild(el('p','sub',r.entry_note));
-  } else c3.appendChild(el('p','sub','Runs once Step 2 passes.'));
-  g.appendChild(c3);
-
-  var c4=el('div','card'); c4.appendChild(el('h3',null,'CONTEXT'));
-  var dl=el('dl','kv');
-  function kv(k,v){ dl.appendChild(el('dt',null,k)); dl.appendChild(el('dd',null,v)); }
-  kv('Price', n(r.price));
-  if(r.vwap!=null) kv(r.vwap_mode==='vwap'?'VWAP':'Time-price avg', n(r.vwap));
-  if(r.delta!=null) kv('Delta (est.)', Number(r.delta).toFixed(2));
-  if(r.bb_width!=null) kv('1H BB width', Number(r.bb_width).toFixed(0)+'th pct');
-  if(r.rsi!=null) kv('5M RSI', Number(r.rsi).toFixed(0));
-  kv('Regime', r.regime.trend+' · '+r.regime.vol+' vol');
-  kv('ADX (1D)', Number(r.regime.adx).toFixed(1));
-  c4.appendChild(dl);
-  g.appendChild(c4);
-
-  var c5=el('div','card'); c5.appendChild(el('h3',null,'STEPS 4-5 · STOP, RISK, TARGETS'));
-  if(r.risk){
-    var t=el('div','tg');
-    function tg(k,v){ var d=el('div'); d.appendChild(el('span',null,k)); d.appendChild(el('b',null,v)); t.appendChild(d); }
-    tg('Entry', n(r.risk.entry));
-    tg('Stop ('+r.risk.sl_from+')', n(r.risk.sl)+(r.risk.wide?'  ⚠ wide':''));
-    if(r.risk.sl_structural!=null) tg('— 15m structural', n(r.risk.sl_structural));
-    if(r.risk.sl_alt!=null) tg('— ATR alternative', n(r.risk.sl_alt));
-    tg('Risk', n(r.risk.risk)+(r.risk.risk_pct!=null?'  ·  '+r.risk.risk_pct+'%':''));
-    (r.risk.targets||[]).forEach(function(x){ tg(x.label+'  '+x.rr+'R  '+x.note, n(x.price)); });
-    if(r.risk.block_exit!=null) tg('Structural exit (4H/1H block)', n(r.risk.block_exit));
-    tg('Position size', r.risk.size_pct+'%  (max '+r.risk.max_loss+'%)');
-    c5.appendChild(t);
-    c5.appendChild(el('p','sub','Trail: '+r.risk.trail));
-    if(r.risk.vol_index!=null) c5.appendChild(el('p','sub','Sized against '+r.risk.vol_index_name+' '+r.risk.vol_index+'.'));
-  } else c5.appendChild(el('p','sub','Levels appear once Step 3 produces an entry.'));
-  g.appendChild(c5);
-
-  return g;
-}
-
-function render(){
-  var out=q('#out'); out.textContent='';
-  if(!data){ out.appendChild(el('div','msg','Loading…')); return; }
-  if(data.error){ out.appendChild(el('div','msg',data.error)); return; }
-  var rows=data.rows||[];
-  if(data.meta) kpis(data.meta);
-  if(!rows.length){
-    out.appendChild(el('div','msg','Nothing is through the structure gates in this market right now. For a model this selective that is the normal state — check back when the session is busier.'));
-    return;
-  }
-  var tb=el('table','tbl'), th=el('thead'), hr=el('tr');
-  [['Symbol',''],['Side',''],['Status',''],['Score','r'],['Steps',''],
-   ['Price','r'],['Stop','r hide'],['T1','r hide'],['Size','r hide']].forEach(function(h){
-    hr.appendChild(el('th',h[1],h[0]));
-  });
-  th.appendChild(hr); tb.appendChild(th);
-  var bd=el('tbody');
-
-  rows.forEach(function(r){
-    var tr=el('tr','r');
-    var c=el('td');
-    c.appendChild(el('div','sym',r.symbol));
-    c.appendChild(el('div','sub',r.name||''));
-    if(r.tv){
-      var tvb=el('span','tv',r.tv); tvb.title='Click to copy the TradingView code';
-      tvb.addEventListener('click',function(e){ e.stopPropagation();
-        try{ navigator.clipboard.writeText(r.tv); tvb.textContent='copied';
-          setTimeout(function(){tvb.textContent=r.tv;},900); }catch(_){}
-      });
-      c.appendChild(tvb);
-    }
-    tr.appendChild(c);
-
-    var sd=el('td'); sd.appendChild(el('span','side '+r.side,r.side)); tr.appendChild(sd);
-    var st=el('td'); st.appendChild(el('span','st '+r.status.replace(/[^A-Z]/g,''),r.status)); tr.appendChild(st);
-    tr.appendChild(el('td','r num',sc(r.score)));
-
-    var bc=el('td'); var bars=el('div','bars');
-    [['f1',r.s1,35],['f2',r.s2,25],['f3',r.s3,40]].forEach(function(b){
-      var i=el('i',b[0]+(b[1]==null?'':(b[1]>=b[2]*0.8?' full':' on')));
-      bars.appendChild(i);
-    });
-    bc.appendChild(bars); tr.appendChild(bc);
-
-    tr.appendChild(el('td','r num',n(r.price)));
-    tr.appendChild(el('td','r num hide'+(r.risk&&r.risk.wide?' warn':''),
-      r.risk?(n(r.risk.sl)+(r.risk.wide?' ⚠':'')):'—'));
-    var t1=null;
-    if(r.risk&&r.risk.targets){ r.risk.targets.forEach(function(x){ if(x.label==='T1') t1=x.price; }); }
-    tr.appendChild(el('td','r num hide',t1==null?'—':n(t1)));
-    tr.appendChild(el('td','r num hide',r.risk?r.risk.size_pct+'%':'—'));
-    bd.appendChild(tr);
-
-    var dr=el('tr','det'), dc=el('td'); dc.colSpan=9;
-    dc.appendChild(detail(r)); dr.appendChild(dc);
-    dr.style.display = open[r.symbol] ? '' : 'none';
-    bd.appendChild(dr);
-
-    tr.addEventListener('click',function(){
-      open[r.symbol]=!open[r.symbol];
-      dr.style.display = open[r.symbol] ? '' : 'none';
-    });
-  });
-
-  tb.appendChild(bd); out.appendChild(tb);
-}
-
-function avail(list){
-  var box=q('#avail'); box.textContent='';
-  (list||[]).forEach(function(a){
-    var r=el('div','arow');
-    r.appendChild(el('div','g',a.group));
-    r.appendChild(el('div','i',a.item));
-    r.appendChild(el('span','sstate '+a.state,a.state));
-    box.appendChild(r);
-  });
-}
-
-function load(force){
-  if(busy)return; busy=true;
-  var b=q('#go'); b.disabled=true; b.textContent='Scanning…';
-  fetch(API+'?r=scan&mkt='+mkt+(force?'&force=1':''),{headers:{'Accept':'application/json'}})
-    .then(function(x){return x.json();})
-    .then(function(j){
-      data=j; render();
-      if(j.availability) avail(j.availability);
-      if(j.at) q('#stamp').textContent='updated '+new Date(j.at*1000).toLocaleTimeString();
-    })
-    .catch(function(){
-      data={error:'The scanner could not be reached just now. Sorry for the inconvenience — please try again in a moment.'};
-      render();
-    })
-    .then(function(){ busy=false; b.disabled=false; b.textContent='Refresh'; });
-}
-
-load();
-setInterval(function(){ if(!document.hidden) load(); }, 60000);
+if (Q.get("s")) loadDetail(Q.get("s")); else { listShell(); loadList(); }
 })();
 </script>
 </body>

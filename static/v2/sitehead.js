@@ -4,6 +4,7 @@
   "use strict";
   var MENU = [
     { t: "Scanner", href: "/scanner.html", match: ["/scanner.html", "/tier2.html"] },
+    { t: "Day Drive", href: "/scanners/day-drive/" },
     { t: "Markets", cols: [{ items: [
       { t: "Bias", d: "Trend direction for every symbol", href: "/bias/" },
       { t: "Movers", d: "Today's biggest moves, by market", href: "/movers/" },
@@ -15,7 +16,7 @@
         { t: "All scanners", d: "Fifteen ready-made scans", href: "/scanners/" },
         { t: "Bottom reversal", d: "Daily reversals off the lows", href: "/scanners/bottom-reversal/" },
         { t: "200 EMA", d: "Price meeting its 200 EMA", href: "/scanners/ema-200/" },
-        { t: "Day drive", d: "Early entries near the day low", href: "/scanners/day-drive/" }
+        { t: "Day Drive", d: "Three checks, weekly chart to 15m entry", href: "/scanners/day-drive/" }
       ] },
       { h: "Research", items: [
         { t: "Backtesting", d: "Test your own strategy on history", href: "/backtesting/" },
