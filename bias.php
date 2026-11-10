@@ -54,8 +54,10 @@ if (!$sym) {   // old or unknown slug: try the ticker part, else 404
 $r = $rows[$sym] ?? null; $name = t_name($sym); $mkt = t_symbols()[$sym];
 [$w, $k, $conv] = $r ? seo_bias($r) : ['–', 'neu', 'Waiting for the first scan'];
 $ch = $r['change_pct'] ?? null;
-$title = "$name ($sym) trend bias today: $w | ChartPulse";
-$desc = $r ? sprintf('%s (%s) is %s on the ChartPulse engine (%s). Today %s, 1 month %s, 1 year %s. Live stats and news, free, no sign-up.', $name, $sym, strtolower($w), strtolower($conv), seo_pct($ch), seo_pct($r['ret_1m'] ?? null, 1), seo_pct($r['ret_1y'] ?? null, 1))
+// 11 Nov 2026: worded the way people search (Search Console queries: "crude oil mini trend today",
+// "mcx gold mini price", "gold mini live chart").
+$title = "$name trend today: $w, live price ($sym) | ChartPulse";
+$desc = $r ? sprintf('%s (%s) trend today is %s on the ChartPulse engine (%s). Today %s, 1 month %s, 1 year %s. Live stats and news, free, no sign-up.', $name, $sym, strtolower($w), strtolower($conv), seo_pct($ch), seo_pct($r['ret_1m'] ?? null, 1), seo_pct($r['ret_1y'] ?? null, 1))
     : "$name ($sym) trend bias, stats and news from ChartPulse.";
 $path = seo_url($sym);
 $news = seo_news($sym, 8);
@@ -77,6 +79,7 @@ $st = fn($l, $v, $c = '') => '<div><span>' . $l . '</span><b class="mono ' . $c 
       <div class="bc-px"><b class="mono"><?= seo_e(t_fp((float)$r['price'])) ?></b><span class="mono <?= seo_cls($ch) ?>"><?= seo_pct($ch) ?></span><span class="stbadge <?= seo_e($r['status'] ?? '') ?>"><?= !empty($r['live']) ? 'LIVE' : 'CLOSED' ?></span></div>
 <?php endif; ?>
     </header>
+    <p class="bc-next" style="margin:10px 0 14px"><a href="/desk/?s=<?= rawurlencode($sym) ?>"><?= seo_e($name) ?> chart with trend lines and AI Scan</a> · <a href="/scanners/day-drive/?s=<?= rawurlencode($sym) ?>">Day Drive checks</a> · <a href="/scanner.html">Live signal scanner</a></p>
 <?php if ($r): ?>
     <div class="bc-grid">
       <div class="bc-bias <?= $k ?>">
