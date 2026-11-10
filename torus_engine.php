@@ -1237,10 +1237,11 @@ function t_due(array $scan, int $now): array {
     foreach (t_symbols() as $sym => $_) {
         $ss = t_session(t_exchange($sym), $now);
         $r = $scan['rows'][$sym] ?? null; $f = $scan['fail'][$sym] ?? null;
+        if ($f && strncmp((string)($f['why'] ?? ''), 'alpaca', 6) === 0) $f = null;   // an Alpaca miss falls back to Yahoo now, it never parks the symbol
         if ($f && $now < (int)$f['at'] + min(86400, 300 * 2 ** min((int)$f['n'] - 1, 9))) continue;   // back off after failures
         if (!$r || !empty($r['mig'])) { $pri[$sym] = [$ss['open'] ? 0 : 3, 0]; continue; }
         $age = $now - (int)$r['ts'];
-        $wantSrc = t_up_key($sym) ? 'upstox' : (t_alp_key($sym) ? 'alpaca' : 'yahoo');
+        $wantSrc = t_up_key($sym) ? 'upstox' : (t_alp_use($sym, $scan, $now) ? 'alpaca' : 'yahoo');
         if ($wantSrc !== ($r['src'] ?? 'yahoo') && $age >= 30) { $pri[$sym] = [$ss['open'] ? 1 : 3, -$age]; continue; }   // data source switched
         if ($ss['open']) {
             $traded = (int)$r['rmt'] >= (int)$r['ts'] - T_FRESH;
@@ -1274,7 +1275,7 @@ function t_process(array $syms, array &$scan, int $now): void {
     $up = []; $al = []; $yh = [];
     foreach ($syms as $s) {
         if (t_up_key($s)) $up[] = $s;          // NSE / MCX via Upstox, unchanged
-        elseif (t_alp_key($s)) $al[] = $s;     // US stocks + Alpaca's own crypto list
+        elseif (t_alp_use($s, $scan, $now)) $al[] = $s;     // US stocks + Alpaca's own crypto list (unless Alpaca just failed for it)
         else $yh[] = $s;                       // everything else stays on Yahoo
     }
     if ($yh) t_process_yahoo($yh, $scan, $now);

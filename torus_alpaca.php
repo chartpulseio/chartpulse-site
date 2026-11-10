@@ -45,6 +45,12 @@ function t_alp_key(string $sym): ?string {
     // reject the whole multi-symbol request, which took every other symbol in that batch down with it.
     return in_array($sym, T_ALP_US, true) ? str_replace('-', '.', $sym) : null;
 }
+/** Use Alpaca for this symbol right now? Not while it is in its cool-off after a failed history request
+ *  (10 Nov 2026: a symbol Alpaca could not serve used to stop updating altogether -- live rows went stale
+ *  for 15+ minutes and stayed on Tier 1. It now drops back to Yahoo for 30 minutes and Alpaca is tried again after). */
+function t_alp_use(string $sym, array $scan, int $now): bool {
+    return t_alp_key($sym) !== null && $now >= (int)($scan['alp_off'][$sym] ?? 0);
+}
 function t_alp_iso(int $ts): string { return gmdate('Y-m-d\TH:i:s\Z', $ts); }
 
 /** Batched multi-symbol bars for one asset class, paginated via next_page_token. Returns alpaca-symbol => frame. */
@@ -134,11 +140,12 @@ function t_process_alpaca(array $syms, array &$scan, int $now): void {
         if ($need5) $frames5M += t_alp_bars($cls, array_map(fn($s) => $plan[$s][2], $need5), '5Min', $now - 3 * 86400, $now);
         $snapAll += t_alp_snapshots($cls, array_map(fn($s) => $plan[$s][2], $list));
     }
+    $fb = [];
     foreach ($plan as $s => [$full, $fr, $alp, $ex]) {
         $Hnew = $frames1H[$alp] ?? null;
         if ($full) {
             $Dfull = $frames1D[$alp] ?? null;
-            if (!$Hnew || !$Dfull) { t_fail($scan, $s, $now, 'alpaca history unavailable'); continue; }
+            if (!$Hnew || !$Dfull) { $scan['alp_off'][$s] = $now + 1800; unset($scan['fail'][$s]); $fb[] = $s; continue; }
             $fr = ['v' => 2, 'src' => 'alpaca', 'tz' => 'UTC', 'synth' => false, '1H' => t_merge(null, $Hnew, T_KEEP_H), '1D' => t_merge(null, $Dfull, T_KEEP_D), 'full' => $now];
         } elseif ($Hnew) {
             $fr['1H'] = t_merge($fr['1H'] ?? null, $Hnew, T_KEEP_H);
@@ -169,4 +176,5 @@ function t_process_alpaca(array $syms, array &$scan, int $now): void {
         $M5 = $frames5M[$alp] ?? null;
         t_finish($s, $fr, ['rmt' => $rmt, 'cs' => $cs, 'ce' => $ce], $dayOk, $scan, $now, ['src' => 'alpaca', 'ukey' => $alp], $M5);
     }
+    if ($fb) t_process_yahoo($fb, $scan, $now);   // Alpaca could not serve these: Yahoo keeps them live meanwhile
 }
