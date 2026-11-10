@@ -19,7 +19,7 @@
       ] },
       { h: "Research", items: [
         { t: "Backtesting", d: "Test your own strategy on history", href: "/backtesting/" },
-        { t: "Bias desk", d: "Forecast, news tone and stats for one symbol", href: "/desk/" }
+        { t: "AI Scan", d: "Forecast, news tone and analyst view for one symbol", href: "/desk/" }
       ] }
     ] },
     { t: "Pricing", href: "/pricing.html" }

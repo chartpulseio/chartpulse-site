@@ -25,7 +25,7 @@
 <script src="/static/v2/consent.js?v=2"></script>
 <link rel="stylesheet" href="/static/v2/fonts.css?v=1">
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=2">
-<script defer src="/static/v2/sitehead.js?v=1"></script>
+<script defer src="/static/v2/sitehead.js?v=2"></script>
 </head>
 <body class="scanner" data-page="scanner">
 <header class="site-head">
@@ -98,13 +98,15 @@
 
         <div class="mkt-pick" id="mktPick" role="group" aria-label="Show one market"></div>
 
-        <div class="kpis" id="kpis"></div>
-      <section class="win-strip" id="winStrip" hidden aria-live="polite"></section>
-
         <article class="panel queue-panel">
           <header class="p-head"><div><h2>Signal queue</h2><span class="p-sub">Every shortlisted symbol: live signals first, then Under process by score · refreshes every minute</span></div><span class="q-count mono" id="queueCount">–</span></header>
           <div class="tbl-wrap"><table class="tbl" id="topTable"></table></div>
         </article>
+
+        <div class="kpis" id="kpis"></div>
+      <section class="win-strip" id="winStrip" hidden aria-live="polite"></section>
+
+
 
         <article class="panel recent-panel" hidden style="display:none">
           <header class="p-head"><div><h2>Recent signals</h2><span class="p-sub">Every CALL / PUT of the last 24 hours, with the time it appeared and ended · live ones on top of the list stay green</span></div><span class="q-count mono" id="recentCount">–</span></header>
@@ -253,7 +255,7 @@
 <div class="tip mono" id="tip" hidden></div>
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
 <script>window.LightweightCharts || document.write('<script src="https://unpkg.com/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"><\/script>');</script>
-<script src="/static/v2/cp.js?v=98"></script>
+<script src="/static/v2/cp.js?v=99"></script>
 <script src="/static/v2/v10ui.js?v=21"></script>
 <script>window.TORUS_PHP = 1;</script>
 <script src="/static/v2/torus.js?v=100"></script>
