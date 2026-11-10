@@ -100,6 +100,7 @@ function tl_best(array $F, int $n, array $piv, int $side, float $atr): ?array {
     $c = (float)$F['c'][$n - 1]; $d = ($c - $best['now']) * $side;   // > 0 = price is beyond the line
     $best['state'] = $d > $tol ? 'broken' : (abs($c - $best['now']) <= 0.6 * $atr ? 'testing' : 'holding');
     $best['dist_pct'] = $c > 0 ? round(($best['now'] - $c) / $c * 100, 2) : 0.0;
+    $best['ag'] = round(abs($c - $best['now']) / $atr, 2);   // distance from the line in ATRs
     return $best;
 }
 
@@ -178,7 +179,7 @@ function tl_frame(string $tf, array $F, bool $bars = true): ?array {
         if (!$L) return null;
         return ['i1' => $L['a'], 'p1' => round($L['pa'], $d + 1), 'i2' => $L['b'], 'p2' => round($L['pb'], $d + 1),
                 'slope' => $L['slope'], 'now' => round($L['now'], $d), 'touches' => $L['touches'],
-                'dir' => $L['dir'], 'state' => $L['state'], 'dist_pct' => $L['dist_pct']];
+                'dir' => $L['dir'], 'state' => $L['state'], 'dist_pct' => $L['dist_pct'], 'ag' => $L['ag']];
     };
     return ['tf' => $tf, 'pattern' => $name, 'lean' => $lean, 'dec' => $d, 'price' => round($px, $d),
             'res' => $pub($R), 'sup' => $pub($S), 'text' => tl_text($tf, $name, $R, $S, $px, $d)]
@@ -236,9 +237,11 @@ function tl_row(string $sym, array $row, int $now): ?array {
             $L = $x[$side]; if (!$L) continue;
             $cell[$side] = ['dir' => $L['dir'], 'n' => $L['touches'], 'st' => $L['state'], 'now' => $L['now'], 'gap' => $L['dist_pct']];
             $w = TL_SCAN_W[$k] * (1 + min(4, $L['touches'] - 2) * 0.25);
-            if ($L['touches'] < 3) continue;   // a break or test only counts on a line with 3+ touches (2 points always make a line)
-            if ($L['state'] === 'broken') { $ev[] = ['tf' => $k, 'e' => $side === 'res' ? 'break_up' : 'break_down', 'n' => $L['touches'], 'lv' => $L['now']]; $rank += 3 * $w; }
-            elseif ($L['state'] === 'testing') { $ev[] = ['tf' => $k, 'e' => $side === 'res' ? 'at_res' : 'at_sup', 'n' => $L['touches'], 'lv' => $L['now']]; $rank += 1.5 * $w; }
+            // An event needs a line with 3+ touches (2 points always make a line), a DECISIVE break (the close is
+            // half an ATR or more through the line) or a CLOSE test (within 0.3 ATR of it).
+            if ($L['touches'] < 3) continue;
+            if ($L['state'] === 'broken' && $L['ag'] >= 0.5) { $cell[$side]['ev'] = 'break'; $ev[] = ['tf' => $k, 'e' => $side === 'res' ? 'break_up' : 'break_down', 'n' => $L['touches'], 'lv' => $L['now']]; $rank += 3 * $w; }
+            elseif ($L['state'] === 'testing' && $L['ag'] <= 0.3) { $cell[$side]['ev'] = 'test'; $ev[] = ['tf' => $k, 'e' => $side === 'res' ? 'at_res' : 'at_sup', 'n' => $L['touches'], 'lv' => $L['now']]; $rank += 1.5 * $w; }
         }
         if ($x['lean'] === 'up') $up++; elseif ($x['lean'] === 'down') $dn++;
         $rank += 0.2 * TL_SCAN_W[$k];
@@ -253,11 +256,11 @@ function tl_row(string $sym, array $row, int $now): ?array {
 /** Whole-universe scan, built in steps inside a time budget and cached; the page polls until progress is 1. */
 function tl_scan(): array {
     $dir = T_DATA . '/tl'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
-    $now = t_now(); $ck = $dir . '/_scan2.json';
+    $now = t_now(); $ck = $dir . '/_scan3.json';
     $c = t_read_json($ck, null);
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 45 && !empty($c['rows'])) return $c;
     $scan = t_scan_load(); $syms = array_keys($scan['rows'] ?? []);
-    $cp = $dir . '/_rows2.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
+    $cp = $dir . '/_rows3.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
     $t0 = microtime(true); $done = 0; $fresh = 0;
     foreach ($syms as $sym) {
         $old = $cache[$sym] ?? null;
