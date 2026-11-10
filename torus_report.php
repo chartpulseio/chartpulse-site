@@ -221,7 +221,7 @@ function tr_send(array $rep): array {
     if ($chat === '' || trim((string)t_cfg('telegram_bot_token', '')) === '') return [false, 'Telegram admin chat or bot token is not set in config.php'];
     $base = rtrim((string)t_cfg('site_url', 'https://chartpulse.io'), '/');
     $ok = true; $info = '';
-    foreach (tr_tg_messages($rep, $base . '/admin/reports.php?d=' . $rep['date']) as $m) { [$k, $info] = t2_tg_send($m, $chat); $ok = $ok && $k; if (!$k) break; usleep(400000); }
+    foreach (tr_tg_messages($rep, $base . '/admin/reports.php') as $m) { [$k, $info] = t2_tg_send($m, $chat); $ok = $ok && $k; if (!$k) break; usleep(400000); }
     return [$ok, $info];
 }
 /** Called by cron.php (owner, 30 Sep 2026): from 08:00 IST
