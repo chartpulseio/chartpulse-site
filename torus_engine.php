@@ -1358,7 +1358,12 @@ function t_sticky_apply(string $s, array $row, int $now): array {
     if ($E && !empty($E['open']) && ($row['signal'] ?? 'WAIT') === ($E['sig'] ?? '') && !empty($row['flow'])) {
         $row['remark'] = ($row['remark'] ?? null) ? $row['remark'] . ' · zone retested' : 'Zone retested';
     }
+    // owner, 10 Nov 2026: a NEW Day High (PUT) / Day Low (CALL) beyond the extreme a held entry was built on makes
+    // that entry stale -- its ticks must not stay on screen. $past(sig, ext) = today's extreme has moved past ext.
+    $eps = max($a5 * 0.02, abs($zone) * 1e-7);
+    $past = fn(string $sig, float $ext): bool => $ext > 0 && $zs($sig) > 0 && ($sig === 'CALL' ? $zs($sig) < $ext - $eps : $zs($sig) > $ext + $eps);
     $T = t_t2_open_map()[$s] ?? null;
+    if ($T && !empty($T['day_ext']) && $past((string)$T['sig'], (float)$T['day_ext'])) $T = null;
     if ($T && !$blocked((string)$T['sig'], (int)($T['pattern_time'] ?? $T['entry_time']))) {   // Tier 2 is in a trade: Tier 1 mirrors it while an entry is possible
         $sg = ($T['sig'] ?? '') === 'CALL' ? 1 : -1; $ta = $a5 > 0 ? $a5 : (float)($T['atr5'] ?? 0);
         // Owner, 20 Oct 2026: an open trade is frozen -- the band no longer ends it, only its own exit does.
@@ -1423,7 +1428,10 @@ function t_sticky_apply(string $s, array $row, int $now): array {
         // moving outside the ATR entry window, which is what trips GATE CLOSE below).
         $ok = !t_sl_crossed($px, $sg, $k['sl']) && ($kEntry || t_entry_ok($px, $sg, (float)($k['ext'] ?? 0), $a5 > 0 ? $a5 : (float)($k['a5'] ?? 0), $k['sl']));
         $flip = ($row['signal'] ?? 'WAIT') !== 'WAIT' && $row['signal'] !== $k['signal'];
-        if (!$ok || $flip) {
+        if (!empty($k['v10']) && ($k['setup'] ?? '') === 'trend' && $past((string)$k['signal'], (float)($k['ext'] ?? 0))) {
+            unset($S[$s]); $changed = true;   // new extreme: drop the old snapshot quietly, the row shows the fresh cycle
+        }
+        elseif (!$ok || $flip) {
             if (!empty($k['v10'])) { $gcSet($k); $row = $gcShow($row); }
             $endIt((string)$k['signal'], (float)($k['ext'] ?? $zs($k['signal'])));
         }

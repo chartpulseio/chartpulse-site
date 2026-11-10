@@ -317,11 +317,15 @@ function t10_rx(array $F, int $a, int $b, int $sg): array {
     return $RX;
 }
 /** Cycles: a new one starts at every 5m close beyond the zone (prior running extreme -/+ band). Returns [[start, end], ...]. */
-function t10_cycles(array $F, int $a, int $b, int $sg, array $A5, array $RX, float $zb): array {
+function t10_cycles(array $F, int $a, int $b, int $sg, array $A5, array $RX, float $zb, bool $fresh = false): array {
     $C = []; $s = $a;
     for ($i = $a + 1; $i <= $b; $i++) {
         $band = $zb * (float)$A5[$i]; $c = (float)$F['c'][$i]; $p = $RX[$i - 1];
-        if ($sg > 0 ? $c < $p - $band : $c > $p + $band) { $C[] = [$s, $i - 1]; $s = $i; }
+        // $fresh (trend, owner 10 Nov 2026): ANY new Day High / Day Low starts a new cycle, so the gate and the
+        // ticks are always counted from the candle that made the current extreme -- never left over from an
+        // older, lower high (higher low). The old rule needed a 5m CLOSE beyond the old extreme by a whole band.
+        $brk = $fresh ? $RX[$i] != $p : ($sg > 0 ? $c < $p - $band : $c > $p + $band);
+        if ($brk) { $C[] = [$s, $i - 1]; $s = $i; }
     }
     $C[] = [$s, $b];
     return $C;
@@ -473,7 +477,7 @@ function t10_retest_idx(array $F, int $cs, int $ce, int $sg, array $A5, array $R
  * entry freezes a cycle). Owner, 20 Oct 2026: once a cycle has an entry it is re-run to the end of the
  * session, so a later close beyond the zone no longer resets it -- after entry everything freezes.
  */
-function t10_session(array $F, int $a, int $b, int $sg, ?array $M1, float $zb, int $now, ?float $adr = null, array $lv = [], bool $arm = false, ?int $moveGate = null): array {
+function t10_session(array $F, int $a, int $b, int $sg, ?array $M1, float $zb, int $now, ?float $adr = null, array $lv = [], bool $arm = false, ?int $moveGate = null, bool $fresh = false): array {
     $b = min($b, count($F['t']) - 1); while ($b >= $a && (int)$F['t'][$b] + 300 > $now) $b--;
     if ($b - $a < 3) return [];
     $A5 = t_atr($F, 14); $RX = t10_rx($F, $a, $b, $sg);
@@ -484,9 +488,10 @@ function t10_session(array $F, int $a, int $b, int $sg, ?array $M1, float $zb, i
     $fly = t_fly_events($F, $a, $b, $sg, $M1, $zb, $now)['events'];
     $key = $arm ? 'first_rt' : 'first';
     $out = []; $last = null;
-    foreach (t10_cycles($F, $a, $b, $sg, $A5, $RX, $zb) as [$cs, $ce]) {
+    foreach (t10_cycles($F, $a, $b, $sg, $A5, $RX, $zb, $fresh) as [$cs, $ce]) {
         $ev = t10_cycle_eval($F, $a, $cs, $ce, $sg, $A5, $RX, $Lo, $U, $zb, $M30, $fly, $gate, $lv, $now);
-        if (($ev[$key] ?? null) !== null && $ce < $b) {
+        // $fresh: an entry does not survive a new extreme -- that cycle simply ends there and the next one starts clean.
+        if (!$fresh && ($ev[$key] ?? null) !== null && $ce < $b) {
             $ev = t10_cycle_eval($F, $a, $cs, $b, $sg, $A5, $RX, $Lo, $U, $zb, $M30, $fly, $gate, $lv, $now);
             $ev['frozen'] = true;
         }
@@ -601,8 +606,8 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     if ($fN !== null) $glv['Fib'] = $fN;
     $pvN = null; foreach (($ctx['pivots'] ?? []) as $pv) if ($pvN === null || abs((float)$pv - $zone) < abs($pvN - $zone)) $pvN = (float)$pv;
     if ($pvN !== null) $glv['Pivot'] = $pvN;
-    $C = t10_session($F5, $bars[0], $bars[count($bars) - 1], $sg, $M1, (float)$ctx['zb'], $now, $ctx['adr'] ?? null, $glv, false, $mvGate);
-    $cy = t10_pick($C, $sym, false);
+    $C = t10_session($F5, $bars[0], $bars[count($bars) - 1], $sg, $M1, (float)$ctx['zb'], $now, $ctx['adr'] ?? null, $glv, false, $mvGate, true);
+    $cy = $C ? $C[count($C) - 1] : null;   // always the cycle of the CURRENT Day extreme (owner, 10 Nov 2026)
     $s30 = t10_stoch_k($m30);
     $c5 = t10_closed($F5, 300, $now); $rsi5 = count($c5['c']) >= 20 ? t_rsi_last(array_map('floatval', array_slice($c5['c'], -200)), 14) : null;
     [$ax, $pd, $md] = $m30 ? t_adx($m30, 14) : [0.0, 0.0, 0.0];
