@@ -41,7 +41,9 @@ function t_alp_req(string $url): array { return ['u' => $url, 'h' => t_alp_hdr()
 function t_alp_key(string $sym): ?string {
     if (!t_alp_on()) return null;
     if (isset(T_ALP_CRYPTO[$sym])) return T_ALP_CRYPTO[$sym];
-    return in_array($sym, T_ALP_US, true) ? $sym : null;
+    // Alpaca writes share classes with a dot (BRK.B); ours use a dash (BRK-B). One unknown symbol makes Alpaca
+    // reject the whole multi-symbol request, which took every other symbol in that batch down with it.
+    return in_array($sym, T_ALP_US, true) ? str_replace('-', '.', $sym) : null;
 }
 function t_alp_iso(int $ts): string { return gmdate('Y-m-d\TH:i:s\Z', $ts); }
 
@@ -50,7 +52,12 @@ function t_alp_bars(string $cls, array $alpSyms, string $tf, int $start, int $en
     if (!$alpSyms) return [];
     $base = $cls === 'crypto' ? T_ALP_CRYPTO_API : T_ALP_STOCK_API;
     $out = [];
-    foreach (array_chunk(array_values(array_unique($alpSyms)), 100) as $i => $chunk) {
+    // 10 Nov 2026: 49 symbols were stuck on "alpaca history unavailable". A long-range request for many symbols
+    // runs to several pages; when one page failed the loop stopped and every symbol on the later pages came back
+    // empty, then the whole batch was retried on the next scan step. Long ranges now go a few symbols at a time
+    // and a failed page is retried once before giving up.
+    $per = ($end - $start) > 30 * 86400 ? 6 : 100;
+    foreach (array_chunk(array_values(array_unique($alpSyms)), $per) as $i => $chunk) {
         $syms = implode(',', $chunk);
         $page = null; $n = 0;
         do {
@@ -59,6 +66,11 @@ function t_alp_bars(string $cls, array $alpSyms, string $tf, int $start, int $en
             if ($page) $qs .= '&page_token=' . rawurlencode($page);
             $b = t_fetch(["b{$i}_{$n}" => t_alp_req("$base/bars?$qs")], $codes);
             $j = json_decode((string)($b["b{$i}_{$n}"] ?? ''), true);
+            if (!is_array($j) || !array_key_exists('bars', $j)) {
+                usleep(600000);
+                $b = t_fetch(["b{$i}_{$n}" => t_alp_req("$base/bars?$qs")], $codes);
+                $j = json_decode((string)($b["b{$i}_{$n}"] ?? ''), true);
+            }
             if (!is_array($j)) break;
             foreach (($j['bars'] ?? []) as $s => $rows) {
                 if (!isset($out[$s])) $out[$s] = ['t' => [], 'o' => [], 'h' => [], 'l' => [], 'c' => [], 'v' => []];
@@ -81,7 +93,12 @@ function t_alp_snapshots(string $cls, array $alpSyms): array {
     if (!$alpSyms) return [];
     $base = $cls === 'crypto' ? T_ALP_CRYPTO_API : T_ALP_STOCK_API;
     $out = [];
-    foreach (array_chunk(array_values(array_unique($alpSyms)), 100) as $i => $chunk) {
+    // 10 Nov 2026: 49 symbols were stuck on "alpaca history unavailable". A long-range request for many symbols
+    // runs to several pages; when one page failed the loop stopped and every symbol on the later pages came back
+    // empty, then the whole batch was retried on the next scan step. Long ranges now go a few symbols at a time
+    // and a failed page is retried once before giving up.
+    $per = ($end - $start) > 30 * 86400 ? 6 : 100;
+    foreach (array_chunk(array_values(array_unique($alpSyms)), $per) as $i => $chunk) {
         $qs = 'symbols=' . implode(',', $chunk) . ($cls !== 'crypto' ? '&feed=iex' : '');
         $b = t_fetch(["s$i" => t_alp_req("$base/snapshots?$qs")], $codes);
         if (($codes["s$i"] ?? 0) === 401 || ($codes["s$i"] ?? 0) === 403) t_write_json(T_DATA . '/alpaca_state.json', ['auth_error' => t_now()]);
