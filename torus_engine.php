@@ -586,7 +586,7 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
     $pdc = $D['c'][$n - 2];
     $v10ctx = ['atr_low' => $atrLow, 'atr_high' => $atrHigh, 'atr5' => $atr5, 'band' => $band,
         'zb' => (float)$k['zone_band'], 'price' => $price, 'atLow' => $atLow, 'atHigh' => $atHigh, 'bars' => $bars,
-        'pdh' => $pdh, 'pdl' => $pdl, 'pdc' => $pdc, 'adr' => $adrV, 'near' => $zTol, 'pivots' => $pivR ?: []];
+        'pdh' => $pdh, 'pdl' => $pdl, 'pdc' => $pdc, 'atrd' => (float)$atrD, 'adr' => $adrV, 'near' => $zTol, 'pivots' => $pivR ?: []];
     $v10 = t10_eval($sym, $fr, array_map(fn($v) => (int)$v['dir'], $tfs), $v10ctx);
     $isV10 = $v10 && !empty($v10['trend']) && !empty($v10['valid']);
     if ($isV10) {
@@ -730,6 +730,13 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
         'day_high' => $pdh, 'day_low' => $pdl, 'today_open' => $tOpen, 'today_high' => $tHigh, 'today_low' => $tLow,
         'atr' => $atrD, 'atr_pct' => round($atrD / $price * 100, 3), 'atr_low' => $atrLow, 'atr_high' => $atrHigh,
         // free Big Movers panel (public, no Tier-1 logic): today's move and range measured in daily ATRs
+        // Day move label on Tier 1 (owner, 10 Nov 2026): how much of the daily ATR the day has used from the previous
+        // close, on the side this row trades (its signal, else its bias). Same number the Trend / Mid-Trend gate checks.
+        'mv' => (function () use ($signal, $bias, $atrHigh, $atrLow, $pdc, $atrD) {
+            $sgM = $signal === 'CALL' ? 1 : ($signal === 'PUT' ? -1 : ($bias === 'UP' ? 1 : ($bias === 'DOWN' ? -1 : 0)));
+            $u = $sgM ? t10_move_used((float)$atrHigh, (float)$atrLow, (float)$pdc, (float)$atrD, $sgM) : null;
+            return $u === null ? null : (int)round($u * 100);
+        })(),
         'move_atr' => $atrD > 0 ? round(abs($last - $D['c'][$n - 2]) / $atrD, 2) : null,
         'range_atr' => $atrD > 0 ? round(($atrHigh - $atrLow) / $atrD, 2) : null,
         'range_pct' => $price > 0 ? round(($atrHigh - $atrLow) / $price * 100, 3) : null,
@@ -1207,7 +1214,7 @@ function t_slim(array $r, array $st): array {
     $o = [];
     // owner, 4 Nov 2026 fix: 'mt' was missing here, so it never survived to the stored scan row -- the frontend's
     // Mid Target badge and the pb5/ema5/st5 "not for mid-trend" exclusions (all keyed on r.mt) never fired either.
-    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','pw_n','al5','v10','go','t0','zg','zlv','lad','sl_wide','mt','split24','pw30'] as $k) $o[$k] = $r[$k] ?? null;
+    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','pw_n','al5','v10','go','t0','zg','zlv','lad','sl_wide','mt','split24','pw30','mv'] as $k) $o[$k] = $r[$k] ?? null;
     $o['tf'] = array_map(fn($v) => $v['dir'], $r['tf']);
     foreach (['spark', 'ret_1w', 'ret_1m', 'ret_3m', 'ret_1y', 'vol_20d', 'from_hi_pct', 'from_lo_pct', 'hi_52w', 'lo_52w'] as $k) $o[$k] = $st[$k];
     return $o;

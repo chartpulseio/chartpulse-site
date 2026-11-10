@@ -219,6 +219,31 @@ function t10_adr_gate(array $F, int $a, int $b, ?float $adr): ?int {
     }
     return PHP_INT_MAX;
 }
+/**
+ * Day-move gate (owner, 10 Nov 2026): "PUT at the Day High keeps getting stopped because the high keeps moving up".
+ * A day spends roughly one daily ATR, measured from the previous close (that is what true range is). A Day High is
+ * only worth fading once the day has used enough of that budget; the same for a Day Low. Anchored to the previous
+ * close, so a gap counts from the first candle and nothing has to wait for "today's range" to build.
+ *   PUT  (sg < 0): (Day High - min(Day Low, PDC)) / ATR(14, daily)
+ *   CALL (sg > 0): (max(Day High, PDC) - Day Low) / ATR(14, daily)
+ * Used by Trend and Mid-Trend. Returns the fraction used (1.0 = one full ATR), null when it cannot be measured.
+ */
+const T10_MOVE_MIN = 0.70;   // x daily ATR -- below this the extreme still has room to extend, no entry
+function t10_move_used(float $hi, float $lo, float $pdc, float $atrD, int $sg): ?float {
+    if ($atrD <= 0 || $pdc <= 0 || $hi <= 0 || $lo <= 0) return null;
+    return ($sg > 0 ? max($hi, $pdc) - $lo : $hi - min($lo, $pdc)) / $atrD;
+}
+/** First 5m bar index in [$a,$b] at which the day move reaches T10_MOVE_MIN (PHP_INT_MAX = not yet, null = no gate). */
+function t10_move_gate(array $F, int $a, int $b, int $sg, float $pdc, float $atrD): ?int {
+    if ($atrD <= 0 || $pdc <= 0) return null;
+    $hi = -INF; $lo = INF;
+    for ($i = $a; $i <= $b; $i++) {
+        $hi = max($hi, (float)$F['h'][$i]); $lo = min($lo, (float)$F['l'][$i]);
+        $u = t10_move_used($hi, $lo, $pdc, $atrD, $sg);
+        if ($u !== null && $u >= T10_MOVE_MIN) return $i;
+    }
+    return PHP_INT_MAX;
+}
 /** 8-minute candles from 1-minute bars, anchored to the session open, closed bars only (owner, 19 Oct 2026). */
 function t10_eight(?array $M1, int $dayTs, int $now): ?array {
     if (!$M1 || empty($M1['t'])) return null;
@@ -448,13 +473,14 @@ function t10_retest_idx(array $F, int $cs, int $ce, int $sg, array $A5, array $R
  * entry freezes a cycle). Owner, 20 Oct 2026: once a cycle has an entry it is re-run to the end of the
  * session, so a later close beyond the zone no longer resets it -- after entry everything freezes.
  */
-function t10_session(array $F, int $a, int $b, int $sg, ?array $M1, float $zb, int $now, ?float $adr = null, array $lv = [], bool $arm = false): array {
+function t10_session(array $F, int $a, int $b, int $sg, ?array $M1, float $zb, int $now, ?float $adr = null, array $lv = [], bool $arm = false, ?int $moveGate = null): array {
     $b = min($b, count($F['t']) - 1); while ($b >= $a && (int)$F['t'][$b] + 300 > $now) $b--;
     if ($b - $a < 3) return [];
     $A5 = t_atr($F, 14); $RX = t10_rx($F, $a, $b, $sg);
     [, $U, $Lo] = t_bb(array_map('floatval', array_slice($F['c'], 0, $b + 1)), 20, 2.0);
     $M30 = t10_m30($F, $now);
     $gate = t10_adr_gate($F, $a, $b, $adr);
+    if ($moveGate !== null) $gate = $gate === null ? $moveGate : max($gate, $moveGate);   // day-move gate (10 Nov 2026): ticks start at the later of the two
     $fly = t_fly_events($F, $a, $b, $sg, $M1, $zb, $now)['events'];
     $key = $arm ? 'first_rt' : 'first';
     $out = []; $last = null;
@@ -558,6 +584,16 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     // Owner, 20 Oct 2026: after an entry everything freezes, so a symbol with an open Tier-2 trade is still
     // evaluated even when price has walked out of the entry range.
     if (!$inRange && !$touch && !t10_open_trade($sym)) return $base + ['valid' => false];
+    // Day-move gate (owner, 10 Nov 2026): no trend entry at a Day extreme until the day has used T10_MOVE_MIN of
+    // its daily ATR from the previous close. Not met yet -> no signal at all; met -> ticks count from that bar on.
+    // A trade that is already open is left alone.
+    $mvGate = t10_move_gate($F5, $bars[0], $bars[count($bars) - 1], $sg, (float)($ctx['pdc'] ?? 0), (float)($ctx['atrd'] ?? 0));
+    if ($mvGate === PHP_INT_MAX) {
+        $uNow = t10_move_used((float)$ctx['atr_high'], (float)$ctx['atr_low'], (float)($ctx['pdc'] ?? 0), (float)($ctx['atrd'] ?? 0), $sg);
+        if ($uNow !== null && $uNow >= T10_MOVE_MIN) $mvGate = $bars[count($bars) - 1];   // live price just got there, bar not printed yet
+        elseif (!t10_open_trade($sym)) return $base + ['valid' => false, 'mv_wait' => true];
+        else $mvGate = null;
+    }
     $M1 = $fr['1m'] ?? t_m1_get($sym);
     // Zone-group levels the 30m Liquidity Sweep is allowed to sweep (besides the running Day extreme).
     $glv = [$wantUp ? 'Prev Low' : 'Prev High' => $wantUp ? $pdl : $pdh];
@@ -565,7 +601,7 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     if ($fN !== null) $glv['Fib'] = $fN;
     $pvN = null; foreach (($ctx['pivots'] ?? []) as $pv) if ($pvN === null || abs((float)$pv - $zone) < abs($pvN - $zone)) $pvN = (float)$pv;
     if ($pvN !== null) $glv['Pivot'] = $pvN;
-    $C = t10_session($F5, $bars[0], $bars[count($bars) - 1], $sg, $M1, (float)$ctx['zb'], $now, $ctx['adr'] ?? null, $glv, false);
+    $C = t10_session($F5, $bars[0], $bars[count($bars) - 1], $sg, $M1, (float)$ctx['zb'], $now, $ctx['adr'] ?? null, $glv, false, $mvGate);
     $cy = t10_pick($C, $sym, false);
     $s30 = t10_stoch_k($m30);
     $c5 = t10_closed($F5, 300, $now); $rsi5 = count($c5['c']) >= 20 ? t_rsi_last(array_map('floatval', array_slice($c5['c'], -200)), 14) : null;
@@ -847,6 +883,9 @@ function t_mt_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     $wantUp = $bias === 'UP'; $sg = $wantUp ? 1 : -1;
     // MTF gate: same Pulse Sync rule Trend uses (3/4 or 4/4 alignment via t10_bias above) --
     // no extra per-TF requirement on top (owner, 9 Nov 2026: "same mtf logic jo trend main use krte hain").
+    // Day-move gate, same as Trend (owner, 10 Nov 2026): the day must have used T10_MOVE_MIN of its daily ATR from PDC.
+    $mvU = t10_move_used((float)($ctx['atr_high'] ?? 0), (float)($ctx['atr_low'] ?? 0), (float)($ctx['pdc'] ?? 0), (float)($ctx['atrd'] ?? 0), $sg);
+    if ($mvU !== null && $mvU < T10_MOVE_MIN) return null;
     $price   = (float)$ctx['price'];
     $pdh = (float)($ctx['pdh'] ?? 0); $pdl = (float)($ctx['pdl'] ?? 0); $pdc = (float)($ctx['pdc'] ?? 0);
     $wh = (float)($ctx['wh'] ?? 0); $wl = (float)($ctx['wl'] ?? 0); $mh = (float)($ctx['mh'] ?? 0); $ml = (float)($ctx['ml'] ?? 0);
