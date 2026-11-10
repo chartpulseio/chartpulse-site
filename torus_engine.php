@@ -675,6 +675,10 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
     // ever reached the row as the auxiliary 'mt' field, which t_apply_status/t_view_rows never treat as a live
     // signal (requires $signal !== 'WAIT'). Result: Mid-Trend never ranked or showed on Tier-1 at all, no
     // matter how strong. Wiring it in exactly like v10/rt do, now that it has independently qualified ($isMt).
+    // owner, 10 Nov 2026 ("trend ke signals nahi aa rahe, sab mid ke hain"): Mid-Trend used to overwrite a row that
+    // had already qualified as Trend or Retracement, so those showed on Tier 1 with the Mid-Trend label. Order is
+    // now Trend -> Retracement -> Mid-Trend: Mid-Trend only takes a row neither of the other two has.
+    if ($isV10 || $isRt) $isMt = false;
     if ($isMt) { $signal = $mt['sig']; $setup = 'midtrend'; $strength = (float)$mt['strength']; $flow = ['state' => $mt['flow'], 'time' => $mt['flow_at'], 'sl' => $mt['flow_sl']]; $grade = null; $swX = null; }
     // owner, 10 Nov 2026: "setup" label on a queue (non-signal) row should mean the SAME thing Tier 2 means by its
     // SETUP / "Setup forming" status -- a reversal candle (t_reversal) sitting right at the day's running extreme,
@@ -713,6 +717,7 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
         // v9 (owner, 6 Oct 2026): high-conviction = trend FLY with a sweep + reclaim; public as a bare flag (bright FLY chip + bolt), never the reason
         'hc' => !$isV10 && $setup === 'trend' && ($flow['state'] ?? null) === 'FLY' && $swX ? 1 : 0,
         'tk' => $isV10 ? $v10['tk'] : ($isRt ? $rt['tk'] : ($isMt ? $mt['tk'] : null)), 'tk_at' => $isV10 ? ($v10['tk_at'] ?? null) : ($isRt ? ($rt['tk_at'] ?? null) : null), 'pw' => $isV10 ? (int)$v10['pw'] : ($isRt ? (int)$rt['pw'] : ($isMt ? (int)$mt['pw'] : 0)),
+        'pw_n' => $isV10 ? (int)($v10['pw_n'] ?? 0) : ($isRt ? (int)($rt['pw_n'] ?? 0) : 0),   // retests counted from the bars of the current cycle
         'al5' => $v10['al5'] ?? ($mt['al5'] ?? null), 'v10' => ($isV10 || $isRt || $isMt) ? 1 : 0,
         // Exceptional 2/4 split (owner, 4 Nov 2026): 1H+4H clean-blocked against 1D+1W. Backtest-validated --
         // lets this specific split rank on Tier-1 even though alignment is only 2/4 (t_tier1() below allows it
@@ -1421,7 +1426,9 @@ function t_sticky_apply(string $s, array $row, int $now): array {
         // else) across the whole cycle, carried forward scan to scan in the same sticky state pw already
         // lives in -- so it naturally resets to 0 whenever $endIt() unsets $S[$s] and a fresh cycle starts.
         $prevPw = (int)($S[$s]['pw'] ?? 0); $prevPwN = (int)($S[$s]['pw_n'] ?? 0); $curPw = (int)($row['pw'] ?? 0);
-        $pwN = ($curPw === 2 && $prevPw !== 2) ? $prevPwN + 1 : $prevPwN;
+        // owner, 10 Nov 2026: v10 rows now carry the real count from the cycle's own bars (t10_cycle_eval); the
+        // scan-to-scan count stays only as the fallback for rows that do not have one.
+        $pwN = !empty($row['v10']) ? (int)($row['pw_n'] ?? 0) : (($curPw === 2 && $prevPw !== 2) ? $prevPwN + 1 : $prevPwN);
         $row['pw_n'] = $pwN;
         $S[$s] = ['signal' => $row['signal'], 'setup' => $row['setup'], 'remark' => $row['remark'] ?? null, 'flow' => $row['flow'], 'flow_at' => (int)($row['flow_at'] ?? $now),
             'grade' => $row['grade'] ?? null, 'runway_type' => $row['runway_type'] ?? null, 'sl' => isset($row['flow_sl']) ? (float)$row['flow_sl'] : null,

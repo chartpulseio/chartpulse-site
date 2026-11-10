@@ -346,7 +346,10 @@ function t10_cycles(array $F, int $a, int $b, int $sg, array $A5, array $RX, flo
 function t10_cycle_eval(array $F, int $a, int $cs, int $ce, int $sg, array $A5, array $RX, array $BBlo, array $BBup, float $zb, ?array $M30, array $flyEv, ?int $gateIdx = null, array $lv = [], int $now = 0, ?int $fromIdx = null): array {
     $dayTs = (int)$F['t'][$a]; $tce = (int)$F['t'][$ce] + 300;
     // retest / sweep / BB touch on 5m -- score inputs only (unchanged)
-    $pw = 0; $bb = false; $touch = false; $bounce = false; $retestAt = null;
+    // owner, 10 Nov 2026: $pwN = how many separate times the zone was retested in this cycle (touch -> bounce ->
+    // come back inside the narrow zone band and reclaim). After each counted retest a fresh bounce is needed
+    // before the next one counts, so one long retest is never counted twice. Shown as RETEST + / ++ / +++.
+    $pw = 0; $pwN = 0; $bb = false; $touch = false; $bounce = false; $retestAt = null;
     for ($i = $cs; $i <= $ce; $i++) {
         $l = (float)$F['l'][$i]; $h = (float)$F['h'][$i]; $c = (float)$F['c'][$i]; $band = $zb * (float)$A5[$i]; $rx = $RX[$i];
         if ($sg > 0 ? ($BBlo[$i] !== null && $l <= $BBlo[$i]) : ($BBup[$i] !== null && $h >= $BBup[$i])) $bb = true;
@@ -355,7 +358,7 @@ function t10_cycle_eval(array $F, int $a, int $cs, int $ce, int $sg, array $A5, 
         if (!$touch) { $touch = $near; continue; }
         if (!$bounce) { $bounce = $sg > 0 ? $c >= $rx + 2 * $band : $c <= $rx - 2 * $band; continue; }
         $noNew = $i > $a && $RX[$i] == $RX[$i - 1];
-        if ($near && $noNew && ($sg > 0 ? $c > $rx + $band : $c < $rx - $band)) { $pw = 2; if ($retestAt === null) $retestAt = $i; }
+        if ($near && $noNew && ($sg > 0 ? $c > $rx + $band : $c < $rx - $band)) { $pw = 2; $pwN++; $bounce = false; if ($retestAt === null) $retestAt = $i; }
     }
     // A confirmed retest (pw=2) restarts the tick search inside the same cycle (owner, 13 Oct 2026); a plain
     // sweep does not. The ADR gate (30% of ADR, owner 19 Oct 2026) is the other start condition.
@@ -448,7 +451,7 @@ function t10_cycle_eval(array $F, int $a, int $cs, int $ce, int $sg, array $A5, 
     [$sl, $wide] = $mk($fpx); [$slRt, $wideRt] = $mk($fpxRt);
     return ['cs' => $tkTcs, 'ce' => $tce, 'ticks' => $tk, 'tick_px' => $tp,
         'first' => $first, 'first_px' => $fpx, 'first_rt' => $firstRt, 'first_rt_px' => $fpxRt,
-        'pw' => $pw, 'bb' => $bb, 'sl' => $sl, 'sl_rt' => $slRt, 'wide' => $wide, 'wide_rt' => $wideRt,
+        'pw' => $pw, 'pw_n' => $pwN, 'bb' => $bb, 'sl' => $sl, 'sl_rt' => $slRt, 'wide' => $wide, 'wide_rt' => $wideRt,
         'gate' => $gateAt, 'gate_px' => $g[1] ?? null, 'gate_type' => $g[2] ?? null, 'gate_level' => $g[4] ?? null,
         'gate_exp' => $gateExp, 'sw_wick' => $swWick, 't0' => $g[2] ?? null,
         'fly' => $fly, 'ext' => $RX[$ce], 'retest' => $retestAt !== null];
@@ -644,7 +647,7 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     return $base + ['valid' => $valid, 'strength' => round($score, 2), 'parts' => $parts, 'flow' => $flow, 'refly' => !empty($cy['refly']), 'tk' => $tk, 'tk_at' => $tkAt, 'go' => $go,
         't0' => $cy['t0'] ?? null, 'zg' => $zg, 'zlv' => $zlv, 'lad' => 10,
         'gate_lv' => $cy['gate_level'] ?? null, 'sl_wide' => !empty($cy['wide']) ? 1 : 0,
-        'pw' => (int)($cy['pw'] ?? 0), 'flow_at' => $entryAt, 'flow_sl' => $cy['sl'] ?? null,
+        'pw' => (int)($cy['pw'] ?? 0), 'pw_n' => (int)($cy['pw_n'] ?? 0), 'flow_at' => $entryAt, 'flow_sl' => $cy['sl'] ?? null,
         'stoch30' => $s30 === null ? null : round($s30, 1), 'rsi5' => $rsi5 === null ? null : round($rsi5, 1), 'adx30' => round($ax, 1),
         'mzp' => $mjPrice !== null ? round($mjPrice, 4) : null, 'mzl' => $mjLabel];
 }
@@ -831,7 +834,12 @@ function t_rt_eval(string $sym, array $fr, array $ctx): ?array {
     // Retracement entry (owner, 20 Oct 2026): the gate HAS to be open first, and the 5 EMA alone is confirm
     // only -- so the entry is the first Early Entry / Reversal Pat / Double Confirm at or after the gate.
     $entryAt = $cy['first_rt'] ?? null; $ticksFired = $entryAt !== null;
-    $valid = ($score >= T_RT_MIN_SCORE && !empty($ctx['locHalf'])) || $ticksFired;
+    // owner, 10 Nov 2026 (Gold spot at the Day Low, bearish 3/4, was missing from Tier 1): same rule as trend --
+    // every retracement setup ranks on Tier 1. The only condition is the setup itself (bearish MTF -> CALL at the
+    // Day Low, bullish MTF -> PUT at the Day High; the engine has already checked price is in the zone). Before,
+    // the row was hidden unless the score was 30+ AND a major level (PDH/PDL, Fib, Pivot, PDC) sat near the zone,
+    // so a strong one-way day that ran past every level never showed. The score now only ranks.
+    $valid = true;
     $gateOn = ($cy['gate'] ?? null) !== null;
     $flow = !$valid ? null
         : ($tk[4] && $ticksFired ? 'FLY' : ($ticksFired ? 'SIGNAL'
@@ -841,7 +849,7 @@ function t_rt_eval(string $sym, array $fr, array $ctx): ?array {
         ['fibs' => $ctx['fibs'] ?? [], 'pivots' => $ctx['pivots'] ?? [], 'pdh' => $ctx['pdh'] ?? null,
          'pdl' => $ctx['pdl'] ?? null, 'pdc' => $ctx['pdc'] ?? null]);
     return ['valid' => $valid, 'strength' => round($score, 2), 'parts' => $parts, 'flow' => $flow, 'tk' => $tk, 'tk_at' => $tkAt,
-        'go' => $go, 't0' => $cy['t0'] ?? null, 'zg' => $zg, 'zlv' => $zlv, 'pw' => (int)($cy['pw'] ?? 0),
+        'go' => $go, 't0' => $cy['t0'] ?? null, 'zg' => $zg, 'zlv' => $zlv, 'pw' => (int)($cy['pw'] ?? 0), 'pw_n' => (int)($cy['pw_n'] ?? 0),
         'lad' => 10, 'gate_lv' => $cy['gate_level'] ?? null, 'sl_wide' => !empty($cy['wide_rt']) ? 1 : 0,
         'flow_at' => $entryAt, 'flow_sl' => $cy['sl_rt'] ?? null,
         'stoch30' => $s30 === null ? null : round($s30, 1), 'adx30' => round($ax, 1)];
