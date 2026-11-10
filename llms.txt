@@ -1,30 +1,32 @@
 # ChartPulse
 
-> Among millions of stars, ChartPulse gives you the brightest.
+> Live market scanners, AI bias and backtesting for stocks, indices, futures, forex and crypto.
 
-ChartPulse is a multi-market trading research tool that scans stocks, indices, futures, forex and crypto instruments. It provides rule-based signal scanning, market bias analysis, and backtesting tools. ChartPulse is an analytics and education tool, not investment advice.
+ChartPulse is a multi-market trading research tool covering 970+ instruments across 24 exchanges. It provides rule-based signal scanning, market bias analysis, trend-line detection and backtesting. ChartPulse is an analytics and education tool, not investment advice.
 
 ## Key Pages
 
-- [Overview](https://chartpulse.io/) — Live global market dashboard with movers, bias and heatmap
-- [Tier-1 Scanner](https://chartpulse.io/scanner.html) — Rule-based signal scanner for live markets
-- [Bias Check](https://chartpulse.io/bias/) — Daily directional bias for all tracked instruments
-- [Market Movers](https://chartpulse.io/movers/) — Biggest daily movers across all markets
-- [Backtesting](https://chartpulse.io/pro-backtesting) — Test trading ideas against historical data
-- [Bottom Reversal Scanner](https://chartpulse.io/dashboard.html) — Daily bottom zone reversal detection
-- [Market Insights](https://chartpulse.io/insights.html) — AI-generated market analysis
-- [News & Impact](https://chartpulse.io/news.html) — Market news with impact scoring
-- [Pricing](https://chartpulse.io/pricing.html) — Plans: Starter, Core, Algo
+- [Overview](https://chartpulse.io/): live global market dashboard with movers, bias and heatmap
+- [Tier-1 Scanner](https://chartpulse.io/scanner.html): live CALL and PUT setups at each market's day high and low, ranked by quality
+- [Day Drive Scanner](https://chartpulse.io/scanners/day-drive/): three checks on every market, from the weekly chart to the 15-minute entry, in plain words
+- [AI Scan](https://chartpulse.io/desk/): bias, forecast cone, trend lines on four timeframes and news tone for any symbol
+- [All free scanners](https://chartpulse.io/scanners/): Day Drive, 200 EMA, bottom reversal, EMA strategy and institutional scans
+- [Bottom Reversal Scanner](https://chartpulse.io/scanners/bottom-reversal/): daily reversals off a bottom zone
+- [200 EMA Scanner](https://chartpulse.io/scanners/ema-200/): daily entries around the 200-day EMA in four stages
+- [Bias](https://chartpulse.io/bias/): daily trend direction for every tracked instrument
+- [Market Movers](https://chartpulse.io/movers/): biggest daily moves across all markets
+- [Backtesting](https://chartpulse.io/backtesting/): test a strategy on real market history
+- [Market Insights](https://chartpulse.io/insights.html): breadth, volatility and momentum across markets
+- [News & Impact](https://chartpulse.io/news.html): market news graded for impact with the price reaction
+- [Pricing](https://chartpulse.io/pricing.html): plans Starter, Core and Algo
 
 ## Legal
 
-- [Risk Disclaimer](https://chartpulse.io/legal.php?p=disclaimer) — Trading involves substantial risk of loss
-- [Terms & Conditions](https://chartpulse.io/legal.php?p=terms)
-- [Privacy Policy](https://chartpulse.io/legal.php?p=privacy)
+- [Risk Disclaimer](https://chartpulse.io/legal/disclaimer): trading involves substantial risk of loss
+- [Terms & Conditions](https://chartpulse.io/legal/terms)
+- [Privacy Policy](https://chartpulse.io/legal/privacy)
 
 ## Contact
 
 - Email: admin@chartpulse.io
 - Telegram: @chartpulseio_bot
-
-ChartPulse has an AI assistant that can answer questions about the platform and market data.

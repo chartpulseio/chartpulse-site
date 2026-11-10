@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Day Drive Scanner · ChartPulse</title>
-<meta name="description" content="Day Drive Scanner: three checks on every market, from the weekly picture down to the 15-minute entry, explained in plain words. Free, no sign-in.">
+<title>Day Drive Scanner: Free Intraday Setup Scanner · ChartPulse</title>
+<meta name="description" content="Free Day Drive Scanner: three checks on every market, from the weekly chart down to the 15-minute entry, explained in plain words. No sign-in needed.">
 <meta name="theme-color" content="#050506">
 <link rel="canonical" href="https://chartpulse.io/scanners/day-drive/">
-<meta property="og:title" content="Day Drive Scanner · ChartPulse">
-<meta property="og:description" content="Three checks on every market, from the weekly picture down to the 15-minute entry, explained in plain words.">
+<meta property="og:title" content="Day Drive Scanner: Free Intraday Setup Scanner · ChartPulse">
+<meta property="og:description" content="Free Day Drive Scanner: three checks on every market, from the weekly chart down to the 15-minute entry, explained in plain words. No sign-in needed.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://chartpulse.io/scanners/day-drive/">
 <meta property="og:image" content="https://chartpulse.io/static/og.jpg">
@@ -126,6 +126,7 @@ a.dd-row:hover{background:var(--card2)}
 .dd-learn dl{margin:0;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
 .dd-learn dt{font-weight:600;margin-top:10px}.dd-learn dt:first-child{margin-top:0}
 .dd-learn dd{margin:2px 0 0;color:var(--dim);font-size:14px}
+.dd-ftr{max-width:1240px;margin:0 auto;padding:0 20px 40px}.dd-ftr nav{display:flex;flex-wrap:wrap;gap:8px 18px;padding-top:18px;border-top:1px solid var(--line)}.dd-ftr a{color:var(--mute);font-size:13px;text-decoration:none}.dd-ftr a:hover{color:var(--ink)}
 .dd-foot{margin-top:22px;color:var(--mute);font-size:13px;line-height:1.55}
 
 @media (max-width:980px){
@@ -142,9 +143,57 @@ a.dd-row:hover{background:var(--card2)}
 @media (max-width:560px){.dd{padding:20px 14px 48px}.dd-steps{grid-template-columns:1fr}.dd-tiles{grid-template-columns:repeat(2,1fr)}.dd-score{text-align:left;width:100%}}
 @media (prefers-reduced-motion:no-preference){.dd-prog i::after{transition:width .5s ease}}
 </style>
+<meta property="og:site_name" content="ChartPulse">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Day Drive Scanner: Free Intraday Setup Scanner · ChartPulse">
+<meta name="twitter:description" content="Free Day Drive Scanner: three checks on every market, from the weekly chart down to the 15-minute entry, explained in plain words. No sign-in needed.">
+<meta name="twitter:image" content="https://chartpulse.io/static/og.jpg">
+<script type="application/ld+json" id="cp-ld">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"Day Drive","item":"https://chartpulse.io/scanners/day-drive/"}]},{"@type":"WebPage","@id":"https://chartpulse.io/scanners/day-drive/#page","url":"https://chartpulse.io/scanners/day-drive/","name":"Day Drive Scanner: Free Intraday Setup Scanner · ChartPulse","description":"Free Day Drive Scanner: three checks on every market, from the weekly chart down to the 15-minute entry, explained in plain words. No sign-in needed.","isPartOf":{"@id":"https://chartpulse.io/#site"},"inLanguage":"en"},{"@type":"WebApplication","name":"Day Drive Scanner","url":"https://chartpulse.io/scanners/day-drive/","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"Free Day Drive Scanner: three checks on every market, from the weekly chart down to the 15-minute entry, explained in plain words. No sign-in needed.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@id":"https://chartpulse.io/#org"}}]}</script>
 </head>
 <body>
-<main class="dd" id="ddApp"><p class="dd-empty">Loading the Day Drive Scanner…</p></main>
+<main class="dd" id="ddApp">
+  <div class="dd-eyebrow">Free scanner</div>
+  <h1>Day Drive Scanner</h1>
+  <p class="dd-lede">Every market gets three checks, from the weekly chart down to the 15-minute chart. A market shows as <b>Entry ready</b> only when all three agree. Tap any row to see exactly what passed and what is still missing.</p>
+  <ol class="dd-steps">
+    <li><span>CHECK 1</span><b>Big picture</b><p>Do the weekly and daily charts agree on a direction?</p></li>
+    <li><span>CHECK 2</span><b>Trend</b><p>Do the 4-hour and 1-hour trends point the same way?</p></li>
+    <li><span>CHECK 3</span><b>Entry</b><p>Has the 15-minute chart given a trigger to act on?</p></li>
+    <li><span>THEN</span><b>Trade plan</b><p>Entry price, stop-loss and targets, worked out for you.</p></li>
+  </ol>
+  <div class="dd-tiles" id="ddTiles"></div>
+  <div id="ddMsg"></div>
+  <div class="dd-bar">
+    <div class="dd-tabs" id="ddMkt" role="group" aria-label="Market">
+      <button type="button" data-m="all" class="on">All markets</button><button type="button" data-m="forex">Forex</button><button type="button" data-m="crypto">Crypto</button><button type="button" data-m="other">Stocks &amp; futures</button>
+    </div>
+    <input class="dd-search" id="ddQ" type="search" placeholder="Find a market…" aria-label="Find a market">
+  </div>
+  <div class="dd-bar" style="margin-top:0">
+    <div class="dd-tabs" id="ddStage" role="group" aria-label="Stage">
+      <button type="button" data-s="all" class="on">Everything</button><button type="button" data-s="ready">Entry ready / Get ready</button><button type="button" data-s="progress">Passed check 1 or 2</button>
+    </div>
+    <span class="dd-upd" id="ddUpd"></span>
+  </div>
+  <div class="dd-list" id="ddList"><p class="dd-empty">Scanning…</p></div>
+  <button type="button" class="dd-btn dd-more" id="ddMore" hidden>Show more</button>
+  <section class="dd-learn">
+    <h2>Words used on this page</h2>
+    <dl>
+      <dt>CALL / PUT</dt><dd>CALL means the scanner is looking for price to rise. PUT means it is looking for price to fall.</dd>
+      <dt>Score</dt><dd>A checklist total out of 100: check 1 is worth 35, check 2 is 25, check 3 is 40. It is not a win probability and has not been measured as one.</dd>
+      <dt>Stop-loss</dt><dd>The price where the idea is wrong and the trade should be closed.</dd>
+    </dl>
+    <dl>
+      <dt>VWAP</dt><dd>Today's average traded price. Above it buyers are ahead, below it sellers are.</dd>
+      <dt>Liquidity sweep</dt><dd>Price runs just past an obvious level, triggers the stops there, then turns back.</dd>
+      <dt>Change of character (CHoCH)</dt><dd>The first break of a swing against the recent move, an early sign of a turn.</dd>
+    </dl>
+  </section>
+  <p class="dd-foot">Some inputs are estimates and are marked "est." on the detail page: buying and selling pressure and one-sided candles are read from where each candle closes, because order-book data is not available here. This page is for education and demonstration. It is not financial advice.</p></main>
+<footer class="dd-ftr"><nav aria-label="Site links">
+<a href="/">ChartPulse home</a><a href="/scanner.html">Tier-1 Scanner</a><a href="/scanners/">All free scanners</a><a href="/scanners/bottom-reversal/">Bottom Reversal Scanner</a><a href="/scanners/ema-200/">200 EMA Scanner</a><a href="/desk/">AI Scan</a><a href="/backtesting/">Backtesting</a><a href="/bias/">Market bias</a><a href="/movers/">Market movers</a><a href="/news.html">News &amp; impact</a><a href="/pricing.html">Pricing</a><a href="/legal/disclaimer">Risk disclaimer</a>
+</nav></footer>
 
 <script src="/static/v2/trendlines.js?v=1"></script>
 <script>
@@ -206,47 +255,6 @@ const prog = r => `<div class="dd-prog">${STEPS.map(st => { const k = stepOk(r, 
 /* ---- list (the Tier-1 style view) --------------------------------------- */
 const L = { rows: [], meta: {}, at: 0, mkt: "all", stage: "all", q: "", show: 60, timer: null };
 function listShell() {
-  document.title = "Day Drive Scanner · ChartPulse";
-  app.innerHTML = `
-  <div class="dd-eyebrow">Free scanner</div>
-  <h1>Day Drive Scanner</h1>
-  <p class="dd-lede">Every market gets three checks, from the weekly chart down to the 15-minute chart. A market shows as <b>Entry ready</b> only when all three agree. Tap any row to see exactly what passed and what is still missing.</p>
-  <ol class="dd-steps">
-    <li><span>CHECK 1</span><b>Big picture</b><p>Do the weekly and daily charts agree on a direction?</p></li>
-    <li><span>CHECK 2</span><b>Trend</b><p>Do the 4-hour and 1-hour trends point the same way?</p></li>
-    <li><span>CHECK 3</span><b>Entry</b><p>Has the 15-minute chart given a trigger to act on?</p></li>
-    <li><span>THEN</span><b>Trade plan</b><p>Entry price, stop-loss and targets, worked out for you.</p></li>
-  </ol>
-  <div class="dd-tiles" id="ddTiles"></div>
-  <div id="ddMsg"></div>
-  <div class="dd-bar">
-    <div class="dd-tabs" id="ddMkt" role="group" aria-label="Market">
-      <button type="button" data-m="all" class="on">All markets</button><button type="button" data-m="forex">Forex</button><button type="button" data-m="crypto">Crypto</button><button type="button" data-m="other">Stocks &amp; futures</button>
-    </div>
-    <input class="dd-search" id="ddQ" type="search" placeholder="Find a market…" aria-label="Find a market">
-  </div>
-  <div class="dd-bar" style="margin-top:0">
-    <div class="dd-tabs" id="ddStage" role="group" aria-label="Stage">
-      <button type="button" data-s="all" class="on">Everything</button><button type="button" data-s="ready">Entry ready / Get ready</button><button type="button" data-s="progress">Passed check 1 or 2</button>
-    </div>
-    <span class="dd-upd" id="ddUpd"></span>
-  </div>
-  <div class="dd-list" id="ddList"><p class="dd-empty">Scanning…</p></div>
-  <button type="button" class="dd-btn dd-more" id="ddMore" hidden>Show more</button>
-  <section class="dd-learn">
-    <h2>Words used on this page</h2>
-    <dl>
-      <dt>CALL / PUT</dt><dd>CALL means the scanner is looking for price to rise. PUT means it is looking for price to fall.</dd>
-      <dt>Score</dt><dd>A checklist total out of 100: check 1 is worth 35, check 2 is 25, check 3 is 40. It is not a win probability and has not been measured as one.</dd>
-      <dt>Stop-loss</dt><dd>The price where the idea is wrong and the trade should be closed.</dd>
-    </dl>
-    <dl>
-      <dt>VWAP</dt><dd>Today's average traded price. Above it buyers are ahead, below it sellers are.</dd>
-      <dt>Liquidity sweep</dt><dd>Price runs just past an obvious level, triggers the stops there, then turns back.</dd>
-      <dt>Change of character (CHoCH)</dt><dd>The first break of a swing against the recent move, an early sign of a turn.</dd>
-    </dl>
-  </section>
-  <p class="dd-foot">Some inputs are estimates and are marked "est." on the detail page: buying and selling pressure and one-sided candles are read from where each candle closes, because order-book data is not available here. This page is for education and demonstration. It is not financial advice.</p>`;
   $("#ddMkt").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; L.mkt = b.dataset.m; [...$("#ddMkt").children].forEach(x => x.classList.toggle("on", x === b)); L.show = 60; paint(); });
   $("#ddStage").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; L.stage = b.dataset.s; [...$("#ddStage").children].forEach(x => x.classList.toggle("on", x === b)); L.show = 60; paint(); });
   $("#ddQ").addEventListener("input", e => { L.q = e.target.value.trim().toLowerCase(); L.show = 60; paint(); });

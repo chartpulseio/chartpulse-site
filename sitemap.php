@@ -1,6 +1,6 @@
 <?php
 // sitemap.xml (served via .htaccess rewrite). Updated 2 Nov 2026.
-// Only indexable URLs. noindex pages (ema200, dashboard, day-drive) are excluded.
+// Only indexable URLs. The free scanner pages (day-drive, bottom-reversal, ema-200) are indexable since 10 Nov 2026.
 // No changefreq / priority (Google ignores them).
 declare(strict_types=1);
 require __DIR__ . '/torus_seo.php';
@@ -16,6 +16,11 @@ $U = [
     ['/', $mt('index.html')],
     ['/scanners/', $mt('scanners.html')],
     ['/scanner.html', $mt('scanner.html')],
+    ['/scanners/day-drive/', $mt('day-drive.html')],
+    ['/scanners/bottom-reversal/', $mt('dashboard.html')],
+    ['/scanners/ema-200/', $mt('ema200.html')],
+    ['/ema-strategies/', $mt('ema-strategies/index.php')],
+    ['/institutional/', $mt('institutional/index.php')],
     ['/backtesting/', $mt('pro-backtesting.html')],
     ['/desk/', $mt('desk.html')],
     ['/news.html', $mt('news.html')],

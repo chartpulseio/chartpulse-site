@@ -6,4 +6,7 @@ Disallow: /api.php
 Disallow: /chat-api.php
 Disallow: /dd_br_api.php
 Disallow: /dd_api.php
+Disallow: /tl_api.php
+Disallow: /ema200_api.php
+Disallow: /health.php
 Sitemap: https://chartpulse.io/sitemap.xml
