@@ -676,6 +676,15 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
     // signal (requires $signal !== 'WAIT'). Result: Mid-Trend never ranked or showed on Tier-1 at all, no
     // matter how strong. Wiring it in exactly like v10/rt do, now that it has independently qualified ($isMt).
     if ($isMt) { $signal = $mt['sig']; $setup = 'midtrend'; $strength = (float)$mt['strength']; $flow = ['state' => $mt['flow'], 'time' => $mt['flow_at'], 'sl' => $mt['flow_sl']]; $grade = null; $swX = null; }
+    // owner, 10 Nov 2026: "setup" label on a queue (non-signal) row should mean the SAME thing Tier 2 means by its
+    // SETUP / "Setup forming" status -- a reversal candle (t_reversal) sitting right at the day's running extreme,
+    // on the latest 10m bar, waiting for the next candle to confirm it (t_fly_events()['pending']). NOT proximity
+    // to a Fib/Pivot/PDH-PDL level (zg) -- that was the wrong signal; this fires at any score, independent of zg.
+    $pend = 0;
+    if ($bars && $inNow) {   // cheap gate first: only symbols already inside their zone band can have a pattern forming there
+        $flyX = t_fly_events($F5, $bars[0], $bars[count($bars) - 1], $wantUp ? 1 : -1, $fr['1m'] ?? t_m1_get($sym), (float)$k['zone_band'], t_now());
+        if (!empty($flyX['pending'])) $pend = 1;
+    }
     // v9 logging: the same score with the old near rule, and whether the 40 cut-off flipped
     $fibOld = 0.0; foreach ($fibs as $fx) $fibOld = max($fibOld, $pbT($fx['price'], $zone, $zTolOld));
     $cTolO = $zTolOld > 0 ? $zTolOld : 0.5 * $atr5; $fibInO = false; foreach ($fibs as $fx) if (abs($fx['price'] - $zone) <= $cTolO) { $fibInO = true; break; }
@@ -723,6 +732,7 @@ function t_evaluate(string $sym, array $fr, array $knobs = []): array {
         't0' => $isV10 ? ($v10['t0'] ?? null) : ($isRt ? ($rt['t0'] ?? null) : ($isMt ? ($mt['t0'] ?? null) : null)),
         'zg' => $isV10 ? (int)($v10['zg'] ?? 2) : ($isRt ? (int)($rt['zg'] ?? 2) : ($isMt ? (int)($mt['zg'] ?? 2) : 2)),
         'zlv' => $isV10 ? ($v10['zlv'] ?? null) : ($isRt ? ($rt['zlv'] ?? null) : ($isMt ? ($mt['zlv'] ?? null) : null)),
+        'pend' => $pend,   // Tier-2-style "setup forming": a reversal candle at the day extreme, awaiting next-candle confirmation
         'grade' => $grade, 'runway_type' => $flow['runway_type'] ?? null, 'rsi_10m' => $rsi10 === null ? null : round($rsi10, 2),
         'adx_value' => round($ax, 2), 'di_plus' => round($pdi, 2), 'di_minus' => round($mdi, 2), 'di_ok' => $diOk,
         'adx_1h' => round($ax1, 2), 'adx_1h_peak' => round((float)$pk1, 2),
@@ -1215,7 +1225,7 @@ function t_slim(array $r, array $st): array {
     $o = [];
     // owner, 4 Nov 2026 fix: 'mt' was missing here, so it never survived to the stored scan row -- the frontend's
     // Mid Target badge and the pb5/ema5/st5 "not for mid-trend" exclusions (all keyed on r.mt) never fired either.
-    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','pw_n','al5','v10','go','t0','zg','zlv','lad','sl_wide','mt','split24','pw30','mv'] as $k) $o[$k] = $r[$k] ?? null;
+    foreach (['symbol','name','market','signal','rule','setup','remark','strength','bias','alignment','zone_touch','zone_near','price','change_pct','adx_value','atr_pct','time_ist','components','rsi','zone','zone_dist_atr','overextended','move_atr','range_atr','range_pct','range_pos','flow','flow_at','flow_sl','grade','runway_type','atr5','atr_low','atr_high','hc','tk','pw','pw_n','al5','v10','go','t0','zg','zlv','pend','lad','sl_wide','mt','split24','pw30','mv'] as $k) $o[$k] = $r[$k] ?? null;
     $o['tf'] = array_map(fn($v) => $v['dir'], $r['tf']);
     foreach (['spark', 'ret_1w', 'ret_1m', 'ret_3m', 'ret_1y', 'vol_20d', 'from_hi_pct', 'from_lo_pct', 'hi_52w', 'lo_52w'] as $k) $o[$k] = $st[$k];
     return $o;
