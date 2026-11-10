@@ -1364,6 +1364,8 @@ function t_sticky_apply(string $s, array $row, int $now): array {
     $past = fn(string $sig, float $ext): bool => $ext > 0 && $zs($sig) > 0 && ($sig === 'CALL' ? $zs($sig) < $ext - $eps : $zs($sig) > $ext + $eps);
     $T = t_t2_open_map()[$s] ?? null;
     if ($T && !empty($T['day_ext']) && $past((string)$T['sig'], (float)$T['day_ext'])) $T = null;
+    // ...and a trend trade is not mirrored while the day-move gate is not met (trades opened before the gate existed)
+    if ($T && ($T['setup'] ?? 'trend') === 'trend' && isset($row['mv']) && (float)$row['mv'] < T10_MOVE_MIN * 100) $T = null;
     if ($T && !$blocked((string)$T['sig'], (int)($T['pattern_time'] ?? $T['entry_time']))) {   // Tier 2 is in a trade: Tier 1 mirrors it while an entry is possible
         $sg = ($T['sig'] ?? '') === 'CALL' ? 1 : -1; $ta = $a5 > 0 ? $a5 : (float)($T['atr5'] ?? 0);
         // Owner, 20 Oct 2026: an open trade is frozen -- the band no longer ends it, only its own exit does.
