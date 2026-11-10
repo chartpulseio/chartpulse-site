@@ -589,15 +589,9 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     // Owner, 20 Oct 2026: after an entry everything freezes, so a symbol with an open Tier-2 trade is still
     // evaluated even when price has walked out of the entry range.
     if (!$inRange && !$touch && !t10_open_trade($sym)) return $base + ['valid' => false];
-    // Day-move gate (owner, 10 Nov 2026): no trend entry at a Day extreme until the day has used T10_MOVE_MIN of
-    // its daily ATR from the previous close. Not met yet -> no signal at all; met -> ticks count from that bar on.
-    $mvGate = t10_move_gate($F5, $bars[0], $bars[count($bars) - 1], $sg, (float)($ctx['pdc'] ?? 0), (float)($ctx['atrd'] ?? 0));
-    if ($mvGate === PHP_INT_MAX) {
-        $uNow = t10_move_used((float)$ctx['atr_high'], (float)$ctx['atr_low'], (float)($ctx['pdc'] ?? 0), (float)($ctx['atrd'] ?? 0), $sg);
-        if ($uNow !== null && $uNow >= T10_MOVE_MIN) $mvGate = $bars[count($bars) - 1];   // live price just got there, bar not printed yet
-        else return $base + ['valid' => false, 'mv_wait' => true];   // no exception for an open trade: a retracement
-        // trade on the same symbol used to let a trend signal through below the gate (seen live 10 Nov, ^IBEX at 33%)
-    }
+    // Day move (owner, 10 Nov 2026, evening): shown on Tier 1 as the "Move %" label ONLY. It was a hard gate for a
+    // few hours and cut the list too much ("signals bahut kam aa rahe hain") -- it no longer blocks anything.
+    $mvGate = null;
     $M1 = $fr['1m'] ?? t_m1_get($sym);
     // Zone-group levels the 30m Liquidity Sweep is allowed to sweep (besides the running Day extreme).
     $glv = [$wantUp ? 'Prev Low' : 'Prev High' => $wantUp ? $pdl : $pdh];
@@ -633,7 +627,10 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     // shown; it does not disappear"). Before, $valid was score-gated only, so a tick already ON could vanish from the
     // scanner the instant a later bar's score dipped under 33 -- the cycle's own ticks are sticky, so entry status
     // should be too. Score still gates a *fresh* APPROACHING/SIGNAL; it no longer hides an entry already in progress.
-    $valid = ($score >= T10_MIN_SCORE && $parts['loc'] > 0) || $ticksFired;
+    // owner, 10 Nov 2026: every trend setup ranks on Tier 1 -- the only condition is the setup itself (CALL from the
+    // Day Low with a bullish MTF, PUT from the Day High with a bearish MTF; in range, checked above). The score no
+    // longer hides a row, it only ranks it.
+    $valid = true;
     // Status ladder: APPROACHING -> GATE OPEN -> TICK 1/2/3 (SIGNAL) -> TICK 4 (FLY), and GATE CLOSE
     // only when no entry was ever taken and the gate expired unused. Tick 4 = Double Confirm = FLY.
     $gateOn = ($cy['gate'] ?? null) !== null;
@@ -691,13 +688,20 @@ function t10_replay(array $F, ?array $M1, int $a, int $b, callable $epFor, ?arra
     $busy = 0;
     foreach (['CALL' => 1, 'PUT' => -1] as $sig => $sg) {
         $lvP = []; foreach (($P ?? []) as $pk => $pv) $lvP[(string)$pk] = (float)$pv;
-        foreach (t10_session($F, $a, $b, $sg, $M1, T2_ZB, $now, null, $lvP, false) as $cy) {
+        // owner, 10 Nov 2026: the recorded trades follow the SAME cycles Tier 1 shows. Trend = ticks restart on every
+        // new Day extreme (fresh cycles, like t10_eval); retracement = its own entry (gate first, never the 5 EMA
+        // alone) on the old cycles. Before, trend trades came from the old cycles and could differ from the scanner.
+        $cand = [];
+        foreach (t10_session($F, $a, $b, $sg, $M1, T2_ZB, $now, null, $lvP, false, null, true) as $cy) {
             $te = $cy['first']; if ($te === null) continue;
-            $ep = $epFor($sig, $te); if (!$ep) continue;
-            $isTrend = ($ep['setup'] ?? null) === 'trend';
-            if (($ep['setup'] ?? null) !== 'trend' && ($ep['setup'] ?? null) !== 'retrace') continue;
-            // Retracement uses its own entry: the gate has to be open first and the 5 EMA alone never enters.
-            if (!$isTrend) { $te = $cy['first_rt']; if ($te === null) continue; $ep = $epFor($sig, $te); if (!$ep) continue; }
+            $ep = $epFor($sig, $te); if ($ep && ($ep['setup'] ?? null) === 'trend') $cand[] = [$te, $cy, $ep, true];
+        }
+        foreach (t10_session($F, $a, $b, $sg, $M1, T2_ZB, $now, null, $lvP, false) as $cy) {
+            $te = $cy['first_rt']; if ($te === null) continue;
+            $ep = $epFor($sig, $te); if ($ep && ($ep['setup'] ?? null) === 'retrace') $cand[] = [$te, $cy, $ep, false];
+        }
+        usort($cand, fn($x, $y) => $x[0] <=> $y[0]);
+        foreach ($cand as [$te, $cy, $ep, $isTrend]) {
             if ($te <= $busy) continue;
             $pe = (float)($isTrend ? $cy['first_px'] : $cy['first_rt_px']);
             $slC = $isTrend ? $cy['sl'] : $cy['sl_rt'];
@@ -887,9 +891,6 @@ function t_mt_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     $wantUp = $bias === 'UP'; $sg = $wantUp ? 1 : -1;
     // MTF gate: same Pulse Sync rule Trend uses (3/4 or 4/4 alignment via t10_bias above) --
     // no extra per-TF requirement on top (owner, 9 Nov 2026: "same mtf logic jo trend main use krte hain").
-    // Day-move gate, same as Trend (owner, 10 Nov 2026): the day must have used T10_MOVE_MIN of its daily ATR from PDC.
-    $mvU = t10_move_used((float)($ctx['atr_high'] ?? 0), (float)($ctx['atr_low'] ?? 0), (float)($ctx['pdc'] ?? 0), (float)($ctx['atrd'] ?? 0), $sg);
-    if ($mvU !== null && $mvU < T10_MOVE_MIN) return null;
     $price   = (float)$ctx['price'];
     $pdh = (float)($ctx['pdh'] ?? 0); $pdl = (float)($ctx['pdl'] ?? 0); $pdc = (float)($ctx['pdc'] ?? 0);
     $wh = (float)($ctx['wh'] ?? 0); $wl = (float)($ctx['wl'] ?? 0); $mh = (float)($ctx['mh'] ?? 0); $ml = (float)($ctx['ml'] ?? 0);
