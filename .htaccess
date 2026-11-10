@@ -83,7 +83,8 @@ RewriteRule ^sitemap\.xml$                               /sitemap.php           
 </FilesMatch>
 
 # --- block specific sensitive files
-<FilesMatch "^(dd_engine|dd_api|app|engine|test_engine|requirements)\.">
+# dd_api.php is the Day Drive page's own endpoint -- it must stay reachable (blocking it turned the scanner off).
+<FilesMatch "^(dd_engine|app|engine|test_engine|requirements)\.">
   Require all denied
 </FilesMatch>
 
