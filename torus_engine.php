@@ -18,7 +18,8 @@ const T_CHUNK = 16;             // symbols per scan step
 const T_KEEP_H = 1500;          // 1H bars kept in cache
 const T_KEEP_D = 1300;          // daily bars kept in cache
 const T_ZONE_PRICE = 'live';
-define('T_DATA', __DIR__ . '/data');
+require_once __DIR__ . '/torus_paths.php';
+define('T_DATA', cp_data_dir());   // outside the deployed folder -- see torus_paths.php
 if (PHP_SAPI !== 'cli' && !headers_sent()) header_remove('X-Powered-By');   // do not advertise the PHP version
 define('T_FRAMES', T_DATA . '/frames');
 

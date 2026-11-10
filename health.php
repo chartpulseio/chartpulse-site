@@ -11,7 +11,8 @@ header('Cache-Control: public, max-age=30');
 $ok = true;
 
 // PHP is obviously running if we got here. Check a writable working folder.
-$cache = __DIR__ . '/data';
+require_once __DIR__ . '/torus_paths.php';
+$cache = cp_data_dir();
 if (!is_dir($cache) || !is_writable($cache)) {
     $cache = sys_get_temp_dir();
     if (!is_dir($cache) || !is_writable($cache)) {
@@ -23,7 +24,7 @@ if (!is_dir($cache) || !is_writable($cache)) {
 $maxAgeMin = 0;
 if ($ok && $maxAgeMin > 0) {
     $newest = 0;
-    foreach (glob(__DIR__ . '/data/*') ?: [] as $f) {
+    foreach (glob(cp_data_dir() . '/*') ?: [] as $f) {
         $newest = max($newest, (int)@filemtime($f));
     }
     if ($newest === 0 || (time() - $newest) > $maxAgeMin * 60) {

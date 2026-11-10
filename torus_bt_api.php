@@ -21,7 +21,8 @@ define('BT_SRC_OK', ['open', 'high', 'low', 'close', 'volume', 'hl2', 'hlc3', 'o
 
 function bt_dir($sub = '')
 {
-    $p = __DIR__ . '/data/bt' . ($sub ? '/' . $sub : '');
+    require_once __DIR__ . '/torus_paths.php';
+    $p = cp_data_dir() . '/bt' . ($sub ? '/' . $sub : '');
     if (!is_dir($p)) @mkdir($p, 0775, true);
     return $p;
 }

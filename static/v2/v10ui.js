@@ -207,7 +207,8 @@ const decorate = r => setupChip(r) + goChip(r) + zChip(r) + tkDots(r) + pb5Chip(
     const STAGE_PTS = [25, 19, 13, 8, 4, 0, -30];   // last = GATE CLOSE: the entry is gone, it sinks
     const quality = r => {
       if (!r) return -1;
-      const stage = STAGE_PTS[Math.max(0, Math.min(6, tickCountRank(r)))];
+      // a GATE CLOSE row keeps its fired ticks on screen, so read the status itself, not the tick count
+      const stage = r.flow === "GATE CLOSE" ? STAGE_PTS[6] : STAGE_PTS[Math.max(0, Math.min(6, tickCountRank(r)))];
       const zone = [12, 6, 0][Math.max(0, Math.min(2, zgRank(r)))];
       const power = Math.min(2, r.pw || 0) * 3 + ((r.split24 || r.pw30) ? 4 : 0) + (r.hc ? 2 : 0);
       const move = r.mv == null ? 0 : r.mv >= 100 ? 5 : r.mv >= 70 ? 2 : 0;

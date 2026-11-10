@@ -36,7 +36,8 @@ $fname   = $msg['from']['first_name'] ?? 'Trader';
 if ($chat_id === '') { http_response_code(200); echo 'ok'; exit; }
 
 // ── Subscriber store ──────────────────────────────────────────────────────────
-$sub_file = __DIR__ . '/data/tg_subscribers.json';
+require_once __DIR__ . '/torus_paths.php';
+$sub_file = cp_data_dir() . '/tg_subscribers.json';
 
 function tg_load_subs(string $f): array {
     if (!is_file($f)) return [];

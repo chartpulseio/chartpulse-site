@@ -161,7 +161,7 @@ function tsw_h1(array $F, int $b, int $now): array {
 /** tsw_log once per $key (keys remembered for 3 days in data/<file>.seen). */
 function tsw_log_once(string $file, string $key, array $rec): void {
     static $seen = [], $loaded = [];
-    $p = __DIR__ . "/data/$file.seen";
+    require_once __DIR__ . "/torus_paths.php"; $p = cp_data_dir() . "/$file.seen";
     if (!isset($loaded[$file])) { $loaded[$file] = true; $j = @json_decode((string)@file_get_contents($p), true); $seen[$file] = is_array($j) ? $j : []; }
     if (isset($seen[$file][$key])) return;
     $now = time(); $seen[$file] = array_filter($seen[$file], fn($t) => $t > $now - 3 * 86400); $seen[$file][$key] = $now;
@@ -170,7 +170,8 @@ function tsw_log_once(string $file, string $key, array $rec): void {
 }
 /** Append one JSON line to data/<file> (best effort). */
 function tsw_log(string $file, array $rec): void {
-    $d = __DIR__ . '/data'; if (!is_dir($d)) return;
+    require_once __DIR__ . '/torus_paths.php';
+    $d = cp_data_dir(); if (!is_dir($d)) return;
     $p = "$d/$file"; if (is_file($p) && filesize($p) > 8 * 1024 * 1024) @rename($p, "$p.1");
     @file_put_contents($p, json_encode($rec, JSON_UNESCAPED_SLASHES) . "\n", FILE_APPEND | LOCK_EX);
 }

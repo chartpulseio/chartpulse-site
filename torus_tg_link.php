@@ -11,7 +11,8 @@ declare(strict_types=1);
 
 const TGL_TOKEN_TTL = 1800;
 
-function tgl_path(string $name): string { return __DIR__ . '/data/' . $name; }
+require_once __DIR__ . '/torus_paths.php';
+function tgl_path(string $name): string { return cp_data_dir() . '/' . $name; }
 
 function tgl_read(string $f): array {
     if (!is_file($f)) return [];
