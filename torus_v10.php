@@ -591,13 +591,12 @@ function t10_eval(string $sym, array $fr, array $tfDirs, array $ctx): ?array {
     if (!$inRange && !$touch && !t10_open_trade($sym)) return $base + ['valid' => false];
     // Day-move gate (owner, 10 Nov 2026): no trend entry at a Day extreme until the day has used T10_MOVE_MIN of
     // its daily ATR from the previous close. Not met yet -> no signal at all; met -> ticks count from that bar on.
-    // A trade that is already open is left alone.
     $mvGate = t10_move_gate($F5, $bars[0], $bars[count($bars) - 1], $sg, (float)($ctx['pdc'] ?? 0), (float)($ctx['atrd'] ?? 0));
     if ($mvGate === PHP_INT_MAX) {
         $uNow = t10_move_used((float)$ctx['atr_high'], (float)$ctx['atr_low'], (float)($ctx['pdc'] ?? 0), (float)($ctx['atrd'] ?? 0), $sg);
         if ($uNow !== null && $uNow >= T10_MOVE_MIN) $mvGate = $bars[count($bars) - 1];   // live price just got there, bar not printed yet
-        elseif (!t10_open_trade($sym)) return $base + ['valid' => false, 'mv_wait' => true];
-        else $mvGate = null;
+        else return $base + ['valid' => false, 'mv_wait' => true];   // no exception for an open trade: a retracement
+        // trade on the same symbol used to let a trend signal through below the gate (seen live 10 Nov, ^IBEX at 33%)
     }
     $M1 = $fr['1m'] ?? t_m1_get($sym);
     // Zone-group levels the 30m Liquidity Sweep is allowed to sweep (besides the running Day extreme).

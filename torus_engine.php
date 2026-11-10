@@ -1391,7 +1391,9 @@ function t_sticky_apply(string $s, array $row, int $now): array {
     }
     if (isset($S['_gc'][$s]) && $now > (int)$S['_gc'][$s]['until']) { unset($S['_gc'][$s]); $changed = true; }
     if ($live && $blocked((string)$row['signal'], (int)($row['flow_at'] ?? 0))) {   // old signal of an ended cycle: show APPROACHING (no flow) only
-        foreach (['flow', 'flow_at', 'grade', 'runway_type'] as $f) $row[$f] = null;
+        foreach (['flow', 'flow_at', 'grade', 'runway_type', 'tk', 'tk_at', 't0'] as $f) $row[$f] = null;
+        $row['pw'] = 0; $row['go'] = 0;   // 10 Nov 2026: the ended cycle's tick marks were left on the row with no status beside them
+        if (!empty($row['v10'])) $row['flow'] = 'APPROACHING';
         $live = false;
     }
     $rowSl = isset($row['flow_sl']) ? (float)$row['flow_sl'] : null;
