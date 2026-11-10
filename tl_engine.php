@@ -236,6 +236,7 @@ function tl_row(string $sym, array $row, int $now): ?array {
             $L = $x[$side]; if (!$L) continue;
             $cell[$side] = ['dir' => $L['dir'], 'n' => $L['touches'], 'st' => $L['state'], 'now' => $L['now'], 'gap' => $L['dist_pct']];
             $w = TL_SCAN_W[$k] * (1 + min(4, $L['touches'] - 2) * 0.25);
+            if ($L['touches'] < 3) continue;   // a break or test only counts on a line with 3+ touches (2 points always make a line)
             if ($L['state'] === 'broken') { $ev[] = ['tf' => $k, 'e' => $side === 'res' ? 'break_up' : 'break_down', 'n' => $L['touches'], 'lv' => $L['now']]; $rank += 3 * $w; }
             elseif ($L['state'] === 'testing') { $ev[] = ['tf' => $k, 'e' => $side === 'res' ? 'at_res' : 'at_sup', 'n' => $L['touches'], 'lv' => $L['now']]; $rank += 1.5 * $w; }
         }
@@ -252,11 +253,11 @@ function tl_row(string $sym, array $row, int $now): ?array {
 /** Whole-universe scan, built in steps inside a time budget and cached; the page polls until progress is 1. */
 function tl_scan(): array {
     $dir = T_DATA . '/tl'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
-    $now = t_now(); $ck = $dir . '/_scan.json';
+    $now = t_now(); $ck = $dir . '/_scan2.json';
     $c = t_read_json($ck, null);
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 45 && !empty($c['rows'])) return $c;
     $scan = t_scan_load(); $syms = array_keys($scan['rows'] ?? []);
-    $cp = $dir . '/_rows.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
+    $cp = $dir . '/_rows2.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
     $t0 = microtime(true); $done = 0; $fresh = 0;
     foreach ($syms as $sym) {
         $old = $cache[$sym] ?? null;

@@ -209,7 +209,7 @@ a.dd-row:hover{background:var(--card2)}
     <dl>
       <dt>Resistance line</dt><dd>A line across swing highs. Price has turned down from it before; a close above it is a breakout.</dd>
       <dt>Support line</dt><dd>A line across swing lows. Price has bounced from it before; a close below it is a breakdown.</dd>
-      <dt>Touches</dt><dd>How many separate times price reached the line and respected it. Three or more is a stronger line.</dd>
+      <dt>Touches</dt><dd>How many separate times price reached the line and respected it. A break or a test is only reported on a line with three or more touches.</dd>
     </dl>
     <dl>
       <dt>Channel</dt><dd>Two lines sloping the same way. Falling channel: sellers in control. Rising channel: buyers in control.</dd>
@@ -243,7 +243,7 @@ function cell(r, k) {
   const c = r.tf[k];
   if (!c) return `<span class="tls-cell none" data-tf="${k}">–</span>`;
   let cls = c.lean, tag = "";
-  const st = s => c[s] && c[s].st;
+  const st = s => c[s] && c[s].n >= 3 && c[s].st;
   if (st("res") === "broken") { cls += " ev-up"; tag = `<small class="u">▲ broke up</small>`; }
   else if (st("sup") === "broken") { cls += " ev-down"; tag = `<small class="d">▼ broke down</small>`; }
   else if (st("res") === "testing") { cls += " ev-test"; tag = `<small class="t">at resistance</small>`; }
