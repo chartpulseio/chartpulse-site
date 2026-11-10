@@ -461,6 +461,8 @@ h1,h2,h3{letter-spacing:-.012em}
 .proc{color:var(--proc)}
 .sig.PROC{color:var(--proc);background:var(--proc-soft);border-color:rgba(244,183,64,.34)}
 .sig.PROC::before{width:6px;height:6px;border:0;border-radius:50%;background:var(--proc);box-shadow:0 0 0 0 rgba(244,183,64,.6);animation:procPulse 2.2s var(--ease) infinite}
+.sig.PROC.forming{color:#fff;background:rgba(244,183,64,.22);border-color:rgba(244,183,64,.55)}
+.sig.PROC.forming::before{background:#fff;box-shadow:0 0 0 0 rgba(244,183,64,.85);animation:procPulse 1.3s var(--ease) infinite}
 .sig.OUT{color:var(--muted);background:transparent;border-color:var(--line2)}
 .sig.OUT::before{width:6px;height:2px;background:var(--line3);border:0}
 @keyframes procPulse{0%{box-shadow:0 0 0 0 rgba(244,183,64,.55)}70%,100%{box-shadow:0 0 0 5px rgba(244,183,64,0)}}
