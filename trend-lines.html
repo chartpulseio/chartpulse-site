@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trend Line Scanner: Breakouts on 5 Timeframes · ChartPulse</title>
+<meta name="description" content="Free trend line scanner for 970+ stocks, forex, crypto and commodities: trend line breakouts and tests on weekly, daily, 4-hour, 1-hour and 30-minute charts.">
+<meta name="theme-color" content="#050506">
+<link rel="canonical" href="https://chartpulse.io/scanners/trend-lines/">
+<meta property="og:site_name" content="ChartPulse">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Trend Line Scanner: Breakouts on 5 Timeframes · ChartPulse">
+<meta property="og:description" content="Free trend line scanner for 970+ stocks, forex, crypto and commodities: trend line breakouts and tests on weekly, daily, 4-hour, 1-hour and 30-minute charts.">
+<meta property="og:url" content="https://chartpulse.io/scanners/trend-lines/">
+<meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Trend Line Scanner: Breakouts on 5 Timeframes · ChartPulse">
+<meta name="twitter:description" content="Free trend line scanner for 970+ markets: trend line breakouts and tests on weekly, daily, 4-hour, 1-hour and 30-minute charts.">
+<meta name="twitter:image" content="https://chartpulse.io/static/og.jpg">
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
+<link rel="stylesheet" href="/static/v2/sitehead.css?v=2">
+<link rel="stylesheet" href="/static/v2/trendlines.css?v=1">
+<script defer src="/static/v2/sitehead.js?v=4"></script>
+<script type="application/ld+json" id="cp-ld">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"Trend Lines","item":"https://chartpulse.io/scanners/trend-lines/"}]},{"@type":"WebApplication","name":"Trend Line Scanner","url":"https://chartpulse.io/scanners/trend-lines/","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"Trend line breakouts and tests on weekly, daily, 4-hour, 1-hour and 30-minute charts for 970+ markets.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@id":"https://chartpulse.io/#org"}}]}</script>
+<style>
+:root{--bg:#050506;--card:#0F1014;--card2:#14161B;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#EDEDEF;--dim:#A3A5AF;--mute:#6B6D78;--gold:#E9C46A;--up:#22AB94;--dn:#F7525F;--blue:#6EA8FE;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.dd{max-width:1240px;margin:0 auto;padding:28px 20px 64px}
+.dd-eyebrow{font:600 12px/1 var(--mono);letter-spacing:.16em;color:var(--gold);text-transform:uppercase}
+.dd h1{margin:10px 0 10px;font-size:clamp(28px,4.4vw,44px);line-height:1.1;letter-spacing:-.02em}
+.dd-lede{margin:0;max-width:62ch;color:var(--dim);font-size:17px}
+.dd-back{display:inline-block;margin-bottom:14px;color:var(--dim);font-size:14px;text-decoration:none}
+.dd-back:hover{color:var(--ink)}
+
+/* the three checks */
+.dd-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:26px 0 0;padding:0;list-style:none}
+.dd-steps li{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.dd-steps b{display:block;font-size:15px;margin:6px 0 4px}
+.dd-steps span{font:600 11px/1 var(--mono);letter-spacing:.12em;color:var(--gold)}
+.dd-steps p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.5}
+
+/* counts */
+.dd-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:22px 0 0}
+.dd-tile{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.dd-tile .v{font:600 26px/1.1 var(--mono)}
+.dd-tile .k{margin-top:4px;color:var(--dim);font-size:13px}
+.dd-tile.hot .v{color:var(--up)}.dd-tile.warm .v{color:var(--gold)}
+
+.dd-note{margin:18px 0 0;padding:12px 16px;border:1px solid rgba(233,196,106,.35);border-radius:12px;background:rgba(233,196,106,.06);color:var(--dim);font-size:14px}
+.dd-note b{color:var(--ink)}
+
+/* controls */
+.dd-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:26px 0 12px}
+.dd-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.dd-tabs button,.dd-btn{appearance:none;border:1px solid var(--line2);background:transparent;color:var(--dim);padding:8px 14px;border-radius:999px;font:500 14px/1 var(--sans);cursor:pointer}
+.dd-tabs button.on{background:var(--ink);color:#000;border-color:var(--ink)}
+.dd-tabs button:hover,.dd-btn:hover{color:var(--ink);border-color:var(--ink)}
+.dd-tabs button.on:hover{color:#000}
+.dd-search{flex:1;min-width:180px;max-width:300px;margin-left:auto;padding:9px 14px;border:1px solid var(--line2);border-radius:999px;background:var(--card);color:var(--ink);font:14px var(--sans)}
+.dd-upd{color:var(--mute);font-size:13px}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* list */
+.dd-list{border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden}
+.dd-row{display:grid;grid-template-columns:40px minmax(150px,1.3fr) repeat(5,minmax(84px,1fr)) minmax(190px,1.8fr) 20px;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid var(--line);text-decoration:none;color:inherit}
+.dd-row:first-child{border-top:0}
+a.dd-row:hover{background:var(--card2)}
+.dd-row.head{color:var(--mute);font:600 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;background:#0B0C0F}
+.dd-rk{color:var(--mute);font:13px var(--mono)}
+.dd-nm b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dd-nm small{color:var(--mute);font:12px var(--mono)}
+.dd-side{display:inline-flex;align-items:center;gap:6px;font:600 13px var(--mono)}
+.dd-side.CALL{color:var(--up)}.dd-side.PUT{color:var(--dn)}
+.dd-pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid var(--line2);font:600 12px/1.3 var(--sans);color:var(--dim);white-space:nowrap}
+.dd-pill.s-drive{background:var(--up);border-color:var(--up);color:#00130f}
+.dd-pill.s-armed{border-color:var(--gold);color:var(--gold)}
+.dd-pill.s-trend,.dd-pill.s-structure{border-color:rgba(110,168,254,.6);color:var(--blue)}
+.dd-prog{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.dd-prog i{display:block;height:6px;border-radius:3px;background:rgba(255,255,255,.08);position:relative;overflow:hidden}
+.dd-prog i::after{content:"";position:absolute;inset:0;width:var(--w,0%);background:var(--gold);border-radius:3px}
+.dd-prog i.done::after{background:var(--up)}
+.dd-prog small{grid-column:1/-1;color:var(--mute);font:11px var(--mono)}
+.dd-sc{font:600 16px var(--mono);text-align:right}
+.dd-sc small{color:var(--mute);font-weight:400;font-size:11px}
+.dd-next{color:var(--dim);font-size:13.5px;line-height:1.45}
+.dd-go{color:var(--mute)}
+.dd-empty{padding:28px 16px;color:var(--dim);text-align:center}
+.dd-more{display:block;margin:14px auto 0}
+
+/* detail */
+.dd-dhead{display:flex;flex-wrap:wrap;gap:18px;justify-content:space-between;align-items:flex-end}
+.dd-dhead h1{margin:6px 0 10px}
+.dd-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dd-score{min-width:150px;padding:14px 18px;border:1px solid var(--line);border-radius:14px;background:var(--card);text-align:right}
+.dd-score .v{font:600 34px/1 var(--mono)}
+.dd-score .k{color:var(--dim);font-size:13px;margin-top:4px}
+.dd-now{margin:20px 0 0;padding:16px 18px;border:1px solid var(--line2);border-radius:14px;background:var(--card);font-size:16px}
+.dd-now b{color:var(--gold)}
+.dd-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
+.dd-card{padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card);min-width:0}
+.dd-card h2{margin:0 0 2px;font-size:16px}
+.dd-card .sub{margin:0 0 12px;color:var(--mute);font-size:13px}
+.dd-card.ok{border-color:rgba(34,171,148,.45)}
+.dd-gate{display:grid;grid-template-columns:22px 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.dd-gate:first-of-type{border-top:0}
+.dd-gate .ic{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 12px/1 var(--sans);margin-top:1px;background:rgba(255,255,255,.07);color:var(--mute)}
+.dd-gate.ok .ic{background:var(--up);color:#00130f}
+.dd-gate b{display:block;font-size:14px;font-weight:600}
+.dd-gate p{margin:2px 0 0;color:var(--dim);font-size:13px;line-height:1.45}
+.dd-gate em{font-style:normal;color:var(--mute);font-size:12px}
+.dd-plan{margin-top:14px}
+.dd-plan table{width:100%;border-collapse:collapse;font-size:14px}
+.dd-plan td{padding:9px 0;border-top:1px solid var(--line)}
+.dd-plan tr:first-child td{border-top:0}
+.dd-plan td:last-child{text-align:right;font-family:var(--mono)}
+.dd-plan td small{display:block;color:var(--mute);font:12px var(--sans)}
+.dd-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.dd-links a{padding:10px 16px;border:1px solid var(--line2);border-radius:999px;text-decoration:none;font-size:14px;color:var(--ink)}
+.dd-links a.pri{background:var(--gold);border-color:var(--gold);color:#1a1300;font-weight:600}
+.dd-links a:hover{border-color:var(--ink)}
+
+/* learn */
+.dd-learn{margin-top:34px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.dd-learn h2{grid-column:1/-1;margin:0;font-size:20px}
+.dd-learn dl{margin:0;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.dd-learn dt{font-weight:600;margin-top:10px}.dd-learn dt:first-child{margin-top:0}
+.dd-learn dd{margin:2px 0 0;color:var(--dim);font-size:14px}
+.dd-ftr{max-width:1240px;margin:0 auto;padding:0 20px 40px}.dd-ftr nav{display:flex;flex-wrap:wrap;gap:8px 18px;padding-top:18px;border-top:1px solid var(--line)}.dd-ftr a{color:var(--mute);font-size:13px;text-decoration:none}.dd-ftr a:hover{color:var(--ink)}
+.dd-foot{margin-top:22px;color:var(--mute);font-size:13px;line-height:1.55}
+
+@media (max-width:980px){
+  .dd-steps{grid-template-columns:repeat(2,1fr)}.dd-tiles{grid-template-columns:repeat(3,1fr)}
+  .dd-row{grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:14px}
+  .dd-row.head{display:none}
+  .dd-rk,.dd-go{display:none}
+  .dd-nm{grid-column:1}.dd-pillc{grid-column:2;grid-row:1;justify-self:end}
+  .dd-sidec{grid-column:1}.dd-sc{grid-column:2;grid-row:2}
+  .dd-progc,.dd-next{grid-column:1/-1}
+  .dd-cols{grid-template-columns:1fr}.dd-learn{grid-template-columns:1fr}
+  .dd-search{max-width:none;margin-left:0;flex-basis:100%}
+}
+@media (max-width:560px){.dd{padding:20px 14px 48px}.dd-steps{grid-template-columns:1fr}.dd-tiles{grid-template-columns:repeat(2,1fr)}.dd-score{text-align:left;width:100%}}
+@media (prefers-reduced-motion:no-preference){.dd-prog i::after{transition:width .5s ease}}
+
+/* trend line scanner */
+.tls-cell{display:block;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:12px;line-height:1.3;color:var(--dim);min-height:44px}
+.tls-cell b{display:block;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tls-cell.up b{color:var(--up)}.tls-cell.down b{color:var(--dn)}.tls-cell.squeeze b{color:var(--gold)}
+.tls-cell.none{border-style:dashed;color:var(--mute);display:grid;place-items:center}
+.tls-cell.ev-test{border-color:var(--gold)}
+.tls-cell.ev-up{border-color:var(--up);background:rgba(34,171,148,.10)}
+.tls-cell.ev-down{border-color:var(--dn);background:rgba(247,82,95,.10)}
+.tls-cell small{font:11px var(--mono)}
+.tls-cell small.t{color:var(--gold)}.tls-cell small.u{color:var(--up)}.tls-cell small.d{color:var(--dn)}
+.tls-tfh{text-align:center}
+.tls-head b{font-weight:600}
+.tls-ev{display:inline-block;margin:0 6px 4px 0;padding:2px 8px;border-radius:999px;border:1px solid var(--line2);font-size:12px;white-space:nowrap}
+.tls-ev.break_up{border-color:var(--up);color:var(--up)}.tls-ev.break_down{border-color:var(--dn);color:var(--dn)}.tls-ev.at_res,.tls-ev.at_sup{border-color:var(--gold);color:var(--gold)}
+.tls-prog{height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;margin:14px 0 0}
+.tls-prog i{display:block;height:100%;background:var(--gold);width:0}
+.dd-tiles.four{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:980px){
+  .dd-row{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+  .dd-row .dd-nm,.dd-row .dd-next{grid-column:1/-1;grid-row:auto}
+  .tls-cell{padding:5px 6px;min-height:40px}.tls-cell b{font-size:11px}
+  .tls-cell::before{content:attr(data-tf);display:block;font:10px var(--mono);color:var(--mute)}
+}
+</style>
+</head>
+<body>
+<main class="dd" id="tlApp">
+  <div class="dd-eyebrow">Free scanner</div>
+  <h1>Trend Line Scanner</h1>
+  <p class="dd-lede">Every market is checked on five charts: weekly, daily, 4-hour, 1-hour and 30-minute. The scanner draws the trend line each chart is respecting, then tells you where price has just <b>broken</b> a line or is <b>testing</b> one right now. Tap any row to see the charts.</p>
+  <ol class="dd-steps">
+    <li><span>STEP 1</span><b>Find the line</b><p>Swing highs make a resistance line, swing lows make a support line. A line needs at least two touches.</p></li>
+    <li><span>STEP 2</span><b>Keep only real ones</b><p>A line is dropped as soon as a candle closes through it. More touches rank higher.</p></li>
+    <li><span>STEP 3</span><b>Read price now</b><p>Holding, being tested, or broken in the last three candles.</p></li>
+    <li><span>THEN</span><b>Rank</b><p>Breakouts first, then tests. Bigger charts and more touches count for more.</p></li>
+  </ol>
+  <div class="dd-tiles four" id="tlTiles"></div>
+  <div class="tls-prog" id="tlProg" hidden><i></i></div>
+  <div class="dd-bar">
+    <div class="dd-tabs" id="tlEv" role="group" aria-label="What is happening">
+      <button type="button" data-e="all" class="on">Everything</button><button type="button" data-e="break_up">Broke above resistance</button><button type="button" data-e="break_down">Broke below support</button><button type="button" data-e="at_res">At resistance now</button><button type="button" data-e="at_sup">At support now</button>
+    </div>
+  </div>
+  <div class="dd-bar" style="margin-top:0">
+    <div class="dd-tabs" id="tlTf" role="group" aria-label="Timeframe">
+      <button type="button" data-t="any" class="on">Any chart</button><button type="button" data-t="1W">Weekly</button><button type="button" data-t="1D">Daily</button><button type="button" data-t="4H">4 hour</button><button type="button" data-t="1H">1 hour</button><button type="button" data-t="30m">30 min</button>
+    </div>
+    <div class="dd-tabs" id="tlMkt" role="group" aria-label="Market">
+      <button type="button" data-m="all" class="on">All</button><button type="button" data-m="forex">Forex</button><button type="button" data-m="crypto">Crypto</button><button type="button" data-m="other">Stocks &amp; futures</button>
+    </div>
+    <input class="dd-search" id="tlQ" type="search" placeholder="Find a market…" aria-label="Find a market">
+  </div>
+  <p class="dd-upd" id="tlUpd" style="margin:0 0 10px"></p>
+  <div class="dd-list" id="tlList"><p class="dd-empty">Scanning every market…</p></div>
+  <button type="button" class="dd-btn dd-more" id="tlMore" hidden>Show more</button>
+  <section class="dd-learn">
+    <h2>Words used on this page</h2>
+    <dl>
+      <dt>Resistance line</dt><dd>A line across swing highs. Price has turned down from it before; a close above it is a breakout.</dd>
+      <dt>Support line</dt><dd>A line across swing lows. Price has bounced from it before; a close below it is a breakdown.</dd>
+      <dt>Touches</dt><dd>How many separate times price reached the line and respected it. Three or more is a stronger line.</dd>
+    </dl>
+    <dl>
+      <dt>Channel</dt><dd>Two lines sloping the same way. Falling channel: sellers in control. Rising channel: buyers in control.</dd>
+      <dt>Triangle and wedge</dt><dd>Two lines closing in on each other. Price is being squeezed and usually leaves with a strong move.</dd>
+      <dt>Testing</dt><dd>Price is at the line right now. It either rejects there or breaks through.</dd>
+    </dl>
+  </section>
+  <p class="dd-foot">Lines are drawn by rule from swing highs and lows on the last 140 candles of each chart. They describe the chart; they are not a forecast. The 30-minute chart is shown for markets with recent intraday data. Education and demonstration only, not financial advice.</p>
+</main>
+<footer class="dd-ftr"><nav aria-label="Site links">
+<a href="/">ChartPulse home</a><a href="/scanner.html">Tier-1 Scanner</a><a href="/scanners/day-drive/">Day Drive Scanner</a><a href="/scanners/">All free scanners</a><a href="/scanners/bottom-reversal/">Bottom Reversal Scanner</a><a href="/scanners/ema-200/">200 EMA Scanner</a><a href="/desk/">AI Scan</a><a href="/backtesting/">Backtesting</a><a href="/bias/">Market bias</a><a href="/movers/">Market movers</a><a href="/pricing.html">Pricing</a><a href="/legal/disclaimer">Risk disclaimer</a>
+</nav></footer>
+
+<script src="/static/v2/trendlines.js?v=2"></script>
+<script>
+(() => {
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const BASE = "/scanners/trend-lines/";
+const app = $("#tlApp"), Q = new URLSearchParams(location.search);
+const TFS = ["1W", "1D", "4H", "1H", "30m"];
+const TFN = { "1W": "weekly", "1D": "daily", "4H": "4-hour", "1H": "1-hour", "30m": "30-min" };
+const EV = { break_up: "Broke above", break_down: "Broke below", at_res: "At", at_sup: "At" };
+const EVL = { break_up: "resistance", break_down: "support", at_res: "resistance", at_sup: "support" };
+const fmt = (v, d) => Number(v).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const ago = t => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); return s < 60 ? `${s}s ago` : `${Math.round(s / 60)} min ago`; };
+const L = { rows: [], meta: {}, at: 0, ev: "all", tf: "any", mkt: "all", q: "", show: 60, timer: null };
+
+function cell(r, k) {
+  const c = r.tf[k];
+  if (!c) return `<span class="tls-cell none" data-tf="${k}">–</span>`;
+  let cls = c.lean, tag = "";
+  const st = s => c[s] && c[s].st;
+  if (st("res") === "broken") { cls += " ev-up"; tag = `<small class="u">▲ broke up</small>`; }
+  else if (st("sup") === "broken") { cls += " ev-down"; tag = `<small class="d">▼ broke down</small>`; }
+  else if (st("res") === "testing") { cls += " ev-test"; tag = `<small class="t">at resistance</small>`; }
+  else if (st("sup") === "testing") { cls += " ev-test"; tag = `<small class="t">at support</small>`; }
+  else tag = `<small>${(c.res ? c.res.n : 0) + (c.sup ? c.sup.n : 0)} touches</small>`;
+  return `<span class="tls-cell ${cls}" data-tf="${k}"><b>${esc(c.p)}</b>${tag}</span>`;
+}
+function headline(r) {
+  const ev = (r.ev || []).filter(e => (L.tf === "any" || e.tf === L.tf) && (L.ev === "all" || e.e === L.ev));
+  if (!ev.length) return `<span>Lines are holding on ${Object.keys(r.tf).length} chart${Object.keys(r.tf).length === 1 ? "" : "s"}. No break or test right now.</span>`;
+  return ev.slice(0, 3).map(e => `<span class="tls-ev ${e.e}">${EV[e.e]} ${TFN[e.tf]} ${EVL[e.e]} · ${e.n} touches · ${fmt(e.lv, r.dec)}</span>`).join("") + (ev.length > 3 ? `<span class="tls-ev">+${ev.length - 3} more</span>` : "");
+}
+function paint() {
+  const all = L.rows, c = (L.meta.counts || {});
+  $("#tlTiles").innerHTML = [["hot", c.break_up || 0, "Broke above resistance"], ["", c.break_down || 0, "Broke below support"], ["warm", c.at_res || 0, "At resistance now"], ["warm", c.at_sup || 0, "At support now"], ["", all.length, "Markets with a trend line"]]
+    .map(([k, v, t]) => `<div class="dd-tile ${k}"><div class="v"${t === "Broke below support" ? ' style="color:var(--dn)"' : ""}>${v}</div><div class="k">${t}</div></div>`).join("");
+  const p = L.meta.progress ?? 1; $("#tlProg").hidden = p >= 1; $("#tlProg").firstElementChild.style.width = Math.round(p * 100) + "%";
+  let rows = all.filter(r => L.mkt === "all" || r.class === L.mkt);
+  if (L.tf !== "any") rows = rows.filter(r => r.tf[L.tf]);
+  if (L.ev !== "all") rows = rows.filter(r => (r.ev || []).some(e => e.e === L.ev && (L.tf === "any" || e.tf === L.tf)));
+  if (L.q) rows = rows.filter(r => (r.name + " " + r.symbol).toLowerCase().includes(L.q));
+  const head = `<div class="dd-row head"><span>#</span><span>Market</span>${TFS.map(k => `<span class="tls-tfh">${k}</span>`).join("")}<span>What is happening</span><span></span></div>`;
+  $("#tlList").innerHTML = rows.length ? head + rows.slice(0, L.show).map((r, i) => `
+    <a class="dd-row" href="${BASE}?s=${encodeURIComponent(r.symbol)}">
+      <span class="dd-rk">${i + 1}</span>
+      <span class="dd-nm"><b>${esc(r.name)}</b><small>${esc(r.symbol)} · ${esc(r.market || "")} · ${fmt(r.price, r.dec)}</small></span>
+      ${TFS.map(k => cell(r, k)).join("")}
+      <span class="dd-next">${headline(r)}</span>
+      <span class="dd-go" aria-hidden="true">›</span>
+    </a>`).join("") : `<p class="dd-empty">${all.length ? "Nothing matches this filter right now." : "Scanning every market…"}</p>`;
+  $("#tlMore").hidden = rows.length <= L.show;
+  $("#tlUpd").textContent = L.at ? `${rows.length} markets shown · ${L.meta.scanned || 0} of ${L.meta.universe || 0} scanned${p < 1 ? " (still scanning)" : ""} · updated ${ago(L.at)}` : "";
+}
+async function load() {
+  let wait = 60000;
+  try {
+    const r = await fetch("/tl_api.php?r=scan", { cache: "no-store" }); const j = await r.json();
+    if (j.error) throw new Error(j.error);
+    L.rows = j.rows || []; L.meta = j.meta || {}; L.at = j.at || 0; paint();
+    if ((L.meta.progress ?? 1) < 1) wait = 5000;
+  } catch (e) { if (!L.rows.length) $("#tlList").innerHTML = `<p class="dd-empty">${esc(e.message || "The scanner could not be reached just now. Please try again in a moment.")}</p>`; }
+  clearTimeout(L.timer); L.timer = setTimeout(load, wait);
+}
+function tabs(id, key, attr) {
+  $(id).addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; L[key] = b.dataset[attr]; [...$(id).children].forEach(x => x.classList.toggle("on", x === b)); L.show = 60; paint(); });
+}
+function detail(sym) {
+  app.innerHTML = `<a class="dd-back" href="${BASE}">‹ Trend Line Scanner</a>
+    <div class="dd-eyebrow">Trend lines</div><h1 id="tlName">${esc(sym)}</h1>
+    <p class="dd-lede">Every chart that is drawing a trend line right now, with the line on it and what it means.</p>
+    <div class="dd-links"><a class="pri" href="/desk/?s=${encodeURIComponent(sym)}">Run AI Scan</a><a href="/scanners/day-drive/?s=${encodeURIComponent(sym)}">Day Drive checks</a><a href="${BASE}">Back to the list</a></div>
+    <div id="tlPanel"></div>`;
+  CP.trendlines.mount($("#tlPanel"), sym, d => { if (d && d.name) { $("#tlName").textContent = d.name; document.title = `${d.name} trend lines · ChartPulse`; } });
+}
+if (Q.get("s")) detail(Q.get("s"));
+else { tabs("#tlEv", "ev", "e"); tabs("#tlTf", "tf", "t"); tabs("#tlMkt", "mkt", "m");
+  $("#tlQ").addEventListener("input", e => { L.q = e.target.value.trim().toLowerCase(); L.show = 60; paint(); });
+  $("#tlMore").addEventListener("click", () => { L.show += 60; paint(); });
+  load(); }
+})();
+</script>
+</body>
+</html>

@@ -44,6 +44,9 @@ RewriteRule ^dashboard\.html$ /scanners/bottom-reversal/ [R=301,L]
 RewriteCond %{THE_REQUEST} \ /day-drive\.html[? ]
 RewriteRule ^day-drive\.html$ /scanners/day-drive/ [R=301,L]
 
+RewriteCond %{THE_REQUEST} \ /trend-lines\.html[? ]
+RewriteRule ^trend-lines\.html$ /scanners/trend-lines/ [R=301,L]
+
 RewriteCond %{THE_REQUEST} \ /pro-backtesting(\.html)?[? ]
 RewriteRule ^pro-backtesting(\.html)?$ /backtesting/ [R=301,L]
 
@@ -63,6 +66,7 @@ RewriteRule ^scanners/?$                                 /scanners.html         
 RewriteRule ^scanners/ema-200/?$                         /ema200.html                 [L]
 RewriteRule ^scanners/bottom-reversal/?$                 /dashboard.html              [L]
 RewriteRule ^scanners/day-drive/?$                       /day-drive.html              [L]
+RewriteRule ^scanners/trend-lines/?$                     /trend-lines.html            [L]
 RewriteRule ^backtesting/?$                              /pro-backtesting.html        [L]
 RewriteRule ^legal/(terms|privacy|refund|disclaimer)/?$  /legal.php?p=$1              [L,QSA]
 RewriteRule ^contact/?$                                  /legal.php?p=contact         [L,QSA]

@@ -6,7 +6,7 @@
   const esc = CP.esc || (s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])));
   const W = 640, H = 250, PL = 6, PR = 64, PT = 10, PB = 20, EXT = 14;
   const fmt = (v, d) => Number(v).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
-  const TFN = { "10m": "10 minute", "1H": "1 hour", "4H": "4 hour", "1D": "Daily" };
+  const TFN = { "10m": "10 minute", "30m": "30 minute", "1H": "1 hour", "4H": "4 hour", "1D": "Daily", "1W": "Weekly" };
   const STATE = { holding: "Holding", testing: "Being tested now", broken: "Broken" };
 
   function chart(f) {
@@ -42,7 +42,7 @@
     });
     const py = Y(f.price);
     s += `<line class="tlx-px" x1="${PL}" x2="${W - PR}" y1="${py.toFixed(1)}" y2="${py.toFixed(1)}"/>`;
-    const d0 = new Date(b.t[0] * 1000), d1 = new Date(b.t[n - 1] * 1000), intr = f.tf !== "1D";
+    const d0 = new Date(b.t[0] * 1000), d1 = new Date(b.t[n - 1] * 1000), intr = f.tf !== "1D" && f.tf !== "1W";
     const lab = d => intr ? d.toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "2-digit" });
     s += `<text class="tlx-ax" x="${PL}" y="${H - 5}">${esc(lab(d0))}</text><text class="tlx-ax" text-anchor="end" x="${X(n - 1).toFixed(1)}" y="${H - 5}">${esc(lab(d1))}</text></svg>`;
     return s;
@@ -65,21 +65,21 @@
   }
 
   const S = { sym: null, node: null, at: 0, busy: false };
-  async function load(sym) {
+  async function load(sym, cb) {
     if (S.busy) return; S.busy = true;
     try {
       const r = await fetch(`/tl_api.php?s=${encodeURIComponent(sym)}`, { cache: "no-store" });
       const d = await r.json();
-      if (S.sym === sym && S.node) { S.node.innerHTML = html(d); S.at = Date.now(); }
+      if (S.sym === sym && S.node) { S.node.innerHTML = html(d); S.at = Date.now(); } if (cb) try { cb(d); } catch (e) {}
     } catch (e) { if (S.node && !S.at) S.node.innerHTML = `<p class="tlx-empty">Trend lines could not be loaded just now.</p>`; }
     finally { S.busy = false; }
   }
-  function mount(root, sym) {
+  function mount(root, sym, cb) {
     if (!root || !sym) return;
     if (S.sym !== sym || !S.node) { S.sym = sym; S.at = 0; S.node = document.createElement("section"); S.node.className = "tlx"; S.node.innerHTML = `<p class="tlx-empty">Reading the trend lines on every timeframe…</p>`; }
     const after = root.querySelector(":scope > .aib");
     if (after) after.insertAdjacentElement("afterend", S.node); else root.insertAdjacentElement("afterbegin", S.node);
-    if (Date.now() - S.at > 60000) load(sym);
+    if (Date.now() - S.at > 60000) load(sym, cb);
   }
   CP.trendlines = { mount, html };
 

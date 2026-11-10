@@ -9,6 +9,7 @@ ChartPulse is a multi-market trading research tool covering 970+ instruments acr
 - [Overview](https://chartpulse.io/): live global market dashboard with movers, bias and heatmap
 - [Tier-1 Scanner](https://chartpulse.io/scanner.html): live CALL and PUT setups at each market's day high and low, ranked by quality
 - [Day Drive Scanner](https://chartpulse.io/scanners/day-drive/): three checks on every market, from the weekly chart to the 15-minute entry, in plain words
+- [Trend Line Scanner](https://chartpulse.io/scanners/trend-lines/): trend line breakouts and tests on weekly, daily, 4-hour, 1-hour and 30-minute charts for every market
 - [AI Scan](https://chartpulse.io/desk/): bias, forecast cone, trend lines on four timeframes and news tone for any symbol
 - [All free scanners](https://chartpulse.io/scanners/): Day Drive, 200 EMA, bottom reversal, EMA strategy and institutional scans
 - [Bottom Reversal Scanner](https://chartpulse.io/scanners/bottom-reversal/): daily reversals off a bottom zone

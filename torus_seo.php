@@ -116,7 +116,7 @@ function seo_head(string $title, string $desc, string $path, array $ld = [], str
 <?php endforeach; ?>
 <script src="/static/v2/consent.js?v=2"></script>
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=2">
-<script defer src="/static/v2/sitehead.js?v=3"></script>
+<script defer src="/static/v2/sitehead.js?v=4"></script>
 </head>
 <body class="site seo-page" data-page="seo">
 <header class="site-head">
