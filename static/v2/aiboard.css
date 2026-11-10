@@ -29,6 +29,7 @@
 .aib-eng{position:relative;padding:14px 16px 15px;border:1px solid var(--a-line);border-radius:14px;background:var(--a-card);min-height:132px;overflow:hidden}
 .aib-eng::before{content:"";position:absolute;inset:0 auto 0 0;width:2px;background:var(--a-line)}
 .aib-eng.up::before{background:var(--a-up)}.aib-eng.dn::before{background:var(--a-dn)}.aib-eng.nt::before{background:var(--a-gold)}
+.aib .aib-eng,.aib .aib-eng.up,.aib .aib-eng.dn{color:var(--a-ink)}
 .aib-eh{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .aib-eh h3{margin:0;font-size:14px;font-weight:500}
 .aib-st{font:500 11.5px var(--f-mono,ui-monospace,monospace);color:var(--a-mute);white-space:nowrap}
