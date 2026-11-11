@@ -203,12 +203,13 @@ a.dd-row:hover{background:var(--card2)}
 .hy-list{display:grid;gap:12px}
 .hy{display:block;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:inherit;text-decoration:none}
 a.hy:hover{background:var(--card2)}
-.hy.s4,.hy.s3{border-color:rgba(233,196,106,.6)}
+.hy.s5,.hy.s4{border-color:rgba(233,196,106,.6)}.hy.s3{border-color:rgba(34,171,148,.55)}
 .hy-top{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
 .hy-top h3{margin:0;font-size:17px}
 .hy-top small{color:var(--mute);font:12px var(--mono)}
 .hy-stage{margin-left:auto;padding:5px 12px;border-radius:999px;font:700 12px/1.2 var(--sans);border:1px solid var(--line2);color:var(--dim);white-space:nowrap}
-.hy.s4 .hy-stage,.hy.s3 .hy-stage{background:var(--gold);border-color:var(--gold);color:#1a1300}
+.hy.s5 .hy-stage,.hy.s4 .hy-stage{background:var(--gold);border-color:var(--gold);color:#1a1300}
+.hy.s3 .hy-stage{background:var(--up);border-color:var(--up);color:#00130f}
 .hy.s2 .hy-stage{border-color:rgba(110,168,254,.6);color:var(--blue)}
 .hy-say{margin:10px 0 8px;font-size:15px;line-height:1.5}
 .hy-say b{color:var(--ink)}
@@ -216,7 +217,7 @@ a.hy:hover{background:var(--card2)}
 .hy-now em{font-style:normal;color:var(--mute);margin-right:2px}
 .hy-now i{font-style:normal;padding:2px 9px;border-radius:6px;border:1px solid var(--line2);color:var(--dim)}
 .hy-now i b{font-family:var(--mono);color:var(--ink)}
-.hy-now i.a{border-color:var(--gold);color:var(--gold)}.hy-now i.b{border-color:rgba(110,168,254,.6);color:var(--blue)}
+.hy-now i.a{border-color:var(--gold);color:var(--gold)}.hy-now i.s{border-color:var(--up);color:var(--up)}.hy-now i.b{border-color:rgba(110,168,254,.6);color:var(--blue)}
 .hy-row2{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-bottom:8px}
 .hy-plan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
 .hy-plan div{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#0B0C0F}
@@ -239,7 +240,7 @@ a.hy:hover{background:var(--card2)}
   <ol class="dd-steps">
     <li><span>STEP 1</span><b>Trend decides the side</b><p>The Daily trend is the veto. The 4-hour or the Weekly trend must agree with it. Down means PUT only, up means CALL only.</p></li>
     <li><span>STEP 2</span><b>Day high or low at a line</b><p>PUT: today's high is at a resistance trend line. CALL: today's low is at a support trend line.</p></li>
-    <li><span>STEP 3</span><b>Wait for the turn</b><p>A candle touches the line and closes away from it, or closes through it and the next candle closes back.</p></li>
+    <li><span>STEP 3</span><b>Signal, then the turn</b><p>Price at the line is the signal. It becomes an alert when a candle touches the line and closes away, or closes through it and the next closes back.</p></li>
     <li><span>LABELS</span><b>Zones and pullback</b><p>A key zone on the line, and 30m / 1H running against the trend into the line, are marked on each setup.</p></li>
   </ol>
   <div class="dd-tiles four" id="hyTiles"></div>
@@ -247,7 +248,7 @@ a.hy:hover{background:var(--card2)}
   <div id="hyAlert"></div>
   <div class="dd-bar">
     <div class="dd-tabs" id="hyStage" role="group" aria-label="Stage">
-      <button type="button" data-s="all" class="on">Everything</button><button type="button" data-s="alert">Alerts only</button><button type="button" data-s="2">Broken, waiting</button><button type="button" data-s="1">Approaching</button><button type="button" data-s="old">Last session</button>
+      <button type="button" data-s="all" class="on">Everything</button><button type="button" data-s="alert">Alerts only</button><button type="button" data-s="3">At the line</button><button type="button" data-s="2">Broken, waiting</button><button type="button" data-s="1">Approaching</button><button type="button" data-s="old">Last session</button>
     </div>
     <div class="dd-tabs" id="hySide" role="group" aria-label="Side">
       <button type="button" data-d="all" class="on">CALL + PUT</button><button type="button" data-d="CALL">CALL</button><button type="button" data-d="PUT">PUT</button>
@@ -268,7 +269,8 @@ a.hy:hover{background:var(--card2)}
     <dl>
       <dt>Failed break</dt><dd>A candle closed through the line, then a candle closed back on the other side. The breakout did not hold. This is the strongest alert.</dd>
       <dt>Rejection</dt><dd>A candle reached the line and closed away from it. The line held.</dd>
-      <dt>Broken, waiting</dt><dd>Price is through the line right now. No trade yet: the scanner is waiting to see whether it comes back.</dd>
+      <dt>At the line</dt><dd>Price is on the line, a little under or a little over it, with the trend against it. This is the signal: the place to look for the trade.</dd>
+      <dt>Broken, waiting</dt><dd>Price is clearly through the line right now. No trade yet: the scanner is waiting to see whether it comes back.</dd>
     </dl>
     <dl>
       <dt>Approaching</dt><dd>Price is close to the line and the day's high or low is already at it. Get ready, nothing to do yet.</dd>
@@ -276,7 +278,7 @@ a.hy:hover{background:var(--card2)}
       <dt>Major / strong zone</dt><dd>The line also sits on a previous day high, low or close, a weekly or monthly high or low, a pivot or a Fibonacci level. One match is a major zone, two different kinds a strong zone.</dd>
     </dl>
   </section>
-  <p class="dd-foot">An alert counts as live only while that market is trading; turns from a closed market are listed lower as "Last session". Lines from the 15-minute and 30-minute charts need three touches. Trend is the standard Supertrend (10, 3). Trend lines come from the Daily, 4-hour, 1-hour, 30-minute and 15-minute charts. The turn is read on 15-minute candles where intraday data is available, otherwise on 1-hour candles. Stop and targets on an alert are worked out by rule; no win rate is attached because these rules have not been measured. Education and demonstration only, not financial advice.</p>
+  <p class="dd-foot">An alert counts as live only while that market is trading; turns from a closed market are listed lower as "Last session". Lines from the 15-minute and 30-minute charts need three touches. Trend is the standard Supertrend (10, 3). Trend lines come from the Daily, 4-hour, 1-hour, 30-minute and 15-minute charts. The turn is read on 15-minute candles where intraday data is available, otherwise on 1-hour candles. Stop and targets on a signal or alert are worked out by rule; no win rate is attached because these rules have not been measured. Education and demonstration only, not financial advice.</p>
 </main>
 <footer class="dd-ftr"><nav aria-label="Site links">
 <a href="/">ChartPulse home</a><a href="/scanner.html">Tier-1 Scanner</a><a href="/scanners/trend-lines/">Trend Line Scanner</a><a href="/scanners/day-drive/">Day Drive Scanner</a><a href="/scanners/">All free scanners</a><a href="/scanners/ema-200/">200 EMA Scanner</a><a href="/desk/">AI Scan</a><a href="/backtesting/">Backtesting</a><a href="/bias/">Market bias</a><a href="/pricing.html">Pricing</a><a href="/legal/disclaimer">Risk disclaimer</a>
@@ -288,8 +290,8 @@ const $ = (s, r = document) => r.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const MTF = ["30m", "1H", "4H", "1D", "1W"];
 const TFN = { "1D": "Daily", "4H": "4-hour", "1H": "1-hour", "30m": "30-min", "15m": "15-min" };
-const STG = { 4: "ALERT · Failed break", 3: "ALERT · Rejection", 2: "Broken, waiting", 1: "Approaching" };
-const stg = r => r.stage >= 3 && !r.live ? (r.stage === 4 ? "Last session · Failed break" : "Last session · Rejection") : STG[r.stage];
+const STG = { 5: "ALERT · Failed break", 4: "ALERT · Rejection", 3: "SIGNAL · At the line", 2: "Broken, waiting", 1: "Approaching" };
+const stg = r => r.stage >= 4 && !r.live ? (r.stage === 5 ? "Last session · Failed break" : "Last session · Rejection") : STG[r.stage];
 const fmt = (v, d) => Number(v).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 const ago = t => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); return s < 60 ? `${s}s ago` : `${Math.round(s / 60)} min ago`; };
 const L = { rows: [], meta: {}, at: 0, stage: "all", side: "all", mkt: "all", q: "", show: 40, timer: null, seen: null, fresh: new Set() };
@@ -300,17 +302,18 @@ function mtf(r) {
 }
 function say(r) {
   const put = r.bias === "PUT", line = `${TFN[r.tf] || r.tf} ${put ? "resistance" : "support"} line at <b>${fmt(r.lv, r.dec)}</b>`, ext = `today's ${put ? "high" : "low"} <b>${fmt(r.day_x, r.dec)}</b>`, c = `${TFN[r.etf] || r.etf} candle`;
-  if (r.stage === 4) return `Price closed ${put ? "above" : "below"} the ${line}, then a ${c} closed back ${put ? "below" : "above"} it. The breakout failed: this is the ${r.bias} trigger.`;
-  if (r.stage === 3) return `A ${c} touched the ${line} and closed ${put ? "down" : "up"} away from it (${ext}). The line held: this is the ${r.bias} trigger.`;
-  if (r.stage === 2) return `Price is ${put ? "above" : "below"} the ${line} right now. No trade yet. Wait for a ${c} to close back ${put ? "below" : "above"} it.`;
+  if (r.stage === 5) return `Price closed ${put ? "above" : "below"} the ${line}, then a ${c} closed back ${put ? "below" : "above"} it. The breakout failed: this is the ${r.bias} trigger.`;
+  if (r.stage === 4) return `A ${c} touched the ${line} and closed ${put ? "down" : "up"} away from it (${ext}). The line held: this is the ${r.bias} trigger.`;
+  if (r.stage === 3) return `Price is right at the ${line}, and ${ext} is at it too. This is the ${r.bias} zone: the trend is ${put ? "down" : "up"} and price is at the ${put ? "resistance" : "support"}. A ${c} turning ${put ? "down" : "up"} here upgrades it to an alert.`;
+  if (r.stage === 2) return `Price is clearly ${put ? "above" : "below"} the ${line} right now. No trade yet. Wait for a ${c} to close back ${put ? "below" : "above"} it.`;
   return `Price is closing in on the ${line}; ${ext} is already at it. Get ready and wait for a ${c} to turn there.`;
 }
 // Which chart is doing what right now, so the charts page does not have to be opened (owner, 11 Nov 2026).
 function nowline(r) {
-  const g = { 4: [], 3: [], 2: [], 1: [] }, put = r.bias === "PUT", ln = put ? "resistance" : "support";
+  const g = { 5: [], 4: [], 3: [], 2: [], 1: [] }, put = r.bias === "PUT", ln = put ? "resistance" : "support";
   (r.all || []).forEach(x => g[x.stage] && g[x.stage].push(x.tf));
   const part = (k, cls, label) => g[k].length ? `<i class="${cls}">${label}: <b>${g[k].join(", ")}</b></i>` : "";
-  return `<span class="hy-now"><em>Right now on the ${ln} lines</em>${part(4, "a", "Broke out and came back")}${part(3, "a", "Touched and turned")}${part(2, "b", put ? "Broken out above" : "Broken out below")}${part(1, "c", "Price approaching")}</span>`;
+  return `<span class="hy-now"><em>Right now on the ${ln} lines</em>${part(5, "a", "Broke out and came back")}${part(4, "a", "Touched and turned")}${part(3, "s", "Price at the line")}${part(2, "b", put ? "Broken out above" : "Broken out below")}${part(1, "c", "Price approaching")}</span>`;
 }
 function chips(r) {
   const f = [];
@@ -327,7 +330,7 @@ function plan(r) {
   return `<div class="hy-plan"><div><span>Entry (now)</span><b>${fmt(p.entry, r.dec)}</b></div><div class="sl"><span>Stop-loss · ${p.risk_pct}%</span><b>${fmt(p.sl, r.dec)}</b></div><div class="tg"><span>Target 1 · 1.5 × risk</span><b>${fmt(p.t1, r.dec)}</b></div><div class="tg"><span>Target 2 · ${esc(p.t2why)}</span><b>${fmt(p.t2, r.dec)}</b></div></div>`;
 }
 function card(r) {
-  return `<a class="hy s${r.stage >= 3 && !r.live ? "0" : r.stage}" href="/scanners/trend-lines/?s=${encodeURIComponent(r.symbol)}">
+  return `<a class="hy s${r.stage >= 4 && !r.live ? "0" : r.stage}" href="/scanners/trend-lines/?s=${encodeURIComponent(r.symbol)}">
     <div class="hy-top"><span class="tls-call ${r.bias}">${r.bias === "CALL" ? "▲ CALL" : "▼ PUT"}</span><h3>${esc(r.name)}</h3><small>${esc(r.symbol)} · ${esc(r.market || "")} · ${fmt(r.price, r.dec)}</small><span class="hy-stage">${stg(r)}${L.fresh.has(r.symbol) ? '<span class="hy-new">NEW</span>' : ""}</span></div>
     <p class="hy-say">${say(r)}</p>
     ${nowline(r)}
@@ -338,13 +341,13 @@ function card(r) {
 function beep() { try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain(); o.connect(g); g.connect(a.destination); o.frequency.value = 880; g.gain.value = 0.08; o.start(); o.stop(a.currentTime + 0.25); } catch (e) {} }
 function paint() {
   const all = L.rows, c = L.meta.counts || {};
-  $("#hyTiles").innerHTML = [["warm", (c[4] || 0), "Failed-break alerts"], ["warm", (c[3] || 0), "Rejection alerts"], ["", (c[2] || 0), "Broken, waiting"], ["", (c[1] || 0), "Approaching"], ["", (c.old || 0), "From the last session (market closed)"]]
+  $("#hyTiles").innerHTML = [["warm", (c[5] || 0), "Failed-break alerts"], ["warm", (c[4] || 0), "Rejection alerts"], ["hot", (c[3] || 0), "Signals at the line"], ["", (c[2] || 0), "Broken, waiting"], ["", (c[1] || 0), "Approaching"]]
     .map(([k, v, t]) => `<div class="dd-tile ${k}"><div class="v">${v}</div><div class="k">${t}</div></div>`).join("");
   const p = L.meta.progress ?? 1; $("#hyProg").hidden = p >= 1; $("#hyProg").firstElementChild.style.width = Math.round(p * 100) + "%";
-  const na = (c[4] || 0) + (c[3] || 0);
-  $("#hyAlert").innerHTML = na ? `<p class="hy-alert"><b>${na} alert${na > 1 ? "s" : ""} right now.</b> An alert means the turn has happened on the line. They are listed first.</p>` : (all.length ? `<p class="dd-note"><b>No alert right now.</b> The setups below are approaching their line or through it; an alert appears when a candle turns there.</p>` : "");
+  const na = (c[5] || 0) + (c[4] || 0);
+  $("#hyAlert").innerHTML = na ? `<p class="hy-alert"><b>${na} alert${na > 1 ? "s" : ""} right now.</b> An alert means the turn has happened on the line. They are listed first, then the signals at the line.${c.old ? " " + c.old + " more turns are from markets that are closed (Last session)." : ""}</p>` : (all.length ? `<p class="dd-note"><b>No alert right now.</b> The setups below are approaching their line or through it; an alert appears when a candle turns there.</p>` : "");
   let rows = all.filter(r => L.mkt === "all" || r.class === L.mkt);
-  if (L.stage === "alert") rows = rows.filter(r => r.stage >= 3 && r.live); else if (L.stage === "old") rows = rows.filter(r => r.stage >= 3 && !r.live); else if (L.stage !== "all" && L.stage !== "alert") rows = rows.filter(r => r.stage === +L.stage);
+  if (L.stage === "alert") rows = rows.filter(r => r.stage >= 4 && r.live); else if (L.stage === "old") rows = rows.filter(r => r.stage >= 4 && !r.live); else if (L.stage !== "all" && L.stage !== "alert") rows = rows.filter(r => r.stage === +L.stage);
   if (L.side !== "all") rows = rows.filter(r => r.bias === L.side);
   if (L.q) rows = rows.filter(r => (r.name + " " + r.symbol).toLowerCase().includes(L.q));
   $("#hyList").innerHTML = rows.length ? rows.slice(0, L.show).map(card).join("") : `<p class="dd-empty">${all.length ? "Nothing matches this filter right now." : (p < 1 ? "Scanning every market…" : "No market has its day high or low at a trend line in the direction of the trend right now.")}</p>`;
@@ -357,7 +360,7 @@ async function load() {
   try {
     const r = await fetch("/tl_api.php?r=hybrid", { cache: "no-store" }); const j = await r.json();
     if (j.error) throw new Error(j.error);
-    const now = new Set((j.rows || []).filter(x => x.stage >= 3 && x.live).map(x => x.symbol + ":" + x.stage + ":" + x.bar_t));
+    const now = new Set((j.rows || []).filter(x => x.stage >= 4 && x.live).map(x => x.symbol + ":" + x.stage + ":" + x.bar_t));
     L.fresh = new Set();
     if (L.seen) { now.forEach(k => { if (!L.seen.has(k)) L.fresh.add(k.split(":")[0]); }); if (L.fresh.size && $("#hySound").checked) beep(); }
     L.seen = now;

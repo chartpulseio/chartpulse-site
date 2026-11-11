@@ -456,9 +456,10 @@ function tl_scan(): array {
 // MTF here IS a filter: the Daily Supertrend is the veto and one of 4H / Weekly must confirm it.
 // 30m / 1H running the other way is the pullback into the line, which is what the setup wants (label).
 // Stages, strongest first:
-//   4 FAILED BREAK  a candle closed through the line, then a candle closed back inside   -> alert
-//   3 REJECTION     a candle touched the line and closed away from it                    -> alert
-//   2 BROKEN        price is through the line right now; waiting for it to come back
+//   5 FAILED BREAK  a candle closed through the line, then a candle closed back inside   -> alert
+//   4 REJECTION     a candle touched the line and closed away from it                    -> alert
+//   3 AT THE LINE   price is on the line (within the band either side)                   -> the signal
+//   2 BROKEN        price is clearly through the line; waiting for it to come back
 //   1 APPROACHING   price is closing in on the line
 // Zones on the line (PDH / PDL / PDC, weekly, monthly, pivots, Fib) are labels.
 // ===========================================================================
@@ -467,7 +468,8 @@ const TLH_NEAR = 0.15;     // x daily ATR: the day's extreme is "at" the line wi
 const TLH_OVER = 0.6;      // x daily ATR: the extreme may have run this far through the line
 const TLH_APPROACH = 0.3;  // x daily ATR: price this close to the line is approaching
 const TLH_WIN = 8;         // entry candles looked back for a close through the line
-const TLH_STAGE = [4 => 'FAILED BREAK', 3 => 'REJECTION', 2 => 'BROKEN', 1 => 'APPROACHING'];
+const TLH_BAND = 0.15;     // x daily ATR: price this close to the line, either side, is AT the line
+const TLH_STAGE = [5 => 'FAILED BREAK', 4 => 'REJECTION', 3 => 'AT THE LINE', 2 => 'BROKEN', 1 => 'APPROACHING'];
 
 /** Bias for the hybrid scanner: Daily is the veto, 4H or Weekly must agree with it. */
 function tlh_bias(array $mtf): ?string {
@@ -506,16 +508,21 @@ function tlh_row(string $sym, array $row, int $now): ?array {
         $reach = $put ? $h >= $lv - $tol : $l <= $lv + $tol;          // the candle got to the line
         $wick = $put ? ($h - max($o, $c)) / $rg : (min($o, $c) - $l) / $rg;   // the tail left at the line
         $turn = $wick >= 0.6 || (($put ? $c < $o : $c > $o) && $wick >= 0.3);
-        if ($brk !== null && $brk < $lc && $inside) $stage = 4;
-        elseif ($brk === null && $reach && $inside && $turn) $stage = 3;
-        elseif (($px - $lv) * $s > $thr) $stage = 2;
-        elseif (($lv - $px) * $s >= 0 && ($lv - $px) * $s <= TLH_APPROACH * $atrD) $stage = 1;
+        // owner, 11 Nov 2026 23:58 (NZD/JPY sat on its 4H resistance and was shown as "waiting"): price hugging the
+        // line, a little under or a little over, is AT THE LINE and that is the signal. "Broken" now means clearly
+        // through it, by more than the band.
+        $dist = ($px - $lv) * $s; $band = TLH_BAND * $atrD;          // > 0: price is beyond the line
+        if ($brk !== null && $brk < $lc && $inside) $stage = 5;
+        elseif ($brk === null && $reach && $inside && $turn) $stage = 4;
+        elseif (abs($dist) <= $band) $stage = 3;
+        elseif ($dist > $band) $stage = 2;
+        elseif (-$dist <= TLH_APPROACH * $atrD) $stage = 1;
         if (!$stage) continue;
         $hits++; $all[] = ['tf' => $k, 'stage' => $stage];   // every chart whose line is in play, for the remark on the list
         $zone = tl_match($Z, $lv, 0.06 * $atrD);   // tight, so the label means the zone really sits on the line
         $cand = ['tf' => $k, 'stage' => $stage, 'lv' => $lv, 'n' => (int)$L['touches'], 'dir' => $L['dir'], 'pattern' => $x['pattern'],
                  'zone' => $zone ? ['t' => $zone['t'], 'n' => $zone['n']] : null, 'opp' => $x[$put ? 'sup' : 'res']['now'] ?? null, 'brk' => $brk,
-                 'key' => [$stage >= 3 ? $live : 1, $stage, $zone ? ($zone['t'] === 'strong' ? 2 : 1) : 0, TL_TF_PTS[$k] ?? 0, (int)$L['touches']]];
+                 'key' => [$stage >= 4 ? $live : 1, $stage, $zone ? ($zone['t'] === 'strong' ? 2 : 1) : 0, TL_TF_PTS[$k] ?? 0, (int)$L['touches']]];
         if ($best === null || $cand['key'] > $best['key']) $best = $cand;
     }
     if (!$best) return null;
@@ -546,11 +553,11 @@ function tlh_row(string $sym, array $row, int $now): ?array {
 /** Whole-universe hybrid scan (same stepping and caching as tl_scan, shorter row life because stages move fast). */
 function tlh_scan(): array {
     $dir = T_DATA . '/tl'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
-    $now = t_now(); $ck = $dir . '/_hscan4.json';
+    $now = t_now(); $ck = $dir . '/_hscan5.json';
     $c = t_read_json($ck, null);
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 30 && isset($c['rows'])) return $c;
     $scan = t_scan_load(); $syms = array_keys($scan['rows'] ?? []);
-    $cp = $dir . '/_hrows4.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
+    $cp = $dir . '/_hrows5.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
     $t0 = microtime(true); $done = 0; $fresh = 0; $nobias = 0;
     foreach ($syms as $sym) {
         $old = $cache[$sym] ?? null;
@@ -563,8 +570,8 @@ function tlh_scan(): array {
     if ($fresh) t_write_json($cp, $cache);
     $rows = array_values(array_filter($cache, fn($r) => is_array($r) && empty($r['none'])));
     usort($rows, fn($a, $b) => $b['key'] <=> $a['key']);
-    $cnt = [4 => 0, 3 => 0, 2 => 0, 1 => 0, 'old' => 0];
-    foreach ($rows as $r) { if ($r['stage'] >= 3 && empty($r['live'])) $cnt['old']++; else $cnt[$r['stage']]++; }
+    $cnt = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0, 'old' => 0];
+    foreach ($rows as $r) { if ($r['stage'] >= 4 && empty($r['live'])) $cnt['old']++; else $cnt[$r['stage']]++; }
     $p = ['at' => $now, 'rows' => $rows, 'meta' => ['universe' => count($syms), 'scanned' => $done, 'progress' => count($syms) ? round($done / count($syms), 3) : 1,
           'counts' => $cnt, 'took_ms' => (int)round((microtime(true) - $t0) * 1000)]];
     t_write_json($ck, $p);
