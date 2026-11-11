@@ -1069,7 +1069,7 @@ h1,h2,h3{letter-spacing:-.012em}
 .bm-note b{color:var(--ink2)}
 @media (max-width:720px){.risk-box{flex-direction:column;padding:16px}.bm-head .filters{width:100%}.bm-chg{font-size:21px}}
 
-/* v18 · free Bias Check */
+/* v18 · free AI Scan */
 .bc-sec{scroll-margin-top:80px}
 .bc-in{display:grid;grid-template-columns:minmax(0,1.2fr) auto minmax(0,1fr);gap:16px;align-items:center;margin-top:18px;padding:18px}
 .bc-search{display:flex;align-items:center;gap:10px;border:1px solid var(--line2);border-radius:12px;background:var(--bg2);padding:6px 6px 6px 12px}

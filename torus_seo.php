@@ -5,7 +5,7 @@
 //   /bias/<slug>           one symbol: bias, stats, news   (bias.php?slug=)
 //   /movers/, /movers/DATE today's biggest moves + archive (movers.php)
 //   /sitemap.xml           every page above                (sitemap.php)
-// Public data only (the same fields the free Bias Check shows). No signal, zone, score or rule internals.
+// Public data only (the same fields the free AI Scan shows). No signal, zone, score or rule internals.
 // ---------------------------------------------------------------------------
 declare(strict_types=1);
 require_once __DIR__ . '/torus_engine.php';
@@ -116,7 +116,7 @@ function seo_head(string $title, string $desc, string $path, array $ld = [], str
 <?php endforeach; ?>
 <script src="/static/v2/consent.js?v=2"></script>
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=2">
-<script defer src="/static/v2/sitehead.js?v=6"></script>
+<script defer src="/static/v2/sitehead.js?v=7"></script>
 </head>
 <body class="site seo-page" data-page="seo">
 <header class="site-head">
@@ -130,7 +130,7 @@ function seo_head(string $title, string $desc, string $path, array $ld = [], str
 .site-nav .nav-menu a{white-space:nowrap;padding:6px 10px}
 </style>
 <details class="nav-dd"><summary>Markets</summary><div class="nav-menu">
-<a href="/bias/" data-p="seo">Bias <small>FREE</small></a>
+<a href="/bias/" data-p="seo">AI Scan <small>FREE</small></a>
 <a href="/movers/" data-p="movers">Movers</a>
 <a href="/news.html" data-p="news">News &amp; Impact <small>IMPACT</small></a>
 <a href="/insights.html" data-p="insights">Insights</a>
@@ -167,7 +167,7 @@ function seo_foot(): void { ?>
       <a class="logo" href="/" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
       <p>Live trend bias, market movers and a rule-based signal scanner for stocks, indices, futures, forex and crypto.</p>
     </div>
-    <div><h4>Free tools</h4><a href="/#bias">Bias Check</a><a href="/bias/">All symbols</a><a href="/movers/">Market movers today</a><a href="/news.html">News &amp; Impact</a></div>
+    <div><h4>Free tools</h4><a href="/#bias">AI Scan</a><a href="/bias/">All symbols</a><a href="/movers/">Market movers today</a><a href="/news.html">News &amp; Impact</a></div>
     <div><h4>Product</h4><a href="/scanner.html">Tier-1 Scanner</a><a href="/insights.html">Market Insights</a><a href="/pricing.html">Pricing</a></div>
     <div><h4>Company</h4><a href="/legal.php?p=contact">Contact us</a><a href="/legal.php?p=terms">Terms &amp; Conditions</a><a href="/legal.php?p=privacy">Privacy Policy</a><a href="/legal.php?p=disclaimer">Risk disclaimer</a></div>
   </div>

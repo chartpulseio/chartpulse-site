@@ -18,9 +18,9 @@ if ($slug === '') {   // ---------------- hub ----------------
     $n = count(t_symbols());
     seo_head("Free trend bias for $n stocks, indices, forex, crypto & commodities | ChartPulse",
         "Live trend bias from the ChartPulse engine for $n instruments across the US, UK, Europe, Gulf, India, forex, crypto and commodities. Free, no sign-up.",
-        '/bias/', [seo_crumbs([['Home', '/'], ['Bias', '/bias/']])]); ?>
+        '/bias/', [seo_crumbs([['Home', '/'], ['AI Scan', '/bias/']])]); ?>
 <main class="page wrap seo" id="main">
-  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span>/</span> <span>Bias</span></nav>
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span>/</span> <span>AI Scan</span></nav>
   <header class="seo-hero">
     <span class="free-tag">FREE · FOR EVERYONE</span>
     <h1>Trend bias for <?= $n ?> markets</h1>
@@ -47,7 +47,7 @@ if (!$sym) {   // old or unknown slug: try the ticker part, else 404
     foreach ($map as $k => $s) if (str_ends_with($slug, '-' . seo_slugify($s)) || $slug === seo_slugify($s)) { header('Location: ' . seo_url($s), true, 301); exit; }
     http_response_code(404);
     seo_head('Symbol not found | ChartPulse', 'This symbol is not covered by ChartPulse.', '/bias/', [], 'noindex,follow'); ?>
-<main class="page wrap seo" id="main"><h1>We do not cover that symbol</h1><p><a href="/bias/">See all symbols</a> or <a href="/#bias">search with Bias Check</a>.</p></main>
+<main class="page wrap seo" id="main"><h1>We do not cover that symbol</h1><p><a href="/bias/">See all symbols</a> or <a href="/#bias">search with AI Scan</a>.</p></main>
 <?php seo_foot(); exit;
 }
 
@@ -64,14 +64,14 @@ $news = seo_news($sym, 8);
 $rel = array_values(array_filter(array_keys(t_symbols()), fn($s) => t_symbols()[$s] === $mkt && $s !== $sym));
 usort($rel, fn($a, $b) => t_rank($a) <=> t_rank($b)); $rel = array_slice($rel, 0, 12);
 $upd = $r && !empty($r['ts']) ? gmdate('d M Y, H:i', (int)$r['ts']) . ' UTC' : '';
-$ld = [seo_crumbs([['Home', '/'], ['Bias', '/bias/'], [$name, $path]]),
+$ld = [seo_crumbs([['Home', '/'], ['AI Scan', '/bias/'], [$name, $path]]),
     ['@context' => 'https://schema.org', '@type' => 'WebPage', 'name' => $title, 'description' => $desc, 'url' => SEO_BASE . $path,
      'dateModified' => $r && !empty($r['ts']) ? gmdate('c', (int)$r['ts']) : null, 'isPartOf' => ['@type' => 'WebSite', 'name' => 'ChartPulse', 'url' => SEO_BASE . '/']]];
 seo_head($title, $desc, $path, $ld);
 $st = fn($l, $v, $c = '') => '<div><span>' . $l . '</span><b class="mono ' . $c . '">' . $v . '</b></div>';
 ?>
 <main class="page wrap seo" id="main">
-  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span>/</span> <a href="/bias/">Bias</a> <span>/</span> <span><?= seo_e($name) ?></span></nav>
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span>/</span> <a href="/bias/">AI Scan</a> <span>/</span> <span><?= seo_e($name) ?></span></nav>
   <article class="bc-card seo-card">
     <header class="bc-h">
       <div><h1><?= seo_e($name) ?> (<?= seo_e($sym) ?>) trend bias today</h1><small><?= seo_e($mkt) ?><?= $r && !empty($r['exchange']) ? ' · ' . seo_e($r['exchange']) : '' ?><?= $upd ? ' · updated ' . $upd : '' ?></small></div>

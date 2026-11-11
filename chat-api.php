@@ -261,7 +261,7 @@ function cp_output_unsafe(string $a): bool
 
 $REFUSAL_ADVICE = "I can't give trading advice — no buy, sell, hold, targets or stop-losses. "
     . "What I can do is explain what the engine currently reads and how to interpret it. "
-    . "Try the [Bias Check](/bias) for the current trend state, or ask me what a term like "
+    . "Try the [AI Scan](/bias) for the current trend state, or ask me what a term like "
     . "Pulse Sync or Ground score means.\n\n" . CP_DISCLAIMER;
 
 $REFUSAL_INJECTION = "I can only help with questions about ChartPulse — how the engine works, "
@@ -293,9 +293,9 @@ function cp_kb(): array
          . "It is an invalidation level for the pattern, not a stop-loss or a trade instruction."],
 
         ['bias', 'bias check, trend bias, daily direction, mixed bias',
-         "Bias Check shows the engine's current directional read for each tracked instrument, updated through the session. "
+         "AI Scan shows the engine's current directional read for each tracked instrument, updated through the session. "
          . "A Mixed bias means the checks disagree right now. It is a description of the current trend state, not a prediction. "
-         . "See [Bias Check](/bias)."],
+         . "See [AI Scan](/bias)."],
 
         ['movers', 'movers, biggest movers, gainers losers',
          "Market Movers lists the biggest daily movers across all tracked markets. See [Movers](/movers)."],

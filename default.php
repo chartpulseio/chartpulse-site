@@ -121,7 +121,7 @@
 .site-nav .nav-menu a{white-space:nowrap;padding:6px 10px}
 </style>
 <details class="nav-dd"><summary>Markets</summary><div class="nav-menu">
-<a href="/bias/" data-p="seo">Bias <small>FREE</small></a>
+<a href="/bias/" data-p="seo">AI Scan <small>FREE</small></a>
 <a href="/movers/" data-p="movers">Movers</a>
 <a href="/news.html" data-p="news">News &amp; Impact <small>IMPACT</small></a>
 <a href="/insights.html" data-p="insights">Insights</a>

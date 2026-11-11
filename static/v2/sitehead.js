@@ -6,7 +6,7 @@
     { t: "Scanner", href: "/scanner.html", match: ["/scanner.html", "/tier2.html"] },
     { t: "Day Drive", href: "/scanners/day-drive/" },
     { t: "Markets", cols: [{ items: [
-      { t: "Bias", d: "Trend direction for every symbol", href: "/bias/" },
+      { t: "AI Scan", d: "Trend direction for every symbol", href: "/bias/" },
       { t: "Movers", d: "Today's biggest moves, by market", href: "/movers/" },
       { t: "News & impact", d: "Headlines and what they moved", href: "/news.html" },
       { t: "Insights", d: "Breadth, volatility and momentum", href: "/insights.html" }

@@ -35,7 +35,7 @@ $title = $pages[$p] . ' · ' . $biz;
 <link rel="stylesheet" href="/static/v2/premium.css?v=2">
 <link rel="stylesheet" href="/static/v2/fonts.css?v=1">
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=2">
-<script defer src="/static/v2/sitehead.js?v=6"></script>
+<script defer src="/static/v2/sitehead.js?v=7"></script>
 </head>
 <body class="site legal-page" data-page="legal">
 <header class="site-head">
@@ -49,7 +49,7 @@ $title = $pages[$p] . ' · ' . $biz;
 .site-nav .nav-menu a{white-space:nowrap;padding:6px 10px}
 </style>
 <details class="nav-dd"><summary>Markets</summary><div class="nav-menu">
-<a href="/bias/" data-p="seo">Bias <small>FREE</small></a>
+<a href="/bias/" data-p="seo">AI Scan <small>FREE</small></a>
 <a href="/movers/" data-p="movers">Movers</a>
 <a href="/news.html" data-p="news">News &amp; Impact <small>IMPACT</small></a>
 <a href="/insights.html" data-p="insights">Insights</a>
