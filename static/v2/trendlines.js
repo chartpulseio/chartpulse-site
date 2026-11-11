@@ -6,7 +6,7 @@
   const esc = CP.esc || (s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])));
   const W = 640, H = 250, PL = 6, PR = 64, PT = 10, PB = 20, EXT = 14;
   const fmt = (v, d) => Number(v).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
-  const TFN = { "10m": "10 minute", "30m": "30 minute", "1H": "1 hour", "4H": "4 hour", "1D": "Daily", "1W": "Weekly" };
+  const TFN = { "5m": "5 minute", "10m": "10 minute", "15m": "15 minute", "30m": "30 minute", "1H": "1 hour", "4H": "4 hour", "1D": "Daily", "1W": "Weekly" };
   const STATE = { holding: "Holding", testing: "Being tested now", broken: "Broken" };
 
   function chart(f) {
@@ -49,16 +49,39 @@
   }
 
   const chip = (k, L) => L ? `<span class="tlx-chip ${k} ${L.state}"><i></i>${k === "res" ? "Resistance" : "Support"} · ${esc(L.dir)} · ${L.touches} touches · ${esc(STATE[L.state] || L.state)}</span>` : "";
+  const zone = z => z ? `<span class="tlx-zone ${esc(z.t)}">${z.t === "strong" ? "★ Strong zone" : "Major zone"} · ${esc((z.n || []).join(" + "))}</span>` : "";
+  const MTFN = ["30m", "1H", "4H", "1D", "1W"];
+  function mtf(m) {
+    if (!m || !m.d) return "";
+    const tag = m.bias ? `<b class="tlx-bias ${m.bias}">${m.bias === "CALL" ? "▲" : "▼"} ${m.bias} bias · ${m.bias === "CALL" ? m.up : m.down}/${m.n}</b>` : `<b class="tlx-bias none">No clear bias · ${m.up} up, ${m.down} down</b>`;
+    return `<div class="tlx-mtf"><span class="tlx-mtfl">MTF trend</span>${MTFN.map(k => { const d = m.d[k] || 0; return `<span class="tlx-mt ${d > 0 ? "u" : d < 0 ? "d" : "n"}">${k} ${d > 0 ? "▲" : d < 0 ? "▼" : "–"}</span>`; }).join("")}${tag}</div>`;
+  }
+  const EVN = { break_up: "broke above resistance", break_down: "broke below support", at_sup: "at support", at_res: "at resistance" };
+  function plan(p) {
+    const f = v => fmt(v, p.dec);
+    return `<article class="tlx-plan ${esc(p.dir)}">
+      <div class="tlx-ptop"><span class="tlx-pdir">${p.dir === "CALL" ? "▲ CALL" : "▼ PUT"}</span><b>${p.view === "swing" ? "Swing plan" : "Intraday plan"} · ${esc(p.tf)} ${esc(p.kind)}</b><span class="tlx-q">Quality ${p.q}/100</span></div>
+      <p class="tlx-pwhy">${esc(p.pattern)}, ${esc(EVN[p.e] || "")}. ${esc(p.read || "")}</p>
+      ${zone(p.zone)}
+      <table><tr><td>Entry<small>${esc(p.how)}</small></td><td>${f(p.entry)}</td></tr>
+      <tr><td>Stop-loss<small>${esc(p.exit)} Risk ${p.risk_pct}% of price.</small></td><td class="dn">${f(p.sl)}</td></tr>
+      <tr><td>Target 1<small>1.5 × the risk. Take part of the position off here.</small></td><td class="up">${f(p.t1)}</td></tr>
+      <tr><td>Target 2<small>${esc(p.t2why)} (${p.rr2} × the risk).</small></td><td class="up">${f(p.t2)}</td></tr></table>
+    </article>`;
+  }
 
   function html(d) {
     if (d.error) return `<p class="tlx-empty">${esc(d.error)}</p>`;
     const fr = d.frames || [];
-    let h = `<header class="tlx-head"><div><h2>Trend lines on the chart right now</h2><p class="tlx-sub">${esc(d.summary || "")}</p></div><span class="tlx-n">${fr.length} timeframe${fr.length === 1 ? "" : "s"}</span></header>`;
+    let h = `<header class="tlx-head"><div><h2>Trend lines on the chart right now</h2><p class="tlx-sub">${esc(d.summary || "")}</p></div><span class="tlx-n">${fr.length} timeframe${fr.length === 1 ? "" : "s"}</span></header>` + mtf(d.mtf);
+    const pl = d.plans || [];
+    if (pl.length) h += `<div class="tlx-plans">${pl.map(plan).join("")}</div><p class="tlx-note">Entry, stop and targets are worked out by rule from the line and the chart's ATR, only for signals that agree with the MTF bias. No win rate is attached: these rules have not been measured.</p>`;
+    else if (fr.length) h += `<p class="tlx-note">No trade plan right now: no line with three or more touches is being broken or tested in the direction of the MTF bias.</p>`;
     if (!fr.length) return h;
     h += `<div class="tlx-grid2">` + fr.map(f => `<article class="tlx-card lean-${esc(f.lean)}">
       <div class="tlx-top"><span class="tlx-tf">${esc(f.tf)}</span><b>${esc(f.pattern)}</b><em>${esc(TFN[f.tf] || f.tf)} chart</em></div>
       ${chart(f)}
-      <div class="tlx-chips">${chip("res", f.res)}${chip("sup", f.sup)}</div>
+      <div class="tlx-chips">${chip("res", f.res)}${f.res ? zone(f.res.zone) : ""}${chip("sup", f.sup)}${f.sup ? zone(f.sup.zone) : ""}</div>
       <ul class="tlx-txt">${(f.text || []).map(t => `<li>${esc(t)}</li>`).join("")}</ul>
     </article>`).join("") + `</div><p class="tlx-note">Lines are drawn by rule from swing highs and lows: a line is kept only while no candle has closed through it. They describe the chart; they are not a forecast or advice.</p>`;
     return h;

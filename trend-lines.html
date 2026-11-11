@@ -3,23 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Trend Line Scanner: Breakouts on 5 Timeframes · ChartPulse</title>
-<meta name="description" content="Free trend line scanner for 970+ stocks, forex, crypto and commodities: trend line breakouts and tests on weekly, daily, 4-hour, 1-hour and 30-minute charts.">
+<title>Trend Line Scanner: Breakouts on 7 Timeframes · ChartPulse</title>
+<meta name="description" content="Free trend line scanner for 970+ stocks, forex, crypto and commodities: trend line breakouts and tests from weekly down to 10-minute charts, ranked CALL and PUT signals.">
 <meta name="theme-color" content="#050506">
 <link rel="canonical" href="https://chartpulse.io/scanners/trend-lines/">
 <meta property="og:site_name" content="ChartPulse">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Trend Line Scanner: Breakouts on 5 Timeframes · ChartPulse">
-<meta property="og:description" content="Free trend line scanner for 970+ stocks, forex, crypto and commodities: trend line breakouts and tests on weekly, daily, 4-hour, 1-hour and 30-minute charts.">
+<meta property="og:title" content="Trend Line Scanner: Breakouts on 7 Timeframes · ChartPulse">
+<meta property="og:description" content="Free trend line scanner for 970+ stocks, forex, crypto and commodities: trend line breakouts and tests from weekly down to 10-minute charts, ranked CALL and PUT signals.">
 <meta property="og:url" content="https://chartpulse.io/scanners/trend-lines/">
 <meta property="og:image" content="https://chartpulse.io/static/og.jpg">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Trend Line Scanner: Breakouts on 5 Timeframes · ChartPulse">
-<meta name="twitter:description" content="Free trend line scanner for 970+ markets: trend line breakouts and tests on weekly, daily, 4-hour, 1-hour and 30-minute charts.">
+<meta name="twitter:title" content="Trend Line Scanner: Breakouts on 7 Timeframes · ChartPulse">
+<meta name="twitter:description" content="Free trend line scanner for 970+ markets: trend line breakouts and tests from weekly down to 10-minute charts, ranked CALL and PUT signals.">
 <meta name="twitter:image" content="https://chartpulse.io/static/og.jpg">
 <link rel="stylesheet" href="/static/v2/fonts.css?v=1">
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=2">
-<link rel="stylesheet" href="/static/v2/trendlines.css?v=1">
+<link rel="stylesheet" href="/static/v2/trendlines.css?v=2">
 <script defer src="/static/v2/sitehead.js?v=4"></script>
 <script type="application/ld+json" id="cp-ld">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"Trend Lines","item":"https://chartpulse.io/scanners/trend-lines/"}]},{"@type":"WebApplication","name":"Trend Line Scanner","url":"https://chartpulse.io/scanners/trend-lines/","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"Trend line breakouts and tests on weekly, daily, 4-hour, 1-hour and 30-minute charts for 970+ markets.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@id":"https://chartpulse.io/#org"}}]}</script>
 <style>
@@ -160,6 +160,22 @@ a.dd-row:hover{background:var(--card2)}
 .tls-cell small{font:11px var(--mono)}
 .tls-cell small.t{color:var(--gold)}.tls-cell small.u{color:var(--up)}.tls-cell small.d{color:var(--dn)}
 .tls-tfh{text-align:center}
+.dd-row{grid-template-columns:36px minmax(140px,1.2fr) 112px repeat(var(--n,4),minmax(84px,1fr)) minmax(200px,1.9fr) 58px}
+.tls-view button{font-weight:600}
+.tls-mtf{display:block}
+.tls-mtf .sq{display:flex;gap:3px;margin-bottom:5px}
+.tls-mtf .sq i{flex:1;height:8px;border-radius:2px;background:rgba(255,255,255,.1)}
+.tls-mtf .sq i.u{background:var(--up)}.tls-mtf .sq i.d{background:var(--dn)}
+.tls-mtf b{font:600 12px var(--mono)}
+.tls-mtf b.CALL{color:var(--up)}.tls-mtf b.PUT{color:var(--dn)}.tls-mtf b.none{color:var(--mute);font-weight:400}
+.tls-call{display:inline-block;margin-right:6px;padding:2px 8px;border-radius:6px;font:700 12px/1.5 var(--mono)}
+.tls-call.CALL{background:var(--up);color:#00130f}.tls-call.PUT{background:var(--dn);color:#1c0003}.tls-call.x{border:1px solid var(--line2);color:var(--mute);font-weight:500}
+.tls-z{display:inline-block;margin-right:6px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid rgba(233,196,106,.5);color:var(--gold)}
+.tls-z.strong{background:var(--gold);border-color:var(--gold);color:#1a1300}
+.tls-cell i.zd{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-left:5px;vertical-align:middle}
+.tls-q{font:600 17px var(--mono);text-align:right}
+.tls-q small{display:block;color:var(--mute);font:400 10px var(--mono)}
+.tls-q.a{color:var(--up)}.tls-q.b{color:var(--gold)}.tls-q.c{color:var(--dim)}
 .tls-head b{font-weight:600}
 .tls-ev{display:inline-block;margin:0 6px 4px 0;padding:2px 8px;border-radius:999px;border:1px solid var(--line2);font-size:12px;white-space:nowrap}
 .tls-ev.break_up{border-color:var(--up);color:var(--up)}.tls-ev.break_down{border-color:var(--dn);color:var(--dn)}.tls-ev.at_res,.tls-ev.at_sup{border-color:var(--gold);color:var(--gold)}
@@ -167,8 +183,10 @@ a.dd-row:hover{background:var(--card2)}
 .tls-prog i{display:block;height:100%;background:var(--gold);width:0}
 .dd-tiles.four{grid-template-columns:repeat(5,minmax(0,1fr))}
 @media (max-width:980px){
-  .dd-row{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-  .dd-row .dd-nm,.dd-row .dd-next{grid-column:1/-1;grid-row:auto}
+  .dd-row{grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:6px}
+  .dd-row .dd-nm,.dd-row .dd-next,.dd-row .tls-mtf{grid-column:1/-1;grid-row:auto}
+  .dd-row .tls-q{position:absolute;right:14px;top:14px}.dd-row{position:relative}
+  .tls-mtf .sq{max-width:160px}
   .tls-cell{padding:5px 6px;min-height:40px}.tls-cell b{font-size:11px}
   .tls-cell::before{content:attr(data-tf);display:block;font:10px var(--mono);color:var(--mute)}
 }
@@ -178,24 +196,32 @@ a.dd-row:hover{background:var(--card2)}
 <main class="dd" id="tlApp">
   <div class="dd-eyebrow">Free scanner</div>
   <h1>Trend Line Scanner</h1>
-  <p class="dd-lede">Every market is checked on five charts: weekly, daily, 4-hour, 1-hour and 30-minute. The scanner draws the trend line each chart is respecting, then tells you where price has just <b>broken</b> a line or is <b>testing</b> one right now. Tap any row to see the charts.</p>
+  <p class="dd-lede">Every market is checked on seven charts, from weekly down to 10-minute. The scanner draws the trend line each chart is respecting, finds where price has just <b>broken</b> a line or is <b>testing</b> one, and ranks the CALL and PUT signals that agree with the bigger trend. Tap a row for the charts, entry, stop and targets.</p>
   <ol class="dd-steps">
-    <li><span>STEP 1</span><b>Find the line</b><p>Swing highs make a resistance line, swing lows make a support line. A line needs at least two touches.</p></li>
-    <li><span>STEP 2</span><b>Keep only real ones</b><p>A line is dropped as soon as a candle closes through it. More touches rank higher.</p></li>
-    <li><span>STEP 3</span><b>Read price now</b><p>Holding, being tested, or broken in the last three candles.</p></li>
-    <li><span>THEN</span><b>Rank</b><p>Breakouts first, then tests. Bigger charts and more touches count for more.</p></li>
+    <li><span>STEP 1</span><b>Find the line</b><p>Swing highs make a resistance line, swing lows a support line. A line dies when a candle closes through it.</p></li>
+    <li><span>STEP 2</span><b>Spot the event</b><p>On lines with three or more touches: a clear break, or price sitting on the line now.</p></li>
+    <li><span>STEP 3</span><b>Check the bias</b><p>MTF trend on 30m, 1H, 4H, 1D, 1W. A CALL or PUT is given only when 75% or more of them agree with it.</p></li>
+    <li><span>THEN</span><b>Rank by quality</b><p>Bias agreement, a key zone on the line, touches, timeframe and pattern add up to a score out of 100.</p></li>
   </ol>
+  <div class="dd-bar" style="margin-bottom:0">
+    <div class="dd-tabs tls-view" id="tlView" role="group" aria-label="View">
+      <button type="button" data-v="swing" class="on">Swing · 1W 1D 4H 1H</button><button type="button" data-v="intra">Intraday · 30m 15m 10m</button>
+    </div>
+  </div>
   <div class="dd-tiles four" id="tlTiles"></div>
   <div class="tls-prog" id="tlProg" hidden><i></i></div>
   <div class="dd-bar">
-    <div class="dd-tabs" id="tlEv" role="group" aria-label="What is happening">
-      <button type="button" data-e="all" class="on">Everything</button><button type="button" data-e="break_up">Broke above resistance</button><button type="button" data-e="break_down">Broke below support</button><button type="button" data-e="at_res">At resistance now</button><button type="button" data-e="at_sup">At support now</button>
+    <div class="dd-tabs" id="tlDir" role="group" aria-label="Signal">
+      <button type="button" data-d="best" class="on">Best signals</button><button type="button" data-d="CALL">CALL only</button><button type="button" data-d="PUT">PUT only</button><button type="button" data-d="all">All markets</button>
+    </div>
+    <div class="dd-tabs" id="tlEv" role="group" aria-label="Event">
+      <button type="button" data-e="all" class="on">Any event</button><button type="button" data-e="break">Breakouts</button><button type="button" data-e="at">At a line</button>
+    </div>
+    <div class="dd-tabs" id="tlZone" role="group" aria-label="Zone">
+      <button type="button" data-z="all" class="on">Any</button><button type="button" data-z="zone">On a major / strong zone</button>
     </div>
   </div>
   <div class="dd-bar" style="margin-top:0">
-    <div class="dd-tabs" id="tlTf" role="group" aria-label="Timeframe">
-      <button type="button" data-t="any" class="on">Any chart</button><button type="button" data-t="1W">Weekly</button><button type="button" data-t="1D">Daily</button><button type="button" data-t="4H">4 hour</button><button type="button" data-t="1H">1 hour</button><button type="button" data-t="30m">30 min</button>
-    </div>
     <div class="dd-tabs" id="tlMkt" role="group" aria-label="Market">
       <button type="button" data-m="all" class="on">All</button><button type="button" data-m="forex">Forex</button><button type="button" data-m="crypto">Crypto</button><button type="button" data-m="other">Stocks &amp; futures</button>
     </div>
@@ -214,16 +240,17 @@ a.dd-row:hover{background:var(--card2)}
     <dl>
       <dt>Channel</dt><dd>Two lines sloping the same way. Falling channel: sellers in control. Rising channel: buyers in control.</dd>
       <dt>Triangle and wedge</dt><dd>Two lines closing in on each other. Price is being squeezed and usually leaves with a strong move.</dd>
-      <dt>Testing</dt><dd>Price is at the line right now. It either rejects there or breaks through.</dd>
+      <dt>Major / strong zone</dt><dd>The line sits on a key level: today's high or low, previous day high, low or close, weekly or monthly high or low, a pivot or a Fibonacci level. One match is a major zone, two or more a strong zone.</dd>
+      <dt>MTF bias</dt><dd>Trend direction on 30m, 1H, 4H, 1D and 1W. CALL bias when at least 4 of 5 point up, PUT bias when at least 4 of 5 point down (3 of 4 where there is no 30m data).</dd>
     </dl>
   </section>
-  <p class="dd-foot">Lines are drawn by rule from swing highs and lows on the last 140 candles of each chart. They describe the chart; they are not a forecast. The 30-minute chart is shown for markets with recent intraday data. Education and demonstration only, not financial advice.</p>
+  <p class="dd-foot">Lines are drawn by rule from swing highs and lows on the last 140 candles of each chart. They describe the chart; they are not a forecast. The quality score is a rule-based checklist total, not a win probability; it has not been measured. Intraday charts are shown for markets with recent intraday data. Education and demonstration only, not financial advice.</p>
 </main>
 <footer class="dd-ftr"><nav aria-label="Site links">
 <a href="/">ChartPulse home</a><a href="/scanner.html">Tier-1 Scanner</a><a href="/scanners/day-drive/">Day Drive Scanner</a><a href="/scanners/">All free scanners</a><a href="/scanners/bottom-reversal/">Bottom Reversal Scanner</a><a href="/scanners/ema-200/">200 EMA Scanner</a><a href="/desk/">AI Scan</a><a href="/backtesting/">Backtesting</a><a href="/bias/">Market bias</a><a href="/movers/">Market movers</a><a href="/pricing.html">Pricing</a><a href="/legal/disclaimer">Risk disclaimer</a>
 </nav></footer>
 
-<script src="/static/v2/trendlines.js?v=2"></script>
+<script src="/static/v2/trendlines.js?v=3"></script>
 <script>
 (() => {
 "use strict";
@@ -231,51 +258,68 @@ const $ = (s, r = document) => r.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const BASE = "/scanners/trend-lines/";
 const app = $("#tlApp"), Q = new URLSearchParams(location.search);
-const TFS = ["1W", "1D", "4H", "1H", "30m"];
-const TFN = { "1W": "weekly", "1D": "daily", "4H": "4-hour", "1H": "1-hour", "30m": "30-min" };
-const EV = { break_up: "Broke above", break_down: "Broke below", at_res: "At", at_sup: "At" };
-const EVL = { break_up: "resistance", break_down: "support", at_res: "resistance", at_sup: "support" };
+const VIEWS = { swing: ["1W", "1D", "4H", "1H"], intra: ["30m", "15m", "10m"] };
+const MTF = ["30m", "1H", "4H", "1D", "1W"];
+const TFN = { "1W": "weekly", "1D": "daily", "4H": "4-hour", "1H": "1-hour", "30m": "30-min", "15m": "15-min", "10m": "10-min" };
+const EVT = { break_up: "Broke above {tf} resistance", break_down: "Broke below {tf} support", at_res: "At {tf} resistance", at_sup: "At {tf} support" };
 const fmt = (v, d) => Number(v).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 const ago = t => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); return s < 60 ? `${s}s ago` : `${Math.round(s / 60)} min ago`; };
-const L = { rows: [], meta: {}, at: 0, ev: "all", tf: "any", mkt: "all", q: "", show: 60, timer: null };
+const L = { rows: [], meta: {}, at: 0, view: Q.get("view") === "intra" ? "intra" : "swing", dir: "best", ev: "all", zone: "all", mkt: "all", q: "", show: 60, timer: null };
+const best = r => (r.best || {})[L.view] || null;
 
 function cell(r, k) {
   const c = r.tf[k];
   if (!c) return `<span class="tls-cell none" data-tf="${k}">–</span>`;
   let cls = c.lean, tag = "";
-  const st = s => c[s] && c[s].ev;
-  if (st("res") === "break") { cls += " ev-up"; tag = `<small class="u">▲ broke up</small>`; }
-  else if (st("sup") === "break") { cls += " ev-down"; tag = `<small class="d">▼ broke down</small>`; }
-  else if (st("res") === "test") { cls += " ev-test"; tag = `<small class="t">at resistance</small>`; }
-  else if (st("sup") === "test") { cls += " ev-test"; tag = `<small class="t">at support</small>`; }
+  const ev = s => c[s] && c[s].ev, zd = (c.res && c.res.z) || (c.sup && c.sup.z) ? `<i class="zd" title="A line here sits on a key zone"></i>` : "";
+  if (ev("res") === "break") { cls += " ev-up"; tag = `<small class="u">▲ broke up</small>`; }
+  else if (ev("sup") === "break") { cls += " ev-down"; tag = `<small class="d">▼ broke down</small>`; }
+  else if (ev("res") === "test") { cls += " ev-test"; tag = `<small class="t">at resistance</small>`; }
+  else if (ev("sup") === "test") { cls += " ev-test"; tag = `<small class="t">at support</small>`; }
   else tag = `<small>${(c.res ? c.res.n : 0) + (c.sup ? c.sup.n : 0)} touches</small>`;
-  return `<span class="tls-cell ${cls}" data-tf="${k}"><b>${esc(c.p)}</b>${tag}</span>`;
+  return `<span class="tls-cell ${cls}" data-tf="${k}"><b>${esc(c.p)}</b>${tag}${zd}</span>`;
 }
-function headline(r) {
-  const ev = (r.ev || []).filter(e => (L.tf === "any" || e.tf === L.tf) && (L.ev === "all" || e.e === L.ev));
-  if (!ev.length) return `<span>Lines are holding on ${Object.keys(r.tf).length} chart${Object.keys(r.tf).length === 1 ? "" : "s"}. No break or test right now.</span>`;
-  return ev.slice(0, 3).map(e => `<span class="tls-ev ${e.e}">${EV[e.e]} ${TFN[e.tf]} ${EVL[e.e]} · ${e.n} touches · ${fmt(e.lv, r.dec)}</span>`).join("") + (ev.length > 3 ? `<span class="tls-ev">+${ev.length - 3} more</span>` : "");
+function mtf(r) {
+  const m = r.mtf || { d: {} };
+  const lab = m.bias ? `<b class="${m.bias}">${m.bias === "CALL" ? "▲" : "▼"} ${m.bias} ${m.bias === "CALL" ? m.up : m.down}/${m.n}</b>` : `<b class="none">mixed ${m.up || 0}▲ ${m.down || 0}▼</b>`;
+  return `<span class="tls-mtf" title="MTF trend: ${MTF.map(k => k + " " + ((m.d[k] || 0) > 0 ? "up" : (m.d[k] || 0) < 0 ? "down" : "n/a")).join(", ")}"><span class="sq">${MTF.map(k => `<i class="${(m.d[k] || 0) > 0 ? "u" : (m.d[k] || 0) < 0 ? "d" : ""}"></i>`).join("")}</span>${lab}</span>`;
 }
+function signal(r) {
+  const b = best(r);
+  if (!b) return `<span>No break or test on a 3-touch line right now.</span>`;
+  const call = b.call ? `<span class="tls-call ${b.call}">${b.call === "CALL" ? "▲ CALL" : "▼ PUT"}</span>` : `<span class="tls-call x">${b.against ? "against bias" : "no clear bias"}</span>`;
+  const z = b.zone ? `<span class="tls-z ${b.zone.t}">${b.zone.t === "strong" ? "★ Strong zone" : "Major zone"} · ${esc(b.zone.n.join(" + "))}</span>` : "";
+  return `${call}${z}<span style="display:block;margin-top:4px">${EVT[b.e].replace("{tf}", TFN[b.tf])} · ${b.n} touches · ${fmt(b.lv, r.dec)}${b.more ? ` · +${b.more} more chart${b.more > 1 ? "s" : ""} agree` : ""}</span>`;
+}
+function qcell(r) { const b = best(r); if (!b) return `<span class="tls-q c">–</span>`; return `<span class="tls-q ${b.q >= 75 ? "a" : b.q >= 55 ? "b" : "c"}">${b.q}<small>quality</small></span>`; }
 function paint() {
-  const all = L.rows, c = (L.meta.counts || {});
-  $("#tlTiles").innerHTML = [["hot", c.break_up || 0, "Broke above resistance"], ["", c.break_down || 0, "Broke below support"], ["warm", c.at_res || 0, "At resistance now"], ["warm", c.at_sup || 0, "At support now"], ["", all.length, "Markets with a trend line"]]
-    .map(([k, v, t]) => `<div class="dd-tile ${k}"><div class="v"${t === "Broke below support" ? ' style="color:var(--dn)"' : ""}>${v}</div><div class="k">${t}</div></div>`).join("");
+  const tfs = VIEWS[L.view], all = L.rows.filter(r => tfs.some(k => r.tf[k]));
+  const sig = all.filter(r => best(r) && best(r).call);
+  $("#tlTiles").innerHTML = [["hot", sig.filter(r => best(r).call === "CALL").length, "CALL signals"], ["", sig.filter(r => best(r).call === "PUT").length, "PUT signals"],
+    ["warm", sig.filter(r => best(r).zone && best(r).zone.t === "strong").length, "On a strong zone"], ["warm", sig.filter(r => best(r).zone && best(r).zone.t === "major").length, "On a major zone"], ["", all.length, "Markets in this view"]]
+    .map(([k, v, t]) => `<div class="dd-tile ${k}"><div class="v"${t === "PUT signals" ? ' style="color:var(--dn)"' : ""}>${v}</div><div class="k">${t}</div></div>`).join("");
   const p = L.meta.progress ?? 1; $("#tlProg").hidden = p >= 1; $("#tlProg").firstElementChild.style.width = Math.round(p * 100) + "%";
   let rows = all.filter(r => L.mkt === "all" || r.class === L.mkt);
-  if (L.tf !== "any") rows = rows.filter(r => r.tf[L.tf]);
-  if (L.ev !== "all") rows = rows.filter(r => (r.ev || []).some(e => e.e === L.ev && (L.tf === "any" || e.tf === L.tf)));
+  if (L.dir === "best") rows = rows.filter(r => best(r) && best(r).call);
+  else if (L.dir !== "all") rows = rows.filter(r => best(r) && best(r).call === L.dir);
+  if (L.ev !== "all") rows = rows.filter(r => best(r) && best(r).e.startsWith(L.ev));
+  if (L.zone === "zone") rows = rows.filter(r => best(r) && best(r).zone);
   if (L.q) rows = rows.filter(r => (r.name + " " + r.symbol).toLowerCase().includes(L.q));
-  const head = `<div class="dd-row head"><span>#</span><span>Market</span>${TFS.map(k => `<span class="tls-tfh">${k}</span>`).join("")}<span>What is happening</span><span></span></div>`;
+  const key = r => { const b = best(r); return b ? (b.call ? 1000 : 0) + b.q : -1; };
+  rows.sort((a, b) => key(b) - key(a));
+  $("#tlList").style.setProperty("--n", tfs.length);
+  const head = `<div class="dd-row head"><span>#</span><span>Market</span><span>MTF trend</span>${tfs.map(k => `<span class="tls-tfh">${k}</span>`).join("")}<span>Best signal</span><span style="text-align:right">Quality</span></div>`;
   $("#tlList").innerHTML = rows.length ? head + rows.slice(0, L.show).map((r, i) => `
     <a class="dd-row" href="${BASE}?s=${encodeURIComponent(r.symbol)}">
       <span class="dd-rk">${i + 1}</span>
       <span class="dd-nm"><b>${esc(r.name)}</b><small>${esc(r.symbol)} · ${esc(r.market || "")} · ${fmt(r.price, r.dec)}</small></span>
-      ${TFS.map(k => cell(r, k)).join("")}
-      <span class="dd-next">${headline(r)}</span>
-      <span class="dd-go" aria-hidden="true">›</span>
-    </a>`).join("") : `<p class="dd-empty">${all.length ? "Nothing matches this filter right now." : "Scanning every market…"}</p>`;
+      ${mtf(r)}
+      ${tfs.map(k => cell(r, k)).join("")}
+      <span class="dd-next">${signal(r)}</span>
+      ${qcell(r)}
+    </a>`).join("") : `<p class="dd-empty">${L.rows.length ? "Nothing matches this filter right now." : "Scanning every market…"}</p>`;
   $("#tlMore").hidden = rows.length <= L.show;
-  $("#tlUpd").textContent = L.at ? `${rows.length} markets shown · ${L.meta.scanned || 0} of ${L.meta.universe || 0} scanned${p < 1 ? " (still scanning)" : ""} · updated ${ago(L.at)}` : "";
+  $("#tlUpd").textContent = L.at ? `${rows.length} markets shown · ${L.meta.scanned || 0} of ${L.meta.universe || 0} scanned${p < 1 ? " (still scanning)" : ""} · updated ${ago(L.at)} · sorted by quality, best first` : "";
 }
 async function load() {
   let wait = 60000;
@@ -288,18 +332,19 @@ async function load() {
   clearTimeout(L.timer); L.timer = setTimeout(load, wait);
 }
 function tabs(id, key, attr) {
-  $(id).addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; L[key] = b.dataset[attr]; [...$(id).children].forEach(x => x.classList.toggle("on", x === b)); L.show = 60; paint(); });
+  const el = $(id); [...el.children].forEach(x => x.classList.toggle("on", x.dataset[attr] === L[key]));
+  el.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; L[key] = b.dataset[attr]; [...el.children].forEach(x => x.classList.toggle("on", x === b)); L.show = 60; paint(); });
 }
 function detail(sym) {
   app.innerHTML = `<a class="dd-back" href="${BASE}">‹ Trend Line Scanner</a>
     <div class="dd-eyebrow">Trend lines</div><h1 id="tlName">${esc(sym)}</h1>
-    <p class="dd-lede">Every chart that is drawing a trend line right now, with the line on it and what it means.</p>
+    <p class="dd-lede">MTF trend, the trade plan, and every chart that is drawing a trend line right now.</p>
     <div class="dd-links"><a class="pri" href="/desk/?s=${encodeURIComponent(sym)}">Run AI Scan</a><a href="/scanners/day-drive/?s=${encodeURIComponent(sym)}">Day Drive checks</a><a href="${BASE}">Back to the list</a></div>
     <div id="tlPanel"></div>`;
   CP.trendlines.mount($("#tlPanel"), sym, d => { if (d && d.name) { $("#tlName").textContent = d.name; document.title = `${d.name} trend lines · ChartPulse`; } });
 }
 if (Q.get("s")) detail(Q.get("s"));
-else { tabs("#tlEv", "ev", "e"); tabs("#tlTf", "tf", "t"); tabs("#tlMkt", "mkt", "m");
+else { tabs("#tlView", "view", "v"); tabs("#tlDir", "dir", "d"); tabs("#tlEv", "ev", "e"); tabs("#tlZone", "zone", "z"); tabs("#tlMkt", "mkt", "m");
   $("#tlQ").addEventListener("input", e => { L.q = e.target.value.trim().toLowerCase(); L.show = 60; paint(); });
   $("#tlMore").addEventListener("click", () => { L.show += 60; paint(); });
   load(); }
