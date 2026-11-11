@@ -19,7 +19,7 @@
 <meta name="twitter:image" content="https://chartpulse.io/static/og.jpg">
 <link rel="stylesheet" href="/static/v2/fonts.css?v=1">
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=2">
-<link rel="stylesheet" href="/static/v2/trendlines.css?v=2">
+<link rel="stylesheet" href="/static/v2/trendlines.css?v=3">
 <script defer src="/static/v2/sitehead.js?v=4"></script>
 <script type="application/ld+json" id="cp-ld">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"Trend Lines","item":"https://chartpulse.io/scanners/trend-lines/"}]},{"@type":"WebApplication","name":"Trend Line Scanner","url":"https://chartpulse.io/scanners/trend-lines/","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"Trend line breakouts and tests on weekly, daily, 4-hour, 1-hour and 30-minute charts for 970+ markets.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@id":"https://chartpulse.io/#org"}}]}</script>
 <style>
@@ -160,7 +160,7 @@ a.dd-row:hover{background:var(--card2)}
 .tls-cell small{font:11px var(--mono)}
 .tls-cell small.t{color:var(--gold)}.tls-cell small.u{color:var(--up)}.tls-cell small.d{color:var(--dn)}
 .tls-tfh{text-align:center}
-.dd-row{grid-template-columns:36px minmax(140px,1.2fr) 112px repeat(var(--n,4),minmax(84px,1fr)) minmax(200px,1.9fr) 58px}
+.dd-row{grid-template-columns:36px minmax(140px,1.2fr) 112px repeat(var(--n,4),minmax(84px,1fr)) minmax(230px,2.2fr) 84px}
 .tls-view button{font-weight:600}
 .tls-mtf{display:block}
 .tls-mtf .sq{display:flex;gap:3px;margin-bottom:5px}
@@ -173,9 +173,15 @@ a.dd-row:hover{background:var(--card2)}
 .tls-z{display:inline-block;margin-right:6px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid rgba(233,196,106,.5);color:var(--gold)}
 .tls-z.strong{background:var(--gold);border-color:var(--gold);color:#1a1300}
 .tls-cell i.zd{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-left:5px;vertical-align:middle}
-.tls-q{font:600 17px var(--mono);text-align:right}
-.tls-q small{display:block;color:var(--mute);font:400 10px var(--mono)}
-.tls-q.a{color:var(--up)}.tls-q.b{color:var(--gold)}.tls-q.c{color:var(--dim)}
+.tls-q{font:600 12px/1.25 var(--sans);text-align:center;padding:5px 8px;border-radius:8px;border:1px solid var(--line2);color:var(--dim)}
+.tls-q.a{background:var(--up);border-color:var(--up);color:#00130f}.tls-q.b{border-color:var(--gold);color:var(--gold)}
+.tls-fx{display:flex;flex-wrap:wrap;gap:5px}
+.tls-fx i{font-style:normal;font-size:11.5px;line-height:1.5;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--mute);white-space:nowrap}
+.tls-fx i.g{border-color:rgba(34,171,148,.45);color:var(--up)}.tls-fx i.w{border-color:rgba(247,82,95,.5);color:var(--dn)}
+.dd-how{margin:22px 0 0;padding:16px 18px;border:1px solid var(--line2);border-radius:14px;background:var(--card)}
+.dd-how h2{margin:0 0 8px;font-size:16px}
+.dd-how ol{margin:0;padding-left:20px;color:var(--dim);font-size:14.5px;line-height:1.6}
+.dd-how b{color:var(--ink)}
 .tls-head b{font-weight:600}
 .tls-ev{display:inline-block;margin:0 6px 4px 0;padding:2px 8px;border-radius:999px;border:1px solid var(--line2);font-size:12px;white-space:nowrap}
 .tls-ev.break_up{border-color:var(--up);color:var(--up)}.tls-ev.break_down{border-color:var(--dn);color:var(--dn)}.tls-ev.at_res,.tls-ev.at_sup{border-color:var(--gold);color:var(--gold)}
@@ -185,7 +191,7 @@ a.dd-row:hover{background:var(--card2)}
 @media (max-width:980px){
   .dd-row{grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:6px}
   .dd-row .dd-nm,.dd-row .dd-next,.dd-row .tls-mtf{grid-column:1/-1;grid-row:auto}
-  .dd-row .tls-q{position:absolute;right:14px;top:14px}.dd-row{position:relative}
+  .dd-row .tls-q{position:absolute;right:14px;top:14px;padding:4px 10px}.dd-row{position:relative}
   .tls-mtf .sq{max-width:160px}
   .tls-cell{padding:5px 6px;min-height:40px}.tls-cell b{font-size:11px}
   .tls-cell::before{content:attr(data-tf);display:block;font:10px var(--mono);color:var(--mute)}
@@ -201,8 +207,17 @@ a.dd-row:hover{background:var(--card2)}
     <li><span>STEP 1</span><b>Find the line</b><p>Swing highs make a resistance line, swing lows a support line. A line dies when a candle closes through it.</p></li>
     <li><span>STEP 2</span><b>Spot the event</b><p>On lines with three or more touches: a clear break, or price sitting on the line now.</p></li>
     <li><span>STEP 3</span><b>Check the bias</b><p>MTF trend on 30m, 1H, 4H, 1D, 1W. A CALL or PUT is given only when 75% or more of them agree with it.</p></li>
-    <li><span>THEN</span><b>Rank by quality</b><p>Bias agreement, a key zone on the line, touches, timeframe and pattern add up to a score out of 100.</p></li>
+    <li><span>THEN</span><b>Best setups first</b><p>Each row shows its quality factors as labels: trend, zone, breakout or test, touches, chart and pattern. More green ticks rank higher.</p></li>
   </ol>
+  <section class="dd-how">
+    <h2>New to this? Use it in four steps</h2>
+    <ol>
+      <li>Stay on <b>Top setups only</b>. These have the trend with them, a key zone on the line and a well-tested line.</li>
+      <li>Take only the side shown: <b>CALL</b> means look to buy, <b>PUT</b> means look to sell. Never trade against it.</li>
+      <li>Open the row. The <b>trade plan</b> gives the entry, the stop-loss and two targets. Do not enter before the entry condition happens.</li>
+      <li>Risk a small, fixed part of your account on each trade, and always place the stop-loss.</li>
+    </ol>
+  </section>
   <div class="dd-bar" style="margin-bottom:0">
     <div class="dd-tabs tls-view" id="tlView" role="group" aria-label="View">
       <button type="button" data-v="swing" class="on">Swing · 1W 1D 4H 1H</button><button type="button" data-v="intra">Intraday · 30m 15m 10m</button>
@@ -212,7 +227,7 @@ a.dd-row:hover{background:var(--card2)}
   <div class="tls-prog" id="tlProg" hidden><i></i></div>
   <div class="dd-bar">
     <div class="dd-tabs" id="tlDir" role="group" aria-label="Signal">
-      <button type="button" data-d="best" class="on">Best signals</button><button type="button" data-d="CALL">CALL only</button><button type="button" data-d="PUT">PUT only</button><button type="button" data-d="all">All markets</button>
+      <button type="button" data-d="best" class="on">All signals</button><button type="button" data-d="top">Top setups only</button><button type="button" data-d="CALL">CALL only</button><button type="button" data-d="PUT">PUT only</button><button type="button" data-d="all">All markets</button>
     </div>
     <div class="dd-tabs" id="tlEv" role="group" aria-label="Event">
       <button type="button" data-e="all" class="on">Any event</button><button type="button" data-e="break">Breakouts</button><button type="button" data-e="at">At a line</button>
@@ -244,13 +259,13 @@ a.dd-row:hover{background:var(--card2)}
       <dt>MTF bias</dt><dd>Trend direction on 30m, 1H, 4H, 1D and 1W. CALL bias when at least 4 of 5 point up, PUT bias when at least 4 of 5 point down (3 of 4 where there is no 30m data).</dd>
     </dl>
   </section>
-  <p class="dd-foot">Lines are drawn by rule from swing highs and lows on the last 140 candles of each chart. They describe the chart; they are not a forecast. The quality score is a rule-based checklist total, not a win probability; it has not been measured. Intraday charts are shown for markets with recent intraday data. Education and demonstration only, not financial advice.</p>
+  <p class="dd-foot">Lines are drawn by rule from swing highs and lows on the last 140 candles of each chart. They describe the chart; they are not a forecast. The grade (Top, Good, Basic) comes from the labelled factors on each row. It is a rule-based checklist, not a win probability; it has not been measured. Intraday charts are shown for markets with recent intraday data. Education and demonstration only, not financial advice.</p>
 </main>
 <footer class="dd-ftr"><nav aria-label="Site links">
 <a href="/">ChartPulse home</a><a href="/scanner.html">Tier-1 Scanner</a><a href="/scanners/day-drive/">Day Drive Scanner</a><a href="/scanners/">All free scanners</a><a href="/scanners/bottom-reversal/">Bottom Reversal Scanner</a><a href="/scanners/ema-200/">200 EMA Scanner</a><a href="/desk/">AI Scan</a><a href="/backtesting/">Backtesting</a><a href="/bias/">Market bias</a><a href="/movers/">Market movers</a><a href="/pricing.html">Pricing</a><a href="/legal/disclaimer">Risk disclaimer</a>
 </nav></footer>
 
-<script src="/static/v2/trendlines.js?v=4"></script>
+<script src="/static/v2/trendlines.js?v=5"></script>
 <script>
 (() => {
 "use strict";
@@ -289,9 +304,25 @@ function signal(r) {
   if (!b) return `<span>No break or test on a 3-touch line right now.</span>`;
   const call = b.call ? `<span class="tls-call ${b.call}">${b.call === "CALL" ? "▲ CALL" : "▼ PUT"}</span>` : `<span class="tls-call x">${b.against ? "against bias" : "no clear bias"}</span>`;
   const z = b.zone ? `<span class="tls-z ${b.zone.t}">${b.zone.t === "strong" ? "★ Strong zone" : "Major zone"} · ${esc(b.zone.n.join(" + "))}</span>` : "";
-  return `${call}${z}<span style="display:block;margin-top:4px">${EVT[b.e].replace("{tf}", TFN[b.tf])} · ${b.n} touches · ${fmt(b.lv, r.dec)}${b.more ? ` · +${b.more} more chart${b.more > 1 ? "s" : ""} agree` : ""}</span>`;
+  return `${call}${z}<span style="display:block;margin:4px 0 6px">${EVT[b.e].replace("{tf}", TFN[b.tf])} at ${fmt(b.lv, r.dec)}</span>${fchips(r, b)}`;
 }
-function qcell(r) { const b = best(r); if (!b) return `<span class="tls-q c">–</span>`; return `<span class="tls-q ${b.q >= 75 ? "a" : b.q >= 55 ? "b" : "c"}">${b.q}<small>quality</small></span>`; }
+const TFL = { "1W": "Weekly chart", "1D": "Daily chart", "4H": "4-hour chart", "1H": "1-hour chart", "30m": "30-min chart", "15m": "15-min chart", "10m": "10-min chart" };
+const grade = q => q >= 80 ? ["a", "Top setup"] : q >= 60 ? ["b", "Good setup"] : ["c", "Basic setup"];
+// Every quality factor as a plain label (owner, 11 Nov 2026: labels, not points). g = good, n = neutral, w = warning.
+function factors(r, b) {
+  const m = r.mtf || {}, p = b.parts || {}, out = [];
+  const agree = b.dir === "CALL" ? m.up : m.down;
+  out.push(b.call ? ["g", `Trend with you ${agree}/${m.n}`] : b.against ? ["w", "Against the trend"] : ["n", "Trend mixed"]);
+  out.push(b.zone ? ["g", b.zone.t === "strong" ? "★ Strong zone" : "Major zone"] : ["n", "No key zone"]);
+  out.push(b.e.startsWith("break") ? ["g", "Clear breakout"] : ["g", "Sitting on the line"]);
+  out.push(b.n >= 5 ? ["g", `Well-tested line · ${b.n} touches`] : ["n", `${b.n} touches`]);
+  out.push([p.tf >= 8 ? "g" : "n", TFL[b.tf] || b.tf]);
+  out.push(p.pattern >= 10 ? ["g", "Pattern agrees"] : p.pattern <= 2 ? ["w", "Pattern warns"] : ["n", "Pattern neutral"]);
+  if (b.more) out.push(["g", `+${b.more} chart${b.more > 1 ? "s" : ""} agree`]);
+  return out;
+}
+const fchips = (r, b) => `<span class="tls-fx">${factors(r, b).map(([k, t]) => `<i class="${k}">${k === "g" ? "✓ " : k === "w" ? "! " : ""}${esc(t)}</i>`).join("")}</span>`;
+function qcell(r) { const b = best(r); if (!b) return `<span class="tls-q c">–</span>`; const [k, t] = grade(b.q); return `<span class="tls-q ${k}">${t}</span>`; }
 function paint() {
   const tfs = VIEWS[L.view], all = L.rows.filter(r => tfs.some(k => r.tf[k]));
   const sig = all.filter(r => best(r) && best(r).call);
@@ -301,14 +332,15 @@ function paint() {
   const p = L.meta.progress ?? 1; $("#tlProg").hidden = p >= 1; $("#tlProg").firstElementChild.style.width = Math.round(p * 100) + "%";
   let rows = all.filter(r => L.mkt === "all" || r.class === L.mkt);
   if (L.dir === "best") rows = rows.filter(r => best(r) && best(r).call);
-  else if (L.dir !== "all") rows = rows.filter(r => best(r) && best(r).call === L.dir);
+  else if (L.dir === "top") rows = rows.filter(r => best(r) && best(r).call && best(r).q >= 80);
+  else if (L.dir === "CALL" || L.dir === "PUT") rows = rows.filter(r => best(r) && best(r).call === L.dir);
   if (L.ev !== "all") rows = rows.filter(r => best(r) && best(r).e.startsWith(L.ev));
   if (L.zone === "zone") rows = rows.filter(r => best(r) && best(r).zone);
   if (L.q) rows = rows.filter(r => (r.name + " " + r.symbol).toLowerCase().includes(L.q));
   const key = r => { const b = best(r); return b ? (b.call ? 1000 : 0) + b.q : -1; };
   rows.sort((a, b) => key(b) - key(a));
   $("#tlList").style.setProperty("--n", tfs.length);
-  const head = `<div class="dd-row head"><span>#</span><span>Market</span><span>MTF trend</span>${tfs.map(k => `<span class="tls-tfh">${k}</span>`).join("")}<span>Best signal</span><span style="text-align:right">Quality</span></div>`;
+  const head = `<div class="dd-row head"><span>#</span><span>Market</span><span>MTF trend</span>${tfs.map(k => `<span class="tls-tfh">${k}</span>`).join("")}<span>Signal and why</span><span style="text-align:right">Grade</span></div>`;
   $("#tlList").innerHTML = rows.length ? head + rows.slice(0, L.show).map((r, i) => `
     <a class="dd-row" href="${BASE}?s=${encodeURIComponent(r.symbol)}">
       <span class="dd-rk">${i + 1}</span>
@@ -319,7 +351,7 @@ function paint() {
       ${qcell(r)}
     </a>`).join("") : `<p class="dd-empty">${L.rows.length ? "Nothing matches this filter right now." : "Scanning every market…"}</p>`;
   $("#tlMore").hidden = rows.length <= L.show;
-  $("#tlUpd").textContent = L.at ? `${rows.length} markets shown · ${L.meta.scanned || 0} of ${L.meta.universe || 0} scanned${p < 1 ? " (still scanning)" : ""} · updated ${ago(L.at)} · sorted by quality, best first` : "";
+  $("#tlUpd").textContent = L.at ? `${rows.length} markets shown · ${L.meta.scanned || 0} of ${L.meta.universe || 0} scanned${p < 1 ? " (still scanning)" : ""} · updated ${ago(L.at)} · best setups first` : "";
 }
 async function load() {
   let wait = 60000;

@@ -57,12 +57,25 @@
     return `<div class="tlx-mtf"><span class="tlx-mtfl">MTF trend</span>${MTFN.map(k => { const d = m.d[k] || 0; return `<span class="tlx-mt ${d > 0 ? "u" : d < 0 ? "d" : "n"}">${k} ${d > 0 ? "▲" : d < 0 ? "▼" : "–"}</span>`; }).join("")}${tag}</div>`;
   }
   const EVN = { break_up: "broke above resistance", break_down: "broke below support", at_sup: "at support", at_res: "at resistance" };
-  function plan(p) {
+  const TFL = { "1W": "weekly", "1D": "daily", "4H": "4-hour", "1H": "1-hour", "30m": "30-minute", "15m": "15-minute", "10m": "10-minute", "5m": "5-minute" };
+  function checks(p, m) {
+    const pt = p.parts || {}, agree = m ? (p.dir === "CALL" ? m.up : m.down) : 0, out = [];
+    out.push(["g", `Trend is with you: ${agree} of ${m ? m.n : 0} timeframes point ${p.dir === "CALL" ? "up" : "down"}.`]);
+    out.push(p.zone ? ["g", `${p.zone.t === "strong" ? "Strong zone" : "Major zone"} on the line: ${(p.zone.n || []).join(" + ")}.`] : ["n", "No key zone on the line."]);
+    out.push(["g", p.kind === "breakout" ? "Clear breakout: the candle closed well through the line." : "Price is sitting right on the line."]);
+    out.push(pt.touches >= 10 ? ["g", "Well-tested line: five or more touches."] : ["n", pt.touches >= 7 ? "Line has four touches." : "Line has three touches, the minimum."]);
+    out.push([pt.tf >= 8 ? "g" : "n", `Signal is on the ${TFL[p.tf] || p.tf} chart${pt.tf >= 8 ? ", a big chart." : "."}`]);
+    out.push(pt.pattern >= 10 ? ["g", `The pattern (${p.pattern}) agrees with this side.`] : pt.pattern <= 2 ? ["w", `The pattern (${p.pattern}) usually leans the other way.`] : ["n", `The pattern (${p.pattern}) is neutral.`]);
+    return out;
+  }
+  const grade = q => q >= 80 ? "Top setup" : q >= 60 ? "Good setup" : "Basic setup";
+  function plan(p, m) {
     const f = v => fmt(v, p.dec);
     return `<article class="tlx-plan ${esc(p.dir)}">
-      <div class="tlx-ptop"><span class="tlx-pdir">${p.dir === "CALL" ? "▲ CALL" : "▼ PUT"}</span><b>${p.view === "swing" ? "Swing plan" : "Intraday plan"} · ${esc(p.tf)} ${esc(p.kind)}</b><span class="tlx-q">Quality ${p.q}/100</span></div>
+      <div class="tlx-ptop"><span class="tlx-pdir">${p.dir === "CALL" ? "▲ CALL" : "▼ PUT"}</span><b>${p.view === "swing" ? "Swing plan" : "Intraday plan"} · ${esc(p.tf)} ${esc(p.kind)}</b><span class="tlx-q">${grade(p.q)}</span></div>
       <p class="tlx-pwhy">${esc(p.pattern)}, ${esc(EVN[p.e] || "")}. ${esc(p.read || "")}</p>
       ${zone(p.zone)}
+      <ul class="tlx-chk">${checks(p, m).map(([k, t]) => `<li class="${k}">${esc(t)}</li>`).join("")}</ul>
       <table><tr><td>Entry<small>${esc(p.how)}</small></td><td>${f(p.entry)}</td></tr>
       <tr><td>Stop-loss<small>${esc(p.exit)} Risk ${p.risk_pct}% of price.</small></td><td class="dn">${f(p.sl)}</td></tr>
       <tr><td>Target 1<small>1.5 × the risk. Take part of the position off here.</small></td><td class="up">${f(p.t1)}</td></tr>
@@ -75,7 +88,7 @@
     const fr = d.frames || [];
     let h = `<header class="tlx-head"><div><h2>Trend lines on the chart right now</h2><p class="tlx-sub">${esc(d.summary || "")}</p></div><span class="tlx-n">${fr.length} timeframe${fr.length === 1 ? "" : "s"}</span></header>` + mtf(d.mtf);
     const pl = d.plans || [];
-    if (pl.length) h += `<div class="tlx-plans">${pl.map(plan).join("")}</div><p class="tlx-note">Entry, stop and targets are worked out by rule from the line and the chart's ATR, only for signals that agree with the MTF bias. No win rate is attached: these rules have not been measured.</p>`;
+    if (pl.length) h += `<div class="tlx-plans">${pl.map(p => plan(p, d.mtf)).join("")}</div><p class="tlx-note">Entry, stop and targets are worked out by rule from the line and the chart's ATR, only for signals that agree with the MTF bias. The grade comes from the checks listed in each plan. No win rate is attached: these rules have not been measured.</p>`;
     else if (fr.length) h += `<p class="tlx-note">No trade plan right now: no line with three or more touches is being broken or tested in the direction of the MTF bias.</p>`;
     if (!fr.length) return h;
     h += `<div class="tlx-grid2">` + fr.map(f => `<article class="tlx-card lean-${esc(f.lean)}">
