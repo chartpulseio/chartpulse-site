@@ -226,18 +226,24 @@ function tl_zones(array $fr): array {
     $H = $fr['1H'] ?? null; $m = count($H['c'] ?? []);
     if ($m >= 62) {
         $hs = array_slice($H['h'], $m - 61, 60); $ls = array_slice($H['l'], $m - 61, 60); $hi = (float)max($hs); $lo = (float)min($ls);
-        if ($hi > $lo) foreach ([0.214, 0.295, 0.382, 0.5, 0.618, 0.705, 0.786] as $r) $Z[] = ['k' => 'Fib ' . rtrim(rtrim(number_format($r, 3), '0'), '.'), 'g' => 'fib', 'p' => $lo + ($hi - $lo) * $r];
+        if ($hi > $lo) foreach ([0.382, 0.5, 0.618, 0.705, 0.786] as $r) $Z[] = ['k' => 'Fib ' . rtrim(rtrim(number_format($r, 3), '0'), '.'), 'g' => 'fib', 'p' => $lo + ($hi - $lo) * $r];
     }
     return $Z;
 }
-/** Zones sitting on a trend line's current level. 'strong' = two or more zones of any kind, 'major' = one. */
+/**
+ * Zones sitting on a trend line's current level. 'strong' = two different kinds agree (a level with a pivot, a
+ * level with a Fib, a pivot with a Fib) or two different levels (PDL with WL); 'major' = one zone. Two pivots or
+ * two Fibs next to each other are still one kind, so they do not make a strong zone.
+ */
 function tl_match(array $Z, float $lv, float $tol): ?array {
-    $hit = []; $grp = [];
-    foreach ($Z as $z) if (abs($z['p'] - $lv) <= $tol) { $hit[] = [$z['k'], abs($z['p'] - $lv)]; $grp[$z['g']] = 1; }
+    $hit = []; $grp = []; $lvl = 0;
+    foreach ($Z as $z) if (abs($z['p'] - $lv) <= $tol) { $hit[] = [$z['k'], abs($z['p'] - $lv), $z['g']]; $grp[$z['g']] = 1; if ($z['g'] === 'level') $lvl++; }
     if (!$hit) return null;
     usort($hit, fn($a, $b) => $a[1] <=> $b[1]);
-    $names = array_values(array_unique(array_column($hit, 0)));
-    return ['t' => count($names) >= 2 ? 'strong' : 'major', 'n' => array_slice($names, 0, 4), 'g' => count($grp)];
+    $names = []; $seen = [];   // nearest zone of each kind first
+    foreach ($hit as $h) if (!isset($seen[$h[2]])) { $seen[$h[2]] = 1; $names[] = $h[0]; }
+    foreach ($hit as $h) if ($h[2] === 'level' && !in_array($h[0], $names, true)) $names[] = $h[0];
+    return ['t' => (count($grp) >= 2 || $lvl >= 2) ? 'strong' : 'major', 'n' => array_slice($names, 0, 4), 'g' => count($grp)];
 }
 
 /** MTF trend: Supertrend(10,3) direction on 30m / 1H / 4H / 1D / 1W, and the bias when 75%+ of them agree. */
@@ -289,7 +295,7 @@ function tl_score(array $sg, array $mtf): array {
 function tl_read(string $k, array $F, array $Z, float $atrD, array $mtf, bool $bars): ?array {
     try { $x = tl_frame($k, $F, $bars); } catch (Throwable $e) { $x = null; }
     if (!$x) return null;
-    $tol = $atrD > 0 ? min(0.35 * $x['atr'], 0.2 * $atrD) : 0.35 * $x['atr'];
+    $tol = $atrD > 0 ? min(0.25 * $x['atr'], 0.1 * $atrD) : 0.25 * $x['atr'];   // tight: a zone must really sit on the line
     $cell = ['p' => $x['pattern'], 'lean' => $x['lean']]; $sigs = [];
     foreach (['res', 'sup'] as $side) {
         $L = $x[$side]; if (!$L) continue;
@@ -356,7 +362,7 @@ function tl_plan(array $sg, array $x): array {
 /** All timeframes for one symbol: charts, zones on the lines, MTF trend, trade plans, summary. Cached 60 s. */
 function tl_build(string $sym): ?array {
     $dir = T_DATA . '/tl'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
-    $p = $dir . '/' . preg_replace('/[^A-Za-z0-9._-]/', '_', $sym) . '.v2.json';
+    $p = $dir . '/' . preg_replace('/[^A-Za-z0-9._-]/', '_', $sym) . '.v3.json';
     $c = t_read_json($p, null);
     if (is_array($c) && t_now() - (int)($c['at'] ?? 0) < 60) return $c;
     $fr = t_read_frames($sym); if (!$fr) return null;
@@ -418,11 +424,11 @@ function tl_row(string $sym, array $row, int $now): ?array {
 /** Whole-universe scan, built in steps inside a time budget and cached; the page polls until progress is 1. */
 function tl_scan(): array {
     $dir = T_DATA . '/tl'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
-    $now = t_now(); $ck = $dir . '/_scan4.json';
+    $now = t_now(); $ck = $dir . '/_scan5.json';
     $c = t_read_json($ck, null);
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 45 && !empty($c['rows'])) return $c;
     $scan = t_scan_load(); $syms = array_keys($scan['rows'] ?? []);
-    $cp = $dir . '/_rows4.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
+    $cp = $dir . '/_rows5.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
     $t0 = microtime(true); $done = 0; $fresh = 0;
     foreach ($syms as $sym) {
         $old = $cache[$sym] ?? null;
