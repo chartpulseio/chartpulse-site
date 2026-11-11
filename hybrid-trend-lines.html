@@ -242,7 +242,7 @@ a.hy:hover{background:var(--card2)}
   <div id="hyAlert"></div>
   <div class="dd-bar">
     <div class="dd-tabs" id="hyStage" role="group" aria-label="Stage">
-      <button type="button" data-s="all" class="on">Everything</button><button type="button" data-s="alert">Alerts only</button><button type="button" data-s="2">Broken, waiting</button><button type="button" data-s="1">Approaching</button>
+      <button type="button" data-s="all" class="on">Everything</button><button type="button" data-s="alert">Alerts only</button><button type="button" data-s="2">Broken, waiting</button><button type="button" data-s="1">Approaching</button><button type="button" data-s="old">Last session</button>
     </div>
     <div class="dd-tabs" id="hySide" role="group" aria-label="Side">
       <button type="button" data-d="all" class="on">CALL + PUT</button><button type="button" data-d="CALL">CALL</button><button type="button" data-d="PUT">PUT</button>
@@ -271,7 +271,7 @@ a.hy:hover{background:var(--card2)}
       <dt>Major / strong zone</dt><dd>The line also sits on a previous day high, low or close, a weekly or monthly high or low, a pivot or a Fibonacci level. One match is a major zone, two different kinds a strong zone.</dd>
     </dl>
   </section>
-  <p class="dd-foot">Trend is the standard Supertrend (10, 3). Trend lines come from the Daily, 4-hour, 1-hour, 30-minute and 15-minute charts. The turn is read on 15-minute candles where intraday data is available, otherwise on 1-hour candles. Stop and targets on an alert are worked out by rule; no win rate is attached because these rules have not been measured. Education and demonstration only, not financial advice.</p>
+  <p class="dd-foot">An alert counts as live only while that market is trading; turns from a closed market are listed lower as "Last session". Lines from the 15-minute and 30-minute charts need three touches. Trend is the standard Supertrend (10, 3). Trend lines come from the Daily, 4-hour, 1-hour, 30-minute and 15-minute charts. The turn is read on 15-minute candles where intraday data is available, otherwise on 1-hour candles. Stop and targets on an alert are worked out by rule; no win rate is attached because these rules have not been measured. Education and demonstration only, not financial advice.</p>
 </main>
 <footer class="dd-ftr"><nav aria-label="Site links">
 <a href="/">ChartPulse home</a><a href="/scanner.html">Tier-1 Scanner</a><a href="/scanners/trend-lines/">Trend Line Scanner</a><a href="/scanners/day-drive/">Day Drive Scanner</a><a href="/scanners/">All free scanners</a><a href="/scanners/ema-200/">200 EMA Scanner</a><a href="/desk/">AI Scan</a><a href="/backtesting/">Backtesting</a><a href="/bias/">Market bias</a><a href="/pricing.html">Pricing</a><a href="/legal/disclaimer">Risk disclaimer</a>
@@ -284,6 +284,7 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": 
 const MTF = ["30m", "1H", "4H", "1D", "1W"];
 const TFN = { "1D": "Daily", "4H": "4-hour", "1H": "1-hour", "30m": "30-min", "15m": "15-min" };
 const STG = { 4: "ALERT · Failed break", 3: "ALERT · Rejection", 2: "Broken, waiting", 1: "Approaching" };
+const stg = r => r.stage >= 3 && !r.live ? (r.stage === 4 ? "Last session · Failed break" : "Last session · Rejection") : STG[r.stage];
 const fmt = (v, d) => Number(v).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 const ago = t => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); return s < 60 ? `${s}s ago` : `${Math.round(s / 60)} min ago`; };
 const L = { rows: [], meta: {}, at: 0, stage: "all", side: "all", mkt: "all", q: "", show: 40, timer: null, seen: null, fresh: new Set() };
@@ -314,8 +315,8 @@ function plan(r) {
   return `<div class="hy-plan"><div><span>Entry (now)</span><b>${fmt(p.entry, r.dec)}</b></div><div class="sl"><span>Stop-loss · ${p.risk_pct}%</span><b>${fmt(p.sl, r.dec)}</b></div><div class="tg"><span>Target 1 · 1.5 × risk</span><b>${fmt(p.t1, r.dec)}</b></div><div class="tg"><span>Target 2 · ${esc(p.t2why)}</span><b>${fmt(p.t2, r.dec)}</b></div></div>`;
 }
 function card(r) {
-  return `<a class="hy s${r.stage}" href="/scanners/trend-lines/?s=${encodeURIComponent(r.symbol)}">
-    <div class="hy-top"><span class="tls-call ${r.bias}">${r.bias === "CALL" ? "▲ CALL" : "▼ PUT"}</span><h3>${esc(r.name)}</h3><small>${esc(r.symbol)} · ${esc(r.market || "")} · ${fmt(r.price, r.dec)}</small><span class="hy-stage">${STG[r.stage]}${L.fresh.has(r.symbol) ? '<span class="hy-new">NEW</span>' : ""}</span></div>
+  return `<a class="hy s${r.stage >= 3 && !r.live ? "0" : r.stage}" href="/scanners/trend-lines/?s=${encodeURIComponent(r.symbol)}">
+    <div class="hy-top"><span class="tls-call ${r.bias}">${r.bias === "CALL" ? "▲ CALL" : "▼ PUT"}</span><h3>${esc(r.name)}</h3><small>${esc(r.symbol)} · ${esc(r.market || "")} · ${fmt(r.price, r.dec)}</small><span class="hy-stage">${stg(r)}${L.fresh.has(r.symbol) ? '<span class="hy-new">NEW</span>' : ""}</span></div>
     <p class="hy-say">${say(r)}</p>
     <div class="hy-row2">${mtf(r)}${chips(r)}</div>
     ${plan(r)}
@@ -324,13 +325,13 @@ function card(r) {
 function beep() { try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain(); o.connect(g); g.connect(a.destination); o.frequency.value = 880; g.gain.value = 0.08; o.start(); o.stop(a.currentTime + 0.25); } catch (e) {} }
 function paint() {
   const all = L.rows, c = L.meta.counts || {};
-  $("#hyTiles").innerHTML = [["warm", (c[4] || 0), "Failed-break alerts"], ["warm", (c[3] || 0), "Rejection alerts"], ["", (c[2] || 0), "Broken, waiting"], ["", (c[1] || 0), "Approaching"], ["", L.meta.universe || 0, "Markets scanned"]]
+  $("#hyTiles").innerHTML = [["warm", (c[4] || 0), "Failed-break alerts"], ["warm", (c[3] || 0), "Rejection alerts"], ["", (c[2] || 0), "Broken, waiting"], ["", (c[1] || 0), "Approaching"], ["", (c.old || 0), "From the last session (market closed)"]]
     .map(([k, v, t]) => `<div class="dd-tile ${k}"><div class="v">${v}</div><div class="k">${t}</div></div>`).join("");
   const p = L.meta.progress ?? 1; $("#hyProg").hidden = p >= 1; $("#hyProg").firstElementChild.style.width = Math.round(p * 100) + "%";
   const na = (c[4] || 0) + (c[3] || 0);
   $("#hyAlert").innerHTML = na ? `<p class="hy-alert"><b>${na} alert${na > 1 ? "s" : ""} right now.</b> An alert means the turn has happened on the line. They are listed first.</p>` : (all.length ? `<p class="dd-note"><b>No alert right now.</b> The setups below are approaching their line or through it; an alert appears when a candle turns there.</p>` : "");
   let rows = all.filter(r => L.mkt === "all" || r.class === L.mkt);
-  if (L.stage === "alert") rows = rows.filter(r => r.stage >= 3); else if (L.stage !== "all") rows = rows.filter(r => r.stage === +L.stage);
+  if (L.stage === "alert") rows = rows.filter(r => r.stage >= 3 && r.live); else if (L.stage === "old") rows = rows.filter(r => r.stage >= 3 && !r.live); else if (L.stage !== "all" && L.stage !== "alert") rows = rows.filter(r => r.stage === +L.stage);
   if (L.side !== "all") rows = rows.filter(r => r.bias === L.side);
   if (L.q) rows = rows.filter(r => (r.name + " " + r.symbol).toLowerCase().includes(L.q));
   $("#hyList").innerHTML = rows.length ? rows.slice(0, L.show).map(card).join("") : `<p class="dd-empty">${all.length ? "Nothing matches this filter right now." : (p < 1 ? "Scanning every market…" : "No market has its day high or low at a trend line in the direction of the trend right now.")}</p>`;
@@ -343,7 +344,7 @@ async function load() {
   try {
     const r = await fetch("/tl_api.php?r=hybrid", { cache: "no-store" }); const j = await r.json();
     if (j.error) throw new Error(j.error);
-    const now = new Set((j.rows || []).filter(x => x.stage >= 3).map(x => x.symbol + ":" + x.stage + ":" + x.bar_t));
+    const now = new Set((j.rows || []).filter(x => x.stage >= 3 && x.live).map(x => x.symbol + ":" + x.stage + ":" + x.bar_t));
     L.fresh = new Set();
     if (L.seen) { now.forEach(k => { if (!L.seen.has(k)) L.fresh.add(k.split(":")[0]); }); if (L.fresh.size && $("#hySound").checked) beep(); }
     L.seen = now;

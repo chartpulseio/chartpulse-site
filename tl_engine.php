@@ -463,9 +463,9 @@ function tl_scan(): array {
 // Zones on the line (PDH / PDL / PDC, weekly, monthly, pivots, Fib) are labels.
 // ===========================================================================
 const TLH_TFS = ['1D', '4H', '1H', '30m', '15m'];   // charts whose lines are used
-const TLH_NEAR = 0.25;     // x daily ATR: the day's extreme is "at" the line within this
-const TLH_OVER = 1.0;      // x daily ATR: the extreme may have run this far through the line
-const TLH_APPROACH = 0.5;  // x daily ATR: price this close to the line is approaching
+const TLH_NEAR = 0.15;     // x daily ATR: the day's extreme is "at" the line within this
+const TLH_OVER = 0.6;      // x daily ATR: the extreme may have run this far through the line
+const TLH_APPROACH = 0.3;  // x daily ATR: price this close to the line is approaching
 const TLH_WIN = 8;         // entry candles looked back for a close through the line
 const TLH_STAGE = [4 => 'FAILED BREAK', 3 => 'REJECTION', 2 => 'BROKEN', 1 => 'APPROACHING'];
 
@@ -489,20 +489,23 @@ function tlh_row(string $sym, array $row, int $now): ?array {
     $etf = !empty($src['15m']) && count($src['15m']['c']) >= 20 ? '15m' : '1H'; $E = $src[$etf]; $ne = count($E['c']);
     if ($ne < TLH_WIN + 3) return null;
     $px = (float)$E['c'][$ne - 1]; $lc = $ne - 2;                     // live price, last closed candle
+    $live = $now - (int)$E['t'][$ne - 1] <= 2 * ($etf === '15m' ? 900 : 3600) ? 1 : 0;   // is the market trading right now?
     $Z = array_values(array_filter(tl_zones($fr), fn($z) => $z['k'] !== 'Day High' && $z['k'] !== 'Day Low'));
     $best = null; $hits = 0;
     foreach (TLH_TFS as $k) {
         if (empty($src[$k])) continue;
         try { $x = tl_frame($k, $src[$k], false); } catch (Throwable $e) { $x = null; }
         $L = $x ? $x[$put ? 'res' : 'sup'] : null; if (!$L) continue;
+        if (($k === '15m' || $k === '30m') && $L['touches'] < 3) continue;   // a 2-touch line on a small chart is noise
         $lv = (float)$L['now']; $over = ($dayX - $lv) * $s;           // > 0: the day's extreme went through the line
         if (!($over >= -TLH_NEAR * $atrD && $over <= TLH_OVER * $atrD)) continue;
-        $thr = 0.05 * $atrD; $tol = 0.1 * $atrD; $stage = 0; $brk = null;
+        $thr = 0.05 * $atrD; $tol = 0.05 * $atrD; $stage = 0; $brk = null;
         for ($i = max(0, $lc - TLH_WIN + 1); $i <= $lc; $i++) if (((float)$E['c'][$i] - $lv) * $s > $thr) $brk = $i;
         $o = (float)$E['o'][$lc]; $h = (float)$E['h'][$lc]; $l = (float)$E['l'][$lc]; $c = (float)$E['c'][$lc]; $rg = max($h - $l, 1e-12);
         $inside = ($c - $lv) * $s < 0 && ($px - $lv) * $s < 0;        // last close and live price are back on the trade's side
         $reach = $put ? $h >= $lv - $tol : $l <= $lv + $tol;          // the candle got to the line
-        $turn = $put ? ($c < $o || ($h - max($o, $c)) / $rg >= 0.5) : ($c > $o || (min($o, $c) - $l) / $rg >= 0.5);
+        $wick = $put ? ($h - max($o, $c)) / $rg : (min($o, $c) - $l) / $rg;   // the tail left at the line
+        $turn = $wick >= 0.6 || (($put ? $c < $o : $c > $o) && $wick >= 0.3);
         if ($brk !== null && $brk < $lc && $inside) $stage = 4;
         elseif ($brk === null && $reach && $inside && $turn) $stage = 3;
         elseif (($px - $lv) * $s > $thr) $stage = 2;
@@ -512,7 +515,7 @@ function tlh_row(string $sym, array $row, int $now): ?array {
         $zone = tl_match($Z, $lv, 0.1 * $atrD);
         $cand = ['tf' => $k, 'stage' => $stage, 'lv' => $lv, 'n' => (int)$L['touches'], 'dir' => $L['dir'], 'pattern' => $x['pattern'],
                  'zone' => $zone ? ['t' => $zone['t'], 'n' => $zone['n']] : null, 'opp' => $x[$put ? 'sup' : 'res']['now'] ?? null, 'brk' => $brk,
-                 'key' => [$stage, $zone ? ($zone['t'] === 'strong' ? 2 : 1) : 0, TL_TF_PTS[$k] ?? 0, (int)$L['touches']]];
+                 'key' => [$stage >= 3 ? $live : 1, $stage, $zone ? ($zone['t'] === 'strong' ? 2 : 1) : 0, TL_TF_PTS[$k] ?? 0, (int)$L['touches']]];
         if ($best === null || $cand['key'] > $best['key']) $best = $cand;
     }
     if (!$best) return null;
@@ -536,18 +539,18 @@ function tlh_row(string $sym, array $row, int $now): ?array {
             'stage' => $best['stage'], 'stage_name' => TLH_STAGE[$best['stage']], 'tf' => $best['tf'], 'etf' => $etf,
             'lv' => round($best['lv'], $d), 'touches' => $best['n'], 'line_dir' => $best['dir'], 'pattern' => $best['pattern'],
             'day_x' => round($dayX, $d), 'gap_atr' => round(abs($dayX - $best['lv']) / $atrD, 2), 'through' => ($dayX - $best['lv']) * $s > 0,
-            'zone' => $best['zone'], 'lines' => $hits, 'plan' => $plan,
+            'zone' => $best['zone'], 'lines' => $hits, 'plan' => $plan, 'live' => $live,
             'bar_t' => (int)$E['t'][$lc], 'key' => array_merge($best['key'], [count($pull)]), 'at' => $now];
 }
 
 /** Whole-universe hybrid scan (same stepping and caching as tl_scan, shorter row life because stages move fast). */
 function tlh_scan(): array {
     $dir = T_DATA . '/tl'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
-    $now = t_now(); $ck = $dir . '/_hscan1.json';
+    $now = t_now(); $ck = $dir . '/_hscan2.json';
     $c = t_read_json($ck, null);
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 30 && isset($c['rows'])) return $c;
     $scan = t_scan_load(); $syms = array_keys($scan['rows'] ?? []);
-    $cp = $dir . '/_hrows1.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
+    $cp = $dir . '/_hrows2.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
     $t0 = microtime(true); $done = 0; $fresh = 0; $nobias = 0;
     foreach ($syms as $sym) {
         $old = $cache[$sym] ?? null;
@@ -560,7 +563,8 @@ function tlh_scan(): array {
     if ($fresh) t_write_json($cp, $cache);
     $rows = array_values(array_filter($cache, fn($r) => is_array($r) && empty($r['none'])));
     usort($rows, fn($a, $b) => $b['key'] <=> $a['key']);
-    $cnt = [4 => 0, 3 => 0, 2 => 0, 1 => 0]; foreach ($rows as $r) $cnt[$r['stage']]++;
+    $cnt = [4 => 0, 3 => 0, 2 => 0, 1 => 0, 'old' => 0];
+    foreach ($rows as $r) { if ($r['stage'] >= 3 && empty($r['live'])) $cnt['old']++; else $cnt[$r['stage']]++; }
     $p = ['at' => $now, 'rows' => $rows, 'meta' => ['universe' => count($syms), 'scanned' => $done, 'progress' => count($syms) ? round($done / count($syms), 3) : 1,
           'counts' => $cnt, 'took_ms' => (int)round((microtime(true) - $t0) * 1000)]];
     t_write_json($ck, $p);
