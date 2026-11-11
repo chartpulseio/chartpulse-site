@@ -100,9 +100,12 @@ if (isset($_GET['min_score']) && $_GET['min_score'] !== '') {
 }
 
 $quality = strtolower((string)($_GET['quality'] ?? 'all'));
+$mkt = strtolower((string)($_GET['mkt'] ?? 'all'));   // all | forex | crypto | other (stocks, indices, futures)
+if (!in_array($mkt, ['all', 'forex', 'crypto', 'other'], true)) $mkt = 'all';
 $out = [];
 foreach ($all['signals'] as $s) {
     if ($side !== 'ALL' && $s['side'] !== $side) continue;
+    if ($mkt !== 'all' && tl_class($s['symbol']) !== $mkt) continue;
     if (!in_array($s['entry_type'], $entry, true)) continue;
     $need = $minScore ?? (E2_DEFAULT_MIN[$s['entry_type']] ?? 0);
     if ($s['score'] < $need) continue;
