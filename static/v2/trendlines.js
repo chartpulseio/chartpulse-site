@@ -66,7 +66,7 @@
       <table><tr><td>Entry<small>${esc(p.how)}</small></td><td>${f(p.entry)}</td></tr>
       <tr><td>Stop-loss<small>${esc(p.exit)} Risk ${p.risk_pct}% of price.</small></td><td class="dn">${f(p.sl)}</td></tr>
       <tr><td>Target 1<small>1.5 × the risk. Take part of the position off here.</small></td><td class="up">${f(p.t1)}</td></tr>
-      <tr><td>Target 2<small>${esc(p.t2why)} (${p.rr2} × the risk).</small></td><td class="up">${f(p.t2)}</td></tr></table>
+      <tr><td>Target 2<small>${/the risk$/.test(p.t2why) ? "2.5 × the risk." : esc(p.t2why) + " (" + p.rr2 + " × the risk)."}</small></td><td class="up">${f(p.t2)}</td></tr></table>
     </article>`;
   }
 
