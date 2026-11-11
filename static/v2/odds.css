@@ -1,5 +1,5 @@
 /* ChartPulse v2 · "Odds, not opinions" layer (owner, 5 Oct 2026): sky header with a live pulse line,
-   probability dial + odds rings on the Bias Desk. Loaded after cp.css. */
+   probability dial + odds rings on the AI Scan. Loaded after cp.css. */
 :root{--sky:#8FD3FF;--sky-2:#4FA8E8;--sky-deep:#0B2338}
 
 /* header: light sky glass over the dark page, with a heartbeat line running along its lower edge */

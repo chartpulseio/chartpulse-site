@@ -116,7 +116,7 @@ function seo_head(string $title, string $desc, string $path, array $ld = [], str
 <?php endforeach; ?>
 <script src="/static/v2/consent.js?v=2"></script>
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=2">
-<script defer src="/static/v2/sitehead.js?v=5"></script>
+<script defer src="/static/v2/sitehead.js?v=6"></script>
 </head>
 <body class="site seo-page" data-page="seo">
 <header class="site-head">
@@ -138,7 +138,6 @@ function seo_head(string $title, string $desc, string $path, array $ld = [], str
 <details class="nav-dd"><summary>Scanners</summary><div class="nav-menu">
 <a href="/scanner.html" data-p="scanner">Tier-1 Scanner <small>TIER-1</small></a>
 <a href="/scanners/" data-p="scanners">All scanners <small class="badge-live">15</small></a>
-<a href="/scanners/bottom-reversal/" data-p="bottomreversal">Bottom Reversal <small>FREE</small></a>
 <a href="/scanners/ema-200/" data-p="ema200">200 EMA <small>FREE</small></a>
 <a href="/scanners/day-drive/" data-p="dayDrive">Day Drive <small>FREE</small></a>
 </div></details>

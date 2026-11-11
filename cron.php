@@ -14,7 +14,7 @@ $t0 = time();
 while (time() - $t0 < 50 && t_scan_step(false, 20)) { }
 t2_trades_refresh(10);
 $m = tr_daily(t_now());
-try { require_once __DIR__ . '/torus_desk.php'; $mx = trim(ml_keepalive() . ' ' . qd_backfill_step() . ' ' . ta_step()); if ($mx !== '') $m = trim(($m ?? '') . ' · ' . $mx, ' ·'); } catch (Throwable $e) { $m = trim(($m ?? '') . ' · ml ' . $e->getMessage(), ' ·'); }   // Bias Desk: keep the ML Space awake, fill Qdrant
+try { require_once __DIR__ . '/torus_desk.php'; $mx = trim(ml_keepalive() . ' ' . qd_backfill_step() . ' ' . ta_step()); if ($mx !== '') $m = trim(($m ?? '') . ' · ' . $mx, ' ·'); } catch (Throwable $e) { $m = trim(($m ?? '') . ' · ml ' . $e->getMessage(), ' ·'); }   // AI Scan: keep the ML Space awake, fill Qdrant
 try { seo_movers_snapshot(t_now()); $tg = seo_tg_daily(t_now()); if ($tg) $m = trim(($m ?? '') . ' · channel ' . $tg, ' ·'); $ix = seo_indexnow(t_now()); if ($ix) $m = trim(($m ?? '') . ' · ' . $ix, ' ·'); } catch (Throwable $e) { $m = trim(($m ?? '') . ' · seo ' . $e->getMessage(), ' ·'); }
 $line = 'ok ' . date('c') . ($m ? " · $m" : '');
 @file_put_contents(T_DATA . '/cron_last.txt', $line . "\n");   // last run, for checking the schedule

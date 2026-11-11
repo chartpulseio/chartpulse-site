@@ -1,6 +1,6 @@
 <?php
 // ---------------------------------------------------------------------------
-// TORUS Bias Desk (owner, 4 Oct 2026): one-symbol bias, price scenario, trade plan and evidence panels.
+// TORUS AI Scan (owner, 4 Oct 2026): one-symbol bias, price scenario, trade plan and evidence panels.
 // Built for shared PHP hosting. The owner's prototype named TimesFM / FinBERT / Qdrant; none of them runs here,
 // so each has a deterministic, testable stand-in that uses only data the site already has:
 //   - scenario cone  : empirical quantiles of this symbol's own forward moves (in ATR units), re-scaled to today's ATR

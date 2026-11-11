@@ -1,9 +1,9 @@
 <?php
 // ---------------------------------------------------------------------------
-// TORUS ML bridge (owner, 4 Oct 2026): the Bias Desk's real models, run outside the shared PHP host.
+// TORUS ML bridge (owner, 4 Oct 2026): the AI Scan's real models, run outside the shared PHP host.
 //   TimesFM 2.5 + FinBERT : the owner's Hugging Face Space (FastAPI, free CPU)  -> config 'ml_space_url', 'ml_space_key'
 //   Qdrant                : Qdrant Cloud free cluster (REST)                     -> config 'qdrant_url', 'qdrant_key'
-// Every call has a short timeout and a cache; when a service is off or slow, the Bias Desk uses its built-in
+// Every call has a short timeout and a cache; when a service is off or slow, the AI Scan uses its built-in
 // statistical stand-ins and labels that module "fallback". Keys stay in config.php and never leave the server.
 // ---------------------------------------------------------------------------
 declare(strict_types=1);
@@ -160,7 +160,7 @@ function ml_keepalive(): string {
 
 /* ---------------- TradingAgents analyst committee (on the Space, free Gemini key) ---------------- */
 const TA_DAILY_AUTO = 6;   // top live Tier-1 signals analysed per day by cron
-const TA_DAILY_USER = 10;   // extra on-demand runs per day from the Bias Desk button
+const TA_DAILY_USER = 10;   // extra on-demand runs per day from the AI Scan button
 function ta_dir(): string { $d = ml_dir() . '/agents'; if (!is_dir($d)) @mkdir($d, 0755, true); return $d; }
 function ta_file(string $sym): string { return ta_dir() . '/' . preg_replace('/[^A-Za-z0-9._-]/', '_', $sym) . '.json'; }
 /** Latest finished committee report for a symbol (max 3 days old), or the pending state. */
@@ -257,7 +257,7 @@ function ml_feed(): array {
     foreach ($Q as &$q) foreach (array_keys(t_symbols()) as $s) if (preg_replace('/[^A-Za-z0-9._-]/', '_', $s) === $q['symbol']) { $q['symbol'] = $s; break; }
     unset($q);
     $st = t_read_json(ml_dir() . '/push_state.json', ['fc_at' => 0]);
-    $P = [];   // symbols users opened on the Bias Desk whose TimesFM forecast is older than 6h: done on the next 15-min run
+    $P = [];   // symbols users opened on the AI Scan whose TimesFM forecast is older than 6h: done on the next 15-min run
     foreach (t_read_json(ml_dir() . '/req.json', []) as $s => $ts) {
         if ($now - (int)$ts > 86400 || !isset(t_symbols()[$s]) || str_starts_with($s, 'MCX:')) continue;
         $f = t_read_json(ml_dir() . '/fc_' . preg_replace('/[^A-Za-z0-9._-]/', '_', "$s-1D") . '.json', null);
@@ -266,13 +266,13 @@ function ml_feed(): array {
     return ['symbols' => array_values(array_filter(array_keys(t_symbols()), fn($s) => !str_starts_with($s, 'MCX:'))), 'headlines' => array_values(array_slice($H, 0, 300)),
         'agents' => array_slice($Q, 0, 8), 'need_forecast' => $now - (int)$st['fc_at'] > 11 * 3600, 'priority' => array_slice($P, 0, 120), 'horizon' => 10];
 }
-/** Remember which symbols users open on the Bias Desk (feeds the 15-min priority forecast list). */
+/** Remember which symbols users open on the AI Scan (feeds the 15-min priority forecast list). */
 function ml_note_request(string $sym): void {
     $p = ml_dir() . '/req.json'; $R = t_read_json($p, []); $now = t_now();
     if ($now - (int)($R[$sym] ?? 0) < 600) return;
     $R[$sym] = $now; arsort($R); t_write_json($p, array_slice($R, 0, 400, true));
 }
-/** Store pushed results in the same caches the Bias Desk already reads. */
+/** Store pushed results in the same caches the AI Scan already reads. */
 function ml_store_push(array $in): array {
     $n = ['fc' => 0, 'sent' => 0, 'agents' => 0]; $now = t_now();
     foreach (($in['forecasts'] ?? []) as $sym => $q) {

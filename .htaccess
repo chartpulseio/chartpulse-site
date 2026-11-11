@@ -39,7 +39,7 @@ RewriteCond %{THE_REQUEST} \ /ema200\.html[? ]
 RewriteRule ^ema200\.html$ /scanners/ema-200/ [R=301,L]
 
 RewriteCond %{THE_REQUEST} \ /dashboard\.html[? ]
-RewriteRule ^dashboard\.html$ /scanners/bottom-reversal/ [R=301,L]
+RewriteRule ^dashboard\.html$ /scanners/ [R=301,L]
 
 RewriteCond %{THE_REQUEST} \ /day-drive\.html[? ]
 RewriteRule ^day-drive\.html$ /scanners/day-drive/ [R=301,L]
@@ -64,7 +64,7 @@ RewriteRule ^pricing\.html$     /pricing.html      [L]
 # --- clean URLs (new structure) -> real files
 RewriteRule ^scanners/?$                                 /scanners.html               [L]
 RewriteRule ^scanners/ema-200/?$                         /ema200.html                 [L]
-RewriteRule ^scanners/bottom-reversal/?$                 /dashboard.html              [L]
+RewriteRule ^scanners/bottom-reversal/?$                 /scanners/                   [R=301,L]
 RewriteRule ^scanners/day-drive/?$                       /day-drive.html              [L]
 RewriteRule ^scanners/trend-lines/?$                     /trend-lines.html            [L]
 RewriteRule ^scanners/hybrid-trend-lines/?$              /hybrid-trend-lines.html     [L]

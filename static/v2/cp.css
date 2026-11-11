@@ -1183,7 +1183,7 @@ h1,h2,h3{letter-spacing:-.012em}
 .flow.approaching{color:#9D8CFF;background:rgba(157,140,255,.08)}
 .flow.none{color:#52525B;border-color:transparent}
 .s-meta .flow{margin-left:6px}
-/* ---------- Bias Desk (owner, 4 Oct 2026) ---------- */
+/* ---------- AI Scan (owner, 4 Oct 2026) ---------- */
 .dk-hero-grid{display:grid;grid-template-columns:1.15fr 1fr;gap:16px}
 @media(max-width:860px){.dk-hero-grid{grid-template-columns:1fr}}
 .dk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:16px}

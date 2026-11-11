@@ -281,25 +281,12 @@ function cp_kb(): array
          . "A CALL or PUT appears only while that market is actually open, which is the live-only rule. "
          . "See [Overview](/) and the [Tier-1 Scanner](/scanner.html)."],
 
-        ['bottom-reversal', 'Bottom Reversal scanner, daily, gate, pattern, entry, stages, no repaint',
-         "The Daily Bottom Reversal Scanner looks for a bottom zone plus 2 of 3 sweep signals (liquidity sweep, BB sweep, CHoCH), "
-         . "then a reversal candle, then confirmation from the next closed candle. Stages: GATE means bottom plus 2 of 3 signals with no candle yet; "
-         . "PATTERN means the candle formed and the next candle decides; ENTRY means the reversal candle was confirmed. "
-         . "It runs on closed daily candles, so it does not repaint. See [Bottom Reversal](/scanners/bottom-reversal/)."],
 
         ['pulse-sync', 'Pulse Sync meaning, confluence, score out of 4',
          "Pulse Sync is ChartPulse's agreement score: how many of the engine's independent checks are pointing the same way at that moment. "
          . "It is shown out of 4. A higher number means more of the checks currently agree — it describes the present state, not a forecast."],
 
-        ['ground-score', 'Ground score, entry score, meter, out of 50',
-         "On the Bottom Reversal cards, Ground score (out of 50) rates how well-built the bottom structure is — things like prior lows, "
-         . "round numbers, Fibonacci levels and pivots lining up. Entry score (out of 50) rates the quality of the trigger. "
-         . "They describe structure, not probability of profit."],
 
-        ['glossary-sweeps', 'liquidity sweep, BB sweep, CHoCH, gate events meaning',
-         "Gate events on the Bottom Reversal scanner: a liquidity sweep is price dipping under an obvious prior low and coming back; "
-         . "a BB sweep is price poking below the lower Bollinger Band and closing back inside; "
-         . "CHoCH (Change of Character) is the first break of the short-term lower-high structure. Two of these three must be present."],
 
         ['cancel-below', 'cancel below, invalidation, not a stop loss',
          "\"Cancel below\" is the level where the setup is no longer valid — the structure that produced it has broken. "

@@ -14,7 +14,6 @@
     { t: "Tools", cols: [
       { h: "Free scanners", items: [
         { t: "All scanners", d: "Fifteen ready-made scans", href: "/scanners/" },
-        { t: "Bottom reversal", d: "Daily reversals off the lows", href: "/scanners/bottom-reversal/" },
         { t: "200 EMA", d: "Price meeting its 200 EMA", href: "/scanners/ema-200/" },
         { t: "Day Drive", d: "Three checks, weekly chart to 15m entry", href: "/scanners/day-drive/" },
         { t: "Trend lines", d: "Breakouts and tests on seven timeframes", href: "/scanners/trend-lines/" },

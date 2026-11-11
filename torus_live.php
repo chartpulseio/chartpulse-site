@@ -1,5 +1,5 @@
 <?php
-/* Live AI committee (owner, 5 Oct 2026): 4 Gemini analysts in parallel + 1 judge, built on the Bias Desk data.
+/* Live AI committee (owner, 5 Oct 2026): 4 Gemini analysts in parallel + 1 judge, built on the AI Scan data.
    Ready in about 20-40 seconds. One shared report per symbol per hour.
    Key: the owner pastes the Gemini API key alone into data/ml/gemini.ini (web access to .ini is denied in .htaccess). */
 const LC_TTL = 3600, LC_DAY_CAP = 150, LC_ANALYST = 'gemini-3.5-flash-lite', LC_JUDGE = 'gemini-3.5-flash';
