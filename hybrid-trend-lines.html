@@ -212,6 +212,11 @@ a.hy:hover{background:var(--card2)}
 .hy.s2 .hy-stage{border-color:rgba(110,168,254,.6);color:var(--blue)}
 .hy-say{margin:10px 0 8px;font-size:15px;line-height:1.5}
 .hy-say b{color:var(--ink)}
+.hy-now{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 10px;font-size:13px}
+.hy-now em{font-style:normal;color:var(--mute);margin-right:2px}
+.hy-now i{font-style:normal;padding:2px 9px;border-radius:6px;border:1px solid var(--line2);color:var(--dim)}
+.hy-now i b{font-family:var(--mono);color:var(--ink)}
+.hy-now i.a{border-color:var(--gold);color:var(--gold)}.hy-now i.b{border-color:rgba(110,168,254,.6);color:var(--blue)}
 .hy-row2{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-bottom:8px}
 .hy-plan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
 .hy-plan div{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#0B0C0F}
@@ -300,6 +305,13 @@ function say(r) {
   if (r.stage === 2) return `Price is ${put ? "above" : "below"} the ${line} right now. No trade yet. Wait for a ${c} to close back ${put ? "below" : "above"} it.`;
   return `Price is closing in on the ${line}; ${ext} is already at it. Get ready and wait for a ${c} to turn there.`;
 }
+// Which chart is doing what right now, so the charts page does not have to be opened (owner, 11 Nov 2026).
+function nowline(r) {
+  const g = { 4: [], 3: [], 2: [], 1: [] }, put = r.bias === "PUT", ln = put ? "resistance" : "support";
+  (r.all || []).forEach(x => g[x.stage] && g[x.stage].push(x.tf));
+  const part = (k, cls, label) => g[k].length ? `<i class="${cls}">${label}: <b>${g[k].join(", ")}</b></i>` : "";
+  return `<span class="hy-now"><em>Right now on the ${ln} lines</em>${part(4, "a", "Broke out and came back")}${part(3, "a", "Touched and turned")}${part(2, "b", put ? "Broken out above" : "Broken out below")}${part(1, "c", "Price approaching")}</span>`;
+}
 function chips(r) {
   const f = [];
   f.push(r.zone ? ["g", `${r.zone.t === "strong" ? "★ Strong zone" : "Major zone"} · ${r.zone.n.join(" + ")}`] : ["n", "No key zone on the line"]);
@@ -318,6 +330,7 @@ function card(r) {
   return `<a class="hy s${r.stage >= 3 && !r.live ? "0" : r.stage}" href="/scanners/trend-lines/?s=${encodeURIComponent(r.symbol)}">
     <div class="hy-top"><span class="tls-call ${r.bias}">${r.bias === "CALL" ? "▲ CALL" : "▼ PUT"}</span><h3>${esc(r.name)}</h3><small>${esc(r.symbol)} · ${esc(r.market || "")} · ${fmt(r.price, r.dec)}</small><span class="hy-stage">${stg(r)}${L.fresh.has(r.symbol) ? '<span class="hy-new">NEW</span>' : ""}</span></div>
     <p class="hy-say">${say(r)}</p>
+    ${nowline(r)}
     <div class="hy-row2">${mtf(r)}${chips(r)}</div>
     ${plan(r)}
   </a>`;

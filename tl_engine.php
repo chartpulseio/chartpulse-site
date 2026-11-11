@@ -33,7 +33,7 @@ const TL_VIEWS = ['swing' => ['1W', '1D', '4H', '1H'], 'intra' => ['30m', '15m',
 const TL_MTF = ['30m', '1H', '4H', '1D', '1W'];   // MTF trend strip; the bias needs 75%+ of the available ones (4/5, or 3/4 without 30m)
 const TL_TF_PTS = ['1W' => 10, '1D' => 9, '4H' => 8, '1H' => 6, '30m' => 6, '15m' => 5, '10m' => 4, '5m' => 2];
 const TL_PIV_MAX = 22;      // newest swing points tried per side (keeps the whole-universe scan fast)
-const TL_ROW_TTL = 600;     // a scanned symbol stays fresh this long
+const TL_ROW_TTL = 180;     // a scanned symbol stays fresh this long (short: the list says what is touching NOW)
 const TL_BUDGET = 18;       // wall clock for one scan step
 
 function tl_dec(float $px): int { $a = abs($px); return $a >= 1000 ? 2 : ($a >= 100 ? 2 : ($a >= 1 ? 4 : ($a >= 0.01 ? 5 : 8))); }
@@ -491,7 +491,7 @@ function tlh_row(string $sym, array $row, int $now): ?array {
     $px = (float)$E['c'][$ne - 1]; $lc = $ne - 2;                     // live price, last closed candle
     $live = $now - (int)$E['t'][$ne - 1] <= 2 * ($etf === '15m' ? 900 : 3600) ? 1 : 0;   // is the market trading right now?
     $Z = array_values(array_filter(tl_zones($fr), fn($z) => $z['k'] !== 'Day High' && $z['k'] !== 'Day Low'));
-    $best = null; $hits = 0;
+    $best = null; $hits = 0; $all = [];
     foreach (TLH_TFS as $k) {
         if (empty($src[$k])) continue;
         try { $x = tl_frame($k, $src[$k], false); } catch (Throwable $e) { $x = null; }
@@ -511,7 +511,7 @@ function tlh_row(string $sym, array $row, int $now): ?array {
         elseif (($px - $lv) * $s > $thr) $stage = 2;
         elseif (($lv - $px) * $s >= 0 && ($lv - $px) * $s <= TLH_APPROACH * $atrD) $stage = 1;
         if (!$stage) continue;
-        $hits++;
+        $hits++; $all[] = ['tf' => $k, 'stage' => $stage];   // every chart whose line is in play, for the remark on the list
         $zone = tl_match($Z, $lv, 0.06 * $atrD);   // tight, so the label means the zone really sits on the line
         $cand = ['tf' => $k, 'stage' => $stage, 'lv' => $lv, 'n' => (int)$L['touches'], 'dir' => $L['dir'], 'pattern' => $x['pattern'],
                  'zone' => $zone ? ['t' => $zone['t'], 'n' => $zone['n']] : null, 'opp' => $x[$put ? 'sup' : 'res']['now'] ?? null, 'brk' => $brk,
@@ -539,18 +539,18 @@ function tlh_row(string $sym, array $row, int $now): ?array {
             'stage' => $best['stage'], 'stage_name' => TLH_STAGE[$best['stage']], 'tf' => $best['tf'], 'etf' => $etf,
             'lv' => round($best['lv'], $d), 'touches' => $best['n'], 'line_dir' => $best['dir'], 'pattern' => $best['pattern'],
             'day_x' => round($dayX, $d), 'gap_atr' => round(abs($dayX - $best['lv']) / $atrD, 2), 'through' => ($dayX - $best['lv']) * $s > 0,
-            'zone' => $best['zone'], 'lines' => $hits, 'plan' => $plan, 'live' => $live,
+            'zone' => $best['zone'], 'lines' => $hits, 'all' => $all, 'plan' => $plan, 'live' => $live,
             'bar_t' => (int)$E['t'][$lc], 'key' => array_merge($best['key'], [count($pull)]), 'at' => $now];
 }
 
 /** Whole-universe hybrid scan (same stepping and caching as tl_scan, shorter row life because stages move fast). */
 function tlh_scan(): array {
     $dir = T_DATA . '/tl'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
-    $now = t_now(); $ck = $dir . '/_hscan3.json';
+    $now = t_now(); $ck = $dir . '/_hscan4.json';
     $c = t_read_json($ck, null);
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 30 && isset($c['rows'])) return $c;
     $scan = t_scan_load(); $syms = array_keys($scan['rows'] ?? []);
-    $cp = $dir . '/_hrows3.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
+    $cp = $dir . '/_hrows4.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
     $t0 = microtime(true); $done = 0; $fresh = 0; $nobias = 0;
     foreach ($syms as $sym) {
         $old = $cache[$sym] ?? null;

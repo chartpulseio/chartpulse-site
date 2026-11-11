@@ -177,6 +177,10 @@ a.dd-row:hover{background:var(--card2)}
 .tls-q{font:600 12px/1.25 var(--sans);text-align:center;padding:5px 8px;border-radius:8px;border:1px solid var(--line2);color:var(--dim)}
 .tls-q.a{background:var(--up);border-color:var(--up);color:#00130f}.tls-q.b{border-color:var(--gold);color:var(--gold)}
 .tls-fx{display:flex;flex-wrap:wrap;gap:5px}
+.tls-now{display:flex;flex-wrap:wrap;gap:5px 6px;margin:0 0 8px;font-size:12.5px}
+.tls-now i{font-style:normal;padding:2px 8px;border-radius:6px;border:1px solid var(--line2);color:var(--dim);white-space:nowrap}
+.tls-now i b{font-family:var(--mono);color:var(--ink)}
+.tls-now i.u{border-color:var(--up);color:var(--up)}.tls-now i.d{border-color:var(--dn);color:var(--dn)}.tls-now i.t{border-color:var(--gold);color:var(--gold)}
 .tls-fx i{font-style:normal;font-size:11.5px;line-height:1.5;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--mute);white-space:nowrap}
 .tls-fx i.g{border-color:rgba(34,171,148,.45);color:var(--up)}.tls-fx i.w{border-color:rgba(247,82,95,.5);color:var(--dn)}
 .dd-how{margin:22px 0 0;padding:16px 18px;border:1px solid var(--line2);border-radius:14px;background:var(--card)}
@@ -302,12 +306,21 @@ function mtf(r) {
   const lab = m.bias ? `<b class="${m.bias}">${m.bias === "CALL" ? "▲" : "▼"} ${m.bias} ${m.bias === "CALL" ? m.up : m.down}/${m.n}</b>` : `<b class="none">mixed ${m.up || 0}▲ ${m.down || 0}▼</b>`;
   return `<span class="tls-mtf" title="MTF trend: ${MTF.map(k => k + " " + ((m.d[k] || 0) > 0 ? "up" : (m.d[k] || 0) < 0 ? "down" : "n/a")).join(", ")}"><span class="sq">${MTF.map(k => `<i class="${(m.d[k] || 0) > 0 ? "u" : (m.d[k] || 0) < 0 ? "d" : ""}"></i>`).join("")}</span>${lab}</span>`;
 }
+// Which chart is touching or has broken right now, all seven charts, so page 2 is not needed (owner, 11 Nov 2026).
+const ORDER = ["1W", "1D", "4H", "1H", "30m", "15m", "10m"];
+function nowline(r) {
+  const g = { break_up: [], break_down: [], at_res: [], at_sup: [] };
+  (r.ev || []).forEach(e => { if (g[e.e] && !g[e.e].includes(e.tf)) g[e.e].push(e.tf); });
+  const part = (k, cls, label) => g[k].length ? `<i class="${cls}">${label}: <b>${g[k].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b)).join(", ")}</b></i>` : "";
+  const h = part("break_up", "u", "▲ Broke resistance") + part("break_down", "d", "▼ Broke support") + part("at_res", "t", "Touching resistance") + part("at_sup", "t", "Touching support");
+  return h ? `<span class="tls-now">${h}</span>` : "";
+}
 function signal(r) {
   const b = best(r);
   if (!b) return `<span>Lines are holding. No break or test right now.</span>`;
   const call = `<span class="tls-call ${b.call}">${b.call === "CALL" ? "▲ CALL" : "▼ PUT"}</span>`;
   const z = b.zone ? `<span class="tls-z ${b.zone.t}">${b.zone.t === "strong" ? "★ Strong zone" : "Major zone"} · ${esc(b.zone.n.join(" + "))}</span>` : "";
-  return `${call}${z}<span style="display:block;margin:4px 0 6px">${EVT[b.e].replace("{tf}", TFN[b.tf])} at ${fmt(b.lv, r.dec)}</span>${fchips(r, b)}`;
+  return `${nowline(r)}${call}${z}<span style="display:block;margin:4px 0 6px">${EVT[b.e].replace("{tf}", TFN[b.tf])} at ${fmt(b.lv, r.dec)}</span>${fchips(r, b)}`;
 }
 const TFL = { "1W": "Weekly chart", "1D": "Daily chart", "4H": "4-hour chart", "1H": "1-hour chart", "30m": "30-min chart", "15m": "15-min chart", "10m": "10-min chart" };
 const grade = q => q >= 80 ? ["a", "Top setup"] : q >= 60 ? ["b", "Good setup"] : ["c", "Basic setup"];
@@ -343,7 +356,7 @@ function paint() {
   const key = r => { const b = best(r); return b ? (b.call ? 1000 : 0) + b.q : -1; };
   rows.sort((a, b) => key(b) - key(a));
   $("#tlList").style.setProperty("--n", tfs.length);
-  const head = `<div class="dd-row head"><span>#</span><span>Market</span><span>MTF trend</span>${tfs.map(k => `<span class="tls-tfh">${k}</span>`).join("")}<span>Signal and why</span><span style="text-align:right">Grade</span></div>`;
+  const head = `<div class="dd-row head"><span>#</span><span>Market</span><span>MTF trend</span>${tfs.map(k => `<span class="tls-tfh">${k}</span>`).join("")}<span>Right now, signal and why</span><span style="text-align:right">Grade</span></div>`;
   $("#tlList").innerHTML = rows.length ? head + rows.slice(0, L.show).map((r, i) => `
     <a class="dd-row" href="${BASE}?s=${encodeURIComponent(r.symbol)}">
       <span class="dd-rk">${i + 1}</span>
