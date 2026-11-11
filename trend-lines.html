@@ -205,18 +205,18 @@ a.dd-row:hover{background:var(--card2)}
 <main class="dd" id="tlApp">
   <div class="dd-eyebrow">Free scanner</div>
   <h1>Trend Line Scanner</h1>
-  <p class="dd-lede">Every market is checked on seven charts, from weekly down to 10-minute. The scanner draws the trend line each chart is respecting, finds where price has just <b>broken</b> a line or is <b>testing</b> one, and ranks the CALL and PUT signals that agree with the bigger trend. Tap a row for the charts, entry, stop and targets.</p>
+  <p class="dd-lede">Every market is checked on seven charts, from weekly down to 10-minute. The scanner draws the trend line each chart is respecting, finds where price has just <b>broken</b> a line or is <b>testing</b> one, and labels every CALL and PUT signal with its trend, zone and line strength. Tap a row for the charts, entry, stop and targets.</p>
   <ol class="dd-steps">
     <li><span>STEP 1</span><b>Find the line</b><p>Swing highs make a resistance line, swing lows a support line. A line dies when a candle closes through it.</p></li>
-    <li><span>STEP 2</span><b>Spot the event</b><p>On lines with three or more touches: a clear break, or price sitting on the line now.</p></li>
-    <li><span>STEP 3</span><b>Check the bias</b><p>MTF trend on 30m, 1H, 4H, 1D, 1W. A CALL or PUT is given only when 75% or more of them agree with it.</p></li>
+    <li><span>STEP 2</span><b>Spot the event</b><p>A candle closed through the line (a break), or price is sitting on the line now (a test). Every one is listed.</p></li>
+    <li><span>STEP 3</span><b>Label it</b><p>MTF trend (Supertrend 10, 3 on 30m, 1H, 4H, 1D, 1W), key zones, touches and pattern are added as labels. Nothing is filtered out.</p></li>
     <li><span>THEN</span><b>Best setups first</b><p>Each row shows its quality factors as labels: trend, zone, breakout or test, touches, chart and pattern. More green ticks rank higher.</p></li>
   </ol>
   <section class="dd-how">
     <h2>New to this? Use it in four steps</h2>
     <ol>
-      <li>Stay on <b>Top setups only</b>. These have the trend with them, a key zone on the line and a well-tested line.</li>
-      <li>Take only the side shown: <b>CALL</b> means look to buy, <b>PUT</b> means look to sell. Never trade against it.</li>
+      <li>Every signal is listed, best first. Read the labels: green ticks are in its favour, a red label is a warning. <b>Top setups only</b> narrows the list if you want fewer.</li>
+      <li><b>CALL</b> means look to buy, <b>PUT</b> means look to sell. The <b>MTF trend</b> label tells you whether the bigger trend is with that side or against it.</li>
       <li>Open the row. The <b>trade plan</b> gives the entry, the stop-loss and two targets. Do not enter before the entry condition happens.</li>
       <li>Risk a small, fixed part of your account on each trade, and always place the stop-loss.</li>
     </ol>
@@ -253,13 +253,13 @@ a.dd-row:hover{background:var(--card2)}
     <dl>
       <dt>Resistance line</dt><dd>A line across swing highs. Price has turned down from it before; a close above it is a breakout.</dd>
       <dt>Support line</dt><dd>A line across swing lows. Price has bounced from it before; a close below it is a breakdown.</dd>
-      <dt>Touches</dt><dd>How many separate times price reached the line and respected it. A break or a test is reported only on a line with three or more touches: a break when the close is clearly through the line, a test when price is right at it.</dd>
+      <dt>Touches</dt><dd>How many separate times price reached the line and respected it. More touches make a stronger line; the count is shown on every signal.</dd>
     </dl>
     <dl>
       <dt>Channel</dt><dd>Two lines sloping the same way. Falling channel: sellers in control. Rising channel: buyers in control.</dd>
       <dt>Triangle and wedge</dt><dd>Two lines closing in on each other. Price is being squeezed and usually leaves with a strong move.</dd>
       <dt>Major / strong zone</dt><dd>The line sits on a key level: today's high or low, previous day high, low or close, weekly or monthly high or low, a pivot or a Fibonacci level. One match is a major zone, two or more a strong zone.</dd>
-      <dt>MTF bias</dt><dd>Trend direction on 30m, 1H, 4H, 1D and 1W. CALL bias when at least 4 of 5 point up, PUT bias when at least 4 of 5 point down (3 of 4 where there is no 30m data).</dd>
+      <dt>MTF bias</dt><dd>Trend direction on 30m, 1H, 4H, 1D and 1W. Standard Supertrend (10, 3). CALL bias when at least 4 of 5 point up, PUT bias when at least 4 of 5 point down (3 of 4 where there is no 30m data). It is a label on each signal, not a filter.</dd>
     </dl>
   </section>
   <p class="dd-foot">Lines are drawn by rule from swing highs and lows on the last 140 candles of each chart. They describe the chart; they are not a forecast. The grade (Top, Good, Basic) comes from the labelled factors on each row. It is a rule-based checklist, not a win probability; it has not been measured. Intraday charts are shown for markets with recent intraday data. Education and demonstration only, not financial advice.</p>
@@ -268,7 +268,7 @@ a.dd-row:hover{background:var(--card2)}
 <a href="/">ChartPulse home</a><a href="/scanner.html">Tier-1 Scanner</a><a href="/scanners/day-drive/">Day Drive Scanner</a><a href="/scanners/">All free scanners</a><a href="/scanners/bottom-reversal/">Bottom Reversal Scanner</a><a href="/scanners/ema-200/">200 EMA Scanner</a><a href="/desk/">AI Scan</a><a href="/backtesting/">Backtesting</a><a href="/bias/">Market bias</a><a href="/movers/">Market movers</a><a href="/pricing.html">Pricing</a><a href="/legal/disclaimer">Risk disclaimer</a>
 </nav></footer>
 
-<script src="/static/v2/trendlines.js?v=5"></script>
+<script src="/static/v2/trendlines.js?v=6"></script>
 <script>
 (() => {
 "use strict";
@@ -304,8 +304,8 @@ function mtf(r) {
 }
 function signal(r) {
   const b = best(r);
-  if (!b) return `<span>No break or test on a 3-touch line right now.</span>`;
-  const call = b.call ? `<span class="tls-call ${b.call}">${b.call === "CALL" ? "▲ CALL" : "▼ PUT"}</span>` : `<span class="tls-call x">${b.against ? "against bias" : "no clear bias"}</span>`;
+  if (!b) return `<span>Lines are holding. No break or test right now.</span>`;
+  const call = `<span class="tls-call ${b.call}">${b.call === "CALL" ? "▲ CALL" : "▼ PUT"}</span>`;
   const z = b.zone ? `<span class="tls-z ${b.zone.t}">${b.zone.t === "strong" ? "★ Strong zone" : "Major zone"} · ${esc(b.zone.n.join(" + "))}</span>` : "";
   return `${call}${z}<span style="display:block;margin:4px 0 6px">${EVT[b.e].replace("{tf}", TFN[b.tf])} at ${fmt(b.lv, r.dec)}</span>${fchips(r, b)}`;
 }
@@ -315,10 +315,10 @@ const grade = q => q >= 80 ? ["a", "Top setup"] : q >= 60 ? ["b", "Good setup"] 
 function factors(r, b) {
   const m = r.mtf || {}, p = b.parts || {}, out = [];
   const agree = b.dir === "CALL" ? m.up : m.down;
-  out.push(b.call ? ["g", `Trend with you ${agree}/${m.n}`] : b.against ? ["w", "Against the trend"] : ["n", "Trend mixed"]);
+  out.push(b.with ? ["g", `Trend with you ${agree}/${m.n}`] : b.against ? ["w", `Against the trend ${agree}/${m.n}`] : ["n", `Trend mixed ${agree}/${m.n}`]);
   out.push(b.zone ? ["g", b.zone.t === "strong" ? "★ Strong zone" : "Major zone"] : ["n", "No key zone"]);
   out.push(b.e.startsWith("break") ? ["g", "Clear breakout"] : ["g", "Sitting on the line"]);
-  out.push(b.n >= 5 ? ["g", `Well-tested line · ${b.n} touches`] : ["n", `${b.n} touches`]);
+  out.push(b.n >= 5 ? ["g", `Well-tested line · ${b.n} touches`] : b.n >= 3 ? ["n", `${b.n} touches`] : ["n", "New line · 2 touches"]);
   out.push([p.tf >= 8 ? "g" : "n", TFL[b.tf] || b.tf]);
   out.push(p.pattern >= 10 ? ["g", "Pattern agrees"] : p.pattern <= 2 ? ["w", "Pattern warns"] : ["n", "Pattern neutral"]);
   if (b.more) out.push(["g", `+${b.more} chart${b.more > 1 ? "s" : ""} agree`]);

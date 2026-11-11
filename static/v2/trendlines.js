@@ -60,10 +60,11 @@
   const TFL = { "1W": "weekly", "1D": "daily", "4H": "4-hour", "1H": "1-hour", "30m": "30-minute", "15m": "15-minute", "10m": "10-minute", "5m": "5-minute" };
   function checks(p, m) {
     const pt = p.parts || {}, agree = m ? (p.dir === "CALL" ? m.up : m.down) : 0, out = [];
-    out.push(["g", `Trend is with you: ${agree} of ${m ? m.n : 0} timeframes point ${p.dir === "CALL" ? "up" : "down"}.`]);
+    const tot = m ? m.n : 0, way = p.dir === "CALL" ? "up" : "down";
+    out.push(p.with ? ["g", `Trend is with you: ${agree} of ${tot} timeframes point ${way}.`] : p.against ? ["w", `Against the trend: only ${agree} of ${tot} timeframes point ${way}.`] : ["n", `Trend is mixed: ${agree} of ${tot} timeframes point ${way}.`]);
     out.push(p.zone ? ["g", `${p.zone.t === "strong" ? "Strong zone" : "Major zone"} on the line: ${(p.zone.n || []).join(" + ")}.`] : ["n", "No key zone on the line."]);
     out.push(["g", p.kind === "breakout" ? "Clear breakout: the candle closed well through the line." : "Price is sitting right on the line."]);
-    out.push(pt.touches >= 10 ? ["g", "Well-tested line: five or more touches."] : ["n", pt.touches >= 7 ? "Line has four touches." : "Line has three touches, the minimum."]);
+    out.push(pt.touches >= 10 ? ["g", "Well-tested line: five or more touches."] : ["n", pt.touches >= 7 ? "Line has four touches." : pt.touches >= 4 ? "Line has three touches." : "New line: only two touches so far."]);
     out.push([pt.tf >= 8 ? "g" : "n", `Signal is on the ${TFL[p.tf] || p.tf} chart${pt.tf >= 8 ? ", a big chart." : "."}`]);
     out.push(pt.pattern >= 10 ? ["g", `The pattern (${p.pattern}) agrees with this side.`] : pt.pattern <= 2 ? ["w", `The pattern (${p.pattern}) usually leans the other way.`] : ["n", `The pattern (${p.pattern}) is neutral.`]);
     return out;
@@ -88,8 +89,8 @@
     const fr = d.frames || [];
     let h = `<header class="tlx-head"><div><h2>Trend lines on the chart right now</h2><p class="tlx-sub">${esc(d.summary || "")}</p></div><span class="tlx-n">${fr.length} timeframe${fr.length === 1 ? "" : "s"}</span></header>` + mtf(d.mtf);
     const pl = d.plans || [];
-    if (pl.length) h += `<div class="tlx-plans">${pl.map(p => plan(p, d.mtf)).join("")}</div><p class="tlx-note">Entry, stop and targets are worked out by rule from the line and the chart's ATR, only for signals that agree with the MTF bias. The grade comes from the checks listed in each plan. No win rate is attached: these rules have not been measured.</p>`;
-    else if (fr.length) h += `<p class="tlx-note">No trade plan right now: no line with three or more touches is being broken or tested in the direction of the MTF bias.</p>`;
+    if (pl.length) h += `<div class="tlx-plans">${pl.map(p => plan(p, d.mtf)).join("")}</div><p class="tlx-note">Entry, stop and targets are worked out by rule from the line and the chart's ATR for the best signal of each view. The grade comes from the checks listed in each plan. No win rate is attached: these rules have not been measured.</p>`;
+    else if (fr.length) h += `<p class="tlx-note">No trade plan right now: no line is being broken or tested.</p>`;
     if (!fr.length) return h;
     h += `<div class="tlx-grid2">` + fr.map(f => `<article class="tlx-card lean-${esc(f.lean)}">
       <div class="tlx-top"><span class="tlx-tf">${esc(f.tf)}</span><b>${esc(f.pattern)}</b><em>${esc(TFN[f.tf] || f.tf)} chart</em></div>

@@ -276,7 +276,8 @@ function tl_fit(string $pat, string $e): int {
  *   touches              up to 10   (3 -> 4, 4 -> 7, 5+ -> 10)
  *   timeframe            up to 10
  *   pattern fits         up to 10
- * A signal against the MTF bias keeps 60% of its total and never gets a CALL / PUT label.
+ * A signal against the MTF bias keeps 60% of its total. This is ORDER ONLY (owner, 11 Nov 2026 23:24): nothing is
+ * hidden and every signal keeps its own CALL / PUT; the MTF trend is shown as a label.
  */
 function tl_score(array $sg, array $mtf): array {
     $dir = $sg['dir']; $agree = $dir === 'CALL' ? $mtf['up'] : $mtf['down']; $n = max(1, $mtf['n']); $r = $agree / $n;
@@ -284,7 +285,7 @@ function tl_score(array $sg, array $mtf): array {
     $pM = $with ? ($r >= 0.999 ? 30 : ($r >= 0.8 ? 24 : 22)) : (($mtf['bias'] === null && $r > 0.5) ? 8 : 0);
     $pZ = $sg['zone'] ? ($sg['zone']['t'] === 'strong' ? 25 : 15) : 0;
     $pE = str_starts_with($sg['e'], 'break') ? 15 : 12;
-    $pT = $sg['n'] >= 5 ? 10 : ($sg['n'] === 4 ? 7 : 4);
+    $pT = $sg['n'] >= 5 ? 10 : ($sg['n'] === 4 ? 7 : ($sg['n'] === 3 ? 4 : 1));
     $pF = TL_TF_PTS[$sg['tf']] ?? 3; $pP = tl_fit($sg['pattern'], $sg['e']);
     $tot = $pM + $pZ + $pE + $pT + $pF + $pP; if (!$with) $tot *= 0.6;
     return ['score' => (int)round($tot), 'with' => $with, 'against' => $against,
@@ -301,12 +302,11 @@ function tl_read(string $k, array $F, array $Z, float $atrD, array $mtf, bool $b
         $L = $x[$side]; if (!$L) continue;
         $z = tl_match($Z, (float)$L['now'], $tol); $x[$side]['zone'] = $z;
         $cell[$side] = ['dir' => $L['dir'], 'n' => $L['touches'], 'st' => $L['state'], 'now' => $L['now'], 'gap' => $L['dist_pct']] + ($z ? ['z' => $z['t']] : []);
-        // An event needs a line with 3+ touches (2 points always make a line), a DECISIVE break (the close is half an
-        // ATR or more through the line) or a CLOSE test (within 0.3 ATR of it).
-        if ($L['touches'] < 3) continue;
+        // owner, 11 Nov 2026 23:24: no filters -- every broken or tested line is a signal, exactly as on the first
+        // build. Touches, zone, MTF trend, pattern are labels on the signal; they rank it but never hide it.
         $e = null;
-        if ($L['state'] === 'broken' && $L['ag'] >= 0.5) $e = $side === 'res' ? 'break_up' : 'break_down';
-        elseif ($L['state'] === 'testing' && $L['ag'] <= 0.3) $e = $side === 'res' ? 'at_res' : 'at_sup';
+        if ($L['state'] === 'broken') $e = $side === 'res' ? 'break_up' : 'break_down';
+        elseif ($L['state'] === 'testing') $e = $side === 'res' ? 'at_res' : 'at_sup';
         if (!$e) continue;
         $cell[$side]['ev'] = str_starts_with($e, 'break') ? 'break' : 'test';
         $sg = ['tf' => $k, 'e' => $e, 'dir' => ($e === 'break_up' || $e === 'at_sup') ? 'CALL' : 'PUT', 'n' => $L['touches'], 'lv' => $L['now'],
@@ -316,16 +316,16 @@ function tl_read(string $k, array $F, array $Z, float $atrD, array $mtf, bool $b
     return [$cell, $sigs, $x];
 }
 
-/** Best signal of a set of timeframes: with-the-bias first, then score. Adds a little for other agreeing timeframes. */
+/** Best signal of a set of timeframes, by score. Adds a little for other timeframes pointing the same way. */
 function tl_pick(array $sigs, array $tfs): ?array {
     $s = array_values(array_filter($sigs, fn($g) => in_array($g['tf'], $tfs, true)));
     if (!$s) return null;
-    usort($s, fn($a, $b) => [$b['with'], $b['score']] <=> [$a['with'], $a['score']]);
-    $b = $s[0]; $more = 0;
-    foreach (array_slice($s, 1) as $g) if ($g['with'] && $g['dir'] === $b['dir'] && $g['tf'] !== $b['tf']) $more++;
-    $q = min(100, $b['score'] + ($b['with'] ? min(8, 3 * $more) : 0));
-    return ['q' => $q, 'call' => $b['with'] ? $b['dir'] : null, 'tf' => $b['tf'], 'e' => $b['e'], 'dir' => $b['dir'], 'n' => $b['n'], 'lv' => $b['lv'],
-            'zone' => $b['zone'], 'against' => $b['against'], 'more' => $more, 'pattern' => $b['pattern'], 'parts' => $b['parts']];
+    usort($s, fn($a, $b) => $b['score'] <=> $a['score']);
+    $b = $s[0]; $more = 0; $seen = [$b['tf'] => 1];
+    foreach (array_slice($s, 1) as $g) if ($g['dir'] === $b['dir'] && !isset($seen[$g['tf']])) { $seen[$g['tf']] = 1; $more++; }
+    $q = min(100, $b['score'] + min(8, 3 * $more));
+    return ['q' => $q, 'call' => $b['dir'], 'tf' => $b['tf'], 'e' => $b['e'], 'dir' => $b['dir'], 'n' => $b['n'], 'lv' => $b['lv'],
+            'zone' => $b['zone'], 'with' => $b['with'], 'against' => $b['against'], 'more' => $more, 'pattern' => $b['pattern'], 'parts' => $b['parts']];
 }
 
 /**
@@ -352,7 +352,7 @@ function tl_plan(array $sg, array $x): array {
     $how = $brk
         ? ($up ? "Price closed above the $tf resistance line. Wait for a pullback toward $lvS and buy if it holds as support." : "Price closed below the $tf support line. Wait for a bounce toward $lvS and sell if it holds as resistance.")
         : ($up ? "Price is on the $tf support line. Buy only after a $tf candle closes back up away from the line." : "Price is on the $tf resistance line. Sell only after a $tf candle closes back down away from the line.");
-    return ['tf' => $tf, 'dir' => $sg['dir'], 'kind' => $brk ? 'breakout' : 'bounce', 'e' => $sg['e'], 'pattern' => $sg['pattern'], 'q' => $sg['score'], 'with' => $sg['with'],
+    return ['tf' => $tf, 'dir' => $sg['dir'], 'kind' => $brk ? 'breakout' : 'bounce', 'e' => $sg['e'], 'pattern' => $sg['pattern'], 'q' => $sg['score'], 'with' => $sg['with'], 'against' => $sg['against'], 'n' => $sg['n'],
             'zone' => $sg['zone'], 'entry' => round($entry, $d), 'sl' => round($sl, $d), 't1' => round($t1, $d), 't2' => round($t2, $d), 'dec' => $d,
             'rr2' => round(abs($t2 - $entry) / max($risk, 1e-12), 1), 'risk_pct' => $entry > 0 ? round($risk / $entry * 100, 2) : 0, 't2why' => $t2why,
             'read' => (isset($READ[$sg['pattern']]) && tl_fit($sg['pattern'], $sg['e']) <= 2 ? 'Caution: ' : '') . ($READ[$sg['pattern']] ?? ''), 'how' => $how,
@@ -362,7 +362,7 @@ function tl_plan(array $sg, array $x): array {
 /** All timeframes for one symbol: charts, zones on the lines, MTF trend, trade plans, summary. Cached 60 s. */
 function tl_build(string $sym): ?array {
     $dir = T_DATA . '/tl'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
-    $p = $dir . '/' . preg_replace('/[^A-Za-z0-9._-]/', '_', $sym) . '.v3.json';
+    $p = $dir . '/' . preg_replace('/[^A-Za-z0-9._-]/', '_', $sym) . '.v4.json';
     $c = t_read_json($p, null);
     if (is_array($c) && t_now() - (int)($c['at'] ?? 0) < 60) return $c;
     $fr = t_read_frames($sym); if (!$fr) return null;
@@ -381,7 +381,7 @@ function tl_build(string $sym): ?array {
     }
     $plans = [];
     foreach (TL_VIEWS as $vw => $tfs) {
-        $s = array_values(array_filter($sigs, fn($g) => in_array($g['tf'], $tfs, true) && $g['with']));
+        $s = array_values(array_filter($sigs, fn($g) => in_array($g['tf'], $tfs, true)));
         if (!$s) continue;
         usort($s, fn($a, $b) => $b['score'] <=> $a['score']);
         $plans[] = ['view' => $vw] + tl_plan($s[0], $X[$s[0]['tf']]);
@@ -424,11 +424,11 @@ function tl_row(string $sym, array $row, int $now): ?array {
 /** Whole-universe scan, built in steps inside a time budget and cached; the page polls until progress is 1. */
 function tl_scan(): array {
     $dir = T_DATA . '/tl'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
-    $now = t_now(); $ck = $dir . '/_scan5.json';
+    $now = t_now(); $ck = $dir . '/_scan6.json';
     $c = t_read_json($ck, null);
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 45 && !empty($c['rows'])) return $c;
     $scan = t_scan_load(); $syms = array_keys($scan['rows'] ?? []);
-    $cp = $dir . '/_rows5.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
+    $cp = $dir . '/_rows6.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
     $t0 = microtime(true); $done = 0; $fresh = 0;
     foreach ($syms as $sym) {
         $old = $cache[$sym] ?? null;
