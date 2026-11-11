@@ -17,7 +17,8 @@
         { t: "Bottom reversal", d: "Daily reversals off the lows", href: "/scanners/bottom-reversal/" },
         { t: "200 EMA", d: "Price meeting its 200 EMA", href: "/scanners/ema-200/" },
         { t: "Day Drive", d: "Three checks, weekly chart to 15m entry", href: "/scanners/day-drive/" },
-        { t: "Trend lines", d: "Breakouts and tests on five timeframes", href: "/scanners/trend-lines/" }
+        { t: "Trend lines", d: "Breakouts and tests on seven timeframes", href: "/scanners/trend-lines/" },
+        { t: "Hybrid trend lines", d: "Day high or low at a line, with the trend", href: "/scanners/hybrid-trend-lines/" }
       ] },
       { h: "Research", items: [
         { t: "Backtesting", d: "Test your own strategy on history", href: "/backtesting/" },

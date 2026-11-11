@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hybrid Trend Line Scanner: Day High / Low at a Trend Line · ChartPulse</title>
+<meta name="description" content="Free hybrid trend line scanner: PUT setups where the day high meets a resistance line in a downtrend, CALL setups where the day low meets support in an uptrend.">
+<meta name="theme-color" content="#050506">
+<link rel="canonical" href="https://chartpulse.io/scanners/hybrid-trend-lines/">
+<meta property="og:site_name" content="ChartPulse">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Hybrid Trend Line Scanner: Day High / Low at a Trend Line · ChartPulse">
+<meta property="og:description" content="Free hybrid trend line scanner: PUT setups where the day high meets a resistance line in a downtrend, CALL setups where the day low meets support in an uptrend.">
+<meta property="og:url" content="https://chartpulse.io/scanners/hybrid-trend-lines/">
+<meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Hybrid Trend Line Scanner: Day High / Low at a Trend Line · ChartPulse">
+<meta name="twitter:description" content="Free hybrid trend line scanner: PUT setups where the day high meets a resistance line in a downtrend, CALL setups where the day low meets support in an uptrend.">
+<meta name="twitter:image" content="https://chartpulse.io/static/og.jpg">
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
+<link rel="stylesheet" href="/static/v2/sitehead.css?v=2">
+<script defer src="/static/v2/sitehead.js?v=5"></script>
+<script type="application/ld+json" id="cp-ld">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"Hybrid Trend Lines","item":"https://chartpulse.io/scanners/hybrid-trend-lines/"}]},{"@type":"WebApplication","name":"Hybrid Trend Line Scanner","url":"https://chartpulse.io/scanners/hybrid-trend-lines/","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"Free hybrid trend line scanner: PUT setups where the day high meets a resistance line in a downtrend, CALL setups where the day low meets support in an uptrend.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@id":"https://chartpulse.io/#org"}}]}</script>
+<style>
+:root{--bg:#050506;--card:#0F1014;--card2:#14161B;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#EDEDEF;--dim:#A3A5AF;--mute:#6B6D78;--gold:#E9C46A;--up:#22AB94;--dn:#F7525F;--blue:#6EA8FE;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.dd{max-width:1240px;margin:0 auto;padding:28px 20px 64px}
+.dd-eyebrow{font:600 12px/1 var(--mono);letter-spacing:.16em;color:var(--gold);text-transform:uppercase}
+.dd h1{margin:10px 0 10px;font-size:clamp(28px,4.4vw,44px);line-height:1.1;letter-spacing:-.02em}
+.dd-lede{margin:0;max-width:62ch;color:var(--dim);font-size:17px}
+.dd-back{display:inline-block;margin-bottom:14px;color:var(--dim);font-size:14px;text-decoration:none}
+.dd-back:hover{color:var(--ink)}
+
+/* the three checks */
+.dd-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:26px 0 0;padding:0;list-style:none}
+.dd-steps li{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.dd-steps b{display:block;font-size:15px;margin:6px 0 4px}
+.dd-steps span{font:600 11px/1 var(--mono);letter-spacing:.12em;color:var(--gold)}
+.dd-steps p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.5}
+
+/* counts */
+.dd-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:22px 0 0}
+.dd-tile{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.dd-tile .v{font:600 26px/1.1 var(--mono)}
+.dd-tile .k{margin-top:4px;color:var(--dim);font-size:13px}
+.dd-tile.hot .v{color:var(--up)}.dd-tile.warm .v{color:var(--gold)}
+
+.dd-note{margin:18px 0 0;padding:12px 16px;border:1px solid rgba(233,196,106,.35);border-radius:12px;background:rgba(233,196,106,.06);color:var(--dim);font-size:14px}
+.dd-note b{color:var(--ink)}
+
+/* controls */
+.dd-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:26px 0 12px}
+.dd-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.dd-tabs button,.dd-btn{appearance:none;border:1px solid var(--line2);background:transparent;color:var(--dim);padding:8px 14px;border-radius:999px;font:500 14px/1 var(--sans);cursor:pointer}
+.dd-tabs button.on{background:var(--ink);color:#000;border-color:var(--ink)}
+.dd-tabs button:hover,.dd-btn:hover{color:var(--ink);border-color:var(--ink)}
+.dd-tabs button.on:hover{color:#000}
+.dd-search{flex:1;min-width:180px;max-width:300px;margin-left:auto;padding:9px 14px;border:1px solid var(--line2);border-radius:999px;background:var(--card);color:var(--ink);font:14px var(--sans)}
+.dd-upd{color:var(--mute);font-size:13px}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* list */
+.dd-list{border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden}
+.dd-row{display:grid;grid-template-columns:40px minmax(150px,1.3fr) repeat(5,minmax(84px,1fr)) minmax(190px,1.8fr) 20px;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid var(--line);text-decoration:none;color:inherit}
+.dd-row:first-child{border-top:0}
+a.dd-row:hover{background:var(--card2)}
+.dd-row.head{color:var(--mute);font:600 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;background:#0B0C0F}
+.dd-rk{color:var(--mute);font:13px var(--mono)}
+.dd-nm b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dd-nm small{color:var(--mute);font:12px var(--mono)}
+.dd-side{display:inline-flex;align-items:center;gap:6px;font:600 13px var(--mono)}
+.dd-side.CALL{color:var(--up)}.dd-side.PUT{color:var(--dn)}
+.dd-pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid var(--line2);font:600 12px/1.3 var(--sans);color:var(--dim);white-space:nowrap}
+.dd-pill.s-drive{background:var(--up);border-color:var(--up);color:#00130f}
+.dd-pill.s-armed{border-color:var(--gold);color:var(--gold)}
+.dd-pill.s-trend,.dd-pill.s-structure{border-color:rgba(110,168,254,.6);color:var(--blue)}
+.dd-prog{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.dd-prog i{display:block;height:6px;border-radius:3px;background:rgba(255,255,255,.08);position:relative;overflow:hidden}
+.dd-prog i::after{content:"";position:absolute;inset:0;width:var(--w,0%);background:var(--gold);border-radius:3px}
+.dd-prog i.done::after{background:var(--up)}
+.dd-prog small{grid-column:1/-1;color:var(--mute);font:11px var(--mono)}
+.dd-sc{font:600 16px var(--mono);text-align:right}
+.dd-sc small{color:var(--mute);font-weight:400;font-size:11px}
+.dd-next{color:var(--dim);font-size:13.5px;line-height:1.45}
+.dd-go{color:var(--mute)}
+.dd-empty{padding:28px 16px;color:var(--dim);text-align:center}
+.dd-more{display:block;margin:14px auto 0}
+
+/* detail */
+.dd-dhead{display:flex;flex-wrap:wrap;gap:18px;justify-content:space-between;align-items:flex-end}
+.dd-dhead h1{margin:6px 0 10px}
+.dd-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dd-score{min-width:150px;padding:14px 18px;border:1px solid var(--line);border-radius:14px;background:var(--card);text-align:right}
+.dd-score .v{font:600 34px/1 var(--mono)}
+.dd-score .k{color:var(--dim);font-size:13px;margin-top:4px}
+.dd-now{margin:20px 0 0;padding:16px 18px;border:1px solid var(--line2);border-radius:14px;background:var(--card);font-size:16px}
+.dd-now b{color:var(--gold)}
+.dd-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
+.dd-card{padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card);min-width:0}
+.dd-card h2{margin:0 0 2px;font-size:16px}
+.dd-card .sub{margin:0 0 12px;color:var(--mute);font-size:13px}
+.dd-card.ok{border-color:rgba(34,171,148,.45)}
+.dd-gate{display:grid;grid-template-columns:22px 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.dd-gate:first-of-type{border-top:0}
+.dd-gate .ic{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 12px/1 var(--sans);margin-top:1px;background:rgba(255,255,255,.07);color:var(--mute)}
+.dd-gate.ok .ic{background:var(--up);color:#00130f}
+.dd-gate b{display:block;font-size:14px;font-weight:600}
+.dd-gate p{margin:2px 0 0;color:var(--dim);font-size:13px;line-height:1.45}
+.dd-gate em{font-style:normal;color:var(--mute);font-size:12px}
+.dd-plan{margin-top:14px}
+.dd-plan table{width:100%;border-collapse:collapse;font-size:14px}
+.dd-plan td{padding:9px 0;border-top:1px solid var(--line)}
+.dd-plan tr:first-child td{border-top:0}
+.dd-plan td:last-child{text-align:right;font-family:var(--mono)}
+.dd-plan td small{display:block;color:var(--mute);font:12px var(--sans)}
+.dd-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.dd-links a{padding:10px 16px;border:1px solid var(--line2);border-radius:999px;text-decoration:none;font-size:14px;color:var(--ink)}
+.dd-links a.pri{background:var(--gold);border-color:var(--gold);color:#1a1300;font-weight:600}
+.dd-links a:hover{border-color:var(--ink)}
+
+/* learn */
+.dd-learn{margin-top:34px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.dd-learn h2{grid-column:1/-1;margin:0;font-size:20px}
+.dd-learn dl{margin:0;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.dd-learn dt{font-weight:600;margin-top:10px}.dd-learn dt:first-child{margin-top:0}
+.dd-learn dd{margin:2px 0 0;color:var(--dim);font-size:14px}
+.dd-ftr{max-width:1240px;margin:0 auto;padding:0 20px 40px}.dd-ftr nav{display:flex;flex-wrap:wrap;gap:8px 18px;padding-top:18px;border-top:1px solid var(--line)}.dd-ftr a{color:var(--mute);font-size:13px;text-decoration:none}.dd-ftr a:hover{color:var(--ink)}
+.dd-foot{margin-top:22px;color:var(--mute);font-size:13px;line-height:1.55}
+
+@media (max-width:980px){
+  .dd-steps{grid-template-columns:repeat(2,1fr)}.dd-tiles{grid-template-columns:repeat(3,1fr)}
+  .dd-row{grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:14px}
+  .dd-row.head{display:none}
+  .dd-rk,.dd-go{display:none}
+  .dd-nm{grid-column:1}.dd-pillc{grid-column:2;grid-row:1;justify-self:end}
+  .dd-sidec{grid-column:1}.dd-sc{grid-column:2;grid-row:2}
+  .dd-progc,.dd-next{grid-column:1/-1}
+  .dd-cols{grid-template-columns:1fr}.dd-learn{grid-template-columns:1fr}
+  .dd-search{max-width:none;margin-left:0;flex-basis:100%}
+}
+@media (max-width:560px){.dd{padding:20px 14px 48px}.dd-steps{grid-template-columns:1fr}.dd-tiles{grid-template-columns:repeat(2,1fr)}.dd-score{text-align:left;width:100%}}
+@media (prefers-reduced-motion:no-preference){.dd-prog i::after{transition:width .5s ease}}
+
+/* trend line scanner */
+.tls-cell{display:block;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:12px;line-height:1.3;color:var(--dim);min-height:44px}
+.tls-cell b{display:block;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tls-cell.up b{color:var(--up)}.tls-cell.down b{color:var(--dn)}.tls-cell.squeeze b{color:var(--gold)}
+.tls-cell.none{border-style:dashed;color:var(--mute);display:grid;place-items:center}
+.tls-cell.ev-test{border-color:var(--gold)}
+.tls-cell.ev-up{border-color:var(--up);background:rgba(34,171,148,.10)}
+.tls-cell.ev-down{border-color:var(--dn);background:rgba(247,82,95,.10)}
+.tls-cell small{font:11px var(--mono)}
+.tls-cell small.t{color:var(--gold)}.tls-cell small.u{color:var(--up)}.tls-cell small.d{color:var(--dn)}
+.tls-tfh{text-align:center}
+.dd-row{grid-template-columns:30px minmax(0,1.15fr) 104px repeat(var(--n,4),minmax(0,.95fr)) minmax(0,2.3fr) 86px}
+.tls-z{white-space:normal}.dd-next{min-width:0}
+.tls-view button{font-weight:600}
+.tls-mtf{display:block}
+.tls-mtf .sq{display:flex;gap:3px;margin-bottom:5px}
+.tls-mtf .sq i{flex:1;height:8px;border-radius:2px;background:rgba(255,255,255,.1)}
+.tls-mtf .sq i.u{background:var(--up)}.tls-mtf .sq i.d{background:var(--dn)}
+.tls-mtf b{font:600 12px var(--mono)}
+.tls-mtf b.CALL{color:var(--up)}.tls-mtf b.PUT{color:var(--dn)}.tls-mtf b.none{color:var(--mute);font-weight:400}
+.tls-call{display:inline-block;margin-right:6px;padding:2px 8px;border-radius:6px;font:700 12px/1.5 var(--mono)}
+.tls-call.CALL{background:var(--up);color:#00130f}.tls-call.PUT{background:var(--dn);color:#1c0003}.tls-call.x{border:1px solid var(--line2);color:var(--mute);font-weight:500}
+.tls-z{display:inline-block;margin-right:6px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid rgba(233,196,106,.5);color:var(--gold)}
+.tls-z.strong{background:var(--gold);border-color:var(--gold);color:#1a1300}
+.tls-cell i.zd{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-left:5px;vertical-align:middle}
+.tls-q{font:600 12px/1.25 var(--sans);text-align:center;padding:5px 8px;border-radius:8px;border:1px solid var(--line2);color:var(--dim)}
+.tls-q.a{background:var(--up);border-color:var(--up);color:#00130f}.tls-q.b{border-color:var(--gold);color:var(--gold)}
+.tls-fx{display:flex;flex-wrap:wrap;gap:5px}
+.tls-fx i{font-style:normal;font-size:11.5px;line-height:1.5;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--mute);white-space:nowrap}
+.tls-fx i.g{border-color:rgba(34,171,148,.45);color:var(--up)}.tls-fx i.w{border-color:rgba(247,82,95,.5);color:var(--dn)}
+.dd-how{margin:22px 0 0;padding:16px 18px;border:1px solid var(--line2);border-radius:14px;background:var(--card)}
+.dd-how h2{margin:0 0 8px;font-size:16px}
+.dd-how ol{margin:0;padding-left:20px;color:var(--dim);font-size:14.5px;line-height:1.6}
+.dd-how b{color:var(--ink)}
+.tls-head b{font-weight:600}
+.tls-ev{display:inline-block;margin:0 6px 4px 0;padding:2px 8px;border-radius:999px;border:1px solid var(--line2);font-size:12px;white-space:nowrap}
+.tls-ev.break_up{border-color:var(--up);color:var(--up)}.tls-ev.break_down{border-color:var(--dn);color:var(--dn)}.tls-ev.at_res,.tls-ev.at_sup{border-color:var(--gold);color:var(--gold)}
+.tls-prog{height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;margin:14px 0 0}
+.tls-prog i{display:block;height:100%;background:var(--gold);width:0}
+.dd-tiles.four{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:1180px){
+  .dd-row.head,.dd-rk{display:none}
+  .dd-row{padding:14px}
+  .dd-row{grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:6px}
+  .dd-row .dd-nm,.dd-row .dd-next,.dd-row .tls-mtf{grid-column:1/-1;grid-row:auto}
+  .dd-row .tls-q{position:absolute;right:14px;top:14px;padding:4px 10px}.dd-row{position:relative}
+  .tls-mtf .sq{max-width:160px}
+  .tls-cell{padding:5px 6px;min-height:40px}.tls-cell b{font-size:11px}
+  .tls-cell::before{content:attr(data-tf);display:block;font:10px var(--mono);color:var(--mute)}
+}
+
+/* hybrid scanner cards */
+.hy-list{display:grid;gap:12px}
+.hy{display:block;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:inherit;text-decoration:none}
+a.hy:hover{background:var(--card2)}
+.hy.s4,.hy.s3{border-color:rgba(233,196,106,.6)}
+.hy-top{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.hy-top h3{margin:0;font-size:17px}
+.hy-top small{color:var(--mute);font:12px var(--mono)}
+.hy-stage{margin-left:auto;padding:5px 12px;border-radius:999px;font:700 12px/1.2 var(--sans);border:1px solid var(--line2);color:var(--dim);white-space:nowrap}
+.hy.s4 .hy-stage,.hy.s3 .hy-stage{background:var(--gold);border-color:var(--gold);color:#1a1300}
+.hy.s2 .hy-stage{border-color:rgba(110,168,254,.6);color:var(--blue)}
+.hy-say{margin:10px 0 8px;font-size:15px;line-height:1.5}
+.hy-say b{color:var(--ink)}
+.hy-row2{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-bottom:8px}
+.hy-plan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.hy-plan div{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#0B0C0F}
+.hy-plan span{display:block;color:var(--mute);font-size:11.5px}
+.hy-plan b{font:600 14px var(--mono)}
+.hy-plan .sl b{color:var(--dn)}.hy-plan .tg b{color:var(--up)}
+.hy-new{margin-left:6px;padding:2px 7px;border-radius:999px;background:var(--dn);color:#fff;font:700 10px/1.4 var(--mono)}
+.hy-alert{margin:18px 0 0;padding:12px 16px;border:1px solid rgba(233,196,106,.6);border-radius:12px;background:rgba(233,196,106,.08);font-size:14.5px}
+.hy-alert b{color:var(--gold)}
+.hy-opt{display:inline-flex;align-items:center;gap:8px;color:var(--dim);font-size:14px;cursor:pointer}
+.hy-opt input{width:16px;height:16px;accent-color:var(--gold)}
+@media (max-width:640px){.hy-plan{grid-template-columns:repeat(2,minmax(0,1fr))}.hy-stage{margin-left:0}}
+</style>
+</head>
+<body>
+<main class="dd" id="hyApp">
+  <div class="dd-eyebrow">Free scanner</div>
+  <h1>Hybrid Trend Line Scanner</h1>
+  <p class="dd-lede">Trades with the bigger trend only. In a downtrend it looks for a <b>PUT</b> where today's high meets a resistance line. In an uptrend it looks for a <b>CALL</b> where today's low meets a support line. It alerts when price is rejected at the line, or breaks through it and comes back.</p>
+  <ol class="dd-steps">
+    <li><span>STEP 1</span><b>Trend decides the side</b><p>The Daily trend is the veto. The 4-hour or the Weekly trend must agree with it. Down means PUT only, up means CALL only.</p></li>
+    <li><span>STEP 2</span><b>Day high or low at a line</b><p>PUT: today's high is at a resistance trend line. CALL: today's low is at a support trend line.</p></li>
+    <li><span>STEP 3</span><b>Wait for the turn</b><p>A candle touches the line and closes away from it, or closes through it and the next candle closes back.</p></li>
+    <li><span>LABELS</span><b>Zones and pullback</b><p>A key zone on the line, and 30m / 1H running against the trend into the line, are marked on each setup.</p></li>
+  </ol>
+  <div class="dd-tiles four" id="hyTiles"></div>
+  <div class="tls-prog" id="hyProg" hidden><i></i></div>
+  <div id="hyAlert"></div>
+  <div class="dd-bar">
+    <div class="dd-tabs" id="hyStage" role="group" aria-label="Stage">
+      <button type="button" data-s="all" class="on">Everything</button><button type="button" data-s="alert">Alerts only</button><button type="button" data-s="2">Broken, waiting</button><button type="button" data-s="1">Approaching</button>
+    </div>
+    <div class="dd-tabs" id="hySide" role="group" aria-label="Side">
+      <button type="button" data-d="all" class="on">CALL + PUT</button><button type="button" data-d="CALL">CALL</button><button type="button" data-d="PUT">PUT</button>
+    </div>
+  </div>
+  <div class="dd-bar" style="margin-top:0">
+    <div class="dd-tabs" id="hyMkt" role="group" aria-label="Market">
+      <button type="button" data-m="all" class="on">All</button><button type="button" data-m="forex">Forex</button><button type="button" data-m="crypto">Crypto</button><button type="button" data-m="other">Stocks &amp; futures</button>
+    </div>
+    <label class="hy-opt"><input type="checkbox" id="hySound"> Sound on a new alert</label>
+    <input class="dd-search" id="hyQ" type="search" placeholder="Find a market…" aria-label="Find a market">
+  </div>
+  <p class="dd-upd" id="hyUpd" style="margin:0 0 10px"></p>
+  <div class="hy-list" id="hyList"><p class="dd-empty">Scanning every market…</p></div>
+  <button type="button" class="dd-btn dd-more" id="hyMore" hidden>Show more</button>
+  <section class="dd-learn">
+    <h2>Words used on this page</h2>
+    <dl>
+      <dt>Failed break</dt><dd>A candle closed through the line, then a candle closed back on the other side. The breakout did not hold. This is the strongest alert.</dd>
+      <dt>Rejection</dt><dd>A candle reached the line and closed away from it. The line held.</dd>
+      <dt>Broken, waiting</dt><dd>Price is through the line right now. No trade yet: the scanner is waiting to see whether it comes back.</dd>
+    </dl>
+    <dl>
+      <dt>Approaching</dt><dd>Price is close to the line and the day's high or low is already at it. Get ready, nothing to do yet.</dd>
+      <dt>Pullback</dt><dd>The 30-minute or 1-hour trend is running against the bigger trend, into the line. That is the move this scanner wants to fade.</dd>
+      <dt>Major / strong zone</dt><dd>The line also sits on a previous day high, low or close, a weekly or monthly high or low, a pivot or a Fibonacci level. One match is a major zone, two different kinds a strong zone.</dd>
+    </dl>
+  </section>
+  <p class="dd-foot">Trend is the standard Supertrend (10, 3). Trend lines come from the Daily, 4-hour, 1-hour, 30-minute and 15-minute charts. The turn is read on 15-minute candles where intraday data is available, otherwise on 1-hour candles. Stop and targets on an alert are worked out by rule; no win rate is attached because these rules have not been measured. Education and demonstration only, not financial advice.</p>
+</main>
+<footer class="dd-ftr"><nav aria-label="Site links">
+<a href="/">ChartPulse home</a><a href="/scanner.html">Tier-1 Scanner</a><a href="/scanners/trend-lines/">Trend Line Scanner</a><a href="/scanners/day-drive/">Day Drive Scanner</a><a href="/scanners/">All free scanners</a><a href="/scanners/ema-200/">200 EMA Scanner</a><a href="/desk/">AI Scan</a><a href="/backtesting/">Backtesting</a><a href="/bias/">Market bias</a><a href="/pricing.html">Pricing</a><a href="/legal/disclaimer">Risk disclaimer</a>
+</nav></footer>
+<script>
+(() => {
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const MTF = ["30m", "1H", "4H", "1D", "1W"];
+const TFN = { "1D": "Daily", "4H": "4-hour", "1H": "1-hour", "30m": "30-min", "15m": "15-min" };
+const STG = { 4: "ALERT · Failed break", 3: "ALERT · Rejection", 2: "Broken, waiting", 1: "Approaching" };
+const fmt = (v, d) => Number(v).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const ago = t => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); return s < 60 ? `${s}s ago` : `${Math.round(s / 60)} min ago`; };
+const L = { rows: [], meta: {}, at: 0, stage: "all", side: "all", mkt: "all", q: "", show: 40, timer: null, seen: null, fresh: new Set() };
+
+function mtf(r) {
+  const m = r.mtf || { d: {} };
+  return `<span class="tls-mtf" style="min-width:150px"><span class="sq">${MTF.map(k => `<i class="${(m.d[k] || 0) > 0 ? "u" : (m.d[k] || 0) < 0 ? "d" : ""}" title="${k}"></i>`).join("")}</span><b class="${r.bias}">${r.bias === "CALL" ? "▲ Uptrend" : "▼ Downtrend"} · Daily + ${(m.d["4H"] || 0) === (m.d["1D"] || 0) ? "4H" : "Weekly"}${(m.d["4H"] || 0) === (m.d["1D"] || 0) && (m.d["1W"] || 0) === (m.d["1D"] || 0) ? " + Weekly" : ""}</b></span>`;
+}
+function say(r) {
+  const put = r.bias === "PUT", line = `${TFN[r.tf] || r.tf} ${put ? "resistance" : "support"} line at <b>${fmt(r.lv, r.dec)}</b>`, ext = `today's ${put ? "high" : "low"} <b>${fmt(r.day_x, r.dec)}</b>`, c = `${TFN[r.etf] || r.etf} candle`;
+  if (r.stage === 4) return `Price closed ${put ? "above" : "below"} the ${line}, then a ${c} closed back ${put ? "below" : "above"} it. The breakout failed: this is the ${r.bias} trigger.`;
+  if (r.stage === 3) return `A ${c} touched the ${line} and closed ${put ? "down" : "up"} away from it (${ext}). The line held: this is the ${r.bias} trigger.`;
+  if (r.stage === 2) return `Price is ${put ? "above" : "below"} the ${line} right now. No trade yet. Wait for a ${c} to close back ${put ? "below" : "above"} it.`;
+  return `Price is closing in on the ${line}; ${ext} is already at it. Get ready and wait for a ${c} to turn there.`;
+}
+function chips(r) {
+  const f = [];
+  f.push(r.zone ? ["g", `${r.zone.t === "strong" ? "★ Strong zone" : "Major zone"} · ${r.zone.n.join(" + ")}`] : ["n", "No key zone on the line"]);
+  f.push(r.pull.length ? ["g", `Pullback into the line · ${r.pull.join(" + ")} against the trend`] : ["n", "Lower charts already with the trend"]);
+  f.push(r.touches >= 5 ? ["g", `Well-tested line · ${r.touches} touches`] : r.touches >= 3 ? ["n", `${r.touches} touches`] : ["n", "New line · 2 touches"]);
+  f.push([r.tf === "1D" || r.tf === "4H" ? "g" : "n", `${TFN[r.tf] || r.tf} line`]);
+  if (r.through) f.push(["g", `Day ${r.bias === "PUT" ? "high" : "low"} swept the line`]);
+  if (r.lines > 1) f.push(["g", `+${r.lines - 1} more line${r.lines > 2 ? "s" : ""} here`]);
+  return `<span class="tls-fx">${f.map(([k, t]) => `<i class="${k}">${k === "g" ? "✓ " : ""}${esc(t)}</i>`).join("")}</span>`;
+}
+function plan(r) {
+  const p = r.plan; if (!p) return "";
+  return `<div class="hy-plan"><div><span>Entry (now)</span><b>${fmt(p.entry, r.dec)}</b></div><div class="sl"><span>Stop-loss · ${p.risk_pct}%</span><b>${fmt(p.sl, r.dec)}</b></div><div class="tg"><span>Target 1 · 1.5 × risk</span><b>${fmt(p.t1, r.dec)}</b></div><div class="tg"><span>Target 2 · ${esc(p.t2why)}</span><b>${fmt(p.t2, r.dec)}</b></div></div>`;
+}
+function card(r) {
+  return `<a class="hy s${r.stage}" href="/scanners/trend-lines/?s=${encodeURIComponent(r.symbol)}">
+    <div class="hy-top"><span class="tls-call ${r.bias}">${r.bias === "CALL" ? "▲ CALL" : "▼ PUT"}</span><h3>${esc(r.name)}</h3><small>${esc(r.symbol)} · ${esc(r.market || "")} · ${fmt(r.price, r.dec)}</small><span class="hy-stage">${STG[r.stage]}${L.fresh.has(r.symbol) ? '<span class="hy-new">NEW</span>' : ""}</span></div>
+    <p class="hy-say">${say(r)}</p>
+    <div class="hy-row2">${mtf(r)}${chips(r)}</div>
+    ${plan(r)}
+  </a>`;
+}
+function beep() { try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain(); o.connect(g); g.connect(a.destination); o.frequency.value = 880; g.gain.value = 0.08; o.start(); o.stop(a.currentTime + 0.25); } catch (e) {} }
+function paint() {
+  const all = L.rows, c = L.meta.counts || {};
+  $("#hyTiles").innerHTML = [["warm", (c[4] || 0), "Failed-break alerts"], ["warm", (c[3] || 0), "Rejection alerts"], ["", (c[2] || 0), "Broken, waiting"], ["", (c[1] || 0), "Approaching"], ["", L.meta.universe || 0, "Markets scanned"]]
+    .map(([k, v, t]) => `<div class="dd-tile ${k}"><div class="v">${v}</div><div class="k">${t}</div></div>`).join("");
+  const p = L.meta.progress ?? 1; $("#hyProg").hidden = p >= 1; $("#hyProg").firstElementChild.style.width = Math.round(p * 100) + "%";
+  const na = (c[4] || 0) + (c[3] || 0);
+  $("#hyAlert").innerHTML = na ? `<p class="hy-alert"><b>${na} alert${na > 1 ? "s" : ""} right now.</b> An alert means the turn has happened on the line. They are listed first.</p>` : (all.length ? `<p class="dd-note"><b>No alert right now.</b> The setups below are approaching their line or through it; an alert appears when a candle turns there.</p>` : "");
+  let rows = all.filter(r => L.mkt === "all" || r.class === L.mkt);
+  if (L.stage === "alert") rows = rows.filter(r => r.stage >= 3); else if (L.stage !== "all") rows = rows.filter(r => r.stage === +L.stage);
+  if (L.side !== "all") rows = rows.filter(r => r.bias === L.side);
+  if (L.q) rows = rows.filter(r => (r.name + " " + r.symbol).toLowerCase().includes(L.q));
+  $("#hyList").innerHTML = rows.length ? rows.slice(0, L.show).map(card).join("") : `<p class="dd-empty">${all.length ? "Nothing matches this filter right now." : (p < 1 ? "Scanning every market…" : "No market has its day high or low at a trend line in the direction of the trend right now.")}</p>`;
+  $("#hyMore").hidden = rows.length <= L.show;
+  $("#hyUpd").textContent = L.at ? `${rows.length} setups shown · ${L.meta.scanned || 0} of ${L.meta.universe || 0} markets scanned${p < 1 ? " (still scanning)" : ""} · updated ${ago(L.at)} · alerts first` : "";
+  document.title = (na ? `(${na}) ` : "") + "Hybrid Trend Line Scanner · ChartPulse";
+}
+async function load() {
+  let wait = 30000;
+  try {
+    const r = await fetch("/tl_api.php?r=hybrid", { cache: "no-store" }); const j = await r.json();
+    if (j.error) throw new Error(j.error);
+    const now = new Set((j.rows || []).filter(x => x.stage >= 3).map(x => x.symbol + ":" + x.stage + ":" + x.bar_t));
+    L.fresh = new Set();
+    if (L.seen) { now.forEach(k => { if (!L.seen.has(k)) L.fresh.add(k.split(":")[0]); }); if (L.fresh.size && $("#hySound").checked) beep(); }
+    L.seen = now;
+    L.rows = j.rows || []; L.meta = j.meta || {}; L.at = j.at || 0; paint();
+    if ((L.meta.progress ?? 1) < 1) wait = 5000;
+  } catch (e) { if (!L.rows.length) $("#hyList").innerHTML = `<p class="dd-empty">${esc(e.message || "The scanner could not be reached just now. Please try again in a moment.")}</p>`; }
+  clearTimeout(L.timer); L.timer = setTimeout(load, wait);
+}
+function tabs(id, key, attr) {
+  const el = $(id);
+  el.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; L[key] = b.dataset[attr]; [...el.children].forEach(x => x.classList.toggle("on", x === b)); L.show = 40; paint(); });
+}
+tabs("#hyStage", "stage", "s"); tabs("#hySide", "side", "d"); tabs("#hyMkt", "mkt", "m");
+$("#hyQ").addEventListener("input", e => { L.q = e.target.value.trim().toLowerCase(); L.show = 40; paint(); });
+$("#hyMore").addEventListener("click", () => { L.show += 40; paint(); });
+load();
+})();
+</script>
+</body>
+</html>
