@@ -16,8 +16,9 @@ header('Access-Control-Allow-Methods: GET');
 
 require_once __DIR__ . '/torus_engine.php';
 require_once __DIR__ . '/ema200_engine.php';
+require_once __DIR__ . '/tl_engine.php';   // MTF trend + key zones, the same code the Trend Line Scanner uses
 
-define('E2_CACHE', T_DATA . '/ema200_signals.json');
+define('E2_CACHE', T_DATA . '/ema200_signals2.json');
 define('E2_STALE', 900);
 
 /** Per-stage default minimum score when the caller does not pass min_score. */
@@ -51,11 +52,28 @@ if ($all === null) {
         if ($r['state'] === 'NONE' || $r['stage'] === null) continue;
 
         $px = (float)end($d['c']);
-        $rows[] = e2_row($sym, $market, $r, $px, $hasTv ? t_tv_code($sym, $market) : null);
+        $row = e2_row($sym, $market, $r, $px, $hasTv ? t_tv_code($sym, $market) : null);
+        // owner, 11 Nov 2026: same quality labels as the Trend Line Scanner.
+        //   MTF trend  : Supertrend on 30m 1H 4H 1D 1W; a bias needs 75%+ of the available ones
+        //   key zone   : is the 200 EMA itself sitting on a day / PD / weekly / monthly level, a pivot or a Fib?
+        //   grade      : Top  = trend with the signal + Confirmed or Best stage + a zone on the EMA + 2 of 3 filters
+        //                Good = trend with the signal + (Confirmed or Best stage, or a zone); Watch rows stay Basic
+        try {
+            $mtf = tl_mtf(tl_src($fr, $fr['5m'] ?? null));
+            $A = t_atr($d, 14); $atrD = (float)end($A);
+            $zone = $atrD > 0 ? tl_match(tl_zones($fr), (float)$r['ema200'], 0.1 * $atrD) : null;
+        } catch (\Throwable $e) { $mtf = ['d' => [], 'up' => 0, 'down' => 0, 'n' => 0, 'bias' => null]; $zone = null; }
+        $with = $mtf['bias'] === $row['signal']; $stage = (int)$row['stage'];
+        $row['name'] = t_name($sym);
+        $row['mtf'] = $mtf; $row['with'] = $with; $row['against'] = $mtf['bias'] !== null && !$with;
+        $row['zone'] = $zone ? ['t' => $zone['t'], 'n' => $zone['n']] : null;
+        $row['grade'] = $stage === 0 ? 1 : (($with && $stage >= 2 && $zone && $row['score'] >= 2) ? 3 : (($with && ($stage >= 2 || $zone)) ? 2 : 1));
+        $rows[] = $row;
     }
 
-    // Best > Confirmed > Early > Watch, then strongest first
-    usort($rows, fn($a, $b) => [$b['stage'], $b['strength']] <=> [$a['stage'], $a['strength']]);
+    // Best setups first: grade, then stage (Best > Confirmed > Early > Watch), then a strong zone, then filters agreeing
+    $zr = fn($x) => $x['zone'] ? ($x['zone']['t'] === 'strong' ? 2 : 1) : 0;
+    usort($rows, fn($a, $b) => [$b['grade'], $b['stage'], $zr($b), $b['strength']] <=> [$a['grade'], $a['stage'], $zr($a), $a['strength']]);
 
     $all = [
         'updated' => gmdate('Y-m-d\TH:i:s\Z'),
@@ -81,12 +99,16 @@ if (isset($_GET['min_score']) && $_GET['min_score'] !== '') {
     $minScore = max(0, min(3, (int)$_GET['min_score']));
 }
 
+$quality = strtolower((string)($_GET['quality'] ?? 'all'));
 $out = [];
 foreach ($all['signals'] as $s) {
     if ($side !== 'ALL' && $s['side'] !== $side) continue;
     if (!in_array($s['entry_type'], $entry, true)) continue;
     $need = $minScore ?? (E2_DEFAULT_MIN[$s['entry_type']] ?? 0);
     if ($s['score'] < $need) continue;
+    if ($quality === 'top' && $s['grade'] < 3) continue;
+    if ($quality === 'with' && !$s['with']) continue;
+    if ($quality === 'zone' && !$s['zone']) continue;
     $out[] = $s;
 }
 
