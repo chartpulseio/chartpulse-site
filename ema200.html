@@ -92,6 +92,11 @@ a:hover{text-decoration:underline}
 .grade{display:inline-block;padding:4px 9px;border-radius:3px;border:1px solid var(--rule);font:600 11px/1.2 var(--sans);color:var(--ink-dim);white-space:nowrap}
 .grade.a{background:var(--up);border-color:var(--up);color:#04130b}.grade.b{border-color:var(--s2c);color:var(--s2c)}
 .sym{white-space:nowrap}
+#out{overflow-x:auto}
+.grade{margin-top:7px}
+.fx{min-width:230px}
+.side-LONG,.side-SHORT{white-space:nowrap}
+@media (max-width:760px){.fx i{white-space:normal}}
 .f{width:16px;height:16px;border-radius:2px;border:1px solid var(--rule);font:9px/14px var(--mono);
   text-align:center;color:var(--ink-faint);background:var(--panel-2)}
 .f.on{color:var(--live);border-color:rgba(45,212,170,.5);background:rgba(45,212,170,.1)}
@@ -283,13 +288,12 @@ a:hover{text-decoration:underline}
   function row(s){
     var st = STAGE[s.stage] || '–', g = GRADE[s.grade] || GRADE[1], d = s.dist_pct;
     return '<tr>'
-      + '<td><span class="sym">'+esc(s.name || s.symbol)+'</span><span class="mkt">'+esc(s.symbol)+' · '+esc(s.market)+'</span></td>'
+      + '<td><span class="sym">'+esc(s.name || s.symbol)+'</span><span class="mkt">'+esc(s.symbol)+' · '+esc(s.market)+'</span><span class="grade '+g[0]+'">'+g[1]+'</span></td>'
       + '<td><span class="side-'+esc(s.side)+'">'+(s.signal==='CALL'?'▲ CALL':'▼ PUT')+'</span></td>'
       + '<td>'+mtf(s)+'</td>'
       + '<td><span class="badge b-'+esc(s.entry_type)+'">'+esc(st)+'</span>'
         + (s.is_entry ? '' : '<span class="tag">watchlist, not an entry</span>') + '</td>'
       + '<td>'+why(s)+'</td>'
-      + '<td><span class="grade '+g[0]+'">'+g[1]+'</span></td>'
       + '<td class="r num hide">'+num(s.ema200,4)+'</td>'
       + '<td class="r num hide">'+num(s.price,4)+'</td>'
       + '<td class="r num hide '+(d>0?'pos':(d<0?'neg':''))+'">'+num(d,2)+'%</td>'
@@ -310,7 +314,7 @@ a:hover{text-decoration:underline}
     if (!sig.length) { out.innerHTML = '<div class="msg">No symbol matches these filters right now.</div>'; return; }
 
     var h = '<table class="tbl"><thead><tr>'
-      + '<th>MARKET</th><th>SIDE</th><th>MTF TREND</th><th>STAGE</th><th>WHY IT RANKS HERE</th><th>GRADE</th>'
+      + '<th>MARKET · GRADE</th><th>SIDE</th><th>MTF TREND</th><th>STAGE</th><th>WHY IT RANKS HERE</th>'
       + '<th class="r hide">200 EMA</th><th class="r hide">PRICE</th><th class="r hide">DIST</th>'
       + '</tr></thead><tbody>';
     for (var i = 0; i < sig.length; i++) h += row(sig[i]);
