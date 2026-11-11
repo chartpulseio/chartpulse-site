@@ -512,7 +512,7 @@ function tlh_row(string $sym, array $row, int $now): ?array {
         elseif (($lv - $px) * $s >= 0 && ($lv - $px) * $s <= TLH_APPROACH * $atrD) $stage = 1;
         if (!$stage) continue;
         $hits++;
-        $zone = tl_match($Z, $lv, 0.1 * $atrD);
+        $zone = tl_match($Z, $lv, 0.06 * $atrD);   // tight, so the label means the zone really sits on the line
         $cand = ['tf' => $k, 'stage' => $stage, 'lv' => $lv, 'n' => (int)$L['touches'], 'dir' => $L['dir'], 'pattern' => $x['pattern'],
                  'zone' => $zone ? ['t' => $zone['t'], 'n' => $zone['n']] : null, 'opp' => $x[$put ? 'sup' : 'res']['now'] ?? null, 'brk' => $brk,
                  'key' => [$stage >= 3 ? $live : 1, $stage, $zone ? ($zone['t'] === 'strong' ? 2 : 1) : 0, TL_TF_PTS[$k] ?? 0, (int)$L['touches']]];
@@ -546,11 +546,11 @@ function tlh_row(string $sym, array $row, int $now): ?array {
 /** Whole-universe hybrid scan (same stepping and caching as tl_scan, shorter row life because stages move fast). */
 function tlh_scan(): array {
     $dir = T_DATA . '/tl'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
-    $now = t_now(); $ck = $dir . '/_hscan2.json';
+    $now = t_now(); $ck = $dir . '/_hscan3.json';
     $c = t_read_json($ck, null);
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 30 && isset($c['rows'])) return $c;
     $scan = t_scan_load(); $syms = array_keys($scan['rows'] ?? []);
-    $cp = $dir . '/_hrows2.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
+    $cp = $dir . '/_hrows3.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
     $t0 = microtime(true); $done = 0; $fresh = 0; $nobias = 0;
     foreach ($syms as $sym) {
         $old = $cache[$sym] ?? null;
