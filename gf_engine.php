@@ -170,11 +170,16 @@ function gf_scan(bool $force = false): array {
             $strongBias = $B['n'] >= 4;
             $extra = ($mom ? 1 : 0) + ($orb ? 1 : 0) + ($newsBoost ? 1 : 0) + ($strongBias ? 1 : 0) + ($B['pull'] ? 1 : 0);
 
+            // A+ needs a real turn candle at the line or a Tier-1 tick (a 200 EMA / Day Drive state alone is not enough),
+            // the line AND today's high/low in the zone, and two extras that are not just the pullback
+            $realTurn = ($line && $stage >= 4 && !empty($line['live'])) || (gf_side_of($t1['signal'] ?? null) === $side && !empty($t1['live']));
+            $lineAt = isset($pz['line']) || isset($pz['retest']) || $stage >= 3;
+            $extra2 = ($mom ? 1 : 0) + ($orb ? 1 : 0) + ($newsBoost ? 1 : 0) + ($strongBias ? 1 : 0) + ($emaAt ? 1 : 0) + (isset($pz['multi']) ? 1 : 0);
             // ---- GRADE (labels only)
             $fired = (bool)$trig;
             if (!$live) $grade = 'WATCH';
             elseif ($newsRisk) $grade = 'NEWS';
-            elseif ($fired && $nPz >= 3 && $strongLine && $extra >= 1 && !$momAgainst) $grade = 'A+';
+            elseif ($realTurn && $nPz >= 3 && $dayAt && $lineAt && $strongLine && $extra2 >= 2 && !$momAgainst) $grade = 'A+';
             elseif ($fired && $nPz >= 2) $grade = 'A';
             elseif ($fired) $grade = 'B';
             elseif ($nPz >= 2 && ($stage >= 3 || isset($pz['line']) || isset($pz['retest']) || $dayAt)) $grade = 'READY';
@@ -203,7 +208,7 @@ function gf_scan(bool $force = false): array {
                 ['k' => 'news', 'ok' => !$newsRisk, 't' => $newsRisk ? 'News risk' : ($newsBoost ? 'News with it' : 'No news against it'), 'd' => $newsTxt ?? 'No fresh high-impact story'],
             ];
             $labels = [];
-            if ($nPz >= 3) $labels[] = ['pz', $nPz >= 4 ? 'Quad Power Zone' : 'Triple Power Zone'];
+            if ($nPz >= 3) $labels[] = ['pz', $nPz >= 5 ? $nPz . '-level Power Zone' : ($nPz === 4 ? 'Quad Power Zone' : 'Triple Power Zone')];
             if (isset($pz['multi'])) $labels[] = ['mtf', 'Multi-chart lines'];
             if ($strongLine) $labels[] = ['line', 'Strong line'];
             if ($B['pull']) $labels[] = ['pull', implode('/', $B['pull']) . ' pullback'];
