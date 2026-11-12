@@ -1249,6 +1249,8 @@ function t_scan_load(): array {
 /** Symbols that need a refresh now, most urgent first: symbol => [priority, -age]. */
 function t_due(array $scan, int $now): array {
     $pri = []; $force = (int)($scan['force'] ?? 0);
+    static $gfHot = null;   // God-father's best live names (A+ / A / Get ready): refreshed like the Tier-1 shortlist
+    if ($gfHot === null) { $g = t_read_json(T_DATA . '/gf_hot.json', []); $gfHot = is_array($g) && $now - (int)($g['at'] ?? 0) < 600 ? array_flip((array)($g['s'] ?? [])) : []; }
     foreach (t_symbols() as $sym => $_) {
         $ss = t_session(t_exchange($sym), $now);
         $r = $scan['rows'][$sym] ?? null; $f = $scan['fail'][$sym] ?? null;
@@ -1262,7 +1264,7 @@ function t_due(array $scan, int $now): array {
             $traded = (int)$r['rmt'] >= (int)$r['ts'] - T_FRESH;
             $inCtp = empty($r['cs']) || ($now >= $r['cs'] - 300 && $now < $r['ce'] + 300);
             if ($traded && $inCtp && ($r['day_ok'] ?? true)) {
-                $lim = (abs((float)($r['zone_dist_atr'] ?? 9)) <= 0.75 || (int)($r['alignment'] ?? 0) >= 3 || !empty($r['split24'])) ? T_REFRESH_HOT : T_REFRESH;
+                $lim = (abs((float)($r['zone_dist_atr'] ?? 9)) <= 0.75 || (int)($r['alignment'] ?? 0) >= 3 || !empty($r['split24']) || isset($gfHot[$sym])) ? T_REFRESH_HOT : T_REFRESH;
                 if ($age >= $lim || ($force > $r['ts'] && $age >= 45)) $pri[$sym] = [2, -$age];
             } elseif ($age >= 60 && ($r['ts'] < $ss['since'] || (!empty($r['ce']) && $now >= $r['ce'] && $r['ts'] < $r['ce']))) {
                 $pri[$sym] = [1, -$age];                                    // session just started / trading period rolled over

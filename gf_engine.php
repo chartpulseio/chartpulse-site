@@ -265,6 +265,9 @@ function gf_scan(bool $force = false): array {
         $p = ['at' => $now, 'rows' => $rows, 'meta' => ['universe' => count($T), 'with_bias' => $cnt['bias'], 'strategy_signals' => $feeds, 'feeds' => $fdiag, 'sapi' => PHP_SAPI, 'counts' => $cnt, 'progress' => $prog,
               'took_ms' => (int)round((microtime(true) - $t0) * 1000)]];
         if ($rows || $prog >= 0.9) t_write_json($ck, $p);
+        // the board's best live names are refreshed every minute by the Tier-1 data loop (see t_due)
+        $hot = []; foreach ($rows as $r) if ($r['live'] && in_array($r['grade'], ['A+', 'A', 'READY'], true) && count($hot) < 60) $hot[] = $r['symbol'];
+        t_write_json(T_DATA . '/gf_hot.json', ['at' => $now, 's' => $hot]);
         gf_log($rows, $now);
         return $p;
     } finally { flock($lock, LOCK_UN); fclose($lock); }
