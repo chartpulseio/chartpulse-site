@@ -26,4 +26,5 @@ if (!headers_sent() && str_contains((string)($_SERVER['HTTP_ACCEPT_ENCODING'] ??
     && extension_loaded('zlib') && !ini_get('zlib.output_compression')) ob_start('ob_gzhandler');
 if (!t_rl('gf', 40)) { header('Retry-After: 30'); gf_json(['error' => 'Too many requests. Please wait a few seconds.'], 429); }
 @set_time_limit(90);
+try { t_scan_step(); } catch (Throwable $e) {}   // like the Tier-1 page: every visit moves the price loop one step (hot names first)
 gf_json(gf_scan());
