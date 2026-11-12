@@ -234,6 +234,39 @@ function aib_key($name = 'gemini') {
     $k = trim(preg_replace('/^[A-Za-z_ ]*=\s*/', '', $k), " \t\r\n\"'");
     return preg_match('/^[A-Za-z0-9_.\-]{20,}$/', $k) ? $k : '';
 }
+/** Tidy a model's strategy so small slips do not throw the whole answer away. */
+function aib_clean($st) {
+    if (!is_array($st)) return $st;
+    $def = ['sma' => 50, 'ema' => 20, 'wma' => 20, 'rsi' => 14, 'atr' => 14, 'atr_pct' => 14, 'stdev' => 20, 'bb_upper' => 20, 'bb_lower' => 20, 'bb_mid' => 20, 'bb_width' => 20,
+            'highest' => 20, 'lowest' => 20, 'macd' => 12, 'macd_signal' => 12, 'macd_hist' => 12, 'adx' => 14, 'plus_di' => 14, 'minus_di' => 14, 'supertrend' => 10, 'supertrend_dir' => 10,
+            'stoch_k' => 14, 'stoch_d' => 14, 'vwap' => 20, 'roc' => 10];
+    $op = function ($o) use ($def) {
+        if (!is_array($o)) return $o;
+        if (isset($o['value']) && is_numeric($o['value'])) return ['value' => (float)$o['value']];   // a number side carries nothing else
+        if (!isset($o['ind'])) return $o;
+        $o['ind'] = strtolower((string)$o['ind']);
+        $al = ['price' => 'close', 'supertrend_direction' => 'supertrend_dir', 'bollinger_upper' => 'bb_upper', 'bollinger_lower' => 'bb_lower', 'stochastic' => 'stoch_k', 'macd_line' => 'macd'];
+        if (isset($al[$o['ind']])) $o['ind'] = $al[$o['ind']];
+        if (in_array($o['ind'], ['open', 'high', 'low', 'close', 'volume', 'hl2', 'hlc3', 'ohlc4'], true)) { unset($o['period'], $o['period2'], $o['period3'], $o['mult'], $o['src']); }
+        elseif (empty($o['period']) && isset($def[$o['ind']])) $o['period'] = $def[$o['ind']];
+        foreach (['period', 'period2', 'period3', 'mult', 'src', 'tf', 'back', 'offset'] as $k) if (array_key_exists($k, $o) && ($o[$k] === null || $o[$k] === '')) unset($o[$k]);
+        if (isset($o['src']) && $o['src'] === 'close') unset($o['src']);
+        if (isset($o['tf'])) { $m = ['1d' => '1D', '1w' => '1W', '5m' => '5min', '15m' => '15min', '30m' => '30min']; $o['tf'] = $m[strtolower((string)$o['tf'])] ?? $o['tf']; if (!isset(BT_TF_SEC[$o['tf']])) unset($o['tf']); }
+        foreach (array_keys($o) as $k) if (!in_array($k, ['ind', 'period', 'period2', 'period3', 'mult', 'src', 'tf', 'back', 'offset'], true)) unset($o[$k]);
+        return $o;
+    };
+    foreach (['entry_long', 'exit_long', 'entry_short', 'exit_short'] as $k) {
+        $L = $st['rules'][$k] ?? []; if (!is_array($L)) $L = [];
+        $out = [];
+        foreach ($L as $r) if (is_array($r) && isset($r['op'], $r['left'], $r['right'])) {
+            $r['op'] = ['above' => '>', 'below' => '<', 'cross_above' => 'crosses_above', 'cross_below' => 'crosses_below', '==' => '>=', 'crossover' => 'crosses_above', 'crossunder' => 'crosses_below'][$r['op']] ?? $r['op'];
+            $out[] = ['left' => $op($r['left']), 'op' => $r['op'], 'right' => $op($r['right'])];
+        }
+        $st['rules'][$k] = $out;
+    }
+    if (isset($st['risk']) && is_array($st['risk'])) foreach ($st['risk'] as $k => $v) if ($v === null || $v === '' || $v === 0 || $v === false) unset($st['risk'][$k]);
+    return $st;
+}
 /** Model answer text -> our parse shape, or null. */
 function aib_read_json($txt) {
     $txt = trim((string)$txt);
@@ -356,7 +389,14 @@ try {
 
     $engine = 'rules'; $P = null; $strategy = null;
     [$ai, $aiBy] = aib_parse_ai($text);
-    if ($ai) { try { $strategy = bt_validate_strategy($ai['strategy']); $P = $ai; $engine = $aiBy; } catch (Throwable $e) { $strategy = null; } }
+    if ($ai) {
+        try { $strategy = bt_validate_strategy(aib_clean($ai['strategy'])); $P = $ai; $engine = $aiBy; }
+        catch (Throwable $e) {
+            $strategy = null;
+            @file_put_contents(bt_dir('ai') . '/last_error.json', json_encode(['at' => gmdate('c'), 'host' => $aiBy, 'code' => 'invalid', 'msg' => mb_substr($e->getMessage(), 0, 200),
+                'got' => mb_substr(json_encode($ai['strategy']), 0, 900)]), LOCK_EX);
+        }
+    }
     if (!$strategy) {
         $P = aib_parse_local($text);
         try { $strategy = bt_validate_strategy($P['strategy']); }
