@@ -142,7 +142,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
     <ol class="gf-flow" style="grid-template-columns:repeat(4,minmax(0,1fr))">
       <li><span>1 · CROWDED</span><b>One side pays</b><p>High positive funding: longs crowded (PUT side). Negative funding: shorts crowded (CALL side).</p></li>
       <li><span>2 · BUILDING</span><b>Open interest rising</b><p>More leveraged positions keep opening on the crowded side.</p></li>
-      <li><span>3 · READY</span><b>At a key zone</b><p>Crowded longs at today's high or a resistance line; crowded shorts at today's low or a support line.</p></li>
+      <li><span>3 · READY</span><b>At a key zone</b><p>Crowded longs at today's high or a resistance line; crowded shorts at today's low or a support line. Zones are read for the 98 coins ChartPulse tracks; other liquid coins show crowding only.</p></li>
       <li><span>4 · SQUEEZE ON</span><b>The flush starts</b><p>Price moves against the crowd while open interest drops: positions are being closed or liquidated.</p></li>
     </ol>
   </section>
@@ -184,7 +184,7 @@ function card(r){ const d = r.dec;
     <div class="gc-lb">${r.zone.map(z => `<i class="pz">${esc(z)}</i>`).join("")}${r.extreme ? `<i class="risk">Extreme funding</i>` : ""}</div>
     <p class="gc-say">${esc(r.say)}</p>
     <div class="kv"><div><span>Funding</span><b class="${r.fr_pct >= 0 ? "up" : "dn"}">${r.fr_pct.toFixed(4)}%</b></div><div><span>Open interest</span><b>${usd(r.oi_usd)}</b></div><div><span>OI 1h / 4h</span><b>${pc(r.oi1)} / ${pc(r.oi4)}</b></div><div><span>Price 1h</span><b>${pc(r.p1)}</b></div></div>
-    <div class="gc-foot"><span class="gc-mtf"></span><a href="/scanners/trendline-hero/?s=${encodeURIComponent(r.symbol)}">Chart</a></div></article>`; }
+    <div class="gc-foot"><span class="gc-mtf"></span>${r.ours ? `<a href="/scanners/trendline-hero/?s=${encodeURIComponent(r.symbol)}">Chart</a>` : ""}<a href="https://www.tradingview.com/chart/?symbol=${encodeURIComponent((r.src === "Bybit" ? "BYBIT:" : "BINANCE:") + r.perp + ".P")}" target="_blank" rel="noopener">TradingView</a></div></article>`; }
 function render(){ if (!D) return; tiles(); const rows = D.rows.filter(pass);
   $("#gfList").innerHTML = rows.slice(0, shown).map(card).join("") || `<p class="gf-empty">Nothing here right now. Tap <b>Building</b> to see where crowding is growing.</p>`;
   $("#gfMoreBtn").hidden = rows.length <= shown; }

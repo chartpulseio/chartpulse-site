@@ -13,10 +13,11 @@ declare(strict_types=1);
 require_once __DIR__ . '/tl_engine.php';
 
 const SQ_TTL = 55;
-const SQ_LONG = 0.0003;      // funding per interval >= 0.03%: longs paying, crowded
-const SQ_LONG_X = 0.0008;    // >= 0.08%: extreme
-const SQ_SHORT = -0.0002;    // <= -0.02%: shorts paying, crowded
-const SQ_SHORT_X = -0.0006;
+const SQ_LONG = 0.00025;     // funding per interval >= 0.025% (2.5x the usual 0.01%): longs crowded
+const SQ_LONG_X = 0.0006;    // >= 0.06%: extreme
+const SQ_SHORT = -0.0001;    // <= -0.01% (shorts paying): shorts crowded
+const SQ_SHORT_X = -0.0004;
+const SQ_MIN_TV = 20000000;  // other Bybit perpetuals join when 24h turnover >= $20M (liquid enough to matter)
 
 /** Our crypto symbol -> list of perp tickers to try (BTC-USD -> BTCUSDT; GRT6719-USD -> GRTUSDT; SHIB -> SHIB1000USDT / 1000SHIBUSDT). */
 function sq_perps(string $sym): array {
@@ -58,9 +59,11 @@ function sq_scan(): array {
         $SC = t_scan_load(); $T = []; foreach (t_view_rows($SC, $now) as $r) $T[$r['symbol']] = $r;
         $HE = []; try { foreach (tlh_scan(true)['rows'] as $r) $HE[$r['symbol']] = $r; } catch (Throwable $e) {}
         $rows = []; $snap = $now - (int)($H['_t'] ?? 0) >= 230;
-        foreach (t_symbols() as $sym => $mkt) {
-            if ($mkt !== 'Crypto') continue;
-            $pk = null; foreach (sq_perps($sym) as $p) if (isset($M[$p])) { $pk = $p; break; } if (!$pk) continue;
+        // our crypto list (zones available) + every other liquid perpetual (crowding only)
+        $U = []; $seen = [];
+        foreach (t_symbols() as $sym => $mkt) { if ($mkt !== 'Crypto') continue; foreach (sq_perps($sym) as $p) if (isset($M[$p])) { $U[$sym] = $p; $seen[$p] = 1; break; } }
+        foreach ($M as $p => $x) if (!isset($seen[$p]) && $x['tv'] >= SQ_MIN_TV) $U['~' . $p] = $p;
+        foreach ($U as $sym => $pk) {
             $x = $M[$pk]; $t1 = $T[$sym] ?? null;
             $hist = (array)($H[$pk] ?? []);
             if ($snap) { $hist[] = [$now, round($x['oi']), $x['px']]; $hist = array_values(array_filter($hist, fn($h) => $now - $h[0] <= 8 * 3600)); $H[$pk] = $hist; }
@@ -93,7 +96,8 @@ function sq_scan(): array {
                  . [3 => ($put ? 'Price is falling and open interest is dropping: longs are being flushed out now.' : 'Price is rising and open interest is dropping: shorts are being squeezed now.'),
                     2 => 'Set-up is ready: watch for the first turn ' . ($put ? 'down' : 'up') . ' from this zone.',
                     1 => 'Crowding is building. Not at a key zone yet.', 0 => 'Crowded, but open interest is not building. Watch only.'][$st];
-            $rows[] = ['symbol' => $sym, 'name' => t_name($sym), 'perp' => $pk, 'src' => $x['src'], 'class' => 'crypto', 'side' => $side, 'stage' => $st,
+            $ours = $sym[0] !== '~'; $base = preg_replace('/^(1000000|10000|1000)|1000(?=USDT)|USDT$/', '', $pk);
+            $rows[] = ['symbol' => $ours ? $sym : $base . '-USD', 'name' => $ours ? t_name($sym) : $base, 'ours' => $ours, 'perp' => $pk, 'src' => $x['src'], 'class' => 'crypto', 'side' => $side, 'stage' => $st,
                 'price' => round($x['px'], $d), 'dec' => $d, 'chg24' => round($x['chg'], 2), 'fr' => $fr, 'fr_pct' => round($fr * 100, 4), 'extreme' => $xtr,
                 'oi_usd' => round($x['oi']), 'oi1' => $fmt($oi1), 'oi4' => $fmt($oi4), 'p1' => $fmt($p1), 'tv24' => round($x['tv']), 'zone' => $zone, 'say' => $why,
                 'live' => (bool)($t1['live'] ?? true), 'key' => [$st, $zone ? 1 : 0, $xtr ? 1 : 0, abs($fr)]];
