@@ -16,6 +16,10 @@
     { t: "200 EMA Scanner", href: "/scanners/ema-200/" },
     { t: "AI Scanner", href: "/bias/", match: ["/desk/"] },
     { t: "News Scanner", href: "/scanners/news/" },
+    { t: "Squeeze & Binary", cols: [{ items: [
+      { t: "Liquidation Squeeze Scanner", d: "Crowded longs or shorts at a key zone, and squeezes starting", href: "/scanners/squeeze/" },
+      { t: "Binary Pulse Scanner", d: "Up / down calls with expiry on live forex, crypto and gold", href: "/scanners/binary/" }
+    ] }] },
     { t: "Markets", cols: [{ items: [
       { t: "AI Scan", d: "Trend direction for every symbol", href: "/bias/" },
       { t: "Movers Reversal Scanner", d: "Today's biggest movers and which are snapping back", href: "/movers/" },
