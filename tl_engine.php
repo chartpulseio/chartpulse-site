@@ -400,7 +400,11 @@ function tl_build(string $sym): ?array {
 // ===========================================================================
 // Trend Line Scanner: every symbol of the Tier-1 universe, swing (1W 1D 4H 1H) and intraday (30m 15m 10m)
 // ===========================================================================
-function tl_class(string $sym): string { $ex = t_exchange($sym); return $ex === 'CRYPTO' ? 'crypto' : ($ex === 'FX' ? 'forex' : 'other'); }
+/** Page filter class: forex | crypto | commodity (owner, 13 Nov 2026: Commodities + MCX, gold spot included) | other (stocks, indices, futures). */
+function tl_class(string $sym): string {
+    $m = t_symbols()[$sym] ?? ''; if ($m === 'Commodities' || $m === 'MCX Commodities') return 'commodity';
+    $ex = t_exchange($sym); return $ex === 'CRYPTO' ? 'crypto' : ($ex === 'FX' ? 'forex' : 'other');
+}
 
 /** One symbol for the scanner list. */
 function tl_row(string $sym, array $row, int $now): ?array {

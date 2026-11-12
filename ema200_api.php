@@ -114,7 +114,7 @@ if (isset($_GET['min_score']) && $_GET['min_score'] !== '') {
 
 $quality = strtolower((string)($_GET['quality'] ?? 'all'));
 $mkt = strtolower((string)($_GET['mkt'] ?? 'all'));   // all | forex | crypto | other (stocks, indices, futures)
-if (!in_array($mkt, ['all', 'forex', 'crypto', 'other'], true)) $mkt = 'all';
+if (!in_array($mkt, ['all', 'forex', 'crypto', 'commodity', 'other'], true)) $mkt = 'all';
 $tf = (string)($_GET['tf'] ?? 'any'); if (!in_array($tf, E2_TFS, true)) $tf = 'any';
 $out = [];
 foreach ($all['signals'] as $s) {

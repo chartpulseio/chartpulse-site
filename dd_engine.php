@@ -1006,7 +1006,7 @@ function dd_eval(string $sym, array $row, bool $deep, array $ctx, int $now): ?ar
     return [
         'symbol' => $sym, 'name' => t_name($sym),
         'market' => $row['market'] ?? (t_symbols()[$sym] ?? ''),
-        'class' => dd_class($sym), 'tv' => $row['tv'] ?? dd_tv($sym),
+        'class' => function_exists('tl_class') ? tl_class($sym) : dd_class($sym), 'tv' => $row['tv'] ?? dd_tv($sym),   // page filter class (commodity included)
         'side' => $sg < 0 ? 'PUT' : 'CALL',
         'price' => dd_f($px),
         'status' => $status, 'mode' => $mode, 'bounce' => $bo, 'bounce_why' => $bo ? null : $bwhy,

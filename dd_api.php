@@ -90,7 +90,7 @@ if (!t_rl('dd', 90) || !t_rl('dd:' . $r, $LIM[$r] ?? 20)) {
 }
 
 $mkt = (string)($_GET['mkt'] ?? 'all');
-if (!in_array($mkt, ['all', 'forex', 'crypto', 'other'], true)) $mkt = 'all';
+if (!in_array($mkt, ['all', 'forex', 'crypto', 'commodity', 'other'], true)) $mkt = 'all';
 
 if ($r === 'availability') {
     dd_json(['availability' => dd_availability()]);
