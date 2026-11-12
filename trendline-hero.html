@@ -499,6 +499,7 @@ function t2paint(d) {
   else if (e.state === "late") { t = "Entry already happened"; p = `The entry candle closed ${e.bars_ago} candles ago and price has moved on. Chasing it now means a worse price. Wait for the next setup, or for price to come back to the line.`; }
   else if (e.state === "failed") { t = "Entry failed"; p = `The entry triggered, then price went back past the stop at ${fmt(e.sl, d.dec)}. This setup is over. Wait for a new one.`; }
   else { cls = "wait"; t = "WAIT · price has not reached the line yet"; p = `The setup is valid, but in the last few hours price has not touched the ${TFN[r.tf] || r.tf} ${put ? "resistance" : "support"} line at ${fmt(r.lv, d.dec)}. Wait for it to get there.`; }
+  if (r && !r.live) { if (cls === "entry") cls = "wait"; t = "MARKET CLOSED · " + t; p += " <b>This market is not trading right now</b>: these levels are from the last session. Check again after it opens."; }
   $("#h2State").innerHTML = `<div class="h2-state ${cls}"><b class="t">${t}</b><p>${p}</p></div>`;
   // three checks
   const both = (m.d["4H"] || 0) === (m.d["1D"] || 0) && (m.d["1W"] || 0) === (m.d["1D"] || 0);
