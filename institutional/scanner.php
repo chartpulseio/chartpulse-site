@@ -11,4 +11,5 @@ $e = fn($s) => htmlspecialchars((string)$s, ENT_QUOTES);
 <div class="search-bar"><input id="search" placeholder="Filter symbols: BTC, RELIANCE, Gold, EUR/USD..."><span id="liveCount">0 signals</span></div>
 <div class="table-wrap"><table><thead><tr><th>#</th><th>Symbol</th><th>Bias</th><th>Entry</th><th>SL</th><th>Target</th><th>Score</th><th>Setup</th><th>Change</th></tr></thead><tbody id="tbody"><tr><td colspan="9" style="text-align:center;padding:40px">Scanning...</td></tr></tbody></table></div>
 <script>const STRAT_ID=<?=json_encode($id)?>;</script><script src="assets/js/scanner.js?v=2"></script>
+<script src="/static/v2/tg-join.js?v=1" defer></script>
 </body></html>

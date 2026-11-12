@@ -4,4 +4,5 @@
 <h1 class="main-title">INSTITUTIONAL SCANNERS</h1><p class="sub">Smart-money, order-flow and mean-reversion setups on daily bars</p>
 <div class="grid"><?php foreach($SCANNERS as $id=>$v): ?><a class="card" href="scanner.php?id=<?=htmlspecialchars($id)?>"><div class="card-top"><span class="tag"><?=htmlspecialchars($v['tag'])?></span></div><h3><?=htmlspecialchars($v['name'])?></h3><p style="color:#9ca3af;font-size:12px;margin:8px 0 0 0"><?=htmlspecialchars($v['desc'])?></p><small style="color:#6b7280">Best for: <?=htmlspecialchars($v['for'])?> | <?=htmlspecialchars($v['tf'])?></small><button>Open scanner &rarr;</button></a><?php endforeach; ?></div>
 <p style="text-align:center;color:#6b7280;font-size:11px;padding:0 20px 30px">Educational scanner, not financial advice. No win rate has been measured for these scanners.</p>
+<script src="/static/v2/tg-join.js?v=1" defer></script>
 </body></html>

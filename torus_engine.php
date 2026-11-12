@@ -1515,33 +1515,34 @@ function &t_siglog(): array {
 
 /* ---- Telegram broadcast helpers (3 Nov 2026) ---- */
 
-/** Send one message to all subscribers in data/tg_subscribers.json. Fire-and-forget (curl async). */
-function tg_broadcast(string $html): void {
-    $tok = trim((string)t_cfg('telegram_bot_token', ''));
-    if ($tok === '') return;
-    $sub_file = T_DATA . '/tg_subscribers.json';
-    if (!is_file($sub_file)) return;
-    $subs = json_decode((string)file_get_contents($sub_file), true);
-    if (!is_array($subs) || empty($subs)) return;
-    foreach ($subs as $chat_id => $_) {
-        $ch = curl_init('https://api.telegram.org/bot' . $tok . '/sendMessage');
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST           => true,
-            CURLOPT_TIMEOUT        => 6,
-            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-            CURLOPT_POSTFIELDS     => json_encode([
-                'chat_id'                  => (string)$chat_id,
-                'text'                     => $html,
-                'parse_mode'               => 'HTML',
-                'disable_web_page_preview' => true,
-            ]),
-        ]);
-        curl_exec($ch);
-        curl_close($ch);
-        usleep(50000);   // 50ms between sends — Telegram rate limit safe
-    }
+/** Post one HTML message to one chat. */
+function tg_post(string $tok, string $chat, string $html): bool {
+    $ch = curl_init('https://api.telegram.org/bot' . $tok . '/sendMessage');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_TIMEOUT => 6,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_POSTFIELDS => json_encode(['chat_id' => $chat, 'text' => $html, 'parse_mode' => 'HTML', 'disable_web_page_preview' => true]),
+    ]);
+    $r = curl_exec($ch); curl_close($ch);
+    return is_string($r) && str_contains($r, '"ok":true');
 }
+
+/** Send one message to every bot subscriber (data/tg_subscribers.json) and to config 'telegram_admin_chat'.
+    Returns how many chats it went to. */
+function tg_deliver(string $html): int {
+    $tok = trim((string)t_cfg('telegram_bot_token', ''));
+    if ($tok === '') return 0;
+    $chats = [];
+    $sub_file = T_DATA . '/tg_subscribers.json';
+    $subs = is_file($sub_file) ? json_decode((string)file_get_contents($sub_file), true) : [];
+    if (is_array($subs)) foreach ($subs as $chat_id => $_) $chats[(string)$chat_id] = 1;
+    $adm = trim((string)t_cfg('telegram_admin_chat', ''));
+    if ($adm !== '') $chats[$adm] = 1;
+    $n = 0;
+    foreach (array_keys($chats) as $c) { if (tg_post($tok, (string)$c, $html)) $n++; usleep(50000); }   // 50 ms apart: Telegram rate limit safe
+    return $n;
+}
+function tg_broadcast(string $html): void { tg_deliver($html); }
 
 /** Track per-symbol last-notified flow so we only alert on state UPGRADES. Stored in data/tg_flow_state.json. */
 function &tg_flow_state(): array {
@@ -1578,32 +1579,27 @@ function tg_maybe_notify(string $sym, array $row): void {
     $S[$sym] = $flow;
     tg_flow_state_save();
 
-    // Build message
-    $name  = $row['name']     ?? $sym;
-    $price = isset($row['price'])    ? '₹' . number_format((float)$row['price'], 2)    : '';
-    $str   = isset($row['strength']) ? round((float)$row['strength']) . ' pts'          : '';
-    $emoji = match($flow) {
-        'GATE OPEN'         => '🟡',
-        'SIGNAL', 'TICK 1' => '🟢',
-        'TICK 2'            => '🔵',
-        'TICK 3'            => '🟣',
-        'FLY'               => '✈️',
-        default             => '🔔',
-    };
-    $setupLabel = match($setup) {
-        'trend'      => 'Trend',
-        'retracement'=> 'Retracement',
-        'midtrend'   => 'Mid-Trend',
-        default      => ucfirst($setup),
+    // Message (owner, 12 Nov 2026): scanner name, setup name, a short "why". No link, no disclaimer.
+    // The why stays general: the Tier 1 rules themselves are never written out.
+    $name  = (string)($row['name'] ?? $sym);
+    $px    = isset($row['price']) ? (float)$row['price'] : null;
+    $d     = $px === null ? 2 : (abs($px) >= 100 ? 2 : (abs($px) >= 1 ? 4 : 6));
+    $up    = $sig === 'CALL';
+    $grade = $row['grade'] ?? null;
+    [$setupLabel, $why] = match($setup) {
+        'trend'    => ['Trend · long target', 'Bigger trend is ' . ($up ? 'up' : 'down') . ' and price turned from the day\'s ' . ($up ? 'low' : 'high') . ' zone; all entry checks confirmed.'],
+        'retrace', 'retracement' => ['Retracement · small target', 'Price stretched into a key zone against the bigger trend and turned ' . ($up ? 'up' : 'down') . '; one quick target.'],
+        'midtrend' => ['Mid-Trend', 'Price pulled back into a key zone in the direction of the bigger trend and turned ' . ($up ? 'up' : 'down') . '.'],
+        default    => [ucfirst((string)$setup), 'All entry checks confirmed.'],
     };
     $lines = [
-        "$emoji <b>$flow — $sig</b>",
-        "<b>$name</b>" . ($price ? "  ·  $price" : ''),
-        "Setup: $setupLabel" . ($str ? "  ·  Score: $str" : ''),
-        '📊 <a href="https://chartpulse.io/scanner.html">Open ChartPulse</a>',
-        '<i>Not investment advice.</i>',
+        "\u{1F4E1} <b>Tier 1 Scanner</b>",
+        '',
+        ($up ? "\u{1F7E2}" : "\u{1F534}") . ' <b>' . $sig . ' · ' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</b>' . ($px !== null ? ' · ' . number_format($px, $d, '.', ',') : ''),
+        'Setup: FLY · ' . $setupLabel . ($grade ? ' · Grade ' . $grade : ''),
+        'Why: ' . $why,
     ];
-    tg_broadcast(implode("\n", $lines));
+    tg_deliver(implode("\n", $lines));
 }
 
 /** Reset flow state when a signal ends (so re-entry gets a fresh notification). */

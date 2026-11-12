@@ -78,9 +78,8 @@ if ($cmd === '/start' && preg_match('/^\/start\s+([a-f0-9]{24})$/i', $text, $m))
         tg_save_subs($sub_file, $subs);
         tg_send($tok, $chat_id,
             "✅ <b>Connected to ChartPulse, $fname!</b>\n\n" .
-            "You'll get a message here when a <b>FLY</b> signal fires.\n\n" .
-            "Use /stop to unsubscribe anytime.\n" .
-            "<i>Not investment advice.</i>"
+            "Every CALL / PUT from our scanners will come here.\n\n" .
+            "Use /stop to unsubscribe anytime."
         );
     } else {
         tg_send($tok, $chat_id,
@@ -110,14 +109,11 @@ if ($cmd === '/start') {
         tg_save_subs($sub_file, $subs);
         tg_send($tok, $chat_id,
             "🚀 <b>Welcome to ChartPulse, $fname!</b>\n\n" .
-            "You're now subscribed to live signal alerts.\n\n" .
-            "You'll get notified the moment a signal fires:\n" .
-            "• 🟡 GATE OPEN — setup ready, entry awaited\n" .
-            "• 🟢 TICK 1/2/3 — entry ticks confirmed\n" .
-            "• ✈️ FLY — full confirmation, strongest signal\n\n" .
-            "📊 <a href=\"https://chartpulse.io/scanner.html\">Open Scanner</a>\n\n" .
-            "Use /stop to unsubscribe anytime.\n" .
-            "<i>Not investment advice.</i>"
+            "You're subscribed. Every CALL / PUT from our scanners will come here:\n" .
+            "• Tier 1 (FLY)\n• Trendline Hero · Hero with 200 EMA\n• Hybrid Trend Line · Trend Line\n" .
+            "• 200 EMA · Day Drive\n• Strategy scanners (SMC, FVG, EMA, VWAP...)\n\n" .
+            "Each alert tells you the scanner, the setup and why it fired.\n\n" .
+            "Use /stop to unsubscribe anytime."
         );
     }
 

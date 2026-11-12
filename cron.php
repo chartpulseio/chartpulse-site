@@ -3,7 +3,7 @@
 //   1. scan steps until nothing is due or ~50 s pass (keeps Tier 1 and the signal log running without visitors)
 //   2. replays recent Tier-1 signals into Tier-2 trades (Recent trades list)
 //   3. after 08:00 IST: builds yesterday's research report once and sends it to the admin Telegram chat
-//   5. Telegram alerts for the Hybrid, Trend Line (W/D/4H) and 200 EMA scanners (tg_alerts.php)
+//   5. Telegram CALL / PUT alerts from every scanner (tg_alerts.php)
 //   4. saves today's market movers (archive pages /movers/DATE) and, after 21:00 IST, posts them once to the Telegram channel
 declare(strict_types=1);
 if (PHP_SAPI !== 'cli') { http_response_code(403); exit; }
