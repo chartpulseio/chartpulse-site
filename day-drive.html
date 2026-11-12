@@ -146,6 +146,7 @@ a.dd-row:hover{background:var(--card2)}
 }
 @media (max-width:560px){.dd{padding:20px 14px 48px}.dd-steps{grid-template-columns:1fr}.dd-tiles{grid-template-columns:repeat(2,1fr)}.dd-score{text-align:left;width:100%}}
 @media (prefers-reduced-motion:no-preference){.dd-prog i::after{transition:width .5s ease}}
+.dd-btag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.18);font-style:normal;font-size:11.5px;color:#A3A5AF;white-space:nowrap}.dd-btag.ok{border-color:rgba(34,171,148,.6);color:#22AB94}.dd-btag.no{border-color:rgba(247,82,95,.55);color:#F7525F}
 </style>
 <meta property="og:site_name" content="ChartPulse">
 <meta name="twitter:card" content="summary_large_image">
@@ -254,7 +255,10 @@ function bounceWords(r) {
   const b = r.bounce || {}, put = b.side === "PUT", ext = put ? "today's high" : "today's low";
   const against = Object.entries(b.trends || {}).filter(([k, v]) => (v === "up") === put).map(([k]) => k);
   const z = (b.zones || []).length ? (b.strong ? `Reversed from a strong zone: ${b.zones.join(" + ")}.` : `Reversed from ${b.zones.join(" + ")}.`) : "Plain reversal (no key zone at " + ext + ").";
-  const tr = against.length ? ` Still against the ${against.join(", ")} trend: a small, quick trade with one target.` : "";
+  const NM = {"1W": "Weekly", "1D": "Daily", "4H": "4H", "1H": "1H", "30m": "30m"};
+  const now = Object.entries(b.trends || {}).map(([k, v]) => `${NM[k] || k} ${v === "up" ? "UP" : "DOWN"}`).join(", ");
+  const tr = (now ? ` Trend now: ${now}.` : "") + (against.length ? ` Still against the ${against.map(k => NM[k] || k).join(", ")} trend: a small, quick trade with one target.` : "")
+    + (b.small_with === false ? " The small charts (1H / 30m) are against it too: weaker setup." : b.small_with ? " The small charts already turned with it: preferred." : "");
   if (r.status === "BOUNCE RUN") return `${z} The turn came earlier today (entry was ${fmt(b.entry)}); price has already moved ${b.moved_r ?? "?"}× the risk. Late: do not chase, wait for a pullback.${tr}`;
   return r.status === "BOUNCE GO" ? `${z} A 5-minute candle broke the last swing away from ${ext}.${tr}` : `Price is at ${ext} on ${(b.zones || []).join(" + ")}. Waiting for a 5-minute turn.${tr}`;
 }
@@ -296,7 +300,7 @@ function paint() {
       <span class="dd-rk">${i + 1}</span>
       <span class="dd-nm"><b>${esc(r.name)}</b><small>${esc(r.tv || r.symbol)} · ${esc(r.market || "")}</small></span>
       <span class="dd-sidec"><span class="dd-side ${esc(r.side)}">${r.side === "CALL" ? "▲" : "▼"} ${esc(r.side)}</span></span>
-      <span class="dd-pillc">${pill(r)}${r.mode === "bounce" ? TRN(r) : ""}</span>
+      <span class="dd-pillc">${pill(r)}${r.mode === "bounce" ? TRN(r) : ""}${r.mode === "bounce" && r.bounce && r.bounce.tag ? `<i class="dd-btag ${r.bounce.small_with ? "ok" : "no"}">${esc(r.bounce.tag)}</i>` : ""}${r.mode === "bounce" && r.bounce ? `<i class="dd-btag ${r.bounce.strong ? "ok" : ""}">${r.bounce.strong ? "★ Strong zone" : (r.bounce.zones || []).length ? "Zone" : "Plain reversal"}</i>` : ""}</span>
       <span class="dd-progc">${prog(r)}</span>
       <span class="dd-sc">${Math.round(r.score)}<small>/100</small></span>
       <span class="dd-next">${esc(nextWords(r))}</span>

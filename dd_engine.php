@@ -894,7 +894,13 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
     }
     $zones = array_values($hit); $strong = count($zones) >= 2;
     $trends = []; foreach (['1W', '1D', '4H', '1H', '30m'] as $k) if (isset($mtf[$k])) $trends[$k] = (int)$mtf[$k] > 0 ? 'up' : 'down';
-    $base = ['side' => $call ? 'CALL' : 'PUT', 'extreme' => dd_f($ext), 'zones' => $zones, 'strong' => $strong, 'trends' => $trends];
+    // owner, 13 Nov 2026: prefer bounces that the WEAK (small-chart) trend already backs; label the ones that go against it too
+    $dir = $call ? 'up' : 'down';
+    $with = array_keys(array_filter($trends, fn($v) => $v === $dir)); $against = array_keys(array_filter($trends, fn($v) => $v !== $dir));
+    $smallWith = in_array('1H', $with, true) || in_array('30m', $with, true);
+    $base = ['side' => $call ? 'CALL' : 'PUT', 'extreme' => dd_f($ext), 'zones' => $zones, 'strong' => $strong, 'trends' => $trends,
+             'with' => $with, 'against' => $against, 'small_with' => $smallWith,
+             'tag' => $smallWith ? 'Small trend agrees (' . implode(', ', array_values(array_intersect(['4H', '1H', '30m'], $with))) . ')' : 'Against the small trend too'];
     if (!$today) { $why = 'no intraday bars for today (cs ' . $cs . ')'; return $zones ? $base + ['status' => 'NEED5M'] : null; }      // ask the scan for fresh 5m bars
     // has it turned? a fresh 5m change of character after the extreme
     $ch = $ix < $n5 - 2 ? dd_choch($F5, $ix, $n5, $sg, 8) : null;
@@ -1061,7 +1067,13 @@ function dd_scan(string $mkt = 'all', bool $force = false): array {
     usort($list, function ($a, $b) {
         $rank = ['DRIVE' => 0, 'BOUNCE GO' => 1, 'ARMED' => 2, 'BOUNCE READY' => 3, 'TREND OK' => 4, 'BOUNCE RUN' => 5, 'STRUCTURE OK' => 6, 'OFF-HOURS' => 7, 'WATCH' => 8];
         $x = $rank[$a['status']] ?? 9; $y = $rank[$b['status']] ?? 9;
-        return $x !== $y ? $x <=> $y : (float)$b['score'] <=> (float)$a['score'];
+        if ($x !== $y) return $x <=> $y;
+        if (($a['mode'] ?? '') === 'bounce' && ($b['mode'] ?? '') === 'bounce') {   // bounces: small trend with it first, then more charts with it, then a strong zone
+            $ka = [!empty($a['bounce']['small_with']) ? 1 : 0, count($a['bounce']['with'] ?? []), !empty($a['bounce']['strong']) ? 1 : 0];
+            $kb = [!empty($b['bounce']['small_with']) ? 1 : 0, count($b['bounce']['with'] ?? []), !empty($b['bounce']['strong']) ? 1 : 0];
+            if ($ka !== $kb) return $kb <=> $ka;
+        }
+        return (float)$b['score'] <=> (float)$a['score'];
     });
 
     $cnt = fn(string $s) => count(array_filter($list, fn($r) => $r['status'] === $s));
