@@ -547,7 +547,20 @@ function tlh_row(string $sym, array $row, int $now, array $tfs = TLH_TFS, string
                      'risk_pct' => round($risk / $px * 100, 2)];
         }
     }
-    return ['symbol' => $sym, 'name' => t_name($sym), 'market' => $row['market'] ?? (t_symbols()[$sym] ?? ''), 'class' => tl_class($sym),
+    // Hero with 200 EMA (owner, 12 Nov 2026): is the 200 EMA of the 1-hour chart sitting on the same line?
+    // "On the line" = the EMA is within 1 x the 1-hour ATR of the trend line's level. Label on Trendline Hero, filter on Hero with 200 EMA.
+    $e200 = null;
+    if ($hero && count($fr['1H']['c'] ?? []) >= 220) {
+        $C = $fr['1H']['c']; $k = 2 / 201; $ema = array_sum(array_slice($C, 0, 200)) / 200;
+        for ($i = 200, $nn = count($C); $i < $nn; $i++) $ema += ((float)$C[$i] - $ema) * $k;
+        $A1 = t_atr($fr['1H'], 14); $a1 = (float)end($A1);
+        if ($a1 > 0) {
+            $dl = ($best['lv'] - $ema) / $a1; $dp = ($px - $ema) / $a1;
+            $e200 = ['e' => round($ema, $d), 'dl' => round($dl, 2), 'dp' => round($dp, 2), 'ok' => abs($dl) <= 1.0,
+                     'side' => ($put ? $dp <= 0.25 : $dp >= -0.25)];   // side: price is on the trade's side of the EMA (EMA above for a PUT, below for a CALL)
+        }
+    }
+    return ['symbol' => $sym, 'name' => t_name($sym), 'market' => $row['market'] ?? (t_symbols()[$sym] ?? ''), 'class' => tl_class($sym), 'e200' => $e200,
             'price' => round($px, $d), 'dec' => $d, 'bias' => $bias, 'mtf' => $mtf, 'pull' => $pull,
             'with4h' => (int)($mtf['d']['4H'] ?? 0) === (int)$mtf['d']['1D'], 'with1w' => (int)($mtf['d']['1W'] ?? 0) === (int)$mtf['d']['1D'],
             'stage' => $best['stage'], 'stage_name' => TLH_STAGE[$best['stage']], 'tf' => $best['tf'], 'etf' => $etf,
@@ -560,11 +573,11 @@ function tlh_row(string $sym, array $row, int $now, array $tfs = TLH_TFS, string
 /** Whole-universe hybrid scan (same stepping and caching as tl_scan, shorter row life because stages move fast). */
 function tlh_scan(bool $hero = false): array {
     $dir = T_DATA . '/tl'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
-    $now = t_now(); $ck = $dir . ($hero ? '/_heroscan2.json' : '/_hscan5.json');
+    $now = t_now(); $ck = $dir . ($hero ? '/_heroscan3.json' : '/_hscan5.json');
     $c = t_read_json($ck, null);
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 30 && isset($c['rows'])) return $c;
     $scan = t_scan_load(); $syms = array_keys($scan['rows'] ?? []);
-    $cp = $dir . ($hero ? '/_herorows2.json' : '/_hrows5.json'); $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
+    $cp = $dir . ($hero ? '/_herorows3.json' : '/_hrows5.json'); $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
     $t0 = microtime(true); $done = 0; $fresh = 0; $nobias = 0;
     foreach ($syms as $sym) {
         $old = $cache[$sym] ?? null;

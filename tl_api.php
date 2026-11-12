@@ -37,6 +37,13 @@ if (($_GET['r'] ?? '') === 'hero' && isset($_GET['s'])) {   // Trendline Hero, T
     $hd = tlh_detail($hs); if (!$hd) tl_json(['error' => 'No data for this market yet.'], 404);
     tl_json($hd);
 }
+if (($_GET['r'] ?? '') === 'hero200') {   // Hero with 200 EMA: Trendline Hero setups whose line has the 1-hour 200 EMA on it
+    @set_time_limit(60); $hp = tlh_scan(true);
+    $hp['rows'] = array_values(array_filter($hp['rows'], fn($r) => !empty($r['e200']['ok'])));
+    $hc = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0, 'old' => 0];
+    foreach ($hp['rows'] as $r) { if ($r['stage'] >= 4 && empty($r['live'])) $hc['old']++; else $hc[$r['stage']]++; }
+    $hp['meta']['counts'] = $hc; tl_json($hp);
+}
 if (($_GET['r'] ?? '') === 'hero') { @set_time_limit(60); tl_json(tlh_scan(true)); }   // Trendline Hero: 1W 1D 4H 1H 30m
 if (($_GET['r'] ?? '') === 'scan') { @set_time_limit(60); tl_json(tl_scan()); }
 $s = (string)($_GET['s'] ?? '');
