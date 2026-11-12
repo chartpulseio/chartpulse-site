@@ -645,7 +645,8 @@ function tlh_detail(string $sym): ?array {
         else {
             $E['bars_ago'] = $lc - $hit; $E['trig_t'] = (int)$S['t'][$hit];
             $run = ($trig - $px) * $s;                                           // how far price has already travelled past the trigger
-            $E['state'] = ($lc - $hit <= 6 && $run <= abs($sl - $trig)) ? 'entry' : 'late';
+            $R0 = abs($sl - $trig);
+            $E['state'] = ($lc - $hit <= 6 && $run <= $R0) ? 'entry' : ($run <= 0.5 * $R0 ? 'open' : 'late');   // open: triggered a while ago, price is still at the entry level
             if (($px - $sl) * $s > 0) $E['state'] = 'failed';                    // price went back beyond the stop: the entry is void
         }
         if ($risk > 0) {
