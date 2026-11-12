@@ -657,6 +657,19 @@ function dd_choch(array $F, int $from, int $to, int $sg, int $fresh = 8): ?array
     return $best;
 }
 
+/** The FIRST change of character after bar $from (the real turn off the extreme), or null. */
+function dd_choch_first(array $F, int $from, int $to, int $sg): ?array {
+    $n = min($to, count($F['c'])); $first = null;
+    for ($i = $from + 1; $i < $n - 1; $i++) {
+        $isPiv = $sg < 0 ? ((float)$F['l'][$i] < (float)$F['l'][$i - 1] && (float)$F['l'][$i] <= (float)$F['l'][$i + 1])
+                         : ((float)$F['h'][$i] > (float)$F['h'][$i - 1] && (float)$F['h'][$i] >= (float)$F['h'][$i + 1]);
+        if (!$isPiv) continue;
+        $pl = (float)($sg < 0 ? $F['l'][$i] : $F['h'][$i]);
+        for ($j = $i + 2; $j < $n; $j++) { $c = (float)$F['c'][$j]; if ($sg < 0 ? $c < $pl : $c > $pl) { if ($first === null || $j < $first[1]) $first = [$pl, $j, $c]; break; } }
+    }
+    return $first;
+}
+
 function dd_step3(string $sym, array $F5, int $cs, int $ce, int $sg, ?float $vwap, float $a5, int $now): array {
     $cls = dd_class($sym);
     $g = [];
@@ -922,7 +935,7 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
     }
     if ($zones && abs($px - $ext) <= 1.0 * $a5) return $base + ['status' => 'BOUNCE READY'];
     // the turn happened earlier today and price has already moved: shown, but marked late (do not chase)
-    $old = $ix < $n5 - 2 ? dd_choch($F5, $ix, $n5, $sg, 999) : null;
+    $old = $ix < $n5 - 2 ? dd_choch_first($F5, $ix, $n5, $sg) : null;   // the first turn off the extreme, not the latest break
     if ($old && $away > 0 && ($px - (float)$old[2]) * $sg > 0) {
         $entry = (float)$old[2]; $sl = $ext - $sg * 0.15 * $a5; $risk = abs($entry - $sl);
         return $base + ['status' => 'BOUNCE RUN', 'entry' => dd_f($entry), 'sl' => dd_f($sl), 'moved_r' => $risk > 0 ? round(($px - $entry) * $sg / $risk, 1) : null,
