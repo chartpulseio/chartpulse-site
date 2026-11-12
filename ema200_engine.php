@@ -339,7 +339,7 @@ const E2_TF_MIN = 220;      // candles needed before a 200 EMA is trusted
 const E2_ZONE_ATR = 1.0;    // x ATR of that timeframe
 const E2_X_WIN = 5;         // candles looked back for a close across the EMA
 const E2_M15_TTL = 900;     // a symbol's 15m / 30m reading is refreshed after this many seconds
-const E2_M15_CHUNK = 16;
+const E2_M15_CHUNK = 12;
 
 function e2_tf_stat(?array $F): ?array {
     $c = $F['c'] ?? null; $n = is_array($c) ? count($c) : 0;
@@ -369,11 +369,13 @@ function e2_m15_step(array $syms, float $budget = 8.0): array {
     $t0 = microtime(true); $ch = false;
     while ($due && microtime(true) - $t0 < $budget) {
         $pick = array_splice($due, 0, E2_M15_CHUNK); $urls = [];
-        foreach ($pick as $s) $urls[$s] = t_url($s, '1mo', '15m');
+        foreach ($pick as $s) { $urls[$s] = t_url($s, '1mo', '15m'); $urls["$s|h"] = t_url($s, '1y', '1h'); }   // 1y of 1H bars: enough 4H candles for a 200 EMA
         try { $B = t_fetch($urls); } catch (Throwable $e) { $B = []; }
         foreach ($pick as $s) {
             [$f] = t_parse($B[$s] ?? null); $row = ['at' => $now, '15m' => null, '30m' => null];
             if ($f && count($f['t']) >= E2_TF_MIN) { $row['15m'] = e2_tf_stat($f); $row['30m'] = e2_tf_stat(t_resample($f, 1800)); $row['px'] = (float)end($f['c']); }
+            [$fh] = t_parse($B["$s|h"] ?? null); $row['4H'] = null;
+            if ($fh && count($fh['t']) >= E2_TF_MIN) { try { $row['4H'] = e2_tf_stat(t_resample($fh, 14400)); } catch (Throwable $e) {} }
             $C[$s] = $row; $ch = true;
         }
     }
@@ -386,6 +388,7 @@ function e2_tfs(array $fr, ?array $m): array {
     $o = [];
     try { $o['1D'] = e2_tf_stat($fr['1D'] ?? null); } catch (Throwable $e) { $o['1D'] = null; }
     try { $o['4H'] = e2_tf_stat(t_resample($fr['1H'], 14400)); } catch (Throwable $e) { $o['4H'] = null; }
+    if (!$o['4H'] && is_array($m['4H'] ?? null)) $o['4H'] = $m['4H'];   // short 1H cache: use the 1-year 1H reading
     try { $o['1H'] = e2_tf_stat($fr['1H'] ?? null); } catch (Throwable $e) { $o['1H'] = null; }
     $o['30m'] = is_array($m['30m'] ?? null) ? $m['30m'] : null;
     $o['15m'] = is_array($m['15m'] ?? null) ? $m['15m'] : null;
