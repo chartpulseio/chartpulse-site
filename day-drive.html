@@ -214,6 +214,7 @@ const STAGE = {
   "DRIVE":        { t: "Entry ready",      c: "s-drive",     next: "All three checks passed. The entry, stop and targets are in the trade plan." },
   "BOUNCE GO":    { t: "Bounce · entry",   c: "s-bgo",       next: "" },
   "BOUNCE READY": { t: "Bounce · get ready", c: "s-bready",   next: "" },
+  "BOUNCE RUN":   { t: "Bounce · already moving", c: "s-bready", next: "" },
   "ARMED":        { t: "Get ready",        c: "s-armed",     next: "An entry trigger has appeared. Waiting for the last confirmations before it is a full entry." },
   "TREND OK":     { t: "Trend agrees",     c: "s-trend",     next: "Big picture and trend both agree. Waiting for an entry trigger on the 15-minute chart." },
   "STRUCTURE OK": { t: "Big picture ready",c: "s-structure", next: "The weekly and daily charts agree. Waiting for the 4-hour or 1-hour trend to join." },
@@ -254,6 +255,7 @@ function bounceWords(r) {
   const against = Object.entries(b.trends || {}).filter(([k, v]) => (v === "up") === put).map(([k]) => k);
   const z = (b.zones || []).length ? (b.strong ? `Reversed from a strong zone: ${b.zones.join(" + ")}.` : `Reversed from ${b.zones.join(" + ")}.`) : "Plain reversal (no key zone at " + ext + ").";
   const tr = against.length ? ` Still against the ${against.join(", ")} trend: a small, quick trade with one target.` : "";
+  if (r.status === "BOUNCE RUN") return `${z} The turn came earlier today (entry was ${fmt(b.entry)}); price has already moved ${b.moved_r ?? "?"}× the risk. Late: do not chase, wait for a pullback.${tr}`;
   return r.status === "BOUNCE GO" ? `${z} A 5-minute candle broke the last swing away from ${ext}.${tr}` : `Price is at ${ext} on ${(b.zones || []).join(" + ")}. Waiting for a 5-minute turn.${tr}`;
 }
 function nextWords(r) {
@@ -328,9 +330,9 @@ function detail(r) {
   const b = r.bounce;
   const bcard = r.mode === "bounce" && b ? `<article class="dd-card dd-plan" style="border-color:#B57BFF"><h2>Bounce trade ${TRN(r)}</h2><p class="sub">${esc(bounceWords(r))}</p>
     ${b.entry != null ? `<table>
-      <tr><td>Entry<small>5-minute change of character</small></td><td>${fmt(b.entry)}</td></tr>
+      <tr><td>Entry<small>5-minute change of character${r.status === "BOUNCE RUN" ? " · already passed, do not chase" : ""}</small></td><td>${fmt(b.entry)}</td></tr>
       <tr><td>Stop-loss<small>just beyond ${b.side === "PUT" ? "today's high" : "today's low"} (${fmt(b.extreme)})</small></td><td style="color:var(--dn)">${fmt(b.sl)}</td></tr>
-      <tr><td>Target (only one)<small>${esc(b.t1why)} · reward ${esc(b.rr)}× the risk</small></td><td style="color:var(--up)">${fmt(b.t1)}</td></tr>
+      ${b.t1 != null ? `<tr><td>Target (only one)<small>${esc(b.t1why)} · reward ${esc(b.rr)}× the risk</small></td><td style="color:var(--up)">${fmt(b.t1)}</td></tr>` : ""}
     </table>` : `<p class="dd-next" style="margin:0">Entry, stop and target appear when a 5-minute candle turns at ${b.side === "PUT" ? "today's high" : "today's low"} (${fmt(b.extreme)}).</p>`}</article>` : "";
   const plan = k ? `<article class="dd-card dd-plan"><h2>Trade plan</h2><p class="sub">Worked out from the 15-minute chart. Position size is capped so one loss costs at most ${esc(k.max_loss)}% of the account.</p>
     <table>

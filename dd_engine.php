@@ -900,6 +900,13 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
                         'rr' => round(abs($tp[0] - $entry) / $risk, 1), 'at_bar' => (int)$F5['t'][$ch[1]]];
     }
     if ($zones && abs($px - $ext) <= 1.0 * $a5) return $base + ['status' => 'BOUNCE READY'];
+    // the turn happened earlier today and price has already moved: shown, but marked late (do not chase)
+    $old = $ix < $n5 - 2 ? dd_choch($F5, $ix, $n5, $sg, 999) : null;
+    if ($old && $away > 0 && ($px - (float)$old[2]) * $sg > 0) {
+        $entry = (float)$old[2]; $sl = $ext - $sg * 0.15 * $a5; $risk = abs($entry - $sl);
+        return $base + ['status' => 'BOUNCE RUN', 'entry' => dd_f($entry), 'sl' => dd_f($sl), 'moved_r' => $risk > 0 ? round(($px - $entry) * $sg / $risk, 1) : null,
+                        'at_bar' => (int)$F5['t'][$old[1]]];
+    }
     return null;
 }
 
@@ -957,7 +964,7 @@ function dd_eval(string $sym, array $row, bool $deep, array $ctx, int $now): ?ar
     $gates = $s1['gates'] + ($s2['gates'] ?? []) + ($s3['gates'] ?? []);
     $status = dd_status($s1, $s2, $s3); $mode = 'trend'; $bo = null;
     try { $bo = dd_bounce($sym, $fr, $F5, $cs, $ce, $px, $now); } catch (Throwable $e) { dd_log('bounce', $sym . ': ' . $e->getMessage()); }
-    if ($bo && !in_array($status, ['DRIVE', 'ARMED'], true) && in_array($bo['status'], ['BOUNCE GO', 'BOUNCE READY'], true)) {
+    if ($bo && !in_array($status, ['DRIVE', 'ARMED'], true) && in_array($bo['status'], ['BOUNCE GO', 'BOUNCE READY', 'BOUNCE RUN'], true)) {
         $status = $bo['status']; $mode = 'bounce'; $sg = $bo['side'] === 'CALL' ? 1 : -1;
     }
 
@@ -1039,7 +1046,7 @@ function dd_scan(string $mkt = 'all', bool $force = false): array {
 
     $list = array_values($rows);
     usort($list, function ($a, $b) {
-        $rank = ['DRIVE' => 0, 'BOUNCE GO' => 1, 'ARMED' => 2, 'BOUNCE READY' => 3, 'TREND OK' => 4, 'STRUCTURE OK' => 5, 'OFF-HOURS' => 6, 'WATCH' => 7];
+        $rank = ['DRIVE' => 0, 'BOUNCE GO' => 1, 'ARMED' => 2, 'BOUNCE READY' => 3, 'TREND OK' => 4, 'BOUNCE RUN' => 5, 'STRUCTURE OK' => 6, 'OFF-HOURS' => 7, 'WATCH' => 8];
         $x = $rank[$a['status']] ?? 9; $y = $rank[$b['status']] ?? 9;
         return $x !== $y ? $x <=> $y : (float)$b['score'] <=> (float)$a['score'];
     });
@@ -1049,7 +1056,7 @@ function dd_scan(string $mkt = 'all', bool $force = false): array {
         'at' => $now, 'rows' => $list,
         'meta' => ['scanned' => $seen, 'deep' => $deep, 'universe' => count($cands),
                    'drive' => $cnt('DRIVE'), 'armed' => $cnt('ARMED'), 'bounce_go' => $cnt('BOUNCE GO'), 'bounce_ready' => $cnt('BOUNCE READY'),
-                   'structure' => count(array_filter($list, fn($r) => !in_array($r['status'], ['WATCH', 'BOUNCE GO', 'BOUNCE READY'], true))),
+                   'structure' => count(array_filter($list, fn($r) => !in_array($r['status'], ['WATCH', 'BOUNCE GO', 'BOUNCE READY', 'BOUNCE RUN'], true))),
                    'vix' => $ctx['vix'], 'btc_atr_pct' => $ctx['btc_atr_pct'],
                    'took_ms' => (int)round((microtime(true) - $t0) * 1000)],
         'availability' => dd_availability(),
