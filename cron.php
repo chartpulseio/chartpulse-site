@@ -19,7 +19,7 @@ try { require_once __DIR__ . '/torus_desk.php'; $mx = trim(ml_keepalive() . ' ' 
 try { seo_movers_snapshot(t_now()); $tg = seo_tg_daily(t_now()); if ($tg) $m = trim(($m ?? '') . ' · channel ' . $tg, ' ·'); $ix = seo_indexnow(t_now()); if ($ix) $m = trim(($m ?? '') . ' · ' . $ix, ' ·'); } catch (Throwable $e) { $m = trim(($m ?? '') . ' · seo ' . $e->getMessage(), ' ·'); }
 try {   // God-father feed: keep the 6 strategy scanners' full lists fresh on 1D / 1H / 15m (each call runs on its own, ~2 s fire-and-forget)
     foreach (['institutional', 'ema-strategies'] as $gd) foreach (['1D' => 900, '1H' => 600, '15m' => 300] as $gtf => $gttl) {
-        $gfile = __DIR__ . "/$gd/cache/full_$gtf.json";
+        $gfile = T_DATA . "/strat_full/{$gd}_full_$gtf.json";
         if (is_file($gfile) && time() - filemtime($gfile) < $gttl) continue;
         @file_get_contents("https://chartpulse.io/$gd/api/scan.php?full=$gtf", false, stream_context_create(['http' => ['timeout' => 2, 'ignore_errors' => true]]));
     }

@@ -177,11 +177,13 @@ const TA_FULL_TTL = ['1D' => 900, '1H' => 600, '15m' => 300];
 /** Scans only $ids on timeframe $tf; caches {at, tf, sig: {id: [[symbol, bias, score, setup], ...]}}. Never throws. */
 function ta_get_full(string $dir, array $map, int $minBars, array $ids, string $tf): array {
     if (!isset(TA_FULL_TTL[$tf])) $tf = '1D';
-    $f = "$dir/full_$tf.json";
+    if (!ta_boot()) return ['sig' => []];
+    $folder = basename(dirname($dir));   // 'institutional' or 'ema-strategies'
+    $dir = T_DATA . '/strat_full'; $f = "$dir/{$folder}_full_$tf.json";   // outside the deployed folder: a deploy never wipes it
     $read = function () use ($f) { $j = is_file($f) ? json_decode((string)@file_get_contents($f), true) : null; return is_array($j) ? $j : null; };
     if (is_file($f) && time() - filemtime($f) < TA_FULL_TTL[$tf]) return $read() ?? ['sig' => []];
     if (!is_dir($dir)) @mkdir($dir, 0755, true);
-    $lock = @fopen("$dir/.lock_full_$tf", 'c');
+    $lock = @fopen("$dir/.lock_{$folder}_$tf", "c");
     if ($lock && flock($lock, LOCK_EX | LOCK_NB)) {
         try {
             @set_time_limit(170); @ini_set('memory_limit', '256M');
