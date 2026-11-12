@@ -20,7 +20,8 @@
         { t: "Trend lines", d: "Breakouts and tests on seven timeframes", href: "/scanners/trend-lines/" },
         { t: "Hybrid trend lines", d: "Day high or low at a line, with the trend", href: "/scanners/hybrid-trend-lines/" },
         { t: "Trendline Hero", d: "Trend line trades with the big trend, long targets", href: "/scanners/trendline-hero/" },
-        { t: "Hero with 200 EMA", d: "Hero setups with the 1H 200 EMA on the line", href: "/scanners/hero-200-ema/" }
+        { t: "Hero with 200 EMA", d: "Hero setups with the 1H 200 EMA on the line", href: "/scanners/hero-200-ema/" },
+        { t: "News scanner", d: "Markets in the news, tone and trend", href: "/scanners/news/" }
       ] },
       { h: "Research", items: [
         { t: "Backtesting", d: "Test your own strategy on history", href: "/backtesting/" },

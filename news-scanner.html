@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>News Scanner: Markets in the News, Tone and Trend · ChartPulse</title>
+<meta name="description" content="Free news scanner: every stock, index, forex pair, commodity and crypto in the news in the last 48 hours, with headline tone, impact, price move since the news and the trend.">
+<meta name="theme-color" content="#050506">
+<link rel="canonical" href="https://chartpulse.io/scanners/news/">
+<meta property="og:site_name" content="ChartPulse">
+<meta property="og:type" content="website">
+<meta property="og:title" content="News Scanner: Markets in the News, Tone and Trend · ChartPulse">
+<meta property="og:description" content="Every market in the news in the last 48 hours, with headline tone, impact, price move since the news and the trend.">
+<meta property="og:url" content="https://chartpulse.io/scanners/news/">
+<meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
+<link rel="stylesheet" href="/static/v2/sitehead.css?v=2">
+<link rel="stylesheet" href="/static/v2/trendlines.css?v=3">
+<script defer src="/static/v2/sitehead.js?v=11"></script>
+<script type="application/ld+json" id="cp-ld">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"News Scanner","item":"https://chartpulse.io/scanners/news/"}]},{"@type":"WebApplication","name":"News Scanner","url":"https://chartpulse.io/scanners/news/","applicationCategory":"FinanceApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Markets in the news in the last 48 hours with headline tone, impact, price move since the news and the trend."}]}</script>
+<style>
+:root{--bg:#050506;--card:#0F1014;--card2:#14161B;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#EDEDEF;--dim:#A3A5AF;--mute:#6B6D78;--gold:#E9C46A;--up:#22AB94;--dn:#F7525F;--blue:#6EA8FE;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.dd{max-width:1240px;margin:0 auto;padding:28px 20px 64px}
+.dd-eyebrow{font:600 12px/1 var(--mono);letter-spacing:.16em;color:var(--gold);text-transform:uppercase}
+.dd h1{margin:10px 0 10px;font-size:clamp(28px,4.4vw,44px);line-height:1.1;letter-spacing:-.02em}
+.dd-lede{margin:0;max-width:62ch;color:var(--dim);font-size:17px}
+.dd-back{display:inline-block;margin-bottom:14px;color:var(--dim);font-size:14px;text-decoration:none}
+.dd-back:hover{color:var(--ink)}
+
+/* the three checks */
+.dd-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:26px 0 0;padding:0;list-style:none}
+.dd-steps li{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.dd-steps b{display:block;font-size:15px;margin:6px 0 4px}
+.dd-steps span{font:600 11px/1 var(--mono);letter-spacing:.12em;color:var(--gold)}
+.dd-steps p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.5}
+
+/* counts */
+.dd-tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin:22px 0 0}
+.dd-tile{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.dd-tile .v{font:600 26px/1.1 var(--mono)}
+.dd-tile .k{margin-top:4px;color:var(--dim);font-size:13px}
+.dd-tile.hot .v{color:var(--up)}.dd-tile.warm .v{color:var(--gold)}
+
+.dd-note{margin:18px 0 0;padding:12px 16px;border:1px solid rgba(233,196,106,.35);border-radius:12px;background:rgba(233,196,106,.06);color:var(--dim);font-size:14px}
+.dd-note b{color:var(--ink)}
+
+/* controls */
+.dd-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:26px 0 12px}
+.dd-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.dd-tabs button,.dd-btn{appearance:none;border:1px solid var(--line2);background:transparent;color:var(--dim);padding:8px 14px;border-radius:999px;font:500 14px/1 var(--sans);cursor:pointer}
+.dd-tabs button.on{background:var(--ink);color:#000;border-color:var(--ink)}
+.dd-tabs button:hover,.dd-btn:hover{color:var(--ink);border-color:var(--ink)}
+.dd-tabs button.on:hover{color:#000}
+.dd-search{flex:1;min-width:180px;max-width:300px;margin-left:auto;padding:9px 14px;border:1px solid var(--line2);border-radius:999px;background:var(--card);color:var(--ink);font:14px var(--sans)}
+.dd-upd{color:var(--mute);font-size:13px}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* list */
+.dd-list{border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden}
+.dd-row{display:grid;grid-template-columns:40px minmax(150px,1.3fr) repeat(5,minmax(84px,1fr)) minmax(190px,1.8fr) 20px;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid var(--line);text-decoration:none;color:inherit}
+.dd-row:first-child{border-top:0}
+a.dd-row:hover{background:var(--card2)}
+.dd-row.head{color:var(--mute);font:600 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;background:#0B0C0F}
+.dd-rk{color:var(--mute);font:13px var(--mono)}
+.dd-nm b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dd-nm small{color:var(--mute);font:12px var(--mono)}
+.dd-side{display:inline-flex;align-items:center;gap:6px;font:600 13px var(--mono)}
+.dd-side.CALL{color:var(--up)}.dd-side.PUT{color:var(--dn)}
+.dd-pill{display:inline-block;padding:4px 10px;border-radius:999px;border:1px solid var(--line2);font:600 12px/1.3 var(--sans);color:var(--dim);white-space:nowrap}
+.dd-pill.s-drive{background:var(--up);border-color:var(--up);color:#00130f}
+.dd-pill.s-armed{border-color:var(--gold);color:var(--gold)}
+.dd-pill.s-trend,.dd-pill.s-structure{border-color:rgba(110,168,254,.6);color:var(--blue)}
+.dd-prog{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.dd-prog i{display:block;height:6px;border-radius:3px;background:rgba(255,255,255,.08);position:relative;overflow:hidden}
+.dd-prog i::after{content:"";position:absolute;inset:0;width:var(--w,0%);background:var(--gold);border-radius:3px}
+.dd-prog i.done::after{background:var(--up)}
+.dd-prog small{grid-column:1/-1;color:var(--mute);font:11px var(--mono)}
+.dd-sc{font:600 16px var(--mono);text-align:right}
+.dd-sc small{color:var(--mute);font-weight:400;font-size:11px}
+.dd-next{color:var(--dim);font-size:13.5px;line-height:1.45}
+.dd-go{color:var(--mute)}
+.dd-empty{padding:28px 16px;color:var(--dim);text-align:center}
+.dd-more{display:block;margin:14px auto 0}
+
+/* detail */
+.dd-dhead{display:flex;flex-wrap:wrap;gap:18px;justify-content:space-between;align-items:flex-end}
+.dd-dhead h1{margin:6px 0 10px}
+.dd-chips{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dd-score{min-width:150px;padding:14px 18px;border:1px solid var(--line);border-radius:14px;background:var(--card);text-align:right}
+.dd-score .v{font:600 34px/1 var(--mono)}
+.dd-score .k{color:var(--dim);font-size:13px;margin-top:4px}
+.dd-now{margin:20px 0 0;padding:16px 18px;border:1px solid var(--line2);border-radius:14px;background:var(--card);font-size:16px}
+.dd-now b{color:var(--gold)}
+.dd-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:18px}
+.dd-card{padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card);min-width:0}
+.dd-card h2{margin:0 0 2px;font-size:16px}
+.dd-card .sub{margin:0 0 12px;color:var(--mute);font-size:13px}
+.dd-card.ok{border-color:rgba(34,171,148,.45)}
+.dd-gate{display:grid;grid-template-columns:22px 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.dd-gate:first-of-type{border-top:0}
+.dd-gate .ic{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 12px/1 var(--sans);margin-top:1px;background:rgba(255,255,255,.07);color:var(--mute)}
+.dd-gate.ok .ic{background:var(--up);color:#00130f}
+.dd-gate b{display:block;font-size:14px;font-weight:600}
+.dd-gate p{margin:2px 0 0;color:var(--dim);font-size:13px;line-height:1.45}
+.dd-gate em{font-style:normal;color:var(--mute);font-size:12px}
+.dd-plan{margin-top:14px}
+.dd-plan table{width:100%;border-collapse:collapse;font-size:14px}
+.dd-plan td{padding:9px 0;border-top:1px solid var(--line)}
+.dd-plan tr:first-child td{border-top:0}
+.dd-plan td:last-child{text-align:right;font-family:var(--mono)}
+.dd-plan td small{display:block;color:var(--mute);font:12px var(--sans)}
+.dd-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.dd-links a{padding:10px 16px;border:1px solid var(--line2);border-radius:999px;text-decoration:none;font-size:14px;color:var(--ink)}
+.dd-links a.pri{background:var(--gold);border-color:var(--gold);color:#1a1300;font-weight:600}
+.dd-links a:hover{border-color:var(--ink)}
+
+/* learn */
+.dd-learn{margin-top:34px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.dd-learn h2{grid-column:1/-1;margin:0;font-size:20px}
+.dd-learn dl{margin:0;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.dd-learn dt{font-weight:600;margin-top:10px}.dd-learn dt:first-child{margin-top:0}
+.dd-learn dd{margin:2px 0 0;color:var(--dim);font-size:14px}
+.dd-ftr{max-width:1240px;margin:0 auto;padding:0 20px 40px}.dd-ftr nav{display:flex;flex-wrap:wrap;gap:8px 18px;padding-top:18px;border-top:1px solid var(--line)}.dd-ftr a{color:var(--mute);font-size:13px;text-decoration:none}.dd-ftr a:hover{color:var(--ink)}
+.dd-foot{margin-top:22px;color:var(--mute);font-size:13px;line-height:1.55}
+
+@media (max-width:980px){
+  .dd-steps{grid-template-columns:repeat(2,1fr)}.dd-tiles{grid-template-columns:repeat(3,1fr)}
+  .dd-row{grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;padding:14px}
+  .dd-row.head{display:none}
+  .dd-rk,.dd-go{display:none}
+  .dd-nm{grid-column:1}.dd-pillc{grid-column:2;grid-row:1;justify-self:end}
+  .dd-sidec{grid-column:1}.dd-sc{grid-column:2;grid-row:2}
+  .dd-progc,.dd-next{grid-column:1/-1}
+  .dd-cols{grid-template-columns:1fr}.dd-learn{grid-template-columns:1fr}
+  .dd-search{max-width:none;margin-left:0;flex-basis:100%}
+}
+@media (max-width:560px){.dd{padding:20px 14px 48px}.dd-steps{grid-template-columns:1fr}.dd-tiles{grid-template-columns:repeat(2,1fr)}.dd-score{text-align:left;width:100%}}
+@media (prefers-reduced-motion:no-preference){.dd-prog i::after{transition:width .5s ease}}
+
+/* trend line scanner */
+.tls-cell{display:block;padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:12px;line-height:1.3;color:var(--dim);min-height:44px}
+.tls-cell b{display:block;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tls-cell.up b{color:var(--up)}.tls-cell.down b{color:var(--dn)}.tls-cell.squeeze b{color:var(--gold)}
+.tls-cell.none{border-style:dashed;color:var(--mute);display:grid;place-items:center}
+.tls-cell.ev-test{border-color:var(--gold)}
+.tls-cell.ev-up{border-color:var(--up);background:rgba(34,171,148,.10)}
+.tls-cell.ev-down{border-color:var(--dn);background:rgba(247,82,95,.10)}
+.tls-cell small{font:11px var(--mono)}
+.tls-cell small.t{color:var(--gold)}.tls-cell small.u{color:var(--up)}.tls-cell small.d{color:var(--dn)}
+.tls-tfh{text-align:center}
+.dd-row{grid-template-columns:30px minmax(0,1.15fr) 104px repeat(var(--n,4),minmax(0,.95fr)) minmax(0,2.3fr) 86px}
+.tls-z{white-space:normal}.dd-next{min-width:0}
+.tls-view button{font-weight:600}
+.tls-mtf{display:block}
+.tls-mtf .sq{display:flex;gap:3px;margin-bottom:5px}
+.tls-mtf .sq i{flex:1;height:8px;border-radius:2px;background:rgba(255,255,255,.1)}
+.tls-mtf .sq i.u{background:var(--up)}.tls-mtf .sq i.d{background:var(--dn)}
+.tls-mtf b{font:600 12px var(--mono)}
+.tls-mtf b.CALL{color:var(--up)}.tls-mtf b.PUT{color:var(--dn)}.tls-mtf b.none{color:var(--mute);font-weight:400}
+.tls-call{display:inline-block;margin-right:6px;padding:2px 8px;border-radius:6px;font:700 12px/1.5 var(--mono)}
+.tls-call.CALL{background:var(--up);color:#00130f}.tls-call.PUT{background:var(--dn);color:#1c0003}.tls-call.x{border:1px solid var(--line2);color:var(--mute);font-weight:500}
+.tls-z{display:inline-block;margin-right:6px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid rgba(233,196,106,.5);color:var(--gold)}
+.tls-z.strong{background:var(--gold);border-color:var(--gold);color:#1a1300}
+.tls-cell i.zd{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-left:5px;vertical-align:middle}
+.tls-q{font:600 12px/1.25 var(--sans);text-align:center;padding:5px 8px;border-radius:8px;border:1px solid var(--line2);color:var(--dim)}
+.tls-q.a{background:var(--up);border-color:var(--up);color:#00130f}.tls-q.b{border-color:var(--gold);color:var(--gold)}
+.tls-fx{display:flex;flex-wrap:wrap;gap:5px}
+.tls-fx i{font-style:normal;font-size:11.5px;line-height:1.5;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--mute);white-space:nowrap}
+.tls-fx i.g{border-color:rgba(34,171,148,.45);color:var(--up)}.tls-fx i.w{border-color:rgba(247,82,95,.5);color:var(--dn)}
+.dd-how{margin:22px 0 0;padding:16px 18px;border:1px solid var(--line2);border-radius:14px;background:var(--card)}
+.dd-how h2{margin:0 0 8px;font-size:16px}
+.dd-how ol{margin:0;padding-left:20px;color:var(--dim);font-size:14.5px;line-height:1.6}
+.dd-how b{color:var(--ink)}
+.tls-head b{font-weight:600}
+.tls-ev{display:inline-block;margin:0 6px 4px 0;padding:2px 8px;border-radius:999px;border:1px solid var(--line2);font-size:12px;white-space:nowrap}
+.tls-ev.break_up{border-color:var(--up);color:var(--up)}.tls-ev.break_down{border-color:var(--dn);color:var(--dn)}.tls-ev.at_res,.tls-ev.at_sup{border-color:var(--gold);color:var(--gold)}
+.tls-prog{height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;margin:14px 0 0}
+.tls-prog i{display:block;height:100%;background:var(--gold);width:0}
+.dd-tiles.four{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:1180px){
+  .dd-row.head,.dd-rk{display:none}
+  .dd-row{padding:14px}
+  .dd-row{grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:6px}
+  .dd-row .dd-nm,.dd-row .dd-next,.dd-row .tls-mtf{grid-column:1/-1;grid-row:auto}
+  .dd-row .tls-q{position:absolute;right:14px;top:14px;padding:4px 10px}.dd-row{position:relative}
+  .tls-mtf .sq{max-width:160px}
+  .tls-cell{padding:5px 6px;min-height:40px}.tls-cell b{font-size:11px}
+  .tls-cell::before{content:attr(data-tf);display:block;font:10px var(--mono);color:var(--mute)}
+}
+
+/* hybrid scanner cards */
+.hy-list{display:grid;gap:12px}
+.hy{display:block;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:inherit;text-decoration:none}
+a.hy:hover{background:var(--card2)}
+.hy.s5,.hy.s4{border-color:rgba(233,196,106,.6)}.hy.s3{border-color:rgba(34,171,148,.55)}
+.hy-top{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+.hy-top h3{margin:0;font-size:17px}
+.hy-top small{color:var(--mute);font:12px var(--mono)}
+.hy-stage{margin-left:auto;padding:5px 12px;border-radius:999px;font:700 12px/1.2 var(--sans);border:1px solid var(--line2);color:var(--dim);white-space:nowrap}
+.hy.s5 .hy-stage,.hy.s4 .hy-stage{background:var(--gold);border-color:var(--gold);color:#1a1300}
+.hy.s3 .hy-stage{background:var(--up);border-color:var(--up);color:#00130f}
+.hy.s2 .hy-stage{border-color:rgba(110,168,254,.6);color:var(--blue)}
+.hy-say{margin:10px 0 8px;font-size:15px;line-height:1.5}
+.hy-say b{color:var(--ink)}
+.hy-now{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;margin:0 0 10px;font-size:13px}
+.hy-now em{font-style:normal;color:var(--mute);margin-right:2px}
+.hy-now i{font-style:normal;padding:2px 9px;border-radius:6px;border:1px solid var(--line2);color:var(--dim)}
+.hy-now i b{font-family:var(--mono);color:var(--ink)}
+.hy-now i.a{border-color:var(--gold);color:var(--gold)}.hy-now i.s{border-color:var(--up);color:var(--up)}.hy-now i.b{border-color:rgba(110,168,254,.6);color:var(--blue)}
+.hy-row2{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-bottom:8px}
+.hy-plan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.hy-plan div{padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#0B0C0F}
+.hy-plan span{display:block;color:var(--mute);font-size:11.5px}
+.hy-plan b{font:600 14px var(--mono)}
+.hy-plan .sl b{color:var(--dn)}.hy-plan .tg b{color:var(--up)}
+.hy-new{margin-left:6px;padding:2px 7px;border-radius:999px;background:var(--dn);color:#fff;font:700 10px/1.4 var(--mono)}
+.hy-alert{margin:18px 0 0;padding:12px 16px;border:1px solid rgba(233,196,106,.6);border-radius:12px;background:rgba(233,196,106,.08);font-size:14.5px}
+.hy-alert b{color:var(--gold)}
+.hy-opt{display:inline-flex;align-items:center;gap:8px;color:var(--dim);font-size:14px;cursor:pointer}
+.hy-opt input{width:16px;height:16px;accent-color:var(--gold)}
+@media (max-width:640px){.hy-plan{grid-template-columns:repeat(2,minmax(0,1fr))}.hy-stage{margin-left:0}}
+/* Tier 2: one market */
+.h2-head{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin:6px 0 4px}
+.h2-head h1{margin:0;font-size:clamp(24px,3.6vw,36px)}
+.h2-head small{color:var(--mute);font:13px var(--mono)}
+.h2-state{margin:16px 0 0;padding:16px 18px;border-radius:14px;border:1px solid var(--line2);background:var(--card)}
+.h2-state b.t{display:block;font-size:19px;margin-bottom:4px}
+.h2-state p{margin:0;color:var(--dim);font-size:15px}
+.h2-state.entry{border-color:var(--up);background:rgba(34,171,148,.09)}.h2-state.entry b.t{color:var(--up)}
+.h2-state.wait{border-color:rgba(233,196,106,.6);background:rgba(233,196,106,.06)}.h2-state.wait b.t{color:var(--gold)}
+.h2-state.off b.t{color:var(--dim)}
+.h2-checks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0 0;padding:0;list-style:none}
+.h2-checks li{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.h2-checks li.ok{border-color:rgba(34,171,148,.5)}.h2-checks li.no{border-color:rgba(233,196,106,.45)}
+.h2-checks span{font:600 11px/1 var(--mono);letter-spacing:.12em;color:var(--mute)}
+.h2-checks li.ok span{color:var(--up)}.h2-checks li.no span{color:var(--gold)}
+.h2-checks b{display:block;margin:6px 0 4px;font-size:15px}.h2-checks p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.5}
+.h2-h{margin:30px 0 10px;font-size:19px}
+.h2-sub{margin:-4px 0 10px;color:var(--dim);font-size:14px}
+.h2-chart{border:1px solid var(--line);border-radius:14px;background:#0B0C0F;padding:8px;overflow:hidden}
+.h2-chart svg{display:block;width:100%;height:auto}
+.h2-legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:8px 4px 2px;color:var(--dim);font-size:12.5px}
+.h2-legend i{display:inline-block;width:18px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px}
+.h2-how{margin:0;padding:0 0 0 20px;color:var(--dim);font-size:14.5px;line-height:1.7}.h2-how b{color:var(--ink)}
+.h2-tv{height:520px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#0B0C0F}
+.h2-tv .tradingview-widget-container,.h2-tv .tradingview-widget-container__widget{height:100%}
+@media (max-width:760px){.h2-checks{grid-template-columns:minmax(0,1fr)}.h2-tv{height:420px}}
+
+.ns-st{margin:10px 0 0;padding:0;list-style:none;display:grid;gap:6px}
+.ns-st li{display:flex;gap:8px;align-items:baseline;font-size:14px;line-height:1.45}
+.ns-st a{color:var(--ink);text-decoration:none}.ns-st a:hover{text-decoration:underline}
+.ns-st small{color:var(--mute);font:11.5px var(--mono);white-space:nowrap}
+.ns-dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--mute);transform:translateY(-1px)}.ns-dot.bull{background:var(--up)}.ns-dot.bear{background:var(--dn)}
+.ns-side{padding:5px 11px;border-radius:8px;font:700 12.5px var(--sans);border:1px solid var(--line2);color:var(--dim)}
+.ns-side.UP{background:rgba(34,171,148,.14);border-color:var(--up);color:var(--up)}.ns-side.DOWN{background:rgba(247,82,95,.13);border-color:var(--dn);color:var(--dn)}
+.ns-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.ns-acts a{padding:6px 12px;border:1px solid var(--line2);border-radius:8px;color:var(--dim);font-size:13px;text-decoration:none}.ns-acts a:hover{color:var(--ink)}
+.hy.hi{border-color:rgba(233,196,106,.6)}
+</style>
+</head>
+<body>
+<main class="dd" id="nsApp">
+  <div class="dd-eyebrow">Free scanner</div>
+  <h1>News Scanner</h1>
+  <p class="dd-lede">Which markets are in the news right now, and what the news is saying. One row per market: the headlines, their tone, how far price has moved since, and whether the news agrees with the trend.</p>
+  <ol class="dd-steps">
+    <li><span>STEP 1</span><b>In the news</b><p>A market is listed when at least one story in the last 48 hours names it.</p></li>
+    <li><span>STEP 2</span><b>Tone of the headlines</b><p>Each story is read as positive, negative or neutral. More positive than negative = "News points UP", and the reverse.</p></li>
+    <li><span>STEP 3</span><b>Did price react?</b><p>The move since the first story shows whether price has already answered the news.</p></li>
+    <li><span>STEP 4</span><b>News + trend</b><p>The label says whether the news points the same way as the bigger trend. That is the cleaner case.</p></li>
+  </ol>
+  <div class="dd-tiles" id="nsTiles"></div>
+  <div class="dd-bar">
+    <div class="dd-tabs" id="nsSide" role="group" aria-label="News direction">
+      <button type="button" data-d="all" class="on">All news</button><button type="button" data-d="UP">News points UP</button><button type="button" data-d="DOWN">News points DOWN</button><button type="button" data-d="agree">News + trend agree</button><button type="button" data-d="high">High impact</button>
+    </div>
+    <div class="dd-tabs" id="nsMkt" role="group" aria-label="Market">
+      <button type="button" data-m="all" class="on">All</button><button type="button" data-m="forex">Forex</button><button type="button" data-m="crypto">Crypto</button><button type="button" data-m="other">Stocks &amp; futures</button>
+    </div>
+    <input class="dd-search" id="nsQ" type="search" placeholder="Find a market…" aria-label="Find a market">
+  </div>
+  <p class="dd-upd" id="nsUpd" style="margin:0 0 10px"></p>
+  <div class="hy-list" id="nsList"><p class="dd-empty">Reading the news…</p></div>
+  <button type="button" class="dd-btn dd-more" id="nsMore" hidden>Show more</button>
+  <section class="dd-learn">
+    <h2>Words used on this page</h2>
+    <dl>
+      <dt>News points UP / DOWN</dt><dd>Most of the stories about this market read positive (or negative). It describes the headlines, it is not a forecast.</dd>
+      <dt>Mixed</dt><dd>Positive and negative stories together, or only neutral ones. No clear direction from the news.</dd>
+      <dt>High impact</dt><dd>The story is about something that usually moves markets: interest rates, inflation, war, tariffs, a crash, a default.</dd>
+    </dl>
+    <dl>
+      <dt>Since the news</dt><dd>How far price has moved since just before the first of these stories was published.</dd>
+      <dt>News + trend agree</dt><dd>The headlines point the same way as the trend (Daily, confirmed by the 4-hour or the Weekly).</dd>
+      <dt>Already moved</dt><dd>Price has gone 0.3% or more in the direction of the news. The easy part of the move may be over.</dd>
+    </dl>
+  </section>
+  <p class="dd-foot" id="nsFoot">For education and demonstrations, not financial advice. Tone is read from the words in each headline and summary; it can be wrong, so open the story before acting. Stories come from public news feeds and are matched to markets by name. Trend is the standard Supertrend (10, 3). The page refreshes every minute; the news feed itself every 10 minutes.</p>
+</main>
+<footer class="dd-ftr"><nav aria-label="Site links">
+<a href="/">ChartPulse home</a><a href="/news.html">All news</a><a href="/scanner.html">Tier-1 Scanner</a><a href="/scanners/trendline-hero/">Trendline Hero</a><a href="/scanners/trend-lines/">Trend Line Scanner</a><a href="/scanners/ema-200/">200 EMA Scanner</a><a href="/scanners/">All free scanners</a><a href="/desk/">AI Scan</a><a href="/pricing.html">Pricing</a><a href="/legal/disclaimer">Risk disclaimer</a>
+</nav></footer>
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const MTF = ["30m", "1H", "4H", "1D", "1W"];
+const fmt = (v, d) => Number(v).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const ago = t => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); return s < 3600 ? `${Math.max(1, Math.round(s / 60))} min ago` : s < 86400 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`; };
+const pct = v => v == null ? "" : `${v > 0 ? "+" : ""}${Number(v).toFixed(2)}%`;
+const SIDE = { UP: "▲ News points UP", DOWN: "▼ News points DOWN", MIXED: "News is mixed", NEUTRAL: "News is neutral" };
+const L = { rows: [], meta: {}, at: 0, side: "all", mkt: "all", q: "", show: 30 };
+const safe = u => /^https?:\/\//i.test(u || "") ? u : "#";
+function mtf(r) {
+  const m = r.mtf; if (!m) return "";
+  return `<span class="tls-mtf" style="min-width:150px"><span class="sq">${MTF.map(k => `<i class="${(m.d[k] || 0) > 0 ? "u" : (m.d[k] || 0) < 0 ? "d" : ""}" title="${k}"></i>`).join("")}</span><b class="${m.bias || ""}">${m.bias === "CALL" ? "▲ Uptrend" : m.bias === "PUT" ? "▼ Downtrend" : "Trend not clear"}</b></span>`;
+}
+function chips(r) {
+  const f = [];
+  f.push([r.imp === "high" ? "g" : "n", r.imp === "high" ? "High impact news" : r.imp === "medium" ? "Medium impact" : "Low impact"]);
+  f.push(["n", `${r.n} stor${r.n === 1 ? "y" : "ies"} · ${r.bull} positive, ${r.bear} negative, ${r.neu} neutral`]);
+  if (r.agree === true) f.push(["g", "News + trend agree"]); else if (r.agree === false) f.push(["n", "News against the trend"]);
+  if (r.since != null) f.push([r.moved ? "n" : "g", `${pct(r.since)} since the news${r.moved ? " · already moved" : r.moved === false ? " · not moved yet" : ""}`]);
+  return `<span class="tls-fx">${f.map(([k, t]) => `<i class="${k}">${k === "g" ? "✓ " : ""}${esc(t)}</i>`).join("")}</span>`;
+}
+function say(r) {
+  const tr = r.mtf && r.mtf.bias ? (r.mtf.bias === "CALL" ? "up" : "down") : null;
+  if (r.side === "UP" || r.side === "DOWN") {
+    const d = r.side === "UP" ? "positive" : "negative";
+    return `The headlines about ${esc(r.name)} are mostly <b>${d}</b>. ` + (tr ? (r.agree ? `The trend is ${tr} too, so news and trend point the same way.` : `But the trend is ${tr}, so the news is going against it. Be careful.`) : "The bigger trend is not clear right now.")
+      + (r.moved ? " Price has already moved that way." : r.moved === false ? " Price has not really moved yet." : "");
+  }
+  return `${esc(r.name)} is in the news, but the headlines do not agree on a direction.` + (tr ? ` The trend is ${tr}.` : "");
+}
+function card(r) {
+  const s = encodeURIComponent(r.symbol);
+  return `<div class="hy ${r.imp === "high" ? "hi" : ""}">
+    <div class="hy-top"><span class="ns-side ${r.side}">${SIDE[r.side]}</span><h3>${esc(r.name)}</h3><small>${esc(r.symbol)} · ${esc(r.market || "")}${r.price ? " · " + fmt(r.price, r.dec) : ""}${r.chg != null ? " · " + pct(r.chg) + " today" : ""}</small><span class="hy-stage">Latest ${ago(r.last)}</span></div>
+    <p class="hy-say">${say(r)}</p>
+    <div class="hy-row2">${mtf(r)}${chips(r)}</div>
+    <ul class="ns-st">${r.stories.map(x => `<li><span class="ns-dot ${x.sen}" title="${x.sen === "bull" ? "positive" : x.sen === "bear" ? "negative" : "neutral"}"></span><span><a href="${esc(safe(x.u))}" target="_blank" rel="noopener nofollow">${esc(x.t)}</a> <small>${esc(x.src)} · ${ago(x.ts)}</small></span></li>`).join("")}</ul>
+    <div class="ns-acts"><a href="/desk/?s=${s}">AI Scan</a><a href="/scanners/trendline-hero/?s=${s}">Trendline Hero entry</a><a href="/scanners/trend-lines/?s=${s}">Trend lines</a></div>
+  </div>`;
+}
+function paint() {
+  const all = L.rows, c = L.meta.counts || {};
+  $("#nsTiles").innerHTML = [["", all.length, "Markets in the news"], ["hot", c.up || 0, "News points UP"], ["warm", c.down || 0, "News points DOWN"], ["", c.agree || 0, "News + trend agree"], ["warm", c.high || 0, "High impact"]]
+    .map(([k, v, t]) => `<div class="dd-tile ${k}"><div class="v">${v}</div><div class="k">${t}</div></div>`).join("");
+  let rows = all.filter(r => L.mkt === "all" || r.class === L.mkt);
+  if (L.side === "UP" || L.side === "DOWN") rows = rows.filter(r => r.side === L.side); else if (L.side === "agree") rows = rows.filter(r => r.agree === true); else if (L.side === "high") rows = rows.filter(r => r.imp === "high");
+  if (L.q) rows = rows.filter(r => (r.name + " " + r.symbol).toLowerCase().includes(L.q));
+  $("#nsList").innerHTML = rows.length ? rows.slice(0, L.show).map(card).join("") : `<p class="dd-empty">${all.length ? "Nothing matches this filter right now." : "No market on our list is named in the news of the last 48 hours."}</p>`;
+  $("#nsMore").hidden = rows.length <= L.show;
+  $("#nsUpd").textContent = L.at ? `${rows.length} markets shown · ${L.meta.stories || 0} stories read · news feed updated ${ago(L.meta.feed_at || L.at)} · high impact first` : "";
+}
+async function load() {
+  try {
+    const r = await fetch("/tl_api.php?r=news", { cache: "no-store" }); const j = await r.json();
+    if (j.error) throw new Error(j.error);
+    L.rows = j.rows || []; L.meta = Object.assign({ feed_at: j.feed_at }, j.meta || {}); L.at = j.at || 0; paint();
+  } catch (e) { if (!L.rows.length) $("#nsList").innerHTML = `<p class="dd-empty">${esc(e.message || "The news could not be loaded just now. Please try again in a moment.")}</p>`; }
+  setTimeout(load, 60000);
+}
+function tabs(id, key, attr) { const el = $(id); el.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; L[key] = b.dataset[attr]; [...el.children].forEach(x => x.classList.toggle("on", x === b)); L.show = 30; paint(); }); }
+tabs("#nsSide", "side", "d"); tabs("#nsMkt", "mkt", "m");
+$("#nsQ").addEventListener("input", e => { L.q = e.target.value.trim().toLowerCase(); L.show = 30; paint(); });
+$("#nsMore").addEventListener("click", () => { L.show += 30; paint(); });
+load();
+})();
+</script>
+</body>
+</html>

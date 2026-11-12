@@ -70,6 +70,7 @@ RewriteRule ^scanners/trend-lines/?$                     /trend-lines.html      
 RewriteRule ^scanners/hybrid-trend-lines/?$              /hybrid-trend-lines.html     [L]
 RewriteRule ^scanners/trendline-hero/?$                  /trendline-hero.html         [L]
 RewriteRule ^scanners/hero-200-ema/?$                    /hero-200-ema.html           [L]
+RewriteRule ^scanners/news/?$                            /news-scanner.html           [L]
 RewriteRule ^affiliates/?$                               /affiliates.html             [L]
 RewriteRule ^backtesting/?$                              /pro-backtesting.html        [L]
 RewriteRule ^legal/(terms|privacy|refund|disclaimer)/?$  /legal.php?p=$1              [L,QSA]

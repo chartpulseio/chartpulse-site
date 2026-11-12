@@ -21,6 +21,7 @@ $U = [
     ['/scanners/hybrid-trend-lines/', $mt('hybrid-trend-lines.html')],
     ['/scanners/trendline-hero/', $mt('trendline-hero.html')],
     ['/scanners/hero-200-ema/', $mt('hero-200-ema.html')],
+    ['/scanners/news/', $mt('news-scanner.html')],
     ['/affiliates/', $mt('affiliates.html')],
     ['/scanners/ema-200/', $mt('ema200.html')],
     ['/ema-strategies/', $mt('ema-strategies/index.php')],

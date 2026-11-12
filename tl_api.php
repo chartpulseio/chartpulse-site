@@ -30,6 +30,7 @@ if (!headers_sent() && str_contains((string)($_SERVER['HTTP_ACCEPT_ENCODING'] ??
 
 if (!t_rl('tl', 40)) { header('Retry-After: 30'); tl_json(['error' => 'Too many requests. Please wait a few seconds.'], 429); }
 if (($_GET['r'] ?? '') === 'tgstatus') { require_once __DIR__ . '/tg_alerts.php'; echo json_encode(tga_status()); exit; }
+if (($_GET['r'] ?? '') === 'news') { @set_time_limit(60); require_once __DIR__ . '/news_scan.php'; tl_json(ns_scan()); }   // News Scanner
 if (($_GET['r'] ?? '') === 'hybrid') { @set_time_limit(60); tl_json(tlh_scan()); }
 if (($_GET['r'] ?? '') === 'hero' && isset($_GET['s'])) {   // Trendline Hero, Tier 2: one market with the 5-minute entry
     $hs = (string)$_GET['s'];
