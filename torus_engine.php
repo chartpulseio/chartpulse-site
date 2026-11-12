@@ -1265,7 +1265,7 @@ function t_due(array $scan, int $now): array {
             $inCtp = empty($r['cs']) || ($now >= $r['cs'] - 300 && $now < $r['ce'] + 300);
             if ($traded && $inCtp && ($r['day_ok'] ?? true)) {
                 $lim = (abs((float)($r['zone_dist_atr'] ?? 9)) <= 0.75 || (int)($r['alignment'] ?? 0) >= 3 || !empty($r['split24']) || isset($gfHot[$sym])) ? T_REFRESH_HOT : T_REFRESH;
-                if ($age >= $lim || ($force > $r['ts'] && $age >= 45)) $pri[$sym] = [2, -$age];
+                if ($age >= $lim || ($force > $r['ts'] && $age >= 45)) $pri[$sym] = [isset($gfHot[$sym]) ? 1 : 2, -$age];   // God-father's best names jump the queue
             } elseif ($age >= 60 && ($r['ts'] < $ss['since'] || (!empty($r['ce']) && $now >= $r['ce'] && $r['ts'] < $r['ce']))) {
                 $pri[$sym] = [1, -$age];                                    // session just started / trading period rolled over
             } elseif ($age >= ($now - $ss['since'] < 3600 ? 300 : T_REFRESH_QUIET)) {
