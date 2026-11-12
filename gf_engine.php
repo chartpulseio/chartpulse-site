@@ -179,7 +179,7 @@ function gf_scan(bool $force = false): array {
             $fired = (bool)$trig;
             if (!$live) $grade = 'WATCH';
             elseif ($newsRisk) $grade = 'NEWS';
-            elseif ($realTurn && $nPz >= 3 && $dayAt && $lineAt && $strongLine && $extra2 >= 2 && !$momAgainst) $grade = 'A+';
+            elseif ($realTurn && $nPz >= 4 && $dayAt && $lineAt && $strongLine && ($mom || $orb || $newsBoost) && !$momAgainst) $grade = 'A+';
             elseif ($fired && $nPz >= 2) $grade = 'A';
             elseif ($fired) $grade = 'B';
             elseif ($nPz >= 2 && ($stage >= 3 || isset($pz['line']) || isset($pz['retest']) || $dayAt)) $grade = 'READY';
