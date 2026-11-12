@@ -228,19 +228,37 @@ function aib_parse_local($text) {
 }
 
 /* ----------------------------------------------------------- Gemini reader */
-function aib_key() {
+function aib_key($name = 'gemini') {
     require_once __DIR__ . '/torus_paths.php';
-    $f = cp_data_dir() . '/ml/gemini.ini'; $k = is_file($f) ? trim((string)@file_get_contents($f)) : '';
+    $f = cp_data_dir() . '/ml/' . $name . '.ini'; $k = is_file($f) ? trim((string)@file_get_contents($f)) : '';
     $k = trim(preg_replace('/^[A-Za-z_ ]*=\s*/', '', $k), " \t\r\n\"'");
     return preg_match('/^[A-Za-z0-9_.\-]{20,}$/', $k) ? $k : '';
 }
+/** Model answer text -> our parse shape, or null. */
+function aib_read_json($txt) {
+    $txt = trim((string)$txt);
+    if (preg_match('/\{.*\}/s', $txt, $m)) $txt = $m[0];
+    $o = json_decode($txt, true);
+    if (!is_array($o) || !isset($o['strategy']['rules'])) return null;
+    return ['strategy' => $o['strategy'], 'missed' => array_slice(array_values(array_filter(array_map('strval', (array)($o['missed'] ?? [])))), 0, 6),
+            'symbol' => is_string($o['symbol'] ?? null) ? strtoupper($o['symbol']) : null, 'timeframe' => is_string($o['timeframe'] ?? null) ? strtolower($o['timeframe']) : null,
+            'years' => is_numeric($o['years'] ?? null) ? (float)$o['years'] : null];
+}
+function aib_post($url, $body, $hdr, $timeout = 14) {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => $timeout, CURLOPT_CONNECTTIMEOUT => 4,
+        CURLOPT_HTTPHEADER => array_merge(['Content-Type: application/json'], $hdr)]);
+    $raw = curl_exec($ch); curl_close($ch);
+    return json_decode((string)$raw, true);
+}
+/** Readers in order: Groq (most free answers), then Gemini (backup). Returns [parse, reader name] or [null, null]. */
 function aib_parse_ai($text) {
-    $key = aib_key(); if ($key === '') return null;
+    $groq = aib_key('groq'); $gem = aib_key('gemini');
+    if ($groq === '' && $gem === '') return [null, null];
     $cf = bt_dir('ai') . '/p_' . md5($text) . '.json';
-    if (is_file($cf) && time() - filemtime($cf) < 30 * 86400) { $j = json_decode((string)@file_get_contents($cf), true); if (is_array($j)) return $j; }
-    // daily cap on model calls for the whole site
+    if (is_file($cf) && time() - filemtime($cf) < 30 * 86400) { $j = json_decode((string)@file_get_contents($cf), true); if (is_array($j) && isset($j['p'])) return [$j['p'], $j['by']]; }
     $capf = bt_dir('ai') . '/cap_' . gmdate('Ymd') . '.txt'; $n = (int)@file_get_contents($capf);
-    if ($n >= 600) return null; @file_put_contents($capf, (string)($n + 1), LOCK_EX);
+    if ($n >= 1500) return [null, null]; @file_put_contents($capf, (string)($n + 1), LOCK_EX);
     $codes = implode(', ', array_keys(aib_symbols()['codes']));
     $sys = "You convert a trader's plain-language strategy into JSON for a backtesting engine. Output ONLY one JSON object, no prose.\n"
       . "Shape: {\"symbol\": code or null, \"timeframe\": one of 5m 15m 30m 1h 4h 1d 1w or null, \"years\": number or null, \"strategy\": {\"rules\": {\"entry_long\": [rule], \"exit_long\": [rule], \"entry_short\": [rule], \"exit_short\": [rule]}, \"risk\": {optional keys}}, \"missed\": [short strings for parts you could not express]}\n"
@@ -251,25 +269,23 @@ function aib_parse_ai($text) {
       . "risk keys (all optional, numbers): stop_loss_pct, take_profit_pct, stop_loss_atr, take_profit_atr, trail_pct, trail_atr, max_bars, atr_period. Percent values are plain numbers (2 = 2%). A reward:risk of 1:2 with a 2% stop means take_profit_pct 4.\n"
       . "Only add short rules if the user asks to short or to trade both sides. 'sell' after a buy rule means exit_long. Never invent conditions the user did not state. If the text has no usable entry rule, return entry lists empty.\n"
       . "symbol must be one of: $codes (or null if the user named none). The user may write in English, Hindi or Hinglish.";
-    $body = json_encode(['systemInstruction' => ['parts' => [['text' => $sys]]], 'contents' => [['role' => 'user', 'parts' => [['text' => mb_substr($text, 0, 1500)]]]],
-        'generationConfig' => ['temperature' => 0, 'maxOutputTokens' => 2048, 'responseMimeType' => 'application/json']], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-    foreach (['gemini-3.5-flash-lite', 'gemini-3.5-flash'] as $model) {
-        $ch = curl_init("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent");
-        curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 14, CURLOPT_CONNECTTIMEOUT => 4,
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . $key]]);
-        $raw = curl_exec($ch); curl_close($ch);
-        $j = json_decode((string)$raw, true); $txt = '';
-        foreach (($j['candidates'][0]['content']['parts'] ?? []) as $p) $txt .= (string)($p['text'] ?? '');
-        $o = json_decode(trim(preg_replace('/^```(?:json)?|```$/m', '', trim($txt))), true);
-        if (is_array($o) && isset($o['strategy']['rules'])) {
-            $out = ['strategy' => $o['strategy'], 'missed' => array_slice(array_values(array_filter(array_map('strval', (array)($o['missed'] ?? [])))), 0, 6),
-                    'symbol' => is_string($o['symbol'] ?? null) ? strtoupper($o['symbol']) : null, 'timeframe' => is_string($o['timeframe'] ?? null) ? strtolower($o['timeframe']) : null,
-                    'years' => is_numeric($o['years'] ?? null) ? (float)$o['years'] : null];
-            @file_put_contents($cf, json_encode($out), LOCK_EX);
-            return $out;
-        }
+    $user = mb_substr($text, 0, 1500);
+    $got = null; $by = null;
+    if ($groq !== '') foreach (['openai/gpt-oss-120b', 'llama-3.3-70b-versatile'] as $model) {
+        $j = aib_post('https://api.groq.com/openai/v1/chat/completions', json_encode(['model' => $model, 'temperature' => 0, 'max_tokens' => 2048,
+            'response_format' => ['type' => 'json_object'], 'messages' => [['role' => 'system', 'content' => $sys], ['role' => 'user', 'content' => $user]]], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            ['Authorization: Bearer ' . $groq]);
+        if ($got = aib_read_json($j['choices'][0]['message']['content'] ?? '')) { $by = 'groq'; break; }
     }
-    return null;
+    if (!$got && $gem !== '') foreach (['gemini-3.5-flash-lite', 'gemini-3.5-flash'] as $model) {
+        $j = aib_post("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent", json_encode(['systemInstruction' => ['parts' => [['text' => $sys]]],
+            'contents' => [['role' => 'user', 'parts' => [['text' => $user]]]], 'generationConfig' => ['temperature' => 0, 'maxOutputTokens' => 2048, 'responseMimeType' => 'application/json']], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            ['x-goog-api-key: ' . $gem]);
+        $txt = ''; foreach (($j['candidates'][0]['content']['parts'] ?? []) as $p) $txt .= (string)($p['text'] ?? '');
+        if ($got = aib_read_json($txt)) { $by = 'gemini'; break; }
+    }
+    if ($got) @file_put_contents($cf, json_encode(['p' => $got, 'by' => $by]), LOCK_EX);
+    return [$got, $by];
 }
 
 /* --------------------------------------------- say it back in plain words */
@@ -330,8 +346,8 @@ try {
     @set_time_limit(45); @ini_set('memory_limit', '256M'); $t0 = microtime(true);
 
     $engine = 'rules'; $P = null; $strategy = null;
-    $ai = aib_parse_ai($text);
-    if ($ai) { try { $strategy = bt_validate_strategy($ai['strategy']); $P = $ai; $engine = 'ai'; } catch (Throwable $e) { $strategy = null; } }
+    [$ai, $aiBy] = aib_parse_ai($text);
+    if ($ai) { try { $strategy = bt_validate_strategy($ai['strategy']); $P = $ai; $engine = $aiBy; } catch (Throwable $e) { $strategy = null; } }
     if (!$strategy) {
         $P = aib_parse_local($text);
         try { $strategy = bt_validate_strategy($P['strategy']); }
