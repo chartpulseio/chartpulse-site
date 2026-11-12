@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Rubber Band Reversal Scanner: Stretched Movers Snapping Back · ChartPulse</title>
-<meta name="description" content="Free Rubber Band Reversal Scanner: today's biggest movers that ran far beyond their usual daily range, and whether they are starting to snap back. Forex, crypto, commodities and stocks.">
+<title>Movers Reversal Scanner: Today's Biggest Movers and Reversals · ChartPulse</title>
+<meta name="description" content="Free Movers Reversal Scanner: today's biggest movers that ran far beyond their usual daily range, and whether they are starting to snap back. Forex, crypto, commodities and stocks.">
 <meta name="theme-color" content="#050506">
-<link rel="canonical" href="https://chartpulse.io/scanners/reversal/">
+<link rel="canonical" href="https://chartpulse.io/movers/">
 <meta property="og:site_name" content="ChartPulse"><meta property="og:type" content="website">
-<meta property="og:title" content="Rubber Band Reversal Scanner · ChartPulse">
+<meta property="og:title" content="Movers Reversal Scanner · ChartPulse">
 <meta property="og:description" content="Stretched movers snapping back: STRETCHED, TURNING, SNAPPING, with zones, trend lines and the big trend as labels.">
-<meta property="og:url" content="https://chartpulse.io/scanners/reversal/"><meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta property="og:url" content="https://chartpulse.io/movers/"><meta property="og:image" content="https://chartpulse.io/static/og.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="/static/v2/fonts.css?v=1">
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=4">
-<script defer src="/static/v2/sitehead.js?v=14"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"Rubber Band Reversal Scanner","item":"https://chartpulse.io/scanners/reversal/"}]},{"@type":"WebApplication","name":"Rubber Band Reversal Scanner","url":"https://chartpulse.io/scanners/reversal/","applicationCategory":"FinanceApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@id":"https://chartpulse.io/#org"}}]}</script>
+<script defer src="/static/v2/sitehead.js?v=15"></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"Movers Reversal Scanner","item":"https://chartpulse.io/movers/"}]},{"@type":"WebApplication","name":"Movers Reversal Scanner","url":"https://chartpulse.io/movers/","applicationCategory":"FinanceApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@id":"https://chartpulse.io/#org"}}]}</script>
 <style>
 :root{--bg:#050506;--card:#0E0F13;--card2:#15171D;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.15);
   --ink:#EDEDEF;--dim:#A3A5AF;--mute:#6B6D78;--gold:#E9C46A;--gold2:#F6DE9A;--up:#22AB94;--dn:#F7525F;--blue:#6EA8FE;
@@ -133,13 +133,19 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 .g-tu .gc-grade{background:var(--up);color:#00130f;border:0;font-size:11px;text-align:center;line-height:1.2}.g-st .gc-grade{font-size:11px;text-align:center;line-height:1.2}
 .gc-lb i.with,.gc-lb i.zone,.gc-lb i.line{border-color:rgba(34,171,148,.5);color:var(--up)}.gc-lb i.against{border-color:rgba(247,82,95,.5);color:var(--dn)}.gc-lb i.rsi,.gc-lb i.big{border-color:var(--gold);color:var(--gold)}
 .gf-flow{grid-template-columns:repeat(3,minmax(0,1fr))}
+.mv-sec{margin-top:34px}.mv-sec h2{margin:0 0 4px;font-size:20px}.mv-sec>p{margin:0 0 10px;color:var(--dim);font-size:14px}
+.mv-wrap{border:1px solid var(--line);border-radius:14px;background:var(--card);overflow-x:auto}
+.mv-t{width:100%;border-collapse:collapse;font-size:14px}.mv-t th{position:sticky;top:0;text-align:left;font-weight:500;color:var(--mute);font-size:12px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.mv-t td{padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}.mv-t tr:last-child td{border-bottom:0}.mv-t .n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.mv-t a{text-decoration:none}.mv-t a:hover b{color:var(--gold)}.mv-t small{color:var(--mute);font-family:var(--mono);margin-left:6px}
+.mv-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.mv-days{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0;margin:0}.mv-days a{display:inline-block;padding:6px 12px;border:1px solid var(--line2);border-radius:999px;color:var(--dim);font-size:13px;text-decoration:none}.mv-days a:hover{color:var(--ink);border-color:var(--ink)}
 </style>
 </head>
 <body>
 <main class="gf">
   <section class="gf-hero">
     <div class="gf-eye"><i></i>Stretched movers · snap-back</div>
-    <h1>Rubber Band <span>Reversal</span> Scanner</h1>
+    <h1>Movers <span>Reversal</span> Scanner</h1>
     <p class="gf-lede">When a market runs far beyond its usual daily range, it is stretched like a rubber band. This scanner lists today's stretched movers and shows whether they have started to <b>snap back</b>. Snap-backs that go <b>with the big trend</b> are listed first.</p>
     <ol class="gf-flow">
       <li><span>1 · STRETCHED</span><b>Ran too far</b><p>Today's move is at least 1× the usual daily range. Still at the high or low: watch only.</p></li>
@@ -157,8 +163,9 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
   <p class="gf-upd" id="gfUpd">Scanning today's movers…</p>
   <div class="gf-list" id="gfList"><p class="gf-empty">Scanning today's movers…</p></div>
   <button type="button" class="gf-btn gf-more" id="gfMoreBtn" hidden>Show more</button>
+<!--MOVERS_SSR-->
   <p class="gf-note"><b>Counter-move trades are quick trades.</b> The target is half way back, the stop just beyond today's extreme. A market can keep running: never fade a move without the stop. Not measured yet, no win rate claimed.</p>
-  <p class="gf-foot">For education, not financial advice. Looking for the plain list of gainers and losers? <a href="/movers/">Today's market movers</a> and its daily archive are still here.</p>
+  <p class="gf-foot">For education, not financial advice. Today's biggest gainers and losers are listed below the scanner, with a daily archive.</p>
 </main>
 <footer class="gf-ftr"><nav><a href="/scanners/">All scanners</a><a href="/scanners/godfather/">God-father Scanner</a><a href="/scanners/trendline-hero/">Trendline Hero</a><a href="/scanners/day-drive/">Day Drive</a><a href="/movers/">Market movers</a><a href="/legal.php">Legal</a></nav></footer>
 <script>
@@ -198,6 +205,7 @@ function render(){ if (!D) return; tiles(); const rows = D.rows.filter(pass);
   $("#gfMoreBtn").hidden = rows.length <= shown; }
 function bindTabs(id, key){ $$(`#${id} button`).forEach(b => b.onclick = () => { F[key] = b.dataset.v; $$(`#${id} button`).forEach(x => x.classList.toggle("on", x === b)); shown = 30; render(); }); }
 bindTabs("gfSide","side"); bindTabs("gfMkt","mkt"); bindTabs("gfSet","set");
+$$("#gfMkt button").forEach(b => b.addEventListener("click", () => $$(".mv-t tbody tr").forEach(tr => { tr.hidden = F.mkt === "all" ? tr.dataset.a !== "1" : tr.dataset.c !== F.mkt; })));
 $("#gfQ").oninput = e => { F.q = e.target.value.trim().toLowerCase(); render(); };
 $("#gfMoreBtn").onclick = () => { shown += 30; render(); };
 async function load(){ let next = 30;

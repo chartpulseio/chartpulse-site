@@ -12,14 +12,13 @@
       { t: "Trend Line Scanner", d: "Breakouts and tests on seven timeframes", href: "/scanners/trend-lines/" }
     ] }] },
     { t: "Day Drive Scanner", href: "/scanners/day-drive/" },
-    { t: "Reversal Scanner", href: "/scanners/reversal/" },
+    { t: "Movers Reversal Scanner", href: "/movers/" },
     { t: "200 EMA Scanner", href: "/scanners/ema-200/" },
     { t: "AI Scanner", href: "/bias/", match: ["/desk/"] },
     { t: "News Scanner", href: "/scanners/news/" },
     { t: "Markets", cols: [{ items: [
       { t: "AI Scan", d: "Trend direction for every symbol", href: "/bias/" },
-      { t: "Movers", d: "Today's biggest moves, by market", href: "/movers/" },
-      { t: "Rubber Band Reversal Scanner", d: "Stretched movers starting to snap back", href: "/scanners/reversal/" },
+      { t: "Movers Reversal Scanner", d: "Today's biggest movers and which are snapping back", href: "/movers/" },
       { t: "News & impact", d: "Headlines and what they moved", href: "/news.html" },
       { t: "Insights", d: "Breadth, volatility and momentum", href: "/insights.html" }
     ] }] },
