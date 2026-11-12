@@ -68,6 +68,7 @@ RewriteRule ^scanners/bottom-reversal/?$                 /scanners/             
 RewriteRule ^scanners/day-drive/?$                       /day-drive.html              [L]
 RewriteRule ^scanners/trend-lines/?$                     /trend-lines.html            [L]
 RewriteRule ^scanners/hybrid-trend-lines/?$              /hybrid-trend-lines.html     [L]
+RewriteRule ^affiliates/?$                               /affiliates.html             [L]
 RewriteRule ^backtesting/?$                              /pro-backtesting.html        [L]
 RewriteRule ^legal/(terms|privacy|refund|disclaimer)/?$  /legal.php?p=$1              [L,QSA]
 RewriteRule ^contact/?$                                  /legal.php?p=contact         [L,QSA]

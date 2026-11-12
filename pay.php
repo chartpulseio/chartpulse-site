@@ -4,11 +4,13 @@
 //   POST pay.php?a=verify {razorpay_order_id, razorpay_payment_id, razorpay_signature}
 //   POST pay.php?a=lead   {kind: trial|waitlist|courses, sku, name, email, phone}  -> logged to data/leads.log
 //   POST pay.php?a=recover {payment_id, email}  -> same access code again for a paid order (buyer lost the page)
+//   POST pay.php?a=coupon {code, sku, period, currency, email}  -> price with an affiliate code (first payment 20% off)
 //   POST pay.php?a=webhook  Razorpay order.paid event, signed with config razorpay_webhook_secret
 declare(strict_types=1);
 require __DIR__ . '/torus_engine.php';
 require __DIR__ . '/torus_pricing.php';
 require __DIR__ . '/torus_access.php';
+require __DIR__ . '/torus_aff.php';   // affiliate codes: 20% off a buyer's first payment, 20% commission to the affiliate
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
@@ -37,6 +39,7 @@ function pay_unlock(string $pid, string $oid, array $notes, bool $cookie, string
         $sku = (string)($notes['sku'] ?? ''); $period = (string)($notes['period'] ?? 'monthly');
         if (!isset(TA_RANK[$sku])) return ['code' => null, 'sku' => $sku];
         $exp = ta_period_exp($period); if ($cookie) ta_grant($sku, $exp, 'pay:' . $pid); $code = ta_issue_code($sku, $exp, $pid);
+        try { af_credit($notes, $pid); } catch (\Throwable $e) { pay_log('payments.log', ['type' => 'aff_error', 'order_id' => $oid, 'at' => time()]); }
         pay_log('payments.log', ['type' => 'access', 'via' => $via, 'order_id' => $oid, 'sku' => $sku, 'until' => gmdate('Y-m-d', $exp), 'code' => $code, 'at' => time()]);
         return ['code' => $code, 'sku' => $sku];
     } finally { if ($fh) { flock($fh, LOCK_UN); fclose($fh); } }
@@ -60,7 +63,7 @@ if (($_GET['a'] ?? '') === 'webhook') {   // Razorpay server-to-server: unlocks 
 $in = json_decode((string)file_get_contents('php://input', false, null, 0, 8192), true) ?: [];
 $a = (string)($_GET['a'] ?? '');
 // Rate limits per visitor (owner, 29 Sep 2026): stops order / lead spam. Real buyers never get near these.
-$lim = ['usdt_order' => [8, 600], 'usdt_check' => [150, 600], 'usdt_recover' => [8, 600], 'order' => [10, 600], 'verify' => [20, 600], 'lead' => [5, 600], 'recover' => [6, 600]][$a] ?? [10, 600];
+$lim = ['usdt_order' => [8, 600], 'usdt_check' => [150, 600], 'usdt_recover' => [8, 600], 'order' => [10, 600], 'verify' => [20, 600], 'lead' => [5, 600], 'recover' => [6, 600], 'coupon' => [30, 600]][$a] ?? [10, 600];
 if (!t_rl('pay:' . $a, $lim[0], $lim[1])) pay_out(['error' => 'Too many requests. Please wait a few minutes and try again.'], 429);
 
 if ($a === 'lead') {   // free trial, Algo waitlist, course enquiry: no payment keys needed
@@ -70,6 +73,22 @@ if ($a === 'lead') {   // free trial, Algo waitlist, course enquiry: no payment 
     $sku = preg_replace('/[^a-z0-9_]/', '', (string)($in['sku'] ?? ''));
     pay_log('leads.log', ['type' => $kind, 'sku' => $sku, 'name' => $name, 'email' => $email, 'phone' => $phone, 'at' => time()]);
     pay_out(['ok' => true, 'kind' => $kind]);
+}
+
+/** Affiliate code typed at checkout -> quote, or a 400 when a code was typed and is not usable. No code -> null. */
+$coupon = function (array $in, string $sku, string $period, string $cur, string $email, int $full): ?array {
+    $c = af_code((string)($in['coupon'] ?? $in['code'] ?? '')); if ($c === '') return null;
+    $q = af_quote($c, $sku, $period, $cur, $email, $full);
+    if (!$q) pay_out(['error' => 'This code is not valid for this plan.'], 400);
+    return $q;
+};
+if ($a === 'coupon') {   // price preview for the checkout form; the real price is always computed again in order / usdt_order
+    $sku = (string)($in['sku'] ?? ''); $period = (string)($in['period'] ?? 'monthly'); $cur = strtoupper((string)($in['currency'] ?? 'USD'));
+    if (!tp_valid($sku, $period, $cur) || empty(tp_cfg()['products'][$sku]['available'])) pay_out(['error' => 'This code is not valid for this plan.'], 400);
+    $email = (string)(filter_var(trim((string)($in['email'] ?? '')), FILTER_VALIDATE_EMAIL) ?: '');
+    $q = $coupon($in, $sku, $period, $cur, $email, tp_price($sku, $period, $cur));
+    if (!$q) pay_out(['error' => 'Enter a code.'], 400);
+    pay_out(['ok' => true, 'code' => $q['code'], 'price' => $q['price'], 'full' => $q['full'], 'off' => $q['off'], 'first' => $q['first'], 'currency' => $cur, 'pct' => (int)round(AF_DISC * 100)]);
 }
 
 // USDT checkout (owner, 6 Oct 2026): works without Razorpay keys. See torus_usdt.php.
@@ -87,15 +106,18 @@ if (str_starts_with($a, 'usdt_')) {
             $usd = tp_price($sku, $period, 'USD');
         }
         $who = pay_person($in);
+        $q = $sku === 'courses' ? null : $coupon($in, $sku, $period, 'USD', $who[1], $usd);
+        if ($q) $usd = (int)$q['price'];
         $o = tu_create($sku, $period, $net, $usd, $who);
         if (isset($o['error'])) pay_out($o, 502);
+        if ($q) af_pend_set((string)$o['id'], $q['code']);
         pay_log('payments.log', ['type' => 'usdt_order', 'order_id' => $o['id'], 'sku' => $sku, 'period' => $period, 'net' => $net, 'amount' => $o['amount'],
             'name' => $who[0], 'email' => $who[1], 'phone' => $who[2], 'at' => time()]);
         pay_out(['ok' => true] + tu_view($o));
     }
     $settle = function (array $o, string $via): array {   // paid order -> access code (same code every time), this browser unlocked
         $first = !ta_code_by_ref('usdt:' . $o['tx']);
-        $r = pay_unlock('usdt:' . $o['tx'], $o['id'], ['sku' => $o['sku'], 'period' => $o['period']], true, $via);
+        $r = pay_unlock('usdt:' . $o['tx'], $o['id'], ['sku' => $o['sku'], 'period' => $o['period'], 'email' => $o['email'], 'amt' => (int)$o['usd'], 'cur' => 'USD', 'aff' => af_pend_get((string)$o['id'])], true, $via);
         if ($first) { pay_log('payments.log', ['type' => 'usdt_paid', 'via' => $via, 'order_id' => $o['id'], 'net' => $o['net'], 'amount' => $o['amount'], 'tx' => $o['tx'], 'email' => $o['email'], 'code' => $r['code'], 'at' => time()]); }
         return $r;
     };
@@ -137,10 +159,12 @@ if ($a === 'order') {
         $price = tp_price($sku, $period, $cur); $desc = trim($p['tier'] . ' · ' . $p['label'] . ' · ' . TP_LABELS[$period]);
     }
     [$name, $email, $phone] = pay_person($in);
+    $q = $sku === 'courses' ? null : $coupon($in, $sku, $period, $cur, $email, $price);
+    if ($q) $price = (int)$q['price'];
     $amount = $price * 100;   // integer paise / cents
     $receipt = 'cp_' . gmdate('ymdHis') . '_' . bin2hex(random_bytes(3));
     $body = json_encode(['amount' => $amount, 'currency' => $cur, 'receipt' => $receipt,
-        'notes' => ['sku' => $sku, 'period' => $period, 'name' => $name, 'email' => $email, 'phone' => $phone]]);
+        'notes' => ['sku' => $sku, 'period' => $period, 'name' => $name, 'email' => $email, 'phone' => $phone, 'amt' => $price, 'cur' => $cur] + ($q ? ['aff' => $q['code']] : [])]);
     $ch = curl_init('https://api.razorpay.com/v1/orders');
     curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_USERPWD => "$kid:$ksec",
         CURLOPT_HTTPHEADER => ['Content-Type: application/json'], CURLOPT_TIMEOUT => 20]);
@@ -150,10 +174,10 @@ if ($a === 'order') {
         pay_log('payments.log', ['type' => 'order_error', 'http' => $code, 'sku' => $sku, 'currency' => $cur, 'err' => $o['error']['description'] ?? null, 'at' => time()]);
         pay_out(['error' => $cur === 'USD' ? 'USD checkout is not available right now. Please switch to INR or try again.' : 'Could not start the payment. Please try again.'], 502);
     }
-    pay_log('payments.log', ['type' => 'order', 'order_id' => $o['id'], 'receipt' => $receipt, 'sku' => $sku, 'period' => $period, 'currency' => $cur, 'amount' => $amount,
+    pay_log('payments.log', ['type' => 'order', 'order_id' => $o['id'], 'receipt' => $receipt, 'sku' => $sku, 'period' => $period, 'currency' => $cur, 'amount' => $amount, 'aff' => $q['code'] ?? '',
         'name' => $name, 'email' => $email, 'phone' => $phone, 'at' => time()]);
     pay_out(['key' => $kid, 'order_id' => $o['id'], 'amount' => $amount, 'currency' => $cur, 'name' => (string)t_cfg('business_name', 'ChartPulse'),
-        'description' => $desc, 'prefill' => ['name' => $name, 'email' => $email, 'contact' => $phone]]);
+        'description' => $desc, 'coupon' => $q ? ['code' => $q['code'], 'off' => $q['off'], 'first' => $q['first']] : null, 'prefill' => ['name' => $name, 'email' => $email, 'contact' => $phone]]);
 }
 if ($a === 'verify') {
     $oid = (string)($in['razorpay_order_id'] ?? ''); $pid = (string)($in['razorpay_payment_id'] ?? ''); $sig = (string)($in['razorpay_signature'] ?? '');

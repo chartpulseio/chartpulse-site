@@ -24,8 +24,17 @@
         { t: "AI Scan", d: "Forecast, news tone and analyst view for one symbol", href: "/desk/" }
       ] }
     ] },
-    { t: "Pricing", href: "/pricing.html" }
+    { t: "Pricing", href: "/pricing.html" },
+    { t: "Affiliates", href: "/affiliates/" }
   ];
+  /* affiliate link: ?ref=CODE is remembered for checkout (30 days) and counted once per browser */
+  try {
+    var rf = (new URLSearchParams(location.search).get("ref") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 16);
+    if (rf.length >= 4 && localStorage.getItem("cp_ref") !== rf) {
+      localStorage.setItem("cp_ref", rf);
+      fetch("/aff.php?a=click", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: rf }) }).catch(function () {});
+    }
+  } catch (e) {}
   var LOGO = '<svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg>';
   var CHEV = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var path = location.pathname.replace(/index\.html$/, "");

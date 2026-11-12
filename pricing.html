@@ -26,7 +26,7 @@
 <link rel="stylesheet" href="/static/v2/premium.css?v=2">
 <link rel="stylesheet" href="/static/v2/fonts.css?v=1">
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=2">
-<script defer src="/static/v2/sitehead.js?v=7"></script>
+<script defer src="/static/v2/sitehead.js?v=8"></script>
 <script type="application/ld+json" id="cp-ld">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Pricing","item":"https://chartpulse.io/pricing.html"}]},{"@type":"WebPage","@id":"https://chartpulse.io/pricing.html#page","url":"https://chartpulse.io/pricing.html","name":"Pricing & Plans · ChartPulse","description":"ChartPulse plans: Starter, Core and Algo, with regional INR pricing, up to 30% off on longer billing and a free trial counted in signals.","isPartOf":{"@id":"https://chartpulse.io/#site"},"inLanguage":"en"}]}</script>
 </head>
 <body class="site pricing" data-page="pricing">
@@ -156,6 +156,7 @@
       <label class="field"><span>Full name</span><input id="pName" required autocomplete="name" maxlength="80"></label>
       <label class="field"><span>Email</span><input id="pEmail" type="email" required autocomplete="email" maxlength="120"></label>
       <label class="field"><span>Mobile</span><input id="pPhone" type="tel" required autocomplete="tel" pattern="[0-9+ ]{10,15}" maxlength="15"></label>
+      <label class="field" id="pCouponRow"><span>Affiliate / coupon code (optional)</span><input id="pCoupon" maxlength="16" autocomplete="off" spellcheck="false" style="text-transform:uppercase" placeholder="e.g. RAVI20"><small id="pCouponMsg" style="display:block;margin-top:5px;font-size:12.5px;opacity:.85"></small></label>
       <input type="text" id="pWeb" name="website" tabindex="-1" autocomplete="off" class="hp" aria-hidden="true">
       <label class="check" id="pAgreeRow" style="margin:4px 0 8px"><input type="checkbox" id="pAgree" required> I agree to the&nbsp;<a href="legal.php?p=terms" target="_blank">Terms</a>&nbsp;and&nbsp;<a href="legal.php?p=refund" target="_blank">Refund policy</a></label>
       <p class="m-err" id="payErr"></p>
@@ -171,14 +172,46 @@
       <span class="foot-status"><span class="ldot"></span>Signals only for markets that are live</span>
     </div>
     <div><h4>Product</h4><a href="./">Overview</a><a href="scanner.html">Tier-1 Scanner</a><a href="insights.html">Market Insights</a><a href="news.html">News &amp; Impact</a><a href="pricing.html">Pricing</a></div>
-    <div><h4>Company</h4><a href="legal.php?p=contact">Contact us</a><a href="legal.php?p=terms">Terms &amp; Conditions</a><a href="legal.php?p=privacy">Privacy Policy</a><a href="legal.php?p=refund">Refund &amp; Cancellation</a></div>
+    <div><h4>Company</h4><a href="/affiliates/">Affiliate program</a><a href="legal.php?p=contact">Contact us</a><a href="legal.php?p=terms">Terms &amp; Conditions</a><a href="legal.php?p=privacy">Privacy Policy</a><a href="legal.php?p=refund">Refund &amp; Cancellation</a></div>
     <div><h4>Resources</h4><a href="legal.php?p=disclaimer">Risk disclaimer</a><a href="/api.php?r=export">Signals CSV</a><a href="#" data-cmdk>Search <kbd>⌘K</kbd></a></div>
   </div>
   <div class="disclaimer wrap"><b>Risk disclaimer:</b> ChartPulse provides market data analytics and rule-based scanning tools for education and research. Nothing on this website is investment advice or a recommendation to buy or sell any security, derivative, currency or crypto asset. Trading involves substantial risk of loss. Signals are model output based on delayed or real-time third-party data that may be inaccurate. Consult a SEBI-registered adviser before acting. © <span data-year></span> ChartPulse.</div>
 </footer>
 <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
 <script defer src="/static/v2/cp.js?v=101"></script>
-<script defer src="/static/v2/pricing.js?v=13"></script>
+<style>#pCouponRow[hidden]{display:none}</style>
+<script defer src="/static/v2/pricing.js?v=14"></script>
+<script>
+/* Affiliate code at checkout (12 Nov 2026): prefilled from a ?ref= link, shows the price with the code. The server sets the real price. */
+(function () {
+  var inp = document.getElementById("pCoupon"), msg = document.getElementById("pCouponMsg"), row = document.getElementById("pCouponRow"), modal = document.getElementById("payModal");
+  if (!inp || !modal) return;
+  var money = function (n, c) { return (c === "INR" ? "₹" : "$") + Number(n).toLocaleString(c === "INR" ? "en-IN" : "en-US"); };
+  function check() {
+    var sel = window.CPSEL, code = inp.value = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    msg.textContent = ""; msg.style.color = "";
+    if (!code || !sel || sel.kind !== "pay" || sel.sku === "courses") return;
+    fetch("/pay.php?a=coupon", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: code, sku: sel.sku, period: sel.period, currency: sel.currency, email: document.getElementById("pEmail").value }) })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) {
+        if (inp.value !== code) return;
+        if (!x.ok) { msg.style.color = "#F7525F"; msg.textContent = x.j.error || "This code is not valid."; return; }
+        msg.style.color = "#22AB94";
+        msg.textContent = x.j.first ? "✓ " + x.j.pct + "% off your first payment: you pay " + money(x.j.price, x.j.currency) + " instead of " + money(x.j.full, x.j.currency) + "."
+          : "✓ Code accepted. The discount applies to a first payment only, so this payment is " + money(x.j.full, x.j.currency) + ".";
+      }).catch(function () {});
+  }
+  var t; inp.addEventListener("input", function () { clearTimeout(t); t = setTimeout(check, 450); });
+  document.getElementById("pEmail").addEventListener("change", check);
+  new MutationObserver(function () {
+    if (modal.hidden) return;
+    var pay = window.CPSEL && !document.getElementById("paySum").hidden && window.CPSEL.sku !== "courses";
+    row.hidden = !pay; if (!pay) { inp.value = ""; return; }
+    if (!inp.value) { try { inp.value = localStorage.getItem("cp_ref") || ""; } catch (e) {} }
+    check();
+  }).observe(modal, { attributes: true, attributeFilter: ["hidden"] });
+})();
+</script>
 <script defer src="/static/v2/cp-launcher.js?v=1"></script>
 </body>
 </html>
