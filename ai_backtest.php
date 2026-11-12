@@ -309,9 +309,9 @@ function aib_parse_ai($text) {
       . "symbol must be one of: $codes (or null if the user named none). The user may write in English, Hindi or Hinglish.";
     $user = mb_substr($text, 0, 1500);
     $got = null; $by = null;
-    if ($groq !== '') foreach (['openai/gpt-oss-120b', 'llama-3.3-70b-versatile'] as $model) {
+    if ($groq !== '') foreach (['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'] as $model) {
         $j = aib_post('https://api.groq.com/openai/v1/chat/completions', json_encode(['model' => $model, 'temperature' => 0, 'max_tokens' => 2048,
-            'response_format' => ['type' => 'json_object'], 'messages' => [['role' => 'system', 'content' => $sys], ['role' => 'user', 'content' => $user]]], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            'response_format' => ['type' => 'json_object']] + (str_starts_with($model, 'qwen/') ? ['reasoning_format' => 'hidden'] : ['reasoning_effort' => 'low']) + ['messages' => [['role' => 'system', 'content' => $sys], ['role' => 'user', 'content' => $user]]], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             ['Authorization: Bearer ' . $groq]);
         if ($got = aib_read_json($j['choices'][0]['message']['content'] ?? '')) { $by = 'groq'; break; }
     }

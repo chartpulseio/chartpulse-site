@@ -51,7 +51,7 @@ function lc_multi(array $reqs, int $timeout = 40): array {
 }
 /** Groq (OpenAI-style API). Each call in a batch goes to a different model, because Groq's free limits are per model. */
 function lc_multi_groq(array $reqs, int $timeout): array {
-    $models = ['openai/gpt-oss-120b', 'llama-3.3-70b-versatile', 'openai/gpt-oss-20b', 'llama-3.1-8b-instant'];
+    $models = ['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b', 'openai/gpt-oss-120b'];
     $mh = curl_multi_init(); $H = []; $key = lc_gkey(); $i = 0;
     foreach ($reqs as $k => $q) {
         $m = $models[$i++ % count($models)];
@@ -59,6 +59,7 @@ function lc_multi_groq(array $reqs, int $timeout): array {
               'messages' => [['role' => 'system', 'content' => $q['sys']], ['role' => 'user', 'content' => $q['user']]]];
         if ($q['json']) $b['response_format'] = ['type' => 'json_object'];
         if (str_starts_with($m, 'openai/gpt-oss')) $b['reasoning_effort'] = 'low';
+        if (str_starts_with($m, 'qwen/')) $b['reasoning_format'] = 'hidden';
         $ch = curl_init('https://api.groq.com/openai/v1/chat/completions');
         curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode($b, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => $timeout, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer ' . $key]]);
