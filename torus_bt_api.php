@@ -206,7 +206,7 @@ function bt_check_tfs($strategy, $timeframe)
 function bt_validate_settings($q)
 {
     $sym = strtoupper(trim((string)($q['symbol'] ?? '')));
-    if (!preg_match('/^[A-Z0-9][A-Z0-9.\-=^]{0,19}$/', $sym)) throw new BtError('That symbol code is not valid');
+    if (!preg_match('/^\^?[A-Z0-9][A-Z0-9.\-=]{0,19}$/', $sym)) throw new BtError('That symbol code is not valid');
     $tf = (string)($q['timeframe'] ?? '1d');
     if (!isset(BT_BASE_TF[$tf])) throw new BtError('That timeframe is not valid');
     $start = (string)($q['start'] ?? '');

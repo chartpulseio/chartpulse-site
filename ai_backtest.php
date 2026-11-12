@@ -96,7 +96,7 @@ function aib_rule($c) {
     if (preg_match('/golden cross/', $c)) return $R(['ind' => 'sma', 'period' => 50], 'crosses_above', ['ind' => 'sma', 'period' => 200]);
     if (preg_match('/death cross/', $c)) return $R(['ind' => 'sma', 'period' => 50], 'crosses_below', ['ind' => 'sma', 'period' => 200]);
     if (preg_match('/supertrend/', $c) && preg_match('/\b(bullish|green|up|buy|positive|bearish|red|down|sell|negative)\b/', $c, $m)) {
-        $up = in_array($m[1], ['bullish', 'green', 'up', 'buy', 'positive'], true); $turn = preg_match('/(turn|flip|chang|become|switch|cross)/', $c);
+        $up = in_array($m[1], ['bullish', 'green', 'up', 'buy', 'positive'], true); $turn = preg_match('/(turn|flip|chang|becom|switch|cross)/', $c);
         return $R(['ind' => 'supertrend_dir', 'period' => 10, 'mult' => 3], $turn ? ($up ? 'crosses_above' : 'crosses_below') : ($up ? '>' : '<'), ['value' => 0]);
     }
     if (preg_match('/macd/', $c) && preg_match('/(bullish|bearish)\s*(cross|crossover)/', $c, $m))
@@ -158,9 +158,37 @@ function aib_risk(&$t, &$used) {
     if (isset($risk['stop_loss_atr']) || isset($risk['take_profit_atr']) || isset($risk['trail_atr'])) $risk['atr_period'] = 14;
     return $risk;
 }
+/** Simple Hinglish -> English, so "jab rsi 30 se neeche ho tab buy karo" reads like "buy when rsi below 30". */
+function aib_hinglish($t) {
+    $w = ['khareedo' => 'buy', 'kharido' => 'buy', 'khareed lo' => 'buy', 'kharid lo' => 'buy', 'khareedna' => 'buy', 'becho' => 'sell', 'bech do' => 'sell', 'bechna' => 'sell',
+          'nikal jao' => 'exit', 'nikalo' => 'exit', 'bahar niklo' => 'exit', 'aur' => 'and', 'or bhi' => 'and', 'jab bhi' => 'when', 'jab' => 'when', 'jb' => 'when', 'agar' => 'if',
+          'ghante' => 'hour', 'ghanta' => 'hour', 'din' => 'day', 'saal' => 'years', 'mahine' => 'months', 'pichle' => 'last', 'dono side' => 'both sides', 'dono taraf' => 'both sides'];
+    foreach ($w as $k => $v) $t = preg_replace('/(?<![a-z])' . preg_quote($k, '/') . '(?![a-z])/', $v, $t);
+    // "X se/ke upar" -> "above X", "X se/ke neeche" -> "below X"
+    $opd = '(\d+\s*(?:ema|sma|wma|moving average)|(?:ema|sma|wma)\s*\d+|ema|sma|wma|vwap|supertrend|\d+(?:\.\d+)?)';
+    // "A B ke upar cross kare" -> "A crosses above B" (before the plain above/below rules)
+    $t = preg_replace('/' . $opd . '\s+' . $opd . '\s+(?:ke\s+|se\s+)?(?:upar|uppar|oopar)\s+(?:cross|cut)\w*\s*(?:kare|kre|karta|kar de|ho)?/', ' $1 crosses above $2 ', $t);
+    $t = preg_replace('/' . $opd . '\s+' . $opd . '\s+(?:ke\s+|se\s+)?(?:neeche|niche)\s+(?:cross|cut)\w*\s*(?:kare|kre|karta|kar de|ho)?/', ' $1 crosses below $2 ', $t);
+    $t = preg_replace('/' . $opd . '\s+(?:ke\s+|ki\s+|se\s+)+(?:upar|uppar|oopar|zyada|jyada|adhik)\b/', ' above $1 ', $t);
+    $t = preg_replace('/' . $opd . '\s+(?:ke\s+|ki\s+|se\s+)+(?:neeche|niche|nichay|kam)\b/', ' below $1 ', $t);
+    $t = preg_replace('/\b(?:upar|uppar|oopar)\s+(?:cross|cut)\s*(?:kare|kre|karta|kar de|ho)?/', ' crosses above ', $t);
+    $t = preg_replace('/\b(?:neeche|niche)\s+(?:cross|cut)\s*(?:kare|kre|karta|kar de|ho)?/', ' crosses below ', $t);
+    $t = preg_replace('/\b(?:ho jaye|ho jaaye|ho jata|ho jaata|ban jaye|bane|hote hi|turn ho)\b/', ' becomes ', $t);
+    // "when COND tab/to ACTION karo" -> "ACTION when COND"
+    $act = '(buy|sell|exit|short|long|entry|cover|close)';
+    for ($k = 0; $k < 4; $k++) {
+        $n = preg_replace('/\b(when|if)\s+([^.;,]+?)\s+(?:tab|to|toh|then)\s+' . $act . '\b\s*(?:karo|kro|kar do|krdo|karna|kare|lo|le lo|lena|lenge|karenge)?/', ' $3 when $2 ', $t);
+        if ($n === $t) break; $t = $n;
+    }
+    // a clause with no "when": "rsi 70 se upar ho to becho" -> "sell when rsi above 70"
+    $t = preg_replace('/(^|[.;,]\s*)(?!\s*(?:buy|sell|exit|short|long|entry|cover|close)\b)([^.;,]+?)\s+(?:to|toh|tab|then)\s+' . $act . '\b\s*(?:karo|kro|kar do|krdo|karna|kare|lo|le lo|lena|lenge|karenge)?/', '$1 $3 when $2 ', $t);
+    $t = preg_replace('/\b(karo|kro|karna|kar do|krdo|lo|lena|lenge|karenge|chahiye|hai|ho|hon|me|mein|par|pe|ka|ki|ke|ko)\b/', ' ', $t);
+    return preg_replace('/\s+/', ' ', $t);
+}
 function aib_parse_local($text) {
     $t = ' ' . strtolower($text) . ' ';
     $t = str_replace(['’', '‘', '“', '”', '–', '—'], ["'", "'", '"', '"', '-', '-'], $t);
+    $t = aib_hinglish($t);
     $t = preg_replace('/\b(\d+)\s*-\s*(day|period|bar|week)\b/', '$1 $2', $t);
     $t = preg_replace('/\b(exponential moving average)\b/', 'ema', $t); $t = preg_replace('/\b(simple moving average)\b/', 'sma', $t);
     $t = preg_replace('/\brelative strength index\b/', 'rsi', $t); $t = preg_replace('/\bbollinger bands?\b/', 'bollinger band', $t);

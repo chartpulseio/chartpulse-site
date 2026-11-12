@@ -175,6 +175,7 @@ pre{margin:0;padding:14px;border-radius:12px;background:#0B0C0F;border:1px solid
     ["Supertrend", "Go long Nifty when Supertrend turns bullish and ADX is above 25. Exit when Supertrend turns bearish."],
     ["Breakout", "Buy when price breaks out of the 20 day high with volume above average volume. Stop 3%, target 1:3."],
     ["Golden cross", "Golden cross on Apple daily, exit on death cross."],
+    ["Hinglish", "Jab RSI 30 se neeche ho aur price 200 EMA ke upar ho tab khareedo. RSI 70 se upar ho to becho. Stop loss 3%."],
     ["MACD both sides", "Buy gold when MACD crosses above signal and price is above the 50 SMA. Sell when MACD crosses below signal. Long and short both sides. Trailing stop 4%."]
   ];
   EX.forEach(function (e) { var b = document.createElement("button"); b.type = "button"; b.textContent = e[0]; b.addEventListener("click", function () { $("#txt").value = e[1]; $("#txt").focus(); }); $("#ex").appendChild(b); });
