@@ -4,6 +4,7 @@
   "use strict";
   var MENU = [
     { t: "Scanner", href: "/scanner.html", match: ["/scanner.html", "/tier2.html"] },
+    { t: "Trendline Hero", href: "/scanners/trendline-hero/" },
     { t: "Day Drive", href: "/scanners/day-drive/" },
     { t: "Markets", cols: [{ items: [
       { t: "AI Scan", d: "Trend direction for every symbol", href: "/bias/" },
@@ -17,7 +18,8 @@
         { t: "200 EMA", d: "Price meeting its 200 EMA", href: "/scanners/ema-200/" },
         { t: "Day Drive", d: "Three checks, weekly chart to 15m entry", href: "/scanners/day-drive/" },
         { t: "Trend lines", d: "Breakouts and tests on seven timeframes", href: "/scanners/trend-lines/" },
-        { t: "Hybrid trend lines", d: "Day high or low at a line, with the trend", href: "/scanners/hybrid-trend-lines/" }
+        { t: "Hybrid trend lines", d: "Day high or low at a line, with the trend", href: "/scanners/hybrid-trend-lines/" },
+        { t: "Trendline Hero", d: "Trend line trades with the big trend, long targets", href: "/scanners/trendline-hero/" }
       ] },
       { h: "Research", items: [
         { t: "Backtesting", d: "Test your own strategy on history", href: "/backtesting/" },

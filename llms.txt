@@ -13,6 +13,7 @@ ChartPulse is a multi-market trading research tool covering 970+ instruments acr
 - [Hybrid Trend Line Scanner](https://chartpulse.io/scanners/hybrid-trend-lines/): with-trend setups where the day high meets resistance (PUT) or the day low meets support (CALL), with rejection and failed-break alerts
 - [AI Scan](https://chartpulse.io/desk/): bias, forecast cone, trend lines on four timeframes and news tone for any symbol
 - [All free scanners](https://chartpulse.io/scanners/): Day Drive, 200 EMA, trend lines, EMA strategy and institutional scans
+- [Trendline Hero](https://chartpulse.io/scanners/trendline-hero/): PUT at a resistance trend line that is today's high in a downtrend, CALL at a support line that is today's low in an uptrend; 30m to weekly lines
 - [200 EMA Scanner](https://chartpulse.io/scanners/ema-200/): daily entries around the 200 EMA in four stages, plus which of 1D, 4H, 1H, 30m, 15m has price at its 200 EMA now
 - [Bias](https://chartpulse.io/bias/): daily trend direction for every tracked instrument
 - [Market Movers](https://chartpulse.io/movers/): biggest daily moves across all markets

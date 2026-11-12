@@ -2,6 +2,7 @@
 /**
  * Trend lines endpoint                                          chartpulse.io
  *   GET ?r=hybrid   -> the Hybrid Trend Line Scanner list
+ *   GET ?r=hero     -> Trendline Hero list
  *   GET ?r=scan     -> the Trend Line Scanner list: every symbol, 1W / 1D / 4H / 1H / 30m
  *   GET ?s=SYMBOL   -> { symbol, name, at, summary, frames: [ {tf, pattern, res, sup, text[], bars} ] }
  * Same-origin only (Tier 2 and the AI Scan page). A visitor never sees a backend detail.
@@ -30,6 +31,7 @@ if (!headers_sent() && str_contains((string)($_SERVER['HTTP_ACCEPT_ENCODING'] ??
 if (!t_rl('tl', 40)) { header('Retry-After: 30'); tl_json(['error' => 'Too many requests. Please wait a few seconds.'], 429); }
 if (($_GET['r'] ?? '') === 'tgstatus') { require_once __DIR__ . '/tg_alerts.php'; echo json_encode(tga_status()); exit; }
 if (($_GET['r'] ?? '') === 'hybrid') { @set_time_limit(60); tl_json(tlh_scan()); }
+if (($_GET['r'] ?? '') === 'hero') { @set_time_limit(60); tl_json(tlh_scan(true)); }   // Trendline Hero: 1W 1D 4H 1H 30m
 if (($_GET['r'] ?? '') === 'scan') { @set_time_limit(60); tl_json(tl_scan()); }
 $s = (string)($_GET['s'] ?? '');
 if ($s === '' || strlen($s) > 24 || !isset(t_symbols()[$s])) tl_json(['error' => 'Pick a symbol from the list.'], 422);

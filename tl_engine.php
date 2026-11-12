@@ -480,7 +480,12 @@ function tlh_bias(array $mtf): ?string {
 }
 
 /** One symbol. Returns null when the trend gives no bias or no line is at the day's extreme. */
-function tlh_row(string $sym, array $row, int $now): ?array {
+/** Trendline Hero (owner, 12 Nov 2026): the same rule on 1W 1D 4H 1H 30m lines, the turn read on 30m candles,
+    and longer targets when the line comes from a big chart (a line that held for weeks can pay for a long move). */
+const TLHERO_TFS = ['1W', '1D', '4H', '1H', '30m'];
+const TLHERO_RR = ['1W' => [2.0, 5.0], '1D' => [2.0, 5.0], '4H' => [2.0, 3.5], '1H' => [1.5, 2.5], '30m' => [1.5, 2.5]];
+
+function tlh_row(string $sym, array $row, int $now, array $tfs = TLH_TFS, string $ePref = '15m', bool $hero = false): ?array {
     $fr = t_read_frames($sym); if (!$fr) return null;
     $D = $fr['1D'] ?? null; $nD = count($D['c'] ?? []); if ($nD < 30) return null;
     $src = tl_src($fr, $fr['5m'] ?? null); $mtf = tl_mtf($src); $bias = tlh_bias($mtf); if (!$bias) return null;
@@ -488,17 +493,17 @@ function tlh_row(string $sym, array $row, int $now): ?array {
     $put = $bias === 'PUT'; $s = $put ? 1 : -1;                       // +1: the line is above (resistance), -1: below (support)
     $dayX = $put ? (float)$D['h'][$nD - 1] : (float)$D['l'][$nD - 1];
     // entry candles: 15m where intraday bars are cached, else 1H; the last bar is still forming
-    $etf = !empty($src['15m']) && count($src['15m']['c']) >= 20 ? '15m' : '1H'; $E = $src[$etf]; $ne = count($E['c']);
+    $etf = !empty($src[$ePref]) && count($src[$ePref]['c']) >= 20 ? $ePref : '1H'; $E = $src[$etf]; $ne = count($E['c']);
     if ($ne < TLH_WIN + 3) return null;
     $px = (float)$E['c'][$ne - 1]; $lc = $ne - 2;                     // live price, last closed candle
-    $live = $now - (int)$E['t'][$ne - 1] <= 2 * ($etf === '15m' ? 900 : 3600) ? 1 : 0;   // is the market trading right now?
+    $live = $now - (int)$E['t'][$ne - 1] <= 2 * (['10m' => 600, '15m' => 900, '30m' => 1800][$etf] ?? 3600) ? 1 : 0;   // is the market trading right now?
     $Z = array_values(array_filter(tl_zones($fr), fn($z) => $z['k'] !== 'Day High' && $z['k'] !== 'Day Low'));
     $best = null; $hits = 0; $all = [];
-    foreach (TLH_TFS as $k) {
+    foreach ($tfs as $k) {
         if (empty($src[$k])) continue;
         try { $x = tl_frame($k, $src[$k], false); } catch (Throwable $e) { $x = null; }
         $L = $x ? $x[$put ? 'res' : 'sup'] : null; if (!$L) continue;
-        if (($k === '15m' || $k === '30m') && $L['touches'] < 3) continue;   // a 2-touch line on a small chart is noise
+        if (($k === '10m' || $k === '15m' || $k === '30m') && $L['touches'] < 3) continue;   // a 2-touch line on a small chart is noise
         $lv = (float)$L['now']; $over = ($dayX - $lv) * $s;           // > 0: the day's extreme went through the line
         if (!($over >= -TLH_NEAR * $atrD && $over <= TLH_OVER * $atrD)) continue;
         $thr = 0.05 * $atrD; $tol = 0.05 * $atrD; $stage = 0; $brk = null;
@@ -534,15 +539,17 @@ function tlh_row(string $sym, array $row, int $now): ?array {
         $ext = $dayX; for ($i = max(0, $lc - TLH_WIN + 1); $i < $ne; $i++) $ext = $put ? max($ext, (float)$E['h'][$i]) : min($ext, (float)$E['l'][$i]);
         $sl = $ext + $s * 0.1 * $atrD; $risk = abs($sl - $px);
         if ($risk > 0) {
-            $t1 = $px - $s * 1.5 * $risk; $t2 = $px - $s * 2.5 * $risk; $t2why = '2.5 x the risk';
+            [$r1, $r2] = $hero ? (TLHERO_RR[$best['tf']] ?? [1.5, 2.5]) : [1.5, 2.5];
+            $t1 = $px - $s * $r1 * $risk; $t2 = $px - $s * $r2 * $risk; $t2why = rtrim(rtrim(number_format($r2, 1), '0'), '.') . ' x the risk';
             $opp = $best['opp'];
-            if ($opp !== null && ($px - $opp) * $s >= 2.0 * $risk) { $t2 = (float)$opp; $t2why = 'the other line of the pattern'; }
-            $plan = ['entry' => round($px, $d), 'sl' => round($sl, $d), 't1' => round($t1, $d), 't2' => round($t2, $d), 't2why' => $t2why,
+            if ($opp !== null && ($px - $opp) * $s >= ($hero ? $r2 : 2.0) * $risk) { $t2 = (float)$opp; $t2why = 'the other line of the pattern'; }
+            $plan = ['entry' => round($px, $d), 'sl' => round($sl, $d), 't1' => round($t1, $d), 't2' => round($t2, $d), 't2why' => $t2why, 't1x' => $r1,
                      'risk_pct' => round($risk / $px * 100, 2)];
         }
     }
     return ['symbol' => $sym, 'name' => t_name($sym), 'market' => $row['market'] ?? (t_symbols()[$sym] ?? ''), 'class' => tl_class($sym),
             'price' => round($px, $d), 'dec' => $d, 'bias' => $bias, 'mtf' => $mtf, 'pull' => $pull,
+            'with4h' => (int)($mtf['d']['4H'] ?? 0) === (int)$mtf['d']['1D'], 'with1w' => (int)($mtf['d']['1W'] ?? 0) === (int)$mtf['d']['1D'],
             'stage' => $best['stage'], 'stage_name' => TLH_STAGE[$best['stage']], 'tf' => $best['tf'], 'etf' => $etf,
             'lv' => round($best['lv'], $d), 'touches' => $best['n'], 'line_dir' => $best['dir'], 'pattern' => $best['pattern'],
             'day_x' => round($dayX, $d), 'gap_atr' => round(abs($dayX - $best['lv']) / $atrD, 2), 'through' => ($dayX - $best['lv']) * $s > 0,
@@ -551,19 +558,19 @@ function tlh_row(string $sym, array $row, int $now): ?array {
 }
 
 /** Whole-universe hybrid scan (same stepping and caching as tl_scan, shorter row life because stages move fast). */
-function tlh_scan(): array {
+function tlh_scan(bool $hero = false): array {
     $dir = T_DATA . '/tl'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
-    $now = t_now(); $ck = $dir . '/_hscan5.json';
+    $now = t_now(); $ck = $dir . ($hero ? '/_heroscan2.json' : '/_hscan5.json');
     $c = t_read_json($ck, null);
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 30 && isset($c['rows'])) return $c;
     $scan = t_scan_load(); $syms = array_keys($scan['rows'] ?? []);
-    $cp = $dir . '/_hrows5.json'; $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
+    $cp = $dir . ($hero ? '/_herorows2.json' : '/_hrows5.json'); $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
     $t0 = microtime(true); $done = 0; $fresh = 0; $nobias = 0;
     foreach ($syms as $sym) {
         $old = $cache[$sym] ?? null;
         if (is_array($old) && $now - (int)($old['at'] ?? 0) < 240) { $done++; continue; }
         if (microtime(true) - $t0 > TL_BUDGET) continue;
-        try { $r = tlh_row($sym, $scan['rows'][$sym], $now); } catch (Throwable $e) { $r = null; }
+        try { $r = $hero ? tlh_row($sym, $scan['rows'][$sym], $now, TLHERO_TFS, '30m', true) : tlh_row($sym, $scan['rows'][$sym], $now); } catch (Throwable $e) { $r = null; }
         $cache[$sym] = $r ?: ['at' => $now, 'none' => 1]; $done++; $fresh++;
     }
     foreach ($cache as $s => $_) if (!isset($scan['rows'][$s])) unset($cache[$s]);
