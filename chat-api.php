@@ -300,9 +300,42 @@ function cp_kb(): array
         ['movers', 'movers, biggest movers, gainers losers',
          "Market Movers lists the biggest daily movers across all tracked markets. See [Movers](/movers)."],
 
-        ['backtesting', 'backtesting, historical, test ideas',
-         "Backtesting lets you test a rule set against historical data so you can see how it behaved in the past. "
-         . "Past behaviour is not a promise about the future. See [Backtesting](/backtesting/)."],
+        ['backtesting', 'backtesting, historical, test ideas, pro backtesting, rule builder, walk forward',
+         "Pro Backtesting lets you build a rule set (indicators, entries, exits, stops) and test it against historical data, with a walk-forward check. "
+         . "Past behaviour is not a promise about the future. See [Pro Backtesting](/backtesting/)."],
+
+        ['ai-backtesting', 'ai backtesting, type strategy in words, plain english, hinglish, test my strategy, rsi ema strategy test',
+         "AI Backtesting lets you write a strategy in plain words, for example: \"Buy when RSI is below 30 and price is above the 200 EMA. Sell when RSI is above 70. Stop loss 5%.\" "
+         . "It shows the rules it understood, tests them on real price history with costs, compares the result with simply holding the market, and lists every trade. "
+         . "English and simple Hinglish both work; name the market, chart timeframe and years in the text or pick them on the page. See [AI Backtesting](/ai-backtesting/)."],
+
+        ['trendline-hero', 'trendline hero, trend line hero, day high resistance put, day low support call, mtf bias trend line',
+         "Trendline Hero lists trades with the big trend at a trend line: when the Daily trend is down (confirmed by the 4-hour or Weekly) it looks for a PUT at a resistance trend line that is also today's high; "
+         . "when the trend is up, a CALL at a support line that is also today's low. Lines come from 30-minute to Weekly charts; bigger-chart lines get longer targets. "
+         . "Each market has a Tier 2 page with the 5-minute entry, stop and targets. See [Trendline Hero](/scanners/trendline-hero/) and [Hero with 200 EMA](/scanners/hero-200-ema/)."],
+
+        ['trend-lines', 'trend line scanner, hybrid trend line, breakout of trend line, touching trend line',
+         "The Trend Line Scanner shows every market whose trend line is being touched or broken right now, on Weekly, Daily, 4-hour, 1-hour and intraday charts, with zone and trend labels. "
+         . "The Hybrid Trend Line Scanner adds the trend filter and today's high or low, and alerts on the turn. See [Trend lines](/scanners/trend-lines/) and [Hybrid](/scanners/hybrid-trend-lines/)."],
+
+        ['ema-200', '200 ema scanner, 200 ema, ema 200 zone, atr zone, moving average 200',
+         "The 200 EMA Scanner shows which markets are at their 200 EMA on the Daily, 4-hour, 1-hour, 30-minute and 15-minute charts. "
+         . "\"In the ATR zone\" means price is within one ATR of that chart's 200 EMA. It also marks crosses, retests, key zones and the trend on each timeframe. See [200 EMA Scanner](/scanners/ema-200/)."],
+
+        ['news-scanner', 'news scanner, markets in the news, headline tone, sentiment',
+         "The News Scanner lists markets named in the news of the last 48 hours: how positive or negative the headlines read, their impact, how far price has moved since, and whether the news agrees with the trend. "
+         . "Tone is read from words and can be wrong. See [News Scanner](/scanners/news/)."],
+
+        ['ai-scan', 'ai scan, run ai scan, ai analysis, analysts, desk',
+         "AI Scan gives one market's trend bias, levels and data. \"Run AI Scan\" asks four AI analysts (market, news, bull, bear) and a judge to read that data and write a short report. "
+         . "It describes the current data; it is not a forecast or advice. See [AI Scan](/desk/)."],
+
+        ['scanners-list', 'all scanners, which scanners, free scanners, list of scanners, day drive',
+         "ChartPulse scanners: Tier-1 Scanner, Trendline Hero, Hero with 200 EMA, 200 EMA, Trend Line, Hybrid Trend Line, Day Drive, News, plus six strategy scanners "
+         . "(liquidity sweep with FVG, Power of 3, range breakout, EMA 21/50/200 alignment, Supertrend with RSI 50, VWAP with EMA 200). See [All scanners](/scanners/)."],
+
+        ['affiliates', 'affiliate, referral, coupon, earn, commission, partner',
+         "The affiliate program is free to join: pick your own code, your buyers get 20% off their first payment and you earn 20% of every payment they make, paid monthly in USDT. See [Affiliates](/affiliates/)."],
 
         ['scanner-queue', 'under process queue, watching, how to read the scanner',
          "The under-process queue is the ranked list of instruments the engine is still working through, ordered by current strength. "
@@ -394,7 +427,7 @@ function cp_retrieve(string $q, int $n = 3): array
         }
         $terms[$t] = true;
     }
-    $terms = array_keys($terms);
+    $terms = array_map('strval', array_keys($terms));   // "200" becomes an int key; preg_quote needs a string
     if (!$terms) {
         return [];
     }
@@ -566,10 +599,44 @@ function cp_gemini(array $CFG, string $model, string $system, array $turns, stri
     return [200, trim((string)$text)];
 }
 
+/** Key from the secrets config, else the owner's file in cp_data/ml (same files AI Scan and AI Backtesting use). */
+function cp_key(array $CFG, string $name): string
+{
+    $k = trim((string)($CFG[$name . '_key'] ?? ''));
+    if ($k !== '') return $k;
+    $f = dirname(CP_SECRETS) . '/cp_data/ml/' . $name . '.ini';
+    $k = is_file($f) ? trim((string)@file_get_contents($f)) : '';
+    $k = trim((string)preg_replace('/^[A-Za-z_ ]*=\s*/', '', $k), " \t\r\n\"'");
+    return preg_match('/^[A-Za-z0-9_.\-]{20,}$/', $k) ? $k : '';
+}
+$CFG['gemini_key'] = cp_key($CFG, 'gemini');
+$GROQ_KEY = cp_key($CFG, 'groq');
+
+/** @return array{0:int,1:string} [httpCode, text] — Groq, OpenAI-style chat. */
+function cp_groq(array $CFG, string $key, string $model, string $system, array $turns, string $userMsg, int $maxTokens): array
+{
+    $msgs = [['role' => 'system', 'content' => $system]];
+    foreach (array_slice($turns, -4) as $t) {
+        $txt = cp_mask(substr((string)($t['text'] ?? ''), 0, 800));
+        if ($txt !== '') $msgs[] = ['role' => (($t['role'] ?? '') === 'bot') ? 'assistant' : 'user', 'content' => $txt];
+    }
+    $msgs[] = ['role' => 'user', 'content' => $userMsg];
+    $b = ['model' => $model, 'temperature' => 0.3, 'max_tokens' => $maxTokens + 600, 'messages' => $msgs];
+    if (str_starts_with($model, 'openai/gpt-oss')) $b['reasoning_effort'] = 'low';
+    if (str_starts_with($model, 'qwen/')) $b['reasoning_format'] = 'hidden';
+    $ch = curl_init('https://api.groq.com/openai/v1/chat/completions');
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_TIMEOUT => max(12, (int)$CFG['llm_timeout']),
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer ' . $key], CURLOPT_POSTFIELDS => json_encode($b, JSON_UNESCAPED_UNICODE)]);
+    $body = curl_exec($ch); $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+    if ($code !== 200 || !is_string($body)) return [$code ?: 0, ''];
+    $j = json_decode($body, true);
+    return [200, trim((string)($j['choices'][0]['message']['content'] ?? ''))];
+}
+
 $smartAllowed = !$confident
     && !empty($CFG['smart_enabled'])
     && !$smartKilled
-    && trim((string)$CFG['gemini_key']) !== '';
+    && ($GROQ_KEY !== '' || $CFG['gemini_key'] !== '');
 
 if ($smartAllowed) {
     $smartWin = 's' . gmdate('Ymd');
@@ -579,7 +646,7 @@ if ($smartAllowed) {
     }
 }
 
-if ($smartAllowed && cp_quota_ok($db, 'gemini', (int)$CFG['gemini_rpm'], (int)$CFG['gemini_rpd'])) {
+if ($smartAllowed) {
     $system = "You are ChartPulse Assistant, the help assistant on chartpulse.io. ChartPulse is a market-data and research tool "
         . "that shows trend bias, movers and a rule-based scanner for stocks, indices, futures, forex and crypto. "
         . "Answer briefly and clearly in the user's language. Use only the provided site content and tool results. "
@@ -601,12 +668,21 @@ if ($smartAllowed && cp_quota_ok($db, 'gemini', (int)$CFG['gemini_rpm'], (int)$C
         ? (int)$CFG['llm_max_tokens_detail']
         : (int)$CFG['llm_max_tokens'];
 
-    $chain = array_merge([$CFG['gemini_model']], (array)($CFG['gemini_fallbacks'] ?? []));
     $code = 0;
     $text = '';
+    // Groq first (most free answers), then Gemini as the backup. Free models only.
+    if ($GROQ_KEY !== '' && cp_quota_ok($db, 'groq', 25, 900)) {
+        foreach (['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'] as $model) {
+            [$code, $text] = cp_groq($CFG, $GROQ_KEY, $model, $system, $turns, $userMsg, $maxTok);
+            if ($code === 200 && $text !== '') { $provider = 'groq'; break; }
+        }
+    }
+    $chain = ($CFG['gemini_key'] !== '' && ($text === '' || $code !== 200) && cp_quota_ok($db, 'gemini', (int)$CFG['gemini_rpm'], (int)$CFG['gemini_rpd']))
+        ? array_values(array_unique(array_merge([$CFG['gemini_model']], (array)($CFG['gemini_fallbacks'] ?? []), ['gemini-3.5-flash-lite', 'gemini-3.5-flash']))) : [];
     foreach ($chain as $model) {
         [$code, $text] = cp_gemini($CFG, $model, $system, $turns, $userMsg, $maxTok);
         if ($code === 200 && $text !== '') {
+            $provider = 'gemini';
             break;
         }
         // 404 / 403 / 400 mean this model is unusable for this key: note it and
@@ -624,7 +700,6 @@ if ($smartAllowed && cp_quota_ok($db, 'gemini', (int)$CFG['gemini_rpm'], (int)$C
             $answer = $REFUSAL_ADVICE;
         } else {
             $route    = 'smart';
-            $provider = 'gemini';
             $answer   = $text;
             if (!str_contains($answer, CP_DISCLAIMER)) {
                 $answer .= "\n\n" . CP_DISCLAIMER;
