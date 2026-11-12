@@ -230,12 +230,12 @@ pre{margin:0;padding:14px;border-radius:12px;background:#0B0C0F;border:1px solid
   $("#f").addEventListener("submit", function (e) {
     e.preventDefault(); var txt = $("#txt").value.trim(), er = $("#err"); er.hidden = true;
     if (txt.length < 8) { er.textContent = "Write your strategy first, or tap one of the examples."; er.hidden = false; return; }
-    var b = $("#run"); b.disabled = true; b.innerHTML = '<span class="spin"></span> Testing…'; $("#st").textContent = "Reading your rules and running the test…";
+    var t0 = Date.now(); var b = $("#run"); b.disabled = true; b.innerHTML = '<span class="spin"></span> Testing…'; $("#st").textContent = "Reading your rules and running the test…";
     fetch("/ai_backtest.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: txt, symbol: $("#sym").value, timeframe: $("#tf").value, years: $("#yrs").value, capital: +$("#cap").value || 10000 }) })
       .then(function (r) { return r.json().catch(function () { return { error: "The backtest could not be read. Please try again." }; }); })
       .then(function (j) {
         if (j.error) { er.innerHTML = esc(j.error) + (j.missed && j.missed.length ? "<br><span style='opacity:.8'>Not understood: " + esc(j.missed.join(" · ")) + "</span>" : ""); er.hidden = false; $("#st").textContent = ""; return; }
-        $("#st").textContent = "Done in " + n2((j.took_ms || 0) / 1000, 1) + " s."; render(j);
+        $("#st").textContent = "Done in " + n2((Date.now() - t0) / 1000, 1) + " s."; render(j);
       })
       .catch(function () { er.textContent = "Could not reach the backtester. Check your connection and try again."; er.hidden = false; $("#st").textContent = ""; })
       .then(function () { b.disabled = false; b.textContent = "Run backtest"; });
