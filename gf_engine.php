@@ -65,17 +65,29 @@ function gf_lines(array $tl, string $side, float $atrPct): array {
     return $out;
 }
 
+/** The 6 strategy scanners, FULL lists on 1D, 1H and 15m bars: symbol => [[name, grp, side, setup, tf], ...]. */
 function gf_read_strats(): array {
     $by = [];
-    foreach (GF_STRAT as $dir => $ids) foreach ($ids as $id => [$name, $grp]) {
-        $c = t_read_json(__DIR__ . "/$dir/cache/scan_$id.json", null);
-        foreach ((is_array($c) ? $c['data'] ?? [] : []) as $r) {
-            $s = (string)($r['symbol'] ?? ''); $sd = gf_side_of($r['bias'] ?? null); if ($s === '' || !$sd) continue;
-            $by[$s][] = ['name' => $name, 'grp' => $grp, 'side' => $sd, 'setup' => (string)($r['setup'] ?? ''), 'score' => (int)($r['score'] ?? 0),
-                         'entry' => $r['entry'] ?? null, 'sl' => $r['sl'] ?? null, 'tp' => $r['tp'] ?? null];
+    foreach (GF_STRAT as $dir => $ids) foreach (['1D', '1H', '15m'] as $tf) {
+        $c = t_read_json(__DIR__ . "/$dir/cache/full_$tf.json", null);
+        if (!is_array($c) && $tf === '1D') {   // first run: fall back to the page caches (top 100)
+            foreach ($ids as $id => [$name, $grp]) { $pc = t_read_json(__DIR__ . "/$dir/cache/scan_$id.json", null);
+                foreach ((is_array($pc) ? $pc['data'] ?? [] : []) as $r) if ($sd = gf_side_of($r['bias'] ?? null)) $by[(string)$r['symbol']][] = ['name' => $name, 'grp' => $grp, 'side' => $sd, 'setup' => (string)($r['setup'] ?? ''), 'tf' => '1D']; }
+            continue;
+        }
+        if (!is_array($c) || time() - (int)($c['at'] ?? 0) > 3 * 3600) continue;   // stale intraday readings are ignored
+        foreach ($ids as $id => [$name, $grp]) foreach ((array)($c['sig'][$id] ?? []) as $x) {
+            $sd = gf_side_of($x[1] ?? null); if (!$sd) continue;
+            $by[(string)$x[0]][] = ['name' => $name, 'grp' => $grp, 'side' => $sd, 'setup' => (string)($x[3] ?? ''), 'tf' => $tf];
         }
     }
     return $by;
+}
+/** "EMA 200 + Supertrend + RSI 50 (1H, Daily)" */
+function gf_fam(array $L): string {
+    $g = []; foreach ($L as $x) $g[$x['name']][] = $x['tf'] === '1D' ? 'Daily' : $x['tf'];
+    $o = []; foreach ($g as $n => $t) $o[] = $n . ' (' . implode(', ', array_unique($t)) . ')';
+    return implode(' · ', array_slice($o, 0, 2));
 }
 
 function gf_scan(bool $force = false): array {
@@ -131,7 +143,7 @@ function gf_scan(bool $force = false): array {
             if ($e2 && gf_side_of($e2['signal'] ?? null) === $side) foreach ((array)($e2['tfs'] ?? []) as $k => $x) if (!empty($x['in']) && in_array($k, ['1D', '4H', '1H'], true)) { $emaAt = true; break; }
             if ($emaAt) $pz['ema'] = '200 EMA on the zone';
             $smc = array_values(array_filter($st, fn($x) => $x['grp'] === 'loc' && $x['side'] === $side));
-            if ($smc) $pz['smc'] = $smc[0]['setup'] !== '' ? $smc[0]['setup'] : $smc[0]['name'];
+            if ($smc) $pz['smc'] = ($smc[0]['tf'] === '1D' ? 'Daily ' : $smc[0]['tf'] . ' ') . ($smc[0]['setup'] !== '' ? $smc[0]['setup'] : $smc[0]['name']);
             $nPz = count(array_intersect_key($pz, array_flip(['line', 'retest', 'day', 'zone', 'ema', 'smc'])));
             $hasLine = isset($pz['line']) || isset($pz['retest']) || ($line && (int)$line['stage'] >= 1);
             if (!$hasLine && !$dayAt && !$smc) continue;   // GATE 2: price is nowhere near a zone
@@ -156,7 +168,9 @@ function gf_scan(bool $force = false): array {
 
             // ---- EXTRAS
             $mom = array_values(array_filter($st, fn($x) => $x['grp'] === 'mom' && $x['side'] === $side));
-            $momAgainst = array_values(array_filter($st, fn($x) => $x['grp'] === 'mom' && $x['side'] !== $side));
+            // only a DAILY momentum scanner against the trade counts against it: at a reversal entry the 1H / 15m
+            // momentum still points the old way (it lags), so an intraday 'against' is expected, not a warning
+            $momAgainst = array_values(array_filter($st, fn($x) => $x['grp'] === 'mom' && $x['side'] !== $side && $x['tf'] === '1D'));
             $newsRisk = false; $newsBoost = false; $newsTxt = null;
             if ($ns) {
                 $nside = $ns['side'] === 'UP' ? 'CALL' : ($ns['side'] === 'DOWN' ? 'PUT' : null);
@@ -190,8 +204,6 @@ function gf_scan(bool $force = false): array {
             $d = tl_dec($px ?: 1); $plan = null;
             $p = $line['plan'] ?? null;
             if (is_array($p) && isset($p['sl'])) $plan = ['entry' => (float)$p['entry'], 'sl' => (float)$p['sl'], 't1' => (float)$p['t1'], 't2' => isset($p['t2']) ? (float)$p['t2'] : null, 'from' => 'line'];
-            elseif ($smc && $smc[0]['sl'] !== null) $plan = ['entry' => (float)$smc[0]['entry'], 'sl' => (float)$smc[0]['sl'], 't1' => (float)$smc[0]['tp'], 't2' => null, 'from' => 'smc'];
-            elseif ($mom && $mom[0]['sl'] !== null) $plan = ['entry' => $px, 'sl' => (float)$mom[0]['sl'], 't1' => (float)$mom[0]['tp'], 't2' => null, 'from' => 'mom'];
             $big = $L['ahead'][0] ?? null;
             if ($plan && $big) { $bl = (float)$big['lv']; if (($call && $bl > $plan['t1']) || (!$call && $bl < $plan['t1'])) { $plan['t2'] = $bl; $plan['t2why'] = 'next ' . GF_TFN[$big['tf']] . ' trend line'; } }
             if ($plan) { $risk = abs($plan['entry'] - $plan['sl']); $plan['rr'] = $risk > 0 ? round(abs($plan['t1'] - $plan['entry']) / $risk, 1) : null;
@@ -203,8 +215,8 @@ function gf_scan(bool $force = false): array {
                 ['k' => 'zone', 'ok' => $nPz >= 2, 't' => $nPz >= 3 ? 'Power Zone (' . $nPz . ' levels meet)' : ($nPz === 2 ? 'Double zone' : 'Single level'), 'd' => implode(' · ', array_values(array_intersect_key($pz, array_flip(['line', 'retest', 'day', 'zone', 'ema', 'smc']))))],
                 ['k' => 'line', 'ok' => $strongLine, 't' => $strongLine ? 'Strong trend line' : 'Small-chart line', 'd' => $line ? GF_TFN[$line['tf']] . ' line, ' . $line['touches'] . ' touches' . (($line['pattern'] ?? '') !== '' ? ' · ' . $line['pattern'] : '') : ($tlAt ? GF_TFN[$tlAt[0]['tf']] . ' line, ' . $tlAt[0]['n'] . ' touches' : 'no line right at price')],
                 ['k' => 'trig', 'ok' => $fired, 't' => $fired ? 'Entry trigger fired' : 'Waiting for the turn', 'd' => $fired ? implode(' · ', $trig) : 'No turn candle yet: wait for a rejection, a failed break or a Tier-1 tick'],
-                ['k' => 'mom', 'ok' => (bool)$mom && !$momAgainst, 't' => $mom ? 'Momentum agrees' : ($momAgainst ? 'Momentum disagrees' : 'Momentum neutral'), 'd' => $mom ? $mom[0]['name'] : ($momAgainst ? $momAgainst[0]['name'] . ' points the other way' : 'No EMA strategy signal')],
-                ['k' => 'part', 'ok' => (bool)$orb, 't' => $orb ? 'Volume / VWAP with it' : 'No volume spike', 'd' => $orb ? $orb[0]['setup'] : 'Range Breakout + VWAP has nothing here'],
+                ['k' => 'mom', 'ok' => (bool)$mom && !$momAgainst, 't' => $mom ? 'Momentum agrees' : ($momAgainst ? 'Momentum disagrees' : 'Momentum neutral'), 'd' => $mom ? gf_fam($mom) : ($momAgainst ? gf_fam($momAgainst) . ' points the other way' : 'No EMA strategy signal on Daily, 1H or 15m')],
+                ['k' => 'part', 'ok' => (bool)$orb, 't' => $orb ? 'Volume / VWAP with it' : 'No volume spike', 'd' => $orb ? gf_fam($orb) . ': ' . $orb[0]['setup'] : 'Range Breakout + VWAP has nothing here (Daily, 1H, 15m)'],
                 ['k' => 'news', 'ok' => !$newsRisk, 't' => $newsRisk ? 'News risk' : ($newsBoost ? 'News with it' : 'No news against it'), 'd' => $newsTxt ?? 'No fresh high-impact story'],
             ];
             $labels = [];
@@ -215,6 +227,7 @@ function gf_scan(bool $force = false): array {
             if ($emaAt) $labels[] = ['ema', '200 EMA'];
             if ($smc) $labels[] = ['smc', 'OB / FVG'];
             if ($orb) $labels[] = ['vol', 'Volume'];
+            foreach (['1D' => 'Daily', '1H' => '1H', '15m' => '15m'] as $tk => $tn) if (array_filter($mom, fn($x) => $x['tf'] === $tk)) $labels[] = ['mom', $tn . ' momentum'];
             if ($newsBoost) $labels[] = ['news', 'News with it'];
             if ($newsRisk) $labels[] = ['risk', 'News risk'];
 

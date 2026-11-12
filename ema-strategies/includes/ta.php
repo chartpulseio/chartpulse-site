@@ -111,8 +111,10 @@ function ta_boot(): bool {
     require_once $p;
     return function_exists('t_symbols') && function_exists('t_read_frames');
 }
-function ta_bars(string $sym, int $minBars): ?array {
-    $fr = t_read_frames($sym); $d = $fr['1D'] ?? null;
+function ta_bars(string $sym, int $minBars, string $tf = '1D'): ?array {
+    $fr = t_read_frames($sym);
+    if ($tf === '15m') $d = !empty($fr['5m']['t']) ? t_resample($fr['5m'], 900) : null;
+    else $d = $fr[$tf === '1H' ? '1H' : '1D'] ?? null;
     if (!$d || empty($d['c']) || empty($d['h']) || empty($d['l'])) return null;
     $c = array_map('floatval', array_values($d['c'])); $n = count($c);
     if ($n < $minBars) return null;
@@ -168,4 +170,39 @@ function ta_get(string $dir, array $map, int $minBars, string $id): array {
     }
     if ($lock) fclose($lock);
     return $read() ?? ['updated' => null, 'count' => 0, 'data' => [], 'status' => 'updating'];
+}
+
+// ---- God-father feed (owner, 12 Nov 2026): the FULL result list (not the page's top 100), on 1D, 1H or 15m bars.
+const TA_FULL_TTL = ['1D' => 900, '1H' => 600, '15m' => 300];
+/** Scans only $ids on timeframe $tf; caches {at, tf, sig: {id: [[symbol, bias, score, setup], ...]}}. Never throws. */
+function ta_get_full(string $dir, array $map, int $minBars, array $ids, string $tf): array {
+    if (!isset(TA_FULL_TTL[$tf])) $tf = '1D';
+    $f = "$dir/full_$tf.json";
+    $read = function () use ($f) { $j = is_file($f) ? json_decode((string)@file_get_contents($f), true) : null; return is_array($j) ? $j : null; };
+    if (is_file($f) && time() - filemtime($f) < TA_FULL_TTL[$tf]) return $read() ?? ['sig' => []];
+    if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    $lock = @fopen("$dir/.lock_full_$tf", 'c');
+    if ($lock && flock($lock, LOCK_EX | LOCK_NB)) {
+        try {
+            @set_time_limit(170); @ini_set('memory_limit', '256M');
+            if (!ta_boot()) throw new RuntimeException('data layer not found');
+            $min = $tf === '1D' ? $minBars : max($minBars, 80);
+            $fns = array_intersect_key($map, array_flip($ids)); $out = array_fill_keys(array_keys($fns), []); $n = 0;
+            foreach (t_symbols() as $sym => $_) {
+                $B = ta_bars((string)$sym, $min, $tf); if (!$B) continue;
+                $X = ta_ctx($B); if ($X['atr'][$X['n'] - 1] === null) continue; $n++;
+                foreach ($fns as $id => $fn) {
+                    try { $s = $fn($B, $X); } catch (Throwable $e) { $s = null; }
+                    if ($s) $out[$id][] = [(string)$sym, $s['bias'], (int)$s['score'], (string)$s['setup']];
+                }
+            }
+            $p = ['at' => time(), 'tf' => $tf, 'scanned' => $n, 'sig' => $out];
+            @file_put_contents("$f.tmp", json_encode($p)); @rename("$f.tmp", $f);
+        } catch (Throwable $e) {
+            @file_put_contents("$dir/errors.log", date('c') . ' full ' . $tf . ' ' . $e->getMessage() . "\n", FILE_APPEND);
+        }
+        flock($lock, LOCK_UN);
+    }
+    if ($lock) fclose($lock);
+    return $read() ?? ['sig' => []];
 }
