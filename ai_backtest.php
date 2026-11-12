@@ -248,8 +248,13 @@ function aib_post($url, $body, $hdr, $timeout = 14) {
     $ch = curl_init($url);
     curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $body, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => $timeout, CURLOPT_CONNECTTIMEOUT => 4,
         CURLOPT_HTTPHEADER => array_merge(['Content-Type: application/json'], $hdr)]);
-    $raw = curl_exec($ch); curl_close($ch);
-    return json_decode((string)$raw, true);
+    $raw = curl_exec($ch); $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE); $cerr = curl_error($ch); curl_close($ch);
+    $j = json_decode((string)$raw, true);
+    if ($code !== 200) {
+        $msg = is_array($j) ? (string)($j['error']['message'] ?? json_encode($j['error'] ?? '')) : ($cerr ?: substr((string)$raw, 0, 160));
+        @file_put_contents(bt_dir('ai') . '/last_error.json', json_encode(['at' => gmdate('c'), 'host' => parse_url($url, PHP_URL_HOST), 'code' => $code, 'msg' => mb_substr($msg, 0, 240)]), LOCK_EX);
+    }
+    return $j;
 }
 /** Readers in order: Groq (most free answers), then Gemini (backup). Returns [parse, reader name] or [null, null]. */
 function aib_parse_ai($text) {
@@ -333,6 +338,10 @@ function aib_verdict($m, $n) {
 
 /* -------------------------------------------------------------------- run */
 try {
+    if (($_GET['a'] ?? '') === 'status') {   // which readers are set up, and the last provider error (no key is ever shown)
+        $e = json_decode((string)@file_get_contents(bt_dir('ai') . '/last_error.json'), true);
+        aib_out(['groq' => aib_key('groq') !== '', 'gemini' => aib_key('gemini') !== '', 'last_error' => is_array($e) ? $e : null]);
+    }
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') aib_fail('That method is not allowed', 405);
     $og = isset($_SERVER['HTTP_ORIGIN']) ? parse_url((string)$_SERVER['HTTP_ORIGIN'], PHP_URL_HOST) : null;
     if ($og !== null && $og !== ($_SERVER['HTTP_HOST'] ?? '')) aib_fail('Bad request', 403);
