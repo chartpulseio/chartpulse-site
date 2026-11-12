@@ -42,7 +42,7 @@ $table = function (string $h, array $L, string $note) { ?>
     <span class="free-tag">FREE · <?= $arch ? 'ARCHIVE' : 'LIVE' ?></span>
     <h1><?= $arch ? 'Biggest market movers on ' . seo_e($nice) : 'Biggest market movers today' ?></h1>
     <p><?= seo_e(sprintf('%d instruments tracked: %d up, %d down.', $data['count'], $data['up'], $data['down'])) ?> "vs usual range" compares the day's change with the instrument's average daily range (1.0× is a normal day). Each market's own session counts as its day. Information only: a big move can keep going or reverse.</p>
-    <p><a class="btn ghost" href="/#free">Live Big Movers panel</a> <a class="btn ghost" href="/bias/">Trend bias for every symbol</a></p>
+    <p><a class="btn" href="/scanners/reversal/">Rubber Band Reversal Scanner: which movers are snapping back</a> <a class="btn ghost" href="/#free">Live Big Movers panel</a> <a class="btn ghost" href="/bias/">Trend bias for every symbol</a></p>
   </header>
 <?php
 $table('Biggest gainers', $data['gainers'], 'Largest % rise in the current or last session.');

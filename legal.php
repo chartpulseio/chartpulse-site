@@ -34,8 +34,8 @@ $title = $pages[$p] . ' · ' . $biz;
 <script defer src="/static/v2/consent.js?v=2"></script>
 <link rel="stylesheet" href="/static/v2/premium.css?v=2">
 <link rel="stylesheet" href="/static/v2/fonts.css?v=1">
-<link rel="stylesheet" href="/static/v2/sitehead.css?v=3">
-<script defer src="/static/v2/sitehead.js?v=13"></script>
+<link rel="stylesheet" href="/static/v2/sitehead.css?v=4">
+<script defer src="/static/v2/sitehead.js?v=14"></script>
 </head>
 <body class="site legal-page" data-page="legal">
 <header class="site-head">

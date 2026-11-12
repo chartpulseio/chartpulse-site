@@ -56,7 +56,7 @@
 
 @media (max-width:1600px){.cph .cph-nav>a,.cph .cph-dd>button{padding:0 8px}.cph .cph-logo{margin-right:10px}}
 @media (max-width:1080px){.cph-search span,.cph-search kbd{display:none}.cph-search{padding:0 10px}.cph{padding:0 16px}}
-@media (max-width:1320px){
+@media (max-width:1500px){
   .cph-burger{display:inline-flex}
   .cph-live{display:none}
   .cph-nav{position:fixed;top:64px;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:stretch;gap:0;padding:10px 14px 28px;overflow-y:auto;background:var(--h-bg);border-top:1px solid var(--h-line)}
