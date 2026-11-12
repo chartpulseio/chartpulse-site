@@ -319,6 +319,7 @@ const ago = t => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); ret
 const pct = v => v == null ? "" : `${v > 0 ? "+" : ""}${Number(v).toFixed(2)}%`;
 const SIDE = { UP: "▲ News points UP", DOWN: "▼ News points DOWN", MIXED: "News is mixed", NEUTRAL: "News is neutral" };
 const L = { rows: [], meta: {}, at: 0, side: "all", mkt: "all", q: "", show: 30 };
+const opp = r => r.since != null && (r.side === "UP" ? r.since <= -0.3 : r.side === "DOWN" ? r.since >= 0.3 : false);   // price moved against the news
 const safe = u => /^https?:\/\//i.test(u || "") ? u : "#";
 function mtf(r) {
   const m = r.mtf; if (!m) return "";
@@ -329,7 +330,7 @@ function chips(r) {
   f.push([r.imp === "high" ? "g" : "n", r.imp === "high" ? "High impact news" : r.imp === "medium" ? "Medium impact" : "Low impact"]);
   f.push(["n", `${r.n} stor${r.n === 1 ? "y" : "ies"} · ${r.bull} positive, ${r.bear} negative, ${r.neu} neutral`]);
   if (r.agree === true) f.push(["g", "News + trend agree"]); else if (r.agree === false) f.push(["n", "News against the trend"]);
-  if (r.since != null) f.push([r.moved ? "n" : "g", `${pct(r.since)} since the news${r.moved ? " · already moved" : r.moved === false ? " · not moved yet" : ""}`]);
+  if (r.since != null) f.push([r.moved || opp(r) ? "n" : "g", `${pct(r.since)} since the news${r.moved ? " · already moved" : opp(r) ? " · price went the other way" : r.moved === false ? " · not moved yet" : ""}`]);
   return `<span class="tls-fx">${f.map(([k, t]) => `<i class="${k}">${k === "g" ? "✓ " : ""}${esc(t)}</i>`).join("")}</span>`;
 }
 function say(r) {
@@ -337,7 +338,7 @@ function say(r) {
   if (r.side === "UP" || r.side === "DOWN") {
     const d = r.side === "UP" ? "positive" : "negative";
     return `The headlines about ${esc(r.name)} are mostly <b>${d}</b>. ` + (tr ? (r.agree ? `The trend is ${tr} too, so news and trend point the same way.` : `But the trend is ${tr}, so the news is going against it. Be careful.`) : "The bigger trend is not clear right now.")
-      + (r.moved ? " Price has already moved that way." : r.moved === false ? " Price has not really moved yet." : "");
+      + (r.moved ? " Price has already moved that way." : opp(r) ? " But price has gone the other way since the news, so the market is not reacting to these headlines." : r.moved === false ? " Price has not really moved yet." : "");
   }
   return `${esc(r.name)} is in the news, but the headlines do not agree on a direction.` + (tr ? ` The trend is ${tr}.` : "");
 }
