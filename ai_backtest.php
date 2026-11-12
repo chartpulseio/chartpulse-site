@@ -373,7 +373,17 @@ function aib_verdict($m, $n) {
 try {
     if (($_GET['a'] ?? '') === 'status') {   // which readers are set up, and the last provider error (no key is ever shown)
         $e = json_decode((string)@file_get_contents(bt_dir('ai') . '/last_error.json'), true);
-        aib_out(['groq' => aib_key('groq') !== '', 'gemini' => aib_key('gemini') !== '', 'last_error' => is_array($e) ? $e : null]);
+        $o = ['groq' => aib_key('groq') !== '', 'gemini' => aib_key('gemini') !== '', 'last_error' => is_array($e) ? $e : null];
+        if (!empty($_GET['ping'])) {   // one tiny real call to each provider that has a key
+            bt_rate('aiping', 6, 600);
+            $msg = 'Reply with the single word OK.';
+            if ($o['groq']) { $j = aib_post('https://api.groq.com/openai/v1/chat/completions', json_encode(['model' => 'llama-3.1-8b-instant', 'max_tokens' => 5, 'messages' => [['role' => 'user', 'content' => $msg]]]), ['Authorization: Bearer ' . aib_key('groq')], 10);
+                $o['groq_ping'] = isset($j['choices'][0]['message']) ? 'ok' : ('error: ' . mb_substr((string)($j['error']['message'] ?? 'no answer'), 0, 160)); }
+            foreach (['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'] as $gm) if ($o['gemini'] && (($o['gemini_ping'] ?? '') !== 'ok')) {
+                $j = aib_post("https://generativelanguage.googleapis.com/v1beta/models/$gm:generateContent", json_encode(['contents' => [['role' => 'user', 'parts' => [['text' => $msg]]]], 'generationConfig' => ['maxOutputTokens' => 5]]), ['x-goog-api-key: ' . aib_key('gemini')], 10);
+                $o['gemini_ping'] = isset($j['candidates'][0]) ? 'ok' : ('error: ' . mb_substr((string)($j['error']['message'] ?? 'no answer'), 0, 160)); $o['gemini_model'] = $gm; }
+        }
+        aib_out($o);
     }
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') aib_fail('That method is not allowed', 405);
     $og = isset($_SERVER['HTTP_ORIGIN']) ? parse_url((string)$_SERVER['HTTP_ORIGIN'], PHP_URL_HOST) : null;

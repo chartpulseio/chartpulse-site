@@ -9,7 +9,13 @@ function lc_key(): string {
     $k = trim(preg_replace('/^[A-Za-z_ ]*=\s*/', '', $k), " \t\r\n\"'");
     return preg_match('/^[A-Za-z0-9_.\-]{20,}$/', $k) ? $k : '';
 }
-function lc_on(): bool { return lc_key() !== ''; }
+/** Groq key (owner, 13 Nov 2026): data/ml/groq.ini, same format. Used when Gemini does not answer (or has no key). */
+function lc_gkey(): string {
+    $f = ML_DIR . '/groq.ini'; $k = is_file($f) ? trim((string)@file_get_contents($f)) : '';
+    $k = trim(preg_replace('/^[A-Za-z_ ]*=\s*/', '', $k), " \t\r\n\"'");
+    return preg_match('/^[A-Za-z0-9_.\-]{20,}$/', $k) ? $k : '';
+}
+function lc_on(): bool { return lc_key() !== '' || lc_gkey() !== ''; }
 function lc_file(string $sym): string { $d = ML_DIR . '/live'; if (!is_dir($d)) @mkdir($d, 0755, true); return $d . '/' . preg_replace('/[^A-Za-z0-9._-]/', '_', $sym) . '.json'; }
 function lc_get(string $sym): ?array { $r = t_read_json(lc_file($sym), null); return is_array($r) ? $r : null; }
 
@@ -33,10 +39,40 @@ function lc_context(array $d): string {
 function lc_req(string $model, string $sys, string $user, bool $json): array {
     $b = ['systemInstruction' => ['parts' => [['text' => $sys]]], 'contents' => [['role' => 'user', 'parts' => [['text' => $user]]]],
         'generationConfig' => ['temperature' => 0.3, 'maxOutputTokens' => $json ? 4096 : 2048] + ($json ? ['responseMimeType' => 'application/json'] : [])];
-    return ['url' => "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent", 'body' => json_encode($b, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)];
+    return ['url' => "https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent", 'body' => json_encode($b, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            'sys' => $sys, 'user' => $user, 'json' => $json];
 }
-/** Run several Gemini calls at once; returns the text of each (or '' on failure). */
+/** Run several calls at once: Gemini first, then Groq for any that came back empty. Returns the text of each (or ''). */
 function lc_multi(array $reqs, int $timeout = 40): array {
+    $out = lc_key() !== '' ? lc_multi_gemini($reqs, $timeout) : array_fill_keys(array_keys($reqs), '');
+    $miss = array_filter($reqs, fn($k) => ($out[$k] ?? '') === '', ARRAY_FILTER_USE_KEY);
+    if ($miss && lc_gkey() !== '') foreach (lc_multi_groq($miss, $timeout) as $k => $v) if ($v !== '') $out[$k] = $v;
+    return $out;
+}
+/** Groq (OpenAI-style API). Each call in a batch goes to a different model, because Groq's free limits are per model. */
+function lc_multi_groq(array $reqs, int $timeout): array {
+    $models = ['openai/gpt-oss-120b', 'llama-3.3-70b-versatile', 'openai/gpt-oss-20b', 'llama-3.1-8b-instant'];
+    $mh = curl_multi_init(); $H = []; $key = lc_gkey(); $i = 0;
+    foreach ($reqs as $k => $q) {
+        $m = $models[$i++ % count($models)];
+        $b = ['model' => $m, 'temperature' => 0.3, 'max_tokens' => $q['json'] ? 3000 : 1500,
+              'messages' => [['role' => 'system', 'content' => $q['sys']], ['role' => 'user', 'content' => $q['user']]]];
+        if ($q['json']) $b['response_format'] = ['type' => 'json_object'];
+        if (str_starts_with($m, 'openai/gpt-oss')) $b['reasoning_effort'] = 'low';
+        $ch = curl_init('https://api.groq.com/openai/v1/chat/completions');
+        curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode($b, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE), CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => $timeout, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Authorization: Bearer ' . $key]]);
+        curl_multi_add_handle($mh, $ch); $H[$k] = $ch;
+    }
+    do { $st = curl_multi_exec($mh, $run); if ($run) curl_multi_select($mh, 1); } while ($run && $st === CURLM_OK);
+    $out = [];
+    foreach ($H as $k => $ch) { $j = json_decode((string)curl_multi_getcontent($ch), true);
+        if (!empty($j['error'])) $GLOBALS['lc_err'] = 'groq ' . (int)curl_getinfo($ch, CURLINFO_HTTP_CODE) . ' ' . mb_substr((string)($j['error']['message'] ?? ''), 0, 200);
+        $out[$k] = trim((string)($j['choices'][0]['message']['content'] ?? ''));
+        curl_multi_remove_handle($mh, $ch); curl_close($ch); }
+    curl_multi_close($mh); return $out;
+}
+function lc_multi_gemini(array $reqs, int $timeout = 40): array {
     $mh = curl_multi_init(); $H = []; $key = lc_key();
     foreach ($reqs as $k => $q) { $ch = curl_init($q['url']);
         curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => $q['body'], CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => $timeout, CURLOPT_CONNECTTIMEOUT => 5,
