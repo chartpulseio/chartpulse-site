@@ -115,8 +115,8 @@ function seo_head(string $title, string $desc, string $path, array $ld = [], str
 <?php foreach ($ld as $j): ?><script type="application/ld+json"><?= json_encode($j, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?></script>
 <?php endforeach; ?>
 <script src="/static/v2/consent.js?v=2"></script>
-<link rel="stylesheet" href="/static/v2/sitehead.css?v=2">
-<script defer src="/static/v2/sitehead.js?v=12"></script>
+<link rel="stylesheet" href="/static/v2/sitehead.css?v=3">
+<script defer src="/static/v2/sitehead.js?v=13"></script>
 </head>
 <body class="site seo-page" data-page="seo">
 <header class="site-head">

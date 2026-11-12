@@ -5,8 +5,16 @@
   var MENU = [
     { t: "Scanner", href: "/scanner.html", match: ["/scanner.html", "/tier2.html"] },
     { t: "God-father", href: "/scanners/godfather/" },
-    { t: "Trendline Hero", href: "/scanners/trendline-hero/" },
+    { t: "Trend Lines", cols: [{ items: [
+      { t: "Trendline Hero", d: "Trend line + day / week / month high or low, with the big trend", href: "/scanners/trendline-hero/" },
+      { t: "Hero with 200 EMA", d: "Hero setups with the 1H 200 EMA on the line", href: "/scanners/hero-200-ema/" },
+      { t: "Hybrid Trend Lines", d: "Day high or low at a line, with the trend", href: "/scanners/hybrid-trend-lines/" },
+      { t: "Trend Line Scanner", d: "Breakouts and tests on seven timeframes", href: "/scanners/trend-lines/" }
+    ] }] },
     { t: "Day Drive", href: "/scanners/day-drive/" },
+    { t: "200 EMA", href: "/scanners/ema-200/" },
+    { t: "AI Scan", href: "/bias/", match: ["/desk/"] },
+    { t: "News Scanner", href: "/scanners/news/" },
     { t: "Markets", cols: [{ items: [
       { t: "AI Scan", d: "Trend direction for every symbol", href: "/bias/" },
       { t: "Movers", d: "Today's biggest moves, by market", href: "/movers/" },
