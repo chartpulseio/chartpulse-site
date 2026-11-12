@@ -34,6 +34,7 @@ $U = [
     ['/ema-strategies/scanner.php?id=3-ema-50-21-alignment', $mt('ema-strategies/includes/strategies.php')],
     ['/ema-strategies/scanner.php?id=7-ema-supertrend-rsi', $mt('ema-strategies/includes/strategies.php')],
     ['/ema-strategies/scanner.php?id=5-vwap-ema-combo', $mt('ema-strategies/includes/strategies.php')],
+    ['/ai-backtesting/', $mt('ai-backtesting.html')],
     ['/backtesting/', $mt('pro-backtesting.html')],
     ['/desk/', $mt('desk.html')],
     ['/news.html', $mt('news.html')],

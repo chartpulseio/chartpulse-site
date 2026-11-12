@@ -39,6 +39,7 @@
         { t: "News scanner", d: "Markets in the news, tone and trend", href: "/scanners/news/" }
       ] },
       { h: "Research", items: [
+        { t: "AI Backtesting", d: "Type a strategy in plain words, get a backtest", href: "/ai-backtesting/" },
         { t: "Backtesting", d: "Test your own strategy on history", href: "/backtesting/" },
         { t: "AI Scan", d: "Forecast, news tone and analyst view for one symbol", href: "/desk/" }
       ] }

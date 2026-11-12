@@ -19,6 +19,7 @@ ChartPulse is a multi-market trading research tool covering 970+ instruments acr
 - [200 EMA Scanner](https://chartpulse.io/scanners/ema-200/): daily entries around the 200 EMA in four stages, plus which of 1D, 4H, 1H, 30m, 15m has price at its 200 EMA now
 - [Bias](https://chartpulse.io/bias/): daily trend direction for every tracked instrument
 - [Market Movers](https://chartpulse.io/movers/): biggest daily moves across all markets
+- [AI Backtesting](https://chartpulse.io/ai-backtesting/): describe a strategy in plain words and get a backtest with return, win rate, drawdown and every trade
 - [Backtesting](https://chartpulse.io/backtesting/): test a strategy on real market history
 - [Market Insights](https://chartpulse.io/insights.html): breadth, volatility and momentum across markets
 - [News & Impact](https://chartpulse.io/news.html): market news graded for impact with the price reaction

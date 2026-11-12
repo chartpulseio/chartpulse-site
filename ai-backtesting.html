@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Backtesting: Type a Strategy in Plain Words, Get a Backtest · ChartPulse</title>
+<meta name="description" content="Free AI backtesting. Describe a trading strategy in plain words, such as buy when RSI is below 30, and see how it did on stocks, forex, crypto, gold and indices: return, win rate, drawdown and every trade.">
+<meta name="theme-color" content="#050506">
+<link rel="canonical" href="https://chartpulse.io/ai-backtesting/">
+<meta property="og:site_name" content="ChartPulse">
+<meta property="og:type" content="website">
+<meta property="og:title" content="AI Backtesting: Type a Strategy in Plain Words, Get a Backtest">
+<meta property="og:description" content="Describe a trading strategy in plain words and see how it did: return, win rate, drawdown and every trade. Free.">
+<meta property="og:url" content="https://chartpulse.io/ai-backtesting/">
+<meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
+<link rel="stylesheet" href="/static/v2/sitehead.css?v=2">
+<script defer src="/static/v2/sitehead.js?v=17"></script>
+<script type="application/ld+json" id="cp-ld">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"AI Backtesting","item":"https://chartpulse.io/ai-backtesting/"}]},{"@type":"WebApplication","name":"AI Backtesting","url":"https://chartpulse.io/ai-backtesting/","applicationCategory":"FinanceApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Describe a trading strategy in plain words and get a backtest with return, win rate, drawdown and every trade."}]}</script>
+<style>
+:root{--bg:#050506;--card:#0F1014;--card2:#14161B;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.14);
+  --ink:#EDEDEF;--dim:#A3A5AF;--mute:#6B6D78;--gold:#E9C46A;--up:#22AB94;--dn:#F7525F;--blue:#6EA8FE;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.ab{max-width:1040px;margin:0 auto;padding:28px 20px 64px}
+.eyebrow{font:600 12px/1 var(--mono);letter-spacing:.16em;color:var(--gold);text-transform:uppercase}
+h1{margin:10px 0 8px;font-size:clamp(28px,4.6vw,44px);line-height:1.08;letter-spacing:-.02em}
+.lede{margin:0;max-width:62ch;color:var(--dim);font-size:17px}
+h2{font-size:20px;margin:34px 0 12px;letter-spacing:-.01em}
+.box{margin-top:22px;padding:18px;border:1px solid var(--line2);border-radius:16px;background:var(--card)}
+textarea{width:100%;min-height:128px;resize:vertical;padding:14px 16px;border-radius:12px;border:1px solid var(--line2);background:#0B0C0F;color:var(--ink);font:16px/1.55 var(--sans)}
+textarea:focus,select:focus,input:focus{outline:2px solid var(--gold);outline-offset:1px}
+.ex{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}.ex span{color:var(--mute);font-size:13px;align-self:center}
+.ex button{padding:7px 12px;border-radius:999px;border:1px solid var(--line2);background:transparent;color:var(--dim);font:13px var(--sans);cursor:pointer}.ex button:hover{color:var(--ink);border-color:var(--gold)}
+.opts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
+.opts label{display:grid;gap:5px;font-size:12.5px;color:var(--dim)}
+select,input[type=number]{width:100%;padding:10px 11px;border-radius:10px;border:1px solid var(--line2);background:var(--card2);color:var(--ink);font:14.5px var(--sans)}
+.go{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:16px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 22px;border-radius:11px;border:1px solid var(--gold);background:var(--gold);color:#16130a;font:700 15.5px var(--sans);cursor:pointer}
+.btn:disabled{opacity:.6;cursor:default}.btn.gh{background:transparent;color:var(--ink);border-color:var(--line2);font-weight:600;padding:9px 14px;font-size:13.5px}
+.hint{color:var(--mute);font-size:13px}.err{margin-top:14px;padding:12px 14px;border:1px solid rgba(247,82,95,.5);border-radius:11px;background:rgba(247,82,95,.07);color:#ffb3b9;font-size:14.5px}
+.card{padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.und{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px}
+.und h3{margin:0 0 8px;font:600 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
+.und ul{margin:0 0 12px;padding:0;list-style:none}.und li{padding:3px 0;color:var(--ink)}.und li::before{content:"• ";color:var(--gold)}
+.und b.l{display:block;margin:8px 0 2px;font-size:13.5px;color:var(--dim);font-weight:600}
+.warn{margin-top:12px;padding:11px 14px;border:1px solid rgba(233,196,106,.4);border-radius:11px;background:rgba(233,196,106,.06);color:var(--dim);font-size:14px}
+.verdict{margin-top:12px;padding:18px 20px;border-radius:14px;border:1px solid var(--line2);background:var(--card)}
+.verdict b{display:block;font-size:21px;margin-bottom:4px}.verdict p{margin:0;color:var(--dim);font-size:15.5px}
+.verdict.good{border-color:var(--up);background:rgba(34,171,148,.08)}.verdict.good b{color:var(--up)}
+.verdict.ok{border-color:rgba(34,171,148,.5)}.verdict.ok b{color:var(--up)}
+.verdict.weak,.verdict.thin{border-color:rgba(233,196,106,.6);background:rgba(233,196,106,.06)}.verdict.weak b,.verdict.thin b{color:var(--gold)}
+.verdict.bad{border-color:rgba(247,82,95,.6);background:rgba(247,82,95,.07)}.verdict.bad b{color:var(--dn)}
+.tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:12px}
+.tile{padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.tile .v{font:600 21px/1.15 var(--mono)}.tile .k{margin-top:5px;color:var(--dim);font-size:12.5px;line-height:1.35}
+.pos{color:var(--up)}.neg{color:var(--dn)}
+.chart{margin-top:12px;border:1px solid var(--line);border-radius:14px;background:#0B0C0F;padding:10px}
+.chart svg{display:block;width:100%;height:auto}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin:6px 6px 2px;color:var(--dim);font-size:12.5px}.legend i{display:inline-block;width:18px;border-top:2px solid;vertical-align:middle;margin-right:6px}
+.notes{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:8px}.notes li{padding:10px 14px;border-radius:10px;border:1px solid var(--line);color:var(--dim);font-size:14px}
+.notes li.warn{border-color:rgba(233,196,106,.4);margin:0;background:transparent}
+.tabs{display:inline-flex;gap:4px;padding:4px;border:1px solid var(--line);border-radius:11px;margin-top:22px}
+.tabs button{padding:8px 16px;border-radius:8px;border:0;background:transparent;color:var(--dim);font:600 14px var(--sans);cursor:pointer}.tabs button.on{background:var(--card2);color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--mute);font:600 11px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase}td.r,th.r{text-align:right}
+.scroll{overflow-x:auto;max-height:440px;overflow-y:auto}
+.kv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+pre{margin:0;padding:14px;border-radius:12px;background:#0B0C0F;border:1px solid var(--line);color:var(--dim);font:12.5px/1.5 var(--mono);overflow:auto;max-height:320px}
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.how .card span{font:600 11px/1 var(--mono);letter-spacing:.12em;color:var(--gold)}.how .card b{display:block;margin:6px 0 4px}.how .card p{margin:0;color:var(--dim);font-size:13.5px}
+.can{columns:2;column-gap:28px;margin:0;padding:0 0 0 18px;color:var(--dim);font-size:14px;line-height:1.75}
+.foot{margin-top:28px;color:var(--mute);font-size:12.5px;line-height:1.6}
+.ftr{max-width:1040px;margin:0 auto;padding:0 20px 40px}.ftr nav{display:flex;flex-wrap:wrap;gap:8px 18px;padding-top:18px;border-top:1px solid var(--line)}.ftr a{color:var(--mute);font-size:13px;text-decoration:none}.ftr a:hover{color:var(--ink)}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid rgba(0,0,0,.25);border-top-color:#16130a;animation:sp .7s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+[hidden]{display:none!important}
+@media(max-width:900px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.opts{grid-template-columns:repeat(2,minmax(0,1fr))}.und,.how{grid-template-columns:minmax(0,1fr)}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.can{columns:1}}
+</style>
+</head>
+<body>
+<main class="ab">
+  <div class="eyebrow">Free tool</div>
+  <h1>AI Backtesting</h1>
+  <p class="lede">Write your strategy the way you would explain it to a friend. The tool turns it into rules, tests it on real price history, and tells you in plain words how it did.</p>
+
+  <form class="box" id="f">
+    <label for="txt" class="hint" style="display:block;margin-bottom:8px;color:var(--dim)">Describe your strategy</label>
+    <textarea id="txt" maxlength="1500" placeholder="Example: Buy when RSI is below 30 and price is above the 200 EMA. Sell when RSI is above 70. Stop loss 5%."></textarea>
+    <div class="ex" id="ex"><span>Try one:</span></div>
+    <div class="opts">
+      <label>Market<select id="sym"><option value="auto">Auto (from your text)</option></select></label>
+      <label>Chart timeframe<select id="tf"><option value="auto">Auto (Daily)</option><option value="1w">Weekly</option><option value="1d">Daily</option><option value="4h">4 hour</option><option value="1h">1 hour</option><option value="30m">30 min</option><option value="15m">15 min</option><option value="5m">5 min</option></select></label>
+      <label>How far back<select id="yrs"><option value="">Auto</option><option value="1">1 year</option><option value="3">3 years</option><option value="5">5 years</option><option value="10">10 years</option><option value="20">20 years</option></select></label>
+      <label>Starting money<input id="cap" type="number" min="100" max="100000000" step="100" value="10000"></label>
+    </div>
+    <div class="go"><button class="btn" id="run" type="submit">Run backtest</button><span class="hint" id="st">Takes a few seconds. Costs are included.</span></div>
+    <div class="err" id="err" hidden></div>
+  </form>
+
+  <section id="res" hidden>
+    <h2>What I understood</h2>
+    <div class="und">
+      <div class="card" id="uRules"></div>
+      <div class="card" id="uSet"></div>
+    </div>
+    <div id="uWarn"></div>
+
+    <h2>Result</h2>
+    <div class="verdict" id="verdict"></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="chart" id="chart"></div>
+    <div class="legend"><span><i style="border-color:#E9C46A"></i>Your strategy</span><span><i style="border-color:#6EA8FE;border-top-style:dashed"></i>Buy and hold</span></div>
+    <ul class="notes" id="notes"></ul>
+
+    <div class="tabs" id="tabs"><button type="button" data-t="simple" class="on">Simple view</button><button type="button" data-t="pro">Pro details</button></div>
+    <div id="pro" hidden>
+      <h2>All numbers</h2>
+      <div class="kv" id="kv"></div>
+      <h2 id="mcH" hidden>If the same trades came in a different order</h2>
+      <div class="kv" id="mc"></div>
+      <h2>Every trade</h2>
+      <div class="card scroll" style="padding:4px 8px"><table><thead><tr><th>Entry</th><th>Exit</th><th>Side</th><th class="r">Entry price</th><th class="r">Exit price</th><th class="r">Result</th><th class="r">Bars</th><th>Closed by</th></tr></thead><tbody id="trades"></tbody></table></div>
+      <p class="hint" id="trN" style="margin-top:8px"></p>
+      <h2>The rules as data</h2>
+      <pre id="json"></pre>
+      <p class="hint" style="margin-top:10px">Want walk-forward testing and a rule builder? Use <a href="/backtesting/" style="color:var(--gold)">Pro Backtesting</a>.</p>
+    </div>
+  </section>
+
+  <h2>How it works</h2>
+  <div class="how">
+    <div class="card"><span>STEP 1</span><b>You write, in plain words</b><p>When to buy, when to sell, and your stop-loss. English works best; simple Hinglish is fine too.</p></div>
+    <div class="card"><span>STEP 2</span><b>It shows what it understood</b><p>Your words become exact rules, listed back to you, so you can check them before trusting any number.</p></div>
+    <div class="card"><span>STEP 3</span><b>It tests on real history</b><p>Every trade is simulated with costs, and compared with simply buying and holding.</p></div>
+  </div>
+
+  <h2>What you can write</h2>
+  <ul class="can">
+    <li>RSI above or below a level, oversold, overbought</li>
+    <li>Price above or below an EMA or SMA (any length)</li>
+    <li>One moving average crossing another, golden cross, death cross</li>
+    <li>MACD crossing its signal line</li>
+    <li>Supertrend turning bullish or bearish</li>
+    <li>Bollinger bands, VWAP, ADX, Stochastic</li>
+    <li>Breakout of the 20-day high, or any number of days</li>
+    <li>Volume above its average</li>
+    <li>Stop-loss and target in % or in ATR, trailing stop</li>
+    <li>Reward to risk such as 1:2, exit after N bars</li>
+    <li>"Long and short both sides" for the mirror trade</li>
+    <li>The market, the timeframe and how many years</li>
+  </ul>
+
+  <p class="foot">For education and demonstrations, not financial advice. A backtest shows what would have happened in the past on one market; it does not predict the future. Trades are filled on the next bar with 0.1% commission and 0.05% slippage per side. Chart patterns, news, order flow and intraday session rules cannot be tested here. Always read "What I understood" first: if a rule is not what you meant, rewrite that sentence more simply.</p>
+</main>
+<footer class="ftr"><nav aria-label="Site links">
+<a href="/">ChartPulse home</a><a href="/backtesting/">Pro Backtesting</a><a href="/scanners/">All scanners</a><a href="/scanners/trendline-hero/">Trendline Hero</a><a href="/desk/">AI Scan</a><a href="/pricing.html">Pricing</a><a href="/legal/disclaimer">Risk disclaimer</a>
+</nav></footer>
+<script>
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+  var n2 = function (v, d) { return v == null || !isFinite(v) ? "–" : Number(v).toLocaleString("en-US", { minimumFractionDigits: d == null ? 2 : d, maximumFractionDigits: d == null ? 2 : d }); };
+  var pct = function (v, d) { return v == null || !isFinite(v) ? "–" : (v > 0 ? "+" : "") + n2(v, d == null ? 1 : d) + "%"; };
+  var cls = function (v) { return v == null || !isFinite(v) || v === 0 ? "" : v > 0 ? "pos" : "neg"; };
+  var TF = { "1w": "Weekly", "1d": "Daily", "4h": "4 hour", "1h": "1 hour", "30m": "30 min", "15m": "15 min", "5m": "5 min" };
+  var WHY = { signal: "Exit rule", stop: "Stop-loss", stop_loss: "Stop-loss", sl: "Stop-loss", take_profit: "Target", tp: "Target", target: "Target", trail: "Trailing stop", trailing: "Trailing stop", max_bars: "Time limit", time: "Time limit", end: "End of data", liquidated: "Account empty", reverse: "Opposite signal" };
+  var EX = [
+    ["RSI bounce", "Buy when RSI is below 30 and price is above the 200 EMA. Sell when RSI is above 70. Stop loss 5%."],
+    ["EMA crossover", "Buy Bitcoin when the 20 EMA crosses above the 50 EMA. Exit when the 20 EMA crosses below the 50 EMA. Stop loss 2 ATR."],
+    ["Supertrend", "Go long Nifty when Supertrend turns bullish and ADX is above 25. Exit when Supertrend turns bearish."],
+    ["Breakout", "Buy when price breaks out of the 20 day high with volume above average volume. Stop 3%, target 1:3."],
+    ["Golden cross", "Golden cross on Apple daily, exit on death cross."],
+    ["MACD both sides", "Buy gold when MACD crosses above signal and price is above the 50 SMA. Sell when MACD crosses below signal. Long and short both sides. Trailing stop 4%."]
+  ];
+  EX.forEach(function (e) { var b = document.createElement("button"); b.type = "button"; b.textContent = e[0]; b.addEventListener("click", function () { $("#txt").value = e[1]; $("#txt").focus(); }); $("#ex").appendChild(b); });
+  fetch("/backtest.php?a=meta").then(function (r) { return r.json(); }).then(function (m) {
+    var s = $("#sym");
+    (m.markets || []).forEach(function (g) { var og = document.createElement("optgroup"); og.label = g[0]; g[1].forEach(function (x) { var o = document.createElement("option"); o.value = x[0]; o.textContent = x[1] + " (" + x[0] + ")"; og.appendChild(o); }); s.appendChild(og); });
+  }).catch(function () {});
+
+  function chart(eq) {
+    if (!eq || eq.length < 2) return '<p class="hint" style="padding:18px">No equity curve to draw.</p>';
+    var W = 980, H = 340, PL = 8, PR = 86, PT = 12, PB = 24, lo = Infinity, hi = -Infinity;
+    eq.forEach(function (p) { lo = Math.min(lo, p.v, p.bh); hi = Math.max(hi, p.v, p.bh); });
+    var pad = (hi - lo) * 0.06 || 1; lo -= pad; hi += pad;
+    var t0 = eq[0].t, t1 = eq[eq.length - 1].t, x = function (t) { return PL + (t - t0) / ((t1 - t0) || 1) * (W - PL - PR); }, y = function (v) { return PT + (hi - v) / (hi - lo) * (H - PT - PB); };
+    var path = function (k) { return eq.map(function (p, i) { return (i ? "L" : "M") + x(p.t).toFixed(1) + " " + y(p[k]).toFixed(1); }).join(""); };
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Account value over time">';
+    for (var i = 0; i <= 4; i++) { var v = lo + (hi - lo) * i / 4, yy = y(v); s += '<line x1="' + PL + '" x2="' + (W - PR) + '" y1="' + yy + '" y2="' + yy + '" stroke="rgba(255,255,255,.06)"/><text x="' + (W - PR + 8) + '" y="' + (yy + 4) + '" fill="#6B6D78" font-size="11.5" font-family="IBM Plex Mono,monospace">' + n2(v, 0) + "</text>"; }
+    var y0 = y(eq[0].v); s += '<line x1="' + PL + '" x2="' + (W - PR) + '" y1="' + y0 + '" y2="' + y0 + '" stroke="rgba(255,255,255,.22)" stroke-dasharray="2 5"/>';
+    s += '<path d="' + path("bh") + '" fill="none" stroke="#6EA8FE" stroke-width="1.4" stroke-dasharray="5 4" opacity=".85"/><path d="' + path("v") + '" fill="none" stroke="#E9C46A" stroke-width="2"/>';
+    var d = function (t) { return new Date(t * 1000).toISOString().slice(0, 10); };
+    s += '<text x="' + PL + '" y="' + (H - 6) + '" fill="#6B6D78" font-size="11.5" font-family="IBM Plex Mono,monospace">' + d(t0) + '</text><text x="' + (W - PR) + '" y="' + (H - 6) + '" fill="#6B6D78" font-size="11.5" text-anchor="end" font-family="IBM Plex Mono,monospace">' + d(t1) + "</text></svg>";
+    return s;
+  }
+  function tile(v, k, c) { return '<div class="tile"><div class="v ' + (c || "") + '">' + v + '</div><div class="k">' + k + "</div></div>"; }
+  function render(j) {
+    var u = j.understood, r = j.result, m = r.metrics || {}, cap = +$("#cap").value || 10000;
+    $("#uRules").innerHTML = "<h3>Your rules</h3>" + u.lines.map(function (L) { return '<b class="l">' + esc(L.label) + " " + (L.rules.length > 1 ? "all of these are true" : "") + "</b><ul>" + L.rules.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>"; }).join("")
+      + (u.risk.length ? '<b class="l">Risk rules</b><ul>' + u.risk.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>" : '<b class="l">Risk rules</b><ul><li>None given</li></ul>');
+    $("#uSet").innerHTML = "<h3>Tested on</h3><ul><li>" + esc(u.name) + " (" + esc(u.symbol) + ")</li><li>" + esc(TF[u.timeframe] || u.timeframe) + " candles</li><li>" + esc(u.from) + " to " + esc(u.to) + "</li><li>" + n2(r.bars, 0) + " candles tested</li></ul><h3>Costs</h3><p class='hint' style='margin:0'>" + esc(u.costs) + "</p><p class='hint' style='margin:10px 0 0'>Read by: " + (j.engine === "ai" ? "AI language model" : "built-in phrase reader") + "</p>";
+    $("#uWarn").innerHTML = (j.warnings || []).map(function (w) { return '<div class="warn">' + esc(w) + "</div>"; }).join("");
+    var v = j.verdict || {}; $("#verdict").className = "verdict " + (v.grade || ""); $("#verdict").innerHTML = "<b>" + esc(v.title || "") + "</b><p>" + esc(v.text || "") + "</p>";
+    var endv = r.equity && r.equity.length ? r.equity[r.equity.length - 1].v : null;
+    $("#tiles").innerHTML = tile(pct(m.total_return_pct), "Total return" + (endv != null ? "<br>" + n2(cap, 0) + " became " + n2(endv, 0) : ""), cls(m.total_return_pct))
+      + tile(pct(m.buy_hold_return_pct), "Buy and hold<br>(just holding the market)", cls(m.buy_hold_return_pct))
+      + tile(n2(r.trades_total, 0), "Trades taken")
+      + tile(m.win_rate_pct == null ? "–" : n2(m.win_rate_pct, 0) + "%", "Winning trades<br>(in this test only)")
+      + tile(pct(m.max_drawdown_pct), "Worst fall<br>from a peak", "neg")
+      + tile(m.profit_factor == null ? "–" : n2(m.profit_factor, 2), "Profit factor<br>(above 1 = made money)", m.profit_factor == null ? "" : m.profit_factor >= 1 ? "pos" : "neg");
+    $("#chart").innerHTML = chart(r.equity);
+    $("#notes").innerHTML = (r.notes || []).map(function (x) { return '<li class="' + (x[0] === "warn" ? "warn" : "") + '">' + esc(x[1]) + "</li>"; }).join("");
+    var K = [["CAGR (yearly growth)", pct(m.cagr_pct)], ["Sharpe ratio", n2(m.sharpe)], ["Sortino ratio", n2(m.sortino)], ["Calmar ratio", n2(m.calmar)], ["Average trade", pct(m.avg_trade_pct, 2)], ["Average win", pct(m.avg_win_pct, 2)], ["Average loss", pct(m.avg_loss_pct, 2)], ["Payoff ratio (win ÷ loss)", n2(m.payoff_ratio)], ["Time in the market", m.exposure_pct == null ? "–" : n2(m.exposure_pct, 0) + "%"], ["Data source", esc(r.source || "–")]];
+    Object.keys(m).forEach(function (k) { if (["total_return_pct", "cagr_pct", "max_drawdown_pct", "sharpe", "sortino", "calmar", "win_rate_pct", "profit_factor", "avg_trade_pct", "avg_win_pct", "avg_loss_pct", "payoff_ratio", "exposure_pct", "buy_hold_return_pct", "trades"].indexOf(k) < 0 && typeof m[k] === "number") K.push([k.replace(/_/g, " "), n2(m[k])]); });
+    $("#kv").innerHTML = K.map(function (x) { return tile(x[1], x[0]); }).join("");
+    var mc = r.monte_carlo; $("#mcH").hidden = !mc;
+    $("#mc").innerHTML = mc ? tile(n2(mc.final_equity_p5, 0), "Unlucky case (worst 5%)") + tile(n2(mc.final_equity_median, 0), "Typical end value") + tile(n2(mc.final_equity_p95, 0), "Lucky case (best 5%)") + tile(pct(mc.bad_case_drawdown_pct), "Bad-case fall", "neg") + tile(n2(mc.prob_loss_pct, 0) + "%", "Chance of ending with a loss") + tile(n2(mc.runs, 0), "Re-shuffles run") : "";
+    $("#trades").innerHTML = (r.trades || []).map(function (t) { return "<tr><td class='num'>" + esc(t.entry_time) + "</td><td class='num'>" + esc(t.exit_time) + "</td><td>" + (t.side === "short" || t.side === -1 ? "Short" : "Long") + "</td><td class='r num'>" + n2(t.entry, 4).replace(/\.?0+$/, "") + "</td><td class='r num'>" + n2(t.exit, 4).replace(/\.?0+$/, "") + "</td><td class='r num " + cls(t.ret_pct) + "'>" + pct(t.ret_pct, 2) + "</td><td class='r num'>" + esc(t.bars) + "</td><td>" + esc(WHY[t.reason] || t.reason) + "</td></tr>"; }).join("") || '<tr><td colspan="8" style="color:var(--mute)">No trades.</td></tr>';
+    $("#trN").textContent = r.trades_total > (r.trades || []).length ? "Showing the first " + r.trades.length + " of " + r.trades_total + " trades." : "";
+    $("#json").textContent = JSON.stringify(j.strategy, null, 2);
+    $("#res").hidden = false; $("#res").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  $("#tabs").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; [].forEach.call(this.children, function (x) { x.classList.toggle("on", x === b); }); $("#pro").hidden = b.dataset.t !== "pro"; });
+  $("#f").addEventListener("submit", function (e) {
+    e.preventDefault(); var txt = $("#txt").value.trim(), er = $("#err"); er.hidden = true;
+    if (txt.length < 8) { er.textContent = "Write your strategy first, or tap one of the examples."; er.hidden = false; return; }
+    var b = $("#run"); b.disabled = true; b.innerHTML = '<span class="spin"></span> Testing…'; $("#st").textContent = "Reading your rules and running the test…";
+    fetch("/ai_backtest.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: txt, symbol: $("#sym").value, timeframe: $("#tf").value, years: $("#yrs").value, capital: +$("#cap").value || 10000 }) })
+      .then(function (r) { return r.json().catch(function () { return { error: "The backtest could not be read. Please try again." }; }); })
+      .then(function (j) {
+        if (j.error) { er.innerHTML = esc(j.error) + (j.missed && j.missed.length ? "<br><span style='opacity:.8'>Not understood: " + esc(j.missed.join(" · ")) + "</span>" : ""); er.hidden = false; $("#st").textContent = ""; return; }
+        $("#st").textContent = "Done in " + n2((j.took_ms || 0) / 1000, 1) + " s."; render(j);
+      })
+      .catch(function () { er.textContent = "Could not reach the backtester. Check your connection and try again."; er.hidden = false; $("#st").textContent = ""; })
+      .then(function () { b.disabled = false; b.textContent = "Run backtest"; });
+  });
+})();
+</script>
+</body>
+</html>

@@ -2,6 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /pay.php
 Disallow: /aff.php
+Disallow: /ai_backtest.php
 Disallow: /admin/
 Disallow: /api.php
 Disallow: /chat-api.php
