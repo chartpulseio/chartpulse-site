@@ -377,7 +377,12 @@ try {
         if (!empty($_GET['ping'])) {   // one tiny real call to each provider that has a key
             bt_rate('aiping', 6, 600);
             $msg = 'Reply with the single word OK.';
-            if ($o['groq']) { $j = aib_post('https://api.groq.com/openai/v1/chat/completions', json_encode(['model' => 'llama-3.1-8b-instant', 'max_tokens' => 5, 'messages' => [['role' => 'user', 'content' => $msg]]]), ['Authorization: Bearer ' . aib_key('groq')], 10);
+            if ($o['groq']) {
+                $ch = curl_init('https://api.groq.com/openai/v1/models'); curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 8, CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . aib_key('groq')]]);
+                $ml = json_decode((string)curl_exec($ch), true); curl_close($ch);
+                $o['groq_models'] = array_values(array_map(fn($m) => (string)$m['id'], array_filter((array)($ml['data'] ?? []), fn($m) => !empty($m['active']) || !isset($m['active']))));
+            }
+            if ($o['groq']) { $j = aib_post('https://api.groq.com/openai/v1/chat/completions', json_encode(['model' => 'openai/gpt-oss-20b', 'reasoning_effort' => 'low', 'max_tokens' => 200, 'messages' => [['role' => 'user', 'content' => $msg]]]), ['Authorization: Bearer ' . aib_key('groq')], 10);
                 $o['groq_ping'] = isset($j['choices'][0]['message']) ? 'ok' : ('error: ' . mb_substr((string)($j['error']['message'] ?? 'no answer'), 0, 160)); }
             foreach (['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'] as $gm) if ($o['gemini'] && (($o['gemini_ping'] ?? '') !== 'ok')) {
                 $j = aib_post("https://generativelanguage.googleapis.com/v1beta/models/$gm:generateContent", json_encode(['contents' => [['role' => 'user', 'parts' => [['text' => $msg]]]], 'generationConfig' => ['maxOutputTokens' => 5]]), ['x-goog-api-key: ' . aib_key('gemini')], 10);
