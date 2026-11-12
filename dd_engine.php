@@ -861,6 +861,11 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
     $ia = null; $n5 = count($F5['t'] ?? []);
     for ($i = 0; $i < $n5; $i++) if ((int)$F5['t'][$i] >= $cs) { $ia = $i; break; }
     $today = $ia !== null && $n5 - $ia >= 6;
+    if (!$today) {   // no 5m bars cached for this market: read the turn on 1-hour candles instead
+        $H1 = $fr['1H']; $nh = count($H1['t'] ?? []); $ih = null;
+        for ($i = 0; $i < $nh; $i++) if ((int)$H1['t'][$i] >= $cs) { $ih = $i; break; }
+        if ($ih !== null && $nh - $ih >= 3) { $F5 = $H1; $ia = $ih; $n5 = $nh; $today = true; }
+    }
     if ($today) {
         $ix = $ia; for ($i = $ia; $i < $n5; $i++) if ($call ? (float)$F5['l'][$i] < (float)$F5['l'][$ix] : (float)$F5['h'][$i] > (float)$F5['h'][$ix]) $ix = $i;
         $ext = (float)($call ? $F5['l'][$ix] : $F5['h'][$ix]);
@@ -868,17 +873,24 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
     } else { $ix = null; $ext = (float)($call ? $D['l'][$nD - 1] : $D['h'][$nD - 1]); $a5 = 0.1 * $aD; }
     // zones and lines at today's extreme
     $tol = 0.15 * $aD; $hit = [];
+    // a zone counts when today's extreme is on it, or swept through it by up to 0.6 daily ATR (wick below support, back above)
+    $on = fn(float $p) => ($p - $ext) * $sg >= -$tol && ($p - $ext) * $sg <= 0.6 * $aD;
     $Z = array_values(array_filter(tl_zones($fr), fn($z) => $z['k'] !== 'Day High' && $z['k'] !== 'Day Low'));
-    foreach ($Z as $z) if (abs($z['p'] - $ext) <= $tol) $hit[$z['g'] === 'fib' ? 'Fib' : ($z['g'] === 'pivot' ? 'Pivot' : $z['k'])] = $z['k'];
+    foreach ($Z as $z) if ($on((float)$z['p'])) $hit[$z['g'] === 'fib' ? 'Fib' : ($z['g'] === 'pivot' ? 'Pivot' : $z['k'])] = $z['k'];
     foreach (['1W' => 'Weekly', '1D' => 'Daily', '4H' => '4H', '1H' => '1H', '30m' => '30m', '15m' => '15m'] as $k => $nm) {
         $L = $tl['tf'][$k][$call ? 'sup' : 'res'] ?? null;
-        if (is_array($L) && (int)$L['n'] >= 2 && abs((float)$L['now'] - $ext) <= $tol) { $hit['line'] = $nm . ' ' . ($call ? 'support' : 'resistance') . ' line'; break; }
+        if (is_array($L) && (int)$L['n'] >= 2 && $on((float)$L['now'])) { $hit['line'] = $nm . ' ' . ($call ? 'support' : 'resistance') . ' line'; break; }
     }
     $H = $fr['1H'];
     if (count($H['c']) >= 220) {
         $k2 = 2 / 201; $e = array_sum(array_slice($H['c'], 0, 200)) / 200;
         for ($i = 200, $m = count($H['c']); $i < $m; $i++) $e += ((float)$H['c'][$i] - $e) * $k2;
-        if (abs($e - $ext) <= $tol) $hit['ema'] = '200 EMA (1H)';
+        if ($on($e)) $hit['ema'] = '200 EMA (1H)';
+    }
+    if (count($D['c']) >= 210) {   // the daily 200 EMA too
+        $k2 = 2 / 201; $e = array_sum(array_slice($D['c'], 0, 200)) / 200;
+        for ($i = 200, $m = count($D['c']); $i < $m; $i++) $e += ((float)$D['c'][$i] - $e) * $k2;
+        if ($on($e)) $hit['ema_d'] = '200 EMA (Daily)';
     }
     $zones = array_values($hit); $strong = count($zones) >= 2;
     $trends = []; foreach (['1W', '1D', '4H', '1H', '30m'] as $k) if (isset($mtf[$k])) $trends[$k] = (int)$mtf[$k] > 0 ? 'up' : 'down';
