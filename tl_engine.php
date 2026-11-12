@@ -584,3 +584,80 @@ function tlh_scan(bool $hero = false): array {
     t_write_json($ck, $p);
     return $p;
 }
+
+/**
+ * Trendline Hero, Tier 2 (owner, 12 Nov 2026): one market, with the ENTRY read on the small chart.
+ * The big charts give the side and the place (tlh_row). The entry is a structure break on 5-minute candles:
+ *   PUT: price reaches the resistance line, makes its high there, then a 5m candle CLOSES below the last small swing low.
+ *   CALL: mirror image at the support line.
+ * Stop goes just beyond that small high / low, so it is much tighter than a stop taken from the big chart.
+ * Targets stay sized by the big chart (TLHERO_RR x a risk unit of at least 0.3 daily ATR, or the other line of the pattern).
+ */
+function tlh_detail(string $sym): ?array {
+    $dir = T_DATA . '/tl'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    $p = $dir . '/' . preg_replace('/[^A-Za-z0-9._-]/', '_', $sym) . '.hero1.json'; $now = t_now();
+    $c = t_read_json($p, null);
+    if (is_array($c) && $now - (int)($c['at'] ?? 0) < 20) return $c;
+    $fr = t_read_frames($sym); if (!$fr || count($fr['1D']['c'] ?? []) < 30) return null;
+    $m5 = t_m5($sym) ?: ($fr['5m'] ?? null);
+    $src = tl_src($fr, $m5); $mtf = tl_mtf($src); $bias = tlh_bias($mtf);
+    $scan = t_scan_load(); $base = $scan['rows'][$sym] ?? [];
+    $D = $fr['1D']; $nD = count($D['c']); $A = t_atr($D, 14); $atrD = (float)end($A);
+    $row = null; try { $row = tlh_row($sym, $base, $now, TLHERO_TFS, '30m', true); } catch (Throwable $e) {}
+    $S = is_array($m5) && count($m5['c'] ?? []) >= 40 ? $m5 : null; $stf = '5m';
+    if (!$S) { foreach (['30m', '1H'] as $k) if (!empty($src[$k]) && count($src[$k]['c']) >= 40) { $S = $src[$k]; $stf = $k; break; } }
+    $px = $S ? (float)end($S['c']) : (float)$D['c'][$nD - 1]; $d = tl_dec($px);
+    $out = ['at' => $now, 'symbol' => $sym, 'name' => t_name($sym), 'market' => $base['market'] ?? (t_symbols()[$sym] ?? ''), 'price' => round($px, $d), 'dec' => $d,
+            'bias' => $bias, 'mtf' => $mtf, 'row' => $row, 'stf' => $stf, 'entry' => null, 'bars' => null,
+            'day' => ['h' => round((float)$D['h'][$nD - 1], $d), 'l' => round((float)$D['l'][$nD - 1], $d)]];
+    if ($S) {
+        $n = count($S['c']); $from = max(0, $n - 96); $B = [];
+        for ($i = $from; $i < $n; $i++) $B[] = [(int)$S['t'][$i], round((float)$S['o'][$i], $d), round((float)$S['h'][$i], $d), round((float)$S['l'][$i], $d), round((float)$S['c'][$i], $d)];
+        $out['bars'] = $B;
+    }
+    if (!$row || !$S || $atrD <= 0) { t_write_json($p, $out); return $out; }
+
+    $put = $row['bias'] === 'PUT'; $s = $put ? 1 : -1; $lv = (float)$row['lv']; $tol = 0.05 * $atrD;
+    $n = count($S['c']); $lc = $n - 2; $look = max(2, $n - 72);                 // closed candles of roughly the last 6 hours on 5m
+    $H = fn(int $i) => $put ? (float)$S['h'][$i] : -(float)$S['l'][$i];          // "reach": how far the candle pushed into the line
+    $Lo = fn(int $i) => $put ? (float)$S['l'][$i] : -(float)$S['h'][$i];         // the opposite end, mirrored the same way
+    $lvM = $put ? $lv : -$lv;
+    $pk = null;                                                                  // the candle that pushed furthest into / through the line
+    for ($i = $look; $i <= $lc; $i++) if ($H($i) >= $lvM - $tol && ($pk === null || $H($i) >= $H($pk))) $pk = $i;
+    $E = ['state' => 'wait_touch', 'stf' => $stf, 'trigger' => null, 'peak' => null, 'sweep' => false, 'entry' => null, 'sl' => null, 't1' => null, 't2' => null,
+          't2why' => null, 'rr1' => null, 'rr2' => null, 'risk_pct' => null, 'bars_ago' => null, 'trig_t' => null, 'peak_t' => null];
+    if ($pk !== null) {
+        // trigger level: the last small swing low before the peak (a low with a higher low on each side, 2 bars), else the lowest low of the 6 bars before it
+        $tg = null;
+        for ($i = $pk - 1; $i >= max(2, $pk - 30); $i--) {
+            if ($i + 2 > $pk) continue;
+            if ($Lo($i) <= $Lo($i - 1) && $Lo($i) <= $Lo($i - 2) && $Lo($i) <= $Lo($i + 1) && $Lo($i) <= $Lo($i + 2) && $Lo($i) < $lvM - $tol) { $tg = $Lo($i); break; }
+        }
+        if ($tg === null) { $tg = INF; for ($i = max(0, $pk - 6); $i < $pk; $i++) $tg = min($tg, $Lo($i)); if ($tg === INF) $tg = $Lo($pk); }
+        $hit = null;
+        for ($i = $pk + 1; $i <= $lc; $i++) if (($put ? (float)$S['c'][$i] : -(float)$S['c'][$i]) < $tg) { $hit = $i; break; }
+        $peak = $put ? $H($pk) : -$H($pk); $trig = $put ? $tg : -$tg;
+        $sl = $peak + $s * 0.05 * $atrD;
+        $E['peak'] = round($peak, $d); $E['trigger'] = round($trig, $d); $E['peak_t'] = (int)$S['t'][$pk];
+        $E['sweep'] = $H($pk) > $lvM + $tol;                                     // the push went through the line before coming back
+        $ent = $hit !== null ? $px : $trig; $risk = abs($sl - $ent);
+        if ($hit === null) $E['state'] = 'wait_break';
+        else {
+            $E['bars_ago'] = $lc - $hit; $E['trig_t'] = (int)$S['t'][$hit];
+            $run = ($trig - $px) * $s;                                           // how far price has already travelled past the trigger
+            $E['state'] = ($lc - $hit <= 6 && $run <= abs($sl - $trig)) ? 'entry' : 'late';
+            if (($px - $sl) * $s > 0) $E['state'] = 'failed';                    // price went back beyond the stop: the entry is void
+        }
+        if ($risk > 0) {
+            [$r1, $r2] = TLHERO_RR[$row['tf']] ?? [1.5, 2.5]; $unit = max($risk, 0.3 * $atrD);
+            $t1 = $ent - $s * $r1 * $unit; $t2 = $ent - $s * $r2 * $unit; $why = 'sized for a ' . $row['tf'] . ' line';
+            $opp = $row['plan']['t2why'] ?? '' ; $oppLv = ($opp === 'the other line of the pattern') ? (float)$row['plan']['t2'] : null;
+            if ($oppLv !== null && ($ent - $oppLv) * $s > ($ent - $t2) * $s) { $t2 = $oppLv; $why = 'the other line of the pattern'; }
+            $E['entry'] = round($ent, $d); $E['sl'] = round($sl, $d); $E['t1'] = round($t1, $d); $E['t2'] = round($t2, $d); $E['t2why'] = $why;
+            $E['rr1'] = round(abs($ent - $t1) / $risk, 1); $E['rr2'] = round(abs($ent - $t2) / $risk, 1); $E['risk_pct'] = round($risk / $ent * 100, 2);
+        }
+    }
+    $out['entry'] = $E;
+    t_write_json($p, $out);
+    return $out;
+}

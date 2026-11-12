@@ -19,6 +19,7 @@
 <meta name="twitter:image" content="https://chartpulse.io/static/og.jpg">
 <link rel="stylesheet" href="/static/v2/fonts.css?v=1">
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=2">
+<link rel="stylesheet" href="/static/v2/trendlines.css?v=3">
 <script defer src="/static/v2/sitehead.js?v=9"></script>
 <script type="application/ld+json" id="cp-ld">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"Hybrid Trend Lines","item":"https://chartpulse.io/scanners/trendline-hero/"}]},{"@type":"WebApplication","name":"Trendline Hero","url":"https://chartpulse.io/scanners/trendline-hero/","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"Trendline Hero finds PUT setups where today's high meets a resistance trend line in a downtrend and CALL setups where today's low meets support in an uptrend, on 30m to weekly charts.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@id":"https://chartpulse.io/#org"}}]}</script>
 <style>
@@ -230,9 +231,55 @@ a.hy:hover{background:var(--card2)}
 .hy-opt{display:inline-flex;align-items:center;gap:8px;color:var(--dim);font-size:14px;cursor:pointer}
 .hy-opt input{width:16px;height:16px;accent-color:var(--gold)}
 @media (max-width:640px){.hy-plan{grid-template-columns:repeat(2,minmax(0,1fr))}.hy-stage{margin-left:0}}
+/* Tier 2: one market */
+.h2-head{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin:6px 0 4px}
+.h2-head h1{margin:0;font-size:clamp(24px,3.6vw,36px)}
+.h2-head small{color:var(--mute);font:13px var(--mono)}
+.h2-state{margin:16px 0 0;padding:16px 18px;border-radius:14px;border:1px solid var(--line2);background:var(--card)}
+.h2-state b.t{display:block;font-size:19px;margin-bottom:4px}
+.h2-state p{margin:0;color:var(--dim);font-size:15px}
+.h2-state.entry{border-color:var(--up);background:rgba(34,171,148,.09)}.h2-state.entry b.t{color:var(--up)}
+.h2-state.wait{border-color:rgba(233,196,106,.6);background:rgba(233,196,106,.06)}.h2-state.wait b.t{color:var(--gold)}
+.h2-state.off b.t{color:var(--dim)}
+.h2-checks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0 0;padding:0;list-style:none}
+.h2-checks li{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.h2-checks li.ok{border-color:rgba(34,171,148,.5)}.h2-checks li.no{border-color:rgba(233,196,106,.45)}
+.h2-checks span{font:600 11px/1 var(--mono);letter-spacing:.12em;color:var(--mute)}
+.h2-checks li.ok span{color:var(--up)}.h2-checks li.no span{color:var(--gold)}
+.h2-checks b{display:block;margin:6px 0 4px;font-size:15px}.h2-checks p{margin:0;color:var(--dim);font-size:13.5px;line-height:1.5}
+.h2-h{margin:30px 0 10px;font-size:19px}
+.h2-sub{margin:-4px 0 10px;color:var(--dim);font-size:14px}
+.h2-chart{border:1px solid var(--line);border-radius:14px;background:#0B0C0F;padding:8px;overflow:hidden}
+.h2-chart svg{display:block;width:100%;height:auto}
+.h2-legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin:8px 4px 2px;color:var(--dim);font-size:12.5px}
+.h2-legend i{display:inline-block;width:18px;height:0;border-top:2px solid;vertical-align:middle;margin-right:6px}
+.h2-how{margin:0;padding:0 0 0 20px;color:var(--dim);font-size:14.5px;line-height:1.7}.h2-how b{color:var(--ink)}
+.h2-tv{height:520px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#0B0C0F}
+.h2-tv .tradingview-widget-container,.h2-tv .tradingview-widget-container__widget{height:100%}
+@media (max-width:760px){.h2-checks{grid-template-columns:minmax(0,1fr)}.h2-tv{height:420px}}
 </style>
 </head>
 <body>
+<main class="dd" id="heroT2" hidden>
+  <a class="dd-back" href="/scanners/trendline-hero/">← All Trendline Hero setups</a>
+  <div class="dd-eyebrow">Trendline Hero · Tier 2</div>
+  <div class="h2-head"><span id="h2Side"></span><h1 id="h2Name">Loading…</h1><small id="h2Meta"></small></div>
+  <div id="h2State"></div>
+  <ol class="h2-checks" id="h2Checks"></ol>
+  <div id="h2Plan"></div>
+  <h2 class="h2-h" id="h2ChartH">Entry chart</h2>
+  <p class="h2-sub" id="h2ChartSub"></p>
+  <div class="h2-chart" id="h2Chart"></div>
+  <div class="h2-legend" id="h2Legend"></div>
+  <h2 class="h2-h">How to take this trade</h2>
+  <ol class="h2-how" id="h2How"></ol>
+  <h2 class="h2-h">Live chart</h2>
+  <p class="h2-sub">5-minute candles from TradingView. Use it to watch the entry candle form.</p>
+  <div class="h2-tv" id="h2Tv"></div>
+  <h2 class="h2-h">The trend lines on every chart</h2>
+  <div id="h2Lines"></div>
+  <p class="dd-foot">For education and demonstrations, not financial advice. The entry is read on 5-minute candles (30-minute or 1-hour where 5-minute data is not available). Entry rule: after price reaches the line, a candle closes beyond the last small swing. Stop: just past the high or low made at the line. No win rate has been measured for this scanner yet. This page refreshes every 20 seconds.</p>
+</main>
 <main class="dd" id="hyApp">
   <div class="dd-eyebrow">Free scanner</div>
   <h1>Trendline Hero</h1>
@@ -286,6 +333,7 @@ a.hy:hover{background:var(--card2)}
 <footer class="dd-ftr"><nav aria-label="Site links">
 <a href="/">ChartPulse home</a><a href="/scanner.html">Tier-1 Scanner</a><a href="/scanners/trend-lines/">Trend Line Scanner</a><a href="/scanners/hybrid-trend-lines/">Hybrid Trend Line Scanner</a><a href="/scanners/day-drive/">Day Drive Scanner</a><a href="/scanners/">All free scanners</a><a href="/scanners/ema-200/">200 EMA Scanner</a><a href="/desk/">AI Scan</a><a href="/backtesting/">Backtesting</a><a href="/bias/">Market bias</a><a href="/pricing.html">Pricing</a><a href="/legal/disclaimer">Risk disclaimer</a>
 </nav></footer>
+<script src="/static/v2/trendlines.js?v=6"></script>
 <script>
 (() => {
 "use strict";
@@ -335,7 +383,7 @@ function plan(r) {
   return `<div class="hy-plan"><div><span>Entry (now)</span><b>${fmt(p.entry, r.dec)}</b></div><div class="sl"><span>Stop-loss · ${p.risk_pct}%</span><b>${fmt(p.sl, r.dec)}</b></div><div class="tg"><span>Target 1 · ${p.t1x || 1.5} × risk</span><b>${fmt(p.t1, r.dec)}</b></div><div class="tg"><span>Target 2 · ${esc(p.t2why)}</span><b>${fmt(p.t2, r.dec)}</b></div></div>`;
 }
 function card(r) {
-  return `<a class="hy s${r.stage >= 4 && !r.live ? "0" : r.stage}" href="/scanners/trend-lines/?s=${encodeURIComponent(r.symbol)}">
+  return `<a class="hy s${r.stage >= 4 && !r.live ? "0" : r.stage}" href="/scanners/trendline-hero/?s=${encodeURIComponent(r.symbol)}">
     <div class="hy-top"><span class="tls-call ${r.bias}">${r.bias === "CALL" ? "▲ CALL" : "▼ PUT"}</span><h3>${esc(r.name)}</h3><small>${esc(r.symbol)} · ${esc(r.market || "")} · ${fmt(r.price, r.dec)}</small><span class="hy-stage">${stg(r)}${L.fresh.has(r.symbol) ? '<span class="hy-new">NEW</span>' : ""}</span></div>
     <p class="hy-say">${say(r)}</p>
     ${nowline(r)}
@@ -382,6 +430,111 @@ function tabs(id, key, attr) {
 tabs("#hyStage", "stage", "s"); tabs("#hySide", "side", "d"); tabs("#hyMkt", "mkt", "m"); tabs("#hyTf", "tfq", "t");
 $("#hyQ").addEventListener("input", e => { L.q = e.target.value.trim().toLowerCase(); L.show = 40; paint(); });
 $("#hyMore").addEventListener("click", () => { L.show += 40; paint(); });
+
+/* ---------------- Tier 2: one market, entry on the small chart ---------------- */
+const TV_EMBED = { "^GSPC": "FOREXCOM:SPXUSD", "ES=F": "FOREXCOM:SPXUSD", "^NDX": "FOREXCOM:NSXUSD", "NQ=F": "FOREXCOM:NSXUSD", "^DJI": "FOREXCOM:DJI", "YM=F": "FOREXCOM:DJI", "GC=F": "OANDA:XAUUSD", "SI=F": "OANDA:XAGUSD", "PL=F": "OANDA:XPTUSD", "PA=F": "OANDA:XPDUSD", "HG=F": "OANDA:XCUUSD", "CL=F": "TVC:USOIL", "BZ=F": "TVC:UKOIL", "NG=F": "OANDA:NATGASUSD", "DX-Y.NYB": "TVC:DXY", "BTC-USD": "BITSTAMP:BTCUSD", "ETH-USD": "BITSTAMP:ETHUSD" };
+const TV_SUF = { ".NS": "NSE", ".BO": "BSE", ".TO": "TSX", ".L": "LSE", ".DE": "XETR", ".PA": "EURONEXT", ".AS": "EURONEXT", ".SW": "SIX", ".MI": "MIL", ".MC": "BME", ".CO": "OMXCOP", ".ST": "OMXSTO", ".T": "TSE", ".HK": "HKEX", ".KS": "KRX", ".TW": "TWSE", ".SI": "SGX", ".AX": "ASX", ".SA": "BMFBOVESPA" };
+function tvSym(s) {
+  if (TV_EMBED[s]) return [TV_EMBED[s], true];
+  if (s.endsWith("=X")) return ["FX_IDC:" + s.slice(0, -2), true];
+  if (s.endsWith("-USD")) return ["CRYPTO:" + s.slice(0, -4).replace(/\d+$/, "") + "USD", true];
+  if (/^[A-Z][A-Z0-9-]{0,6}$/.test(s)) return [s.replace("-", "."), true];
+  const i = s.lastIndexOf("."); if (i > 0 && TV_SUF[s.slice(i)]) return [TV_SUF[s.slice(i)] + ":" + (s.endsWith(".HK") ? String(+s.slice(0, i)) : s.slice(0, i).replace(/-/g, "_")), false];
+  return [s, false];
+}
+function tvMount(sym) {
+  const el = $("#h2Tv"), [code, embed] = tvSym(sym), link = "https://www.tradingview.com/chart/?symbol=" + encodeURIComponent(code);
+  const fail = () => { el.style.height = "auto"; el.innerHTML = `<p class="dd-empty" style="margin:0;padding:22px">The live TradingView chart is not available for this market inside the page. <a href="${link}" target="_blank" rel="noopener" style="color:var(--gold)">Open it on TradingView ↗</a></p>`; };
+  if (!embed) return fail();
+  el.innerHTML = '<div class="tradingview-widget-container"><div class="tradingview-widget-container__widget"></div></div>';
+  const s = document.createElement("script"); s.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"; s.async = true;
+  s.innerHTML = JSON.stringify({ autosize: true, symbol: code, interval: "5", timezone: "Etc/UTC", theme: "dark", style: "1", locale: "en", hide_side_toolbar: true, allow_symbol_change: false, save_image: false, support_host: "https://www.tradingview.com" });
+  s.onerror = fail; el.firstChild.appendChild(s);
+  setTimeout(() => { if (!el.querySelector("iframe")) fail(); }, 9000);
+}
+function t2chart(d) {
+  const B = d.bars; if (!B || !B.length) return `<p class="dd-empty" style="margin:0;padding:22px">No small-chart candles for this market yet.</p>`;
+  const r = d.row, e = d.entry, W = 980, H = 420, PL = 8, PR = 118, PT = 14, PB = 22;
+  const lv = []; const add = (v, c, t, dash) => { if (v != null && isFinite(v)) lv.push({ v: +v, c, t, dash }); };
+  if (r) add(r.lv, "#E9C46A", `${TFN[r.tf] || r.tf} ${r.bias === "PUT" ? "resistance" : "support"} line`);
+  add(r && r.bias === "CALL" ? d.day.l : d.day.h, "#6EA8FE", r && r.bias === "CALL" ? "Today's low" : "Today's high", "2 4");
+  if (e && e.trigger != null) add(e.trigger, "#EDEDEF", e.state === "wait_break" ? "Entry trigger" : "Trigger level", "6 4");
+  if (e && e.sl != null) add(e.sl, "#F7525F", "Stop-loss");
+  if (e && e.entry != null && e.state !== "wait_break") add(e.entry, "#EDEDEF", "Entry");
+  let lo = Math.min(...B.map(b => b[3])), hi = Math.max(...B.map(b => b[2]));
+  const span0 = hi - lo || 1; lv.forEach(x => { if (x.v < hi + span0 * 0.6 && x.v > lo - span0 * 0.6) { lo = Math.min(lo, x.v); hi = Math.max(hi, x.v); } });
+  let t1off = "";
+  if (e && e.t1 != null) { if (e.t1 < hi + span0 * 0.6 && e.t1 > lo - span0 * 0.6) { add(e.t1, "#22AB94", "Target 1"); lo = Math.min(lo, e.t1); hi = Math.max(hi, e.t1); } else t1off = `Target 1 (${fmt(e.t1, d.dec)}) is beyond this chart.`; }
+  const pad = (hi - lo) * 0.06 || 1; lo -= pad; hi += pad;
+  const y = v => PT + (hi - v) / (hi - lo) * (H - PT - PB), cw = (W - PL - PR) / B.length, x = i => PL + cw * (i + 0.5);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Entry chart">`;
+  B.forEach((b, i) => { const up = b[4] >= b[1], c = up ? "#22AB94" : "#F7525F", yo = y(b[1]), yc = y(b[4]);
+    s += `<line x1="${x(i)}" x2="${x(i)}" y1="${y(b[2])}" y2="${y(b[3])}" stroke="${c}" stroke-width="1"/><rect x="${x(i) - cw * 0.32}" y="${Math.min(yo, yc)}" width="${cw * 0.64}" height="${Math.max(1, Math.abs(yc - yo))}" fill="${c}"/>`; });
+  const mark = (t, txt, col, above) => { const i = B.findIndex(b => b[0] === t); if (i < 0) return; const b = B[i], yy = above ? y(b[2]) - 8 : y(b[3]) + 16;
+    s += `<text x="${x(i)}" y="${yy}" fill="${col}" font-size="12" font-weight="700" text-anchor="middle" font-family="IBM Plex Mono,monospace">${txt}</text>`; };
+  if (e && e.peak_t) mark(e.peak_t, r.bias === "PUT" ? "▼ high at the line" : "▲ low at the line", "#E9C46A", r.bias === "PUT");
+  if (e && e.trig_t) mark(e.trig_t, "ENTRY", "#EDEDEF", r.bias !== "PUT");
+  lv.sort((a, b) => b.v - a.v); let last = -99;
+  lv.forEach(L => { if (L.v > hi || L.v < lo) return; const yy = y(L.v); let ty = Math.max(yy + 4, last + 13); last = ty;
+    s += `<line x1="${PL}" x2="${W - PR}" y1="${yy}" y2="${yy}" stroke="${L.c}" stroke-width="${L.dash ? 1 : 1.6}" ${L.dash ? `stroke-dasharray="${L.dash}"` : ""} opacity=".9"/><text x="${W - PR + 6}" y="${ty}" fill="${L.c}" font-size="11.5" font-family="IBM Plex Mono,monospace">${fmt(L.v, d.dec)}</text>`; });
+  s += "</svg>";
+  $("#h2Legend").innerHTML = lv.filter(L => L.v <= hi && L.v >= lo).map(L => `<span><i style="border-color:${L.c};${L.dash ? "border-top-style:dashed" : ""}"></i>${esc(L.t)} ${fmt(L.v, d.dec)}</span>`).join("") + (t1off ? `<span>${t1off}</span>` : "");
+  return s;
+}
+function t2paint(d) {
+  const r = d.row, e = d.entry, put = d.bias === "PUT", m = d.mtf || { d: {} }, sm = TFN[d.stf] || (d.stf === "5m" ? "5-min" : d.stf);
+  const smn = d.stf === "5m" ? "5-minute" : d.stf === "30m" ? "30-minute" : "1-hour";
+  $("#h2Name").textContent = d.name; $("#h2Meta").textContent = `${d.symbol} · ${d.market || ""} · ${fmt(d.price, d.dec)}`;
+  $("#h2Side").innerHTML = d.bias ? `<span class="tls-call ${d.bias}">${put ? "▼ PUT" : "▲ CALL"}</span>` : "";
+  document.title = `${d.name} · Trendline Hero entry · ChartPulse`;
+  const up = k => (m.d[k] || 0) > 0 ? "up" : (m.d[k] || 0) < 0 ? "down" : "flat";
+  // headline
+  let cls = "off", t = "", p = "";
+  if (!d.bias) { t = "No trade: the big trend is not clear"; p = `Daily is ${up("1D")}, 4-hour is ${up("4H")}, Weekly is ${up("1W")}. Trendline Hero needs the 4-hour or the Weekly trend to agree with the Daily trend.`; }
+  else if (!r) { t = `Trend is ${put ? "down" : "up"}, but price is not at a line`; p = `No ${put ? "resistance" : "support"} trend line has today's ${put ? "high" : "low"} on it right now. Nothing to do until price comes to a line.`; }
+  else if (!e) { t = "Setup found, small chart not available"; p = "There are no small-chart candles for this market, so the entry cannot be timed here."; }
+  else if (e.state === "entry") { cls = "entry"; t = `ENTRY NOW · ${d.bias}`; p = `A ${smn} candle closed ${put ? "below" : "above"} ${fmt(e.trigger, d.dec)}${e.bars_ago ? `, ${e.bars_ago} candle${e.bars_ago > 1 ? "s" : ""} ago` : " on the last candle"}. Price turned at the line and broke the small swing: this is the entry.`; }
+  else if (e.state === "wait_break") { cls = "wait"; t = `GET READY · wait for the entry candle`; p = `Price reached the line. Enter ${d.bias} only when a ${smn} candle closes ${put ? "below" : "above"} <b>${fmt(e.trigger, d.dec)}</b>. Until then, do nothing.`; }
+  else if (e.state === "late") { t = "Entry already happened"; p = `The entry candle closed ${e.bars_ago} candles ago and price has moved on. Chasing it now means a worse price. Wait for the next setup, or for price to come back to the line.`; }
+  else if (e.state === "failed") { t = "Entry failed"; p = `The entry triggered, then price went back past the stop at ${fmt(e.sl, d.dec)}. This setup is over. Wait for a new one.`; }
+  else { cls = "wait"; t = "WAIT · price has not reached the line yet"; p = `The setup is valid, but in the last few hours price has not touched the ${TFN[r.tf] || r.tf} ${put ? "resistance" : "support"} line at ${fmt(r.lv, d.dec)}. Wait for it to get there.`; }
+  $("#h2State").innerHTML = `<div class="h2-state ${cls}"><b class="t">${t}</b><p>${p}</p></div>`;
+  // three checks
+  const both = (m.d["4H"] || 0) === (m.d["1D"] || 0) && (m.d["1W"] || 0) === (m.d["1D"] || 0);
+  const c1 = d.bias ? ["ok", `Big trend is ${put ? "DOWN" : "UP"}`, `Daily is ${up("1D")} and ${(m.d["4H"] || 0) === (m.d["1D"] || 0) ? (both ? "the 4-hour and the Weekly agree (strong trend)" : "the 4-hour agrees") : "the Weekly agrees"}. So only ${d.bias} trades.`] : ["no", "Big trend not clear", `Daily ${up("1D")}, 4-hour ${up("4H")}, Weekly ${up("1W")}.`];
+  const c2 = r ? ["ok", `${TFN[r.tf] || r.tf} ${put ? "resistance" : "support"} line + today's ${put ? "high" : "low"}`, `Line at ${fmt(r.lv, d.dec)} (${r.touches} touches). Today's ${put ? "high" : "low"} is ${fmt(r.day_x, d.dec)}. ${r.zone ? (r.zone.t === "strong" ? "★ Strong zone: " : "Major zone: ") + r.zone.n.join(" + ") + "." : "No key zone on the line."}`] : ["no", "No line at today's " + (put ? "high" : "low"), "Price has to come to a trend line first."];
+  const c3 = e && e.state === "entry" ? ["ok", `Entry candle on the ${smn} chart`, `Closed ${put ? "below" : "above"} ${fmt(e.trigger, d.dec)}.${e.sweep ? " Price went through the line first and came back (sweep): the best kind of entry." : ""}`]
+    : ["no", `Entry candle on the ${smn} chart`, e && e.trigger != null && e.state === "wait_break" ? `Waiting for a close ${put ? "below" : "above"} ${fmt(e.trigger, d.dec)}.` : e && e.state === "late" ? "Already happened, too late to chase." : e && e.state === "failed" ? "Triggered and failed." : "Not yet."];
+  $("#h2Checks").innerHTML = [["CHECK 1 · SIDE", c1], ["CHECK 2 · PLACE", c2], ["CHECK 3 · ENTRY", c3]].map(([n, c]) => `<li class="${c[0]}"><span>${c[0] === "ok" ? "✓ " : "… "}${n}</span><b>${esc(c[1])}</b><p>${esc(c[2])}</p></li>`).join("");
+  // plan
+  $("#h2Plan").innerHTML = e && e.entry != null && (e.state === "entry" || e.state === "wait_break") ? `<div class="hy-plan" style="margin-top:14px"><div><span>${e.state === "entry" ? "Entry (now)" : "Entry (when the candle closes)"}</span><b>${fmt(e.entry, d.dec)}</b></div><div class="sl"><span>Stop-loss · ${e.risk_pct}% risk</span><b>${fmt(e.sl, d.dec)}</b></div><div class="tg"><span>Target 1 · ${e.rr1} × risk</span><b>${fmt(e.t1, d.dec)}</b></div><div class="tg"><span>Target 2 · ${e.rr2} × risk · ${esc(e.t2why)}</span><b>${fmt(e.t2, d.dec)}</b></div></div>` : "";
+  $("#h2ChartH").textContent = `Entry chart · ${smn} candles`;
+  $("#h2ChartSub").textContent = r ? `The last ${d.bars ? d.bars.length : 0} candles. The gold line is the big chart's trend line. The entry is the candle that closes past the dashed white trigger level.` : "The last candles on the small chart.";
+  $("#h2Chart").innerHTML = t2chart(d);
+  const how = !r ? [`Wait until the list shows this market at a line. Without a line there is no trade.`]
+    : [`<b>Side:</b> the big trend is ${put ? "down" : "up"}, so take only a <b>${d.bias}</b>. Ignore ${put ? "CALL" : "PUT"} ideas on this market today.`,
+       `<b>Place:</b> wait for price to come to the ${TFN[r.tf] || r.tf} ${put ? "resistance" : "support"} line near <b>${fmt(r.lv, d.dec)}</b>. Do not enter in the middle of nowhere.`,
+       `<b>Entry:</b> open the ${smn} chart. After price touches the line, enter when a candle <b>closes ${put ? "below" : "above"} ${e && e.trigger != null ? fmt(e.trigger, d.dec) : "the last small swing " + (put ? "low" : "high")}</b>. A wick is not enough: wait for the close.`,
+       `<b>Stop-loss:</b> just ${put ? "above the high" : "below the low"} that price made at the line${e && e.sl != null ? ` (<b>${fmt(e.sl, d.dec)}</b>)` : ""}. If price goes there, the idea is wrong: exit.`,
+       `<b>Targets:</b> take part of the profit at Target 1 and move the stop to your entry price. Let the rest run to Target 2${BIG[r.tf] ? `, which is long because the line comes from the ${TFN[r.tf]} chart` : ""}.`,
+       `<b>Skip it if</b> the entry candle is very large (your stop becomes too wide), or the market is about to close.`];
+  $("#h2How").innerHTML = how.map(x => `<li>${x}</li>`).join("");
+}
+async function t2load(sym, first) {
+  try {
+    const r = await fetch(`/tl_api.php?r=hero&s=${encodeURIComponent(sym)}`, { cache: "no-store" }); const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    t2paint(d);
+  } catch (e) { if (first) { $("#h2Name").textContent = "Market not found"; $("#h2State").innerHTML = `<div class="h2-state off"><b class="t">${esc(e.message || "Could not load this market.")}</b><p>Go back to the list and pick a market.</p></div>`; } }
+  setTimeout(() => t2load(sym, false), 20000);
+}
+const QS = new URLSearchParams(location.search).get("s");
+if (QS) {
+  $("#hyApp").hidden = true; $("#heroT2").hidden = false;
+  t2load(QS, true); tvMount(QS);
+  try { window.CP.trendlines.mount($("#h2Lines"), QS); } catch (e) {}
+  return;
+}
 load();
 })();
 </script>

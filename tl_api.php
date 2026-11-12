@@ -31,6 +31,12 @@ if (!headers_sent() && str_contains((string)($_SERVER['HTTP_ACCEPT_ENCODING'] ??
 if (!t_rl('tl', 40)) { header('Retry-After: 30'); tl_json(['error' => 'Too many requests. Please wait a few seconds.'], 429); }
 if (($_GET['r'] ?? '') === 'tgstatus') { require_once __DIR__ . '/tg_alerts.php'; echo json_encode(tga_status()); exit; }
 if (($_GET['r'] ?? '') === 'hybrid') { @set_time_limit(60); tl_json(tlh_scan()); }
+if (($_GET['r'] ?? '') === 'hero' && isset($_GET['s'])) {   // Trendline Hero, Tier 2: one market with the 5-minute entry
+    $hs = (string)$_GET['s'];
+    if ($hs === '' || strlen($hs) > 24 || !isset(t_symbols()[$hs])) tl_json(['error' => 'Unknown market.'], 404);
+    $hd = tlh_detail($hs); if (!$hd) tl_json(['error' => 'No data for this market yet.'], 404);
+    tl_json($hd);
+}
 if (($_GET['r'] ?? '') === 'hero') { @set_time_limit(60); tl_json(tlh_scan(true)); }   // Trendline Hero: 1W 1D 4H 1H 30m
 if (($_GET['r'] ?? '') === 'scan') { @set_time_limit(60); tl_json(tl_scan()); }
 $s = (string)($_GET['s'] ?? '');
