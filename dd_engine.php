@@ -51,6 +51,7 @@ if (PHP_SAPI !== 'cli' && realpath(__FILE__) === realpath((string)($_SERVER['SCR
 }
 
 require_once __DIR__ . '/torus_engine.php';
+require_once __DIR__ . '/tl_engine.php';   // zones + trend lines for the Bounce mode
 
 const DD_DIR       = T_DATA . '/daydrive';
 const DD_CACHE_TTL = 90;     // a built row stays fresh this long
@@ -203,7 +204,14 @@ function dd_pivots(array $F, int $from, int $to): array {
  * window's extreme: a completed push that has just been rejected.
  */
 function dd_fractal5(array $F, int $from, int $to, int $sg, float $atr): array {
-    $p = dd_pivots($F, $from, $to);
+    // zigzag: two highs (or two lows) in a row keep only the more extreme one, so the swings alternate
+    $z = [];
+    foreach (dd_pivots($F, $from, $to) as $q) {
+        $k = count($z) - 1;
+        if ($k >= 0 && $z[$k][2] === $q[2]) { if ($q[2] > 0 ? $q[1] >= $z[$k][1] : $q[1] <= $z[$k][1]) $z[$k] = $q; }
+        else $z[] = $q;
+    }
+    $p = $z;
     if (count($p) < 5) return [false, 'fewer than 5 swings'];
     $last = array_slice($p, -5);
     for ($i = 1; $i < 5; $i++) if ($last[$i][2] === $last[$i - 1][2]) return [false, 'swings not alternating'];
@@ -830,6 +838,71 @@ function dd_risk(string $sym, array $fr, array $F5, int $sg, float $entry, float
 // ===========================================================================
 // One symbol
 // ===========================================================================
+// ===========================================================================
+// Bounce mode (owner, 13 Nov 2026): a reversal off today's low / high AGAINST the
+// daily trend (CL=F at its support line + 200 EMA while the daily is bearish).
+//   BOUNCE GO    = a fresh 5m change of character away from today's extreme (any reversal counts)
+//   BOUNCE READY = price is still at today's extreme and that extreme sits on a zone
+// When the extreme sits on 2+ zones / lines the card says "reversed from a strong zone".
+// One target only: the nearest level in the way (VWAP, pivot, PDH/PDL, Fib, a trend line), else 1.5 x risk.
+// ===========================================================================
+function dd_tlrows(): array {
+    static $m = null; if ($m !== null) return $m;
+    $c = t_read_json(T_DATA . '/tl/_scan6.json', null); $m = [];
+    foreach ((is_array($c) ? $c['rows'] ?? [] : []) as $r) if (isset($r['symbol'])) $m[$r['symbol']] = $r;
+    return $m;
+}
+function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $px, int $now): ?array {
+    $tl = dd_tlrows()[$sym] ?? null; $mtf = $tl['mtf']['d'] ?? null;
+    if (!is_array($mtf) || empty($mtf['1D'])) return null;
+    $sg = -(int)$mtf['1D']; $call = $sg > 0;                         // against the daily trend
+    $D = $fr['1D']; $nD = count($D['c']); $A = t_atr($D, 14); $aD = (float)end($A); if ($aD <= 0) return null;
+    // today's 5m bars
+    $ia = null; $n5 = count($F5['t'] ?? []);
+    for ($i = 0; $i < $n5; $i++) if ((int)$F5['t'][$i] >= $cs) { $ia = $i; break; }
+    $today = $ia !== null && $n5 - $ia >= 6;
+    if ($today) {
+        $ix = $ia; for ($i = $ia; $i < $n5; $i++) if ($call ? (float)$F5['l'][$i] < (float)$F5['l'][$ix] : (float)$F5['h'][$i] > (float)$F5['h'][$ix]) $ix = $i;
+        $ext = (float)($call ? $F5['l'][$ix] : $F5['h'][$ix]);
+        $A5 = t_atr($F5, 14); $a5 = (float)end($A5); if ($a5 <= 0) $a5 = 0.1 * $aD;
+    } else { $ix = null; $ext = (float)($call ? $D['l'][$nD - 1] : $D['h'][$nD - 1]); $a5 = 0.1 * $aD; }
+    // zones and lines at today's extreme
+    $tol = 0.15 * $aD; $hit = [];
+    $Z = array_values(array_filter(tl_zones($fr), fn($z) => $z['k'] !== 'Day High' && $z['k'] !== 'Day Low'));
+    foreach ($Z as $z) if (abs($z['p'] - $ext) <= $tol) $hit[$z['g'] === 'fib' ? 'Fib' : ($z['g'] === 'pivot' ? 'Pivot' : $z['k'])] = $z['k'];
+    foreach (['1W' => 'Weekly', '1D' => 'Daily', '4H' => '4H', '1H' => '1H', '30m' => '30m', '15m' => '15m'] as $k => $nm) {
+        $L = $tl['tf'][$k][$call ? 'sup' : 'res'] ?? null;
+        if (is_array($L) && (int)$L['n'] >= 2 && abs((float)$L['now'] - $ext) <= $tol) { $hit['line'] = $nm . ' ' . ($call ? 'support' : 'resistance') . ' line'; break; }
+    }
+    $H = $fr['1H'];
+    if (count($H['c']) >= 220) {
+        $k2 = 2 / 201; $e = array_sum(array_slice($H['c'], 0, 200)) / 200;
+        for ($i = 200, $m = count($H['c']); $i < $m; $i++) $e += ((float)$H['c'][$i] - $e) * $k2;
+        if (abs($e - $ext) <= $tol) $hit['ema'] = '200 EMA (1H)';
+    }
+    $zones = array_values($hit); $strong = count($zones) >= 2;
+    $trends = []; foreach (['1W', '1D', '4H', '1H', '30m'] as $k) if (isset($mtf[$k])) $trends[$k] = (int)$mtf[$k] > 0 ? 'up' : 'down';
+    $base = ['side' => $call ? 'CALL' : 'PUT', 'extreme' => dd_f($ext), 'zones' => $zones, 'strong' => $strong, 'trends' => $trends];
+    if (!$today) return $zones ? $base + ['status' => 'NEED5M'] : null;      // ask the scan for fresh 5m bars
+    // has it turned? a fresh 5m change of character after the extreme
+    $ch = $ix < $n5 - 2 ? dd_choch($F5, $ix, $n5, $sg, 8) : null;
+    $away = ($px - $ext) * $sg;                                        // > 0: price is off the extreme on our side
+    if ($ch && $away > 0 && $away <= 3 * $a5) {
+        $entry = (float)$ch[2]; $sl = $ext - $sg * 0.15 * $a5; $risk = abs($entry - $sl); if ($risk <= 0) return null;
+        $lv = [];
+        $vw = dd_vwap($F5, $cs, $ce ?: $cs + 86400); if ($vw) $lv[] = [(float)$vw['value'], 'VWAP'];
+        foreach ($Z as $z) $lv[] = [(float)$z['p'], $z['k']];
+        foreach ($tl['tf'] ?? [] as $k => $c) { $L = $c[$call ? 'res' : 'sup'] ?? null; if (is_array($L) && (int)$L['n'] >= 2) $lv[] = [(float)$L['now'], $k . ' trend line']; }
+        $tp = null;
+        foreach ($lv as [$p, $nm]) { $d = ($p - $entry) * $sg; if ($d >= 0.8 * $risk && ($tp === null || $d < ($tp[0] - $entry) * $sg)) $tp = [$p, $nm]; }
+        if ($tp === null) $tp = [$entry + $sg * 1.5 * $risk, '1.5 x the risk'];
+        return $base + ['status' => 'BOUNCE GO', 'entry' => dd_f($entry), 'sl' => dd_f($sl), 't1' => dd_f($tp[0]), 't1why' => $tp[1],
+                        'rr' => round(abs($tp[0] - $entry) / $risk, 1), 'at_bar' => (int)$F5['t'][$ch[1]]];
+    }
+    if ($zones && abs($px - $ext) <= 1.0 * $a5) return $base + ['status' => 'BOUNCE READY'];
+    return null;
+}
+
 function dd_status(array $s1, ?array $s2, ?array $s3): string {
     if (!$s1['pass']) return 'WATCH';
     if ($s2 === null || !$s2['pass']) return 'STRUCTURE OK';
@@ -882,6 +955,11 @@ function dd_eval(string $sym, array $row, bool $deep, array $ctx, int $now): ?ar
 
     $score = $s1['score'] + ($s2['score'] ?? 0) + ($s3['score'] ?? 0);
     $gates = $s1['gates'] + ($s2['gates'] ?? []) + ($s3['gates'] ?? []);
+    $status = dd_status($s1, $s2, $s3); $mode = 'trend'; $bo = null;
+    try { $bo = dd_bounce($sym, $fr, $F5, $cs, $ce, $px, $now); } catch (Throwable $e) { dd_log('bounce', $sym . ': ' . $e->getMessage()); }
+    if ($bo && !in_array($status, ['DRIVE', 'ARMED'], true) && in_array($bo['status'], ['BOUNCE GO', 'BOUNCE READY'], true)) {
+        $status = $bo['status']; $mode = 'bounce'; $sg = $bo['side'] === 'CALL' ? 1 : -1;
+    }
 
     return [
         'symbol' => $sym, 'name' => t_name($sym),
@@ -889,7 +967,7 @@ function dd_eval(string $sym, array $row, bool $deep, array $ctx, int $now): ?ar
         'class' => dd_class($sym), 'tv' => $row['tv'] ?? dd_tv($sym),
         'side' => $sg < 0 ? 'PUT' : 'CALL',
         'price' => dd_f($px),
-        'status' => dd_status($s1, $s2, $s3),
+        'status' => $status, 'mode' => $mode, 'bounce' => $bo,
         'score' => dd_1($score),
         's1' => $s1['score'], 's2' => $s2['score'] ?? null, 's3' => $s3['score'] ?? null,
         'gates' => $gates,
@@ -943,7 +1021,7 @@ function dd_scan(string $mkt = 'all', bool $force = false): array {
             // Step 1 runs off cached frames, so it costs nothing. Fresh 5m bars are
             // fetched only for symbols already through Step 1, and only a few per request.
             $r = dd_eval($sym, $cd['r'], false, $ctx, $now);
-            if ($r && $r['status'] !== 'WATCH' && $deep < DD_DEEP_MAX && $cd['live']) {
+            if ($r && ($r['status'] !== 'WATCH' || ($r['bounce']['status'] ?? '') === 'NEED5M') && $deep < DD_DEEP_MAX && $cd['live']) {
                 $d = dd_eval($sym, $cd['r'], true, $ctx, $now);
                 if ($d) { $r = $d; $deep++; }
             }
@@ -961,7 +1039,7 @@ function dd_scan(string $mkt = 'all', bool $force = false): array {
 
     $list = array_values($rows);
     usort($list, function ($a, $b) {
-        $rank = ['DRIVE' => 0, 'ARMED' => 1, 'TREND OK' => 2, 'STRUCTURE OK' => 3, 'OFF-HOURS' => 4, 'WATCH' => 5];
+        $rank = ['DRIVE' => 0, 'BOUNCE GO' => 1, 'ARMED' => 2, 'BOUNCE READY' => 3, 'TREND OK' => 4, 'STRUCTURE OK' => 5, 'OFF-HOURS' => 6, 'WATCH' => 7];
         $x = $rank[$a['status']] ?? 9; $y = $rank[$b['status']] ?? 9;
         return $x !== $y ? $x <=> $y : (float)$b['score'] <=> (float)$a['score'];
     });
@@ -970,8 +1048,8 @@ function dd_scan(string $mkt = 'all', bool $force = false): array {
     $p = [
         'at' => $now, 'rows' => $list,
         'meta' => ['scanned' => $seen, 'deep' => $deep, 'universe' => count($cands),
-                   'drive' => $cnt('DRIVE'), 'armed' => $cnt('ARMED'),
-                   'structure' => count(array_filter($list, fn($r) => $r['status'] !== 'WATCH')),
+                   'drive' => $cnt('DRIVE'), 'armed' => $cnt('ARMED'), 'bounce_go' => $cnt('BOUNCE GO'), 'bounce_ready' => $cnt('BOUNCE READY'),
+                   'structure' => count(array_filter($list, fn($r) => !in_array($r['status'], ['WATCH', 'BOUNCE GO', 'BOUNCE READY'], true))),
                    'vix' => $ctx['vix'], 'btc_atr_pct' => $ctx['btc_atr_pct'],
                    'took_ms' => (int)round((microtime(true) - $t0) * 1000)],
         'availability' => dd_availability(),
