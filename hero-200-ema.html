@@ -286,7 +286,7 @@ a.hy:hover{background:var(--card2)}
   <p class="dd-lede">Trendline Hero, with one more reason added. The setup is listed only when the <b>200 EMA of the 1-hour chart</b> sits on the same trend line. So four things meet in one place: the big trend, a trend line, today's high or low, and the 200 EMA.</p>
   <ol class="dd-steps">
     <li><span>STEP 1</span><b>Find the big trend</b><p>The Daily trend decides. The 4-hour or the Weekly trend must agree with it. Trend down = PUT only. Trend up = CALL only.</p></li>
-    <li><span>STEP 2</span><b>Line + today's high or low</b><p>PUT: today's high sits on a resistance trend line. CALL: today's low sits on a support trend line. Lines come from 30m, 1H, 4H, Daily and Weekly charts.</p></li>
+    <li><span>STEP 2</span><b>Line + day / week / month high or low</b><p>PUT: today's, this week's or this month's high sits on a resistance trend line. CALL: the day, week or month low sits on a support trend line. Lines come from 30m, 1H, 4H, Daily and Weekly charts.</p></li>
     <li><span>STEP 3</span><b>Wait for the turn</b><p>Price at the line is the signal. It becomes an alert when a 30-minute candle touches the line and closes away, or closes through it and then closes back.</p></li>
     <li><span>STEP 4</span><b>200 EMA on the line</b><p>The 1-hour 200 EMA is within one 1-hour ATR of the trend line. Many traders watch this average, so the line has a second reason to hold.</p></li>
   </ol>
@@ -340,6 +340,7 @@ a.hy:hover{background:var(--card2)}
 const $ = (s, r = document) => r.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const MTF = ["30m", "1H", "4H", "1D", "1W"];
+const anc = r => (r.anchor ? (r.anchor.startsWith("Day") ? "today's " : "this " + (r.anchor.startsWith("Week") ? "week's " : "month's ")) + (r.bias === "PUT" ? "high" : "low") : "today's " + (r.bias === "PUT" ? "high" : "low"));
 const TFN = { "1W": "Weekly", "1D": "Daily", "4H": "4-hour", "1H": "1-hour", "30m": "30-min", "15m": "15-min" };
 const BIG = { "1W": 1, "1D": 1, "4H": 1 };
 const STG = { 5: "ALERT · Failed break", 4: "ALERT · Rejection", 3: "SIGNAL · At the line", 2: "Broken, waiting", 1: "Approaching" };
@@ -353,7 +354,7 @@ function mtf(r) {
   return `<span class="tls-mtf" style="min-width:150px"><span class="sq">${MTF.map(k => `<i class="${(m.d[k] || 0) > 0 ? "u" : (m.d[k] || 0) < 0 ? "d" : ""}" title="${k}"></i>`).join("")}</span><b class="${r.bias}">${r.bias === "CALL" ? "▲ Uptrend" : "▼ Downtrend"} · Daily + ${(m.d["4H"] || 0) === (m.d["1D"] || 0) ? "4H" : "Weekly"}${(m.d["4H"] || 0) === (m.d["1D"] || 0) && (m.d["1W"] || 0) === (m.d["1D"] || 0) ? " + Weekly" : ""}</b></span>`;
 }
 function say(r) {
-  const put = r.bias === "PUT", line = `${TFN[r.tf] || r.tf} ${put ? "resistance" : "support"} line at <b>${fmt(r.lv, r.dec)}</b>`, ext = `today's ${put ? "high" : "low"} <b>${fmt(r.day_x, r.dec)}</b>`, c = `${TFN[r.etf] || r.etf} candle`;
+  const put = r.bias === "PUT", line = `${TFN[r.tf] || r.tf} ${put ? "resistance" : "support"} line at <b>${fmt(r.lv, r.dec)}</b>`, ext = `${anc(r)} <b>${fmt(r.anchor_x ?? r.day_x, r.dec)}</b>`, c = `${TFN[r.etf] || r.etf} candle`;
   if (r.stage === 5) return `Price closed ${put ? "above" : "below"} the ${line}, then a ${c} closed back ${put ? "below" : "above"} it. The breakout failed: this is the ${r.bias} trigger.`;
   if (r.stage === 4) return `A ${c} touched the ${line} and closed ${put ? "down" : "up"} away from it (${ext}). The line held: this is the ${r.bias} trigger.`;
   if (r.stage === 3) return `Price is right at the ${line}, and ${ext} is at it too. This is the ${r.bias} zone: the trend is ${put ? "down" : "up"} and price is at the ${put ? "resistance" : "support"}. A ${c} turning ${put ? "down" : "up"} here upgrades it to an alert.`;
@@ -375,7 +376,8 @@ function chips(r) {
   f.push(BIG[r.tf] ? ["g", `${TFN[r.tf]} line · long target`] : ["n", `${TFN[r.tf] || r.tf} line · short target`]);
   if (r.with4h && r.with1w) f.push(["g", "Strong trend · Daily + 4H + Weekly agree"]);
   if (r.e200 && r.e200.ok) f.push(["g", `1H 200 EMA on the line · ${fmt(r.e200.e, r.dec)}${r.e200.side ? "" : " (price on the wrong side of it)"}`]);
-  if (r.through) f.push(["g", `Day ${r.bias === "PUT" ? "high" : "low"} swept the line`]);
+  if (r.through) f.push(["g", `${r.anchor || ("Day " + (r.bias === "PUT" ? "high" : "low"))} swept the line`]);
+  if (r.anchor && !/^Day/.test(r.anchor)) f.push(["g", `★ ${r.anchor} on the line`]);
   if (r.lines > 1) f.push(["g", `+${r.lines - 1} more line${r.lines > 2 ? "s" : ""} here`]);
   return `<span class="tls-fx">${f.map(([k, t]) => `<i class="${k}">${k === "g" ? "✓ " : ""}${esc(t)}</i>`).join("")}</span>`;
 }
@@ -506,7 +508,7 @@ function t2paint(d) {
   // three checks
   const both = (m.d["4H"] || 0) === (m.d["1D"] || 0) && (m.d["1W"] || 0) === (m.d["1D"] || 0);
   const c1 = d.bias ? ["ok", `Big trend is ${put ? "DOWN" : "UP"}`, `Daily is ${up("1D")} and ${(m.d["4H"] || 0) === (m.d["1D"] || 0) ? (both ? "the 4-hour and the Weekly agree (strong trend)" : "the 4-hour agrees") : "the Weekly agrees"}. So only ${d.bias} trades.`] : ["no", "Big trend not clear", `Daily ${up("1D")}, 4-hour ${up("4H")}, Weekly ${up("1W")}.`];
-  const c2 = r ? ["ok", `${TFN[r.tf] || r.tf} ${put ? "resistance" : "support"} line + today's ${put ? "high" : "low"}`, `Line at ${fmt(r.lv, d.dec)} (${r.touches} touches). Today's ${put ? "high" : "low"} is ${fmt(r.day_x, d.dec)}. ${r.zone ? (r.zone.t === "strong" ? "★ Strong zone: " : "Major zone: ") + r.zone.n.join(" + ") + "." : "No key zone on the line."}${r.e200 ? (r.e200.ok ? ` The 1-hour 200 EMA (${fmt(r.e200.e, d.dec)}) is on the same line: two reasons in one place.` : ` The 1-hour 200 EMA is at ${fmt(r.e200.e, d.dec)}, not on this line.`) : ""}`] : ["no", "No line at today's " + (put ? "high" : "low"), "Price has to come to a trend line first."];
+  const c2 = r ? ["ok", `${TFN[r.tf] || r.tf} ${put ? "resistance" : "support"} line + ${anc(r)}`, `Line at ${fmt(r.lv, d.dec)} (${r.touches} touches). The ${anc(r)} is ${fmt(r.anchor_x ?? r.day_x, d.dec)}${(r.anchors||[]).length > 1 ? " (also " + r.anchors.filter(a => a !== r.anchor).map(a => a.toLowerCase()).join(", ") + ")" : ""}. ${r.zone ? (r.zone.t === "strong" ? "★ Strong zone: " : "Major zone: ") + r.zone.n.join(" + ") + "." : "No key zone on the line."}${r.e200 ? (r.e200.ok ? ` The 1-hour 200 EMA (${fmt(r.e200.e, d.dec)}) is on the same line: two reasons in one place.` : ` The 1-hour 200 EMA is at ${fmt(r.e200.e, d.dec)}, not on this line.`) : ""}`] : ["no", "No line at today's " + (put ? "high" : "low"), "Price has to come to a trend line first."];
   const c3 = e && (e.state === "entry" || e.state === "open") ? ["ok", `Entry candle on the ${smn} chart`, `Closed ${put ? "below" : "above"} ${fmt(e.trigger, d.dec)}.${e.sweep ? " Price went through the line first and came back (sweep): the best kind of entry." : ""}`]
     : ["no", `Entry candle on the ${smn} chart`, e && e.trigger != null && e.state === "wait_break" ? `Waiting for a close ${put ? "below" : "above"} ${fmt(e.trigger, d.dec)}.` : e && e.state === "late" ? "Already happened, too late to chase." : e && e.state === "failed" ? "Triggered and failed." : "Not yet."];
   $("#h2Checks").innerHTML = [["CHECK 1 · SIDE", c1], ["CHECK 2 · PLACE", c2], ["CHECK 3 · ENTRY", c3]].map(([n, c]) => `<li class="${c[0]}"><span>${c[0] === "ok" ? "✓ " : "… "}${n}</span><b>${esc(c[1])}</b><p>${esc(c[2])}</p></li>`).join("");

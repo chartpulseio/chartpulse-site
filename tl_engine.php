@@ -485,6 +485,27 @@ function tlh_bias(array $mtf): ?string {
 const TLHERO_TFS = ['1W', '1D', '4H', '1H', '30m'];
 const TLHERO_RR = ['1W' => [2.0, 5.0], '1D' => [2.0, 5.0], '4H' => [2.0, 3.5], '1H' => [1.5, 2.5], '30m' => [1.5, 2.5]];
 
+/**
+ * Trendline Hero anchors (owner, 13 Nov 2026): a resistance line is a setup when today's high, this week's high OR this
+ * month's high sits on it (support: day / week / month low). Bigger anchors rank higher: Month > Week > Day.
+ * Week starts Monday, month on the 1st, in the exchange's own time zone.
+ */
+function tlh_anchors(array $D, string $tz, bool $put): array {
+    $n = count($D['c']); $z = new DateTimeZone($tz ?: 'UTC');
+    $last = (new DateTime('@' . (int)$D['t'][$n - 1]))->setTimezone($z);
+    $wk = $last->format('o-W'); $mo = $last->format('Y-m');
+    $w = null; $m = null;
+    for ($i = $n - 1; $i >= max(0, $n - 32); $i--) {
+        $dt = (new DateTime('@' . (int)$D['t'][$i]))->setTimezone($z); $v = (float)($put ? $D['h'][$i] : $D['l'][$i]);
+        if ($dt->format('Y-m') !== $mo) break;
+        $m = $m === null ? $v : ($put ? max($m, $v) : min($m, $v));
+        if ($dt->format('o-W') === $wk) $w = $w === null ? $v : ($put ? max($w, $v) : min($w, $v));
+    }
+    $day = (float)($put ? $D['h'][$n - 1] : $D['l'][$n - 1]);
+    $hl = $put ? 'High' : 'Low';
+    return [['k' => "Month $hl", 'x' => $m ?? $day, 'r' => 3], ['k' => "Week $hl", 'x' => $w ?? $day, 'r' => 2], ['k' => "Day $hl", 'x' => $day, 'r' => 1]];
+}
+
 function tlh_row(string $sym, array $row, int $now, array $tfs = TLH_TFS, string $ePref = '15m', bool $hero = false): ?array {
     $fr = t_read_frames($sym); if (!$fr) return null;
     $D = $fr['1D'] ?? null; $nD = count($D['c'] ?? []); if ($nD < 30) return null;
@@ -504,8 +525,14 @@ function tlh_row(string $sym, array $row, int $now, array $tfs = TLH_TFS, string
         try { $x = tl_frame($k, $src[$k], false); } catch (Throwable $e) { $x = null; }
         $L = $x ? $x[$put ? 'res' : 'sup'] : null; if (!$L) continue;
         if (($k === '10m' || $k === '15m' || $k === '30m') && $L['touches'] < 3) continue;   // a 2-touch line on a small chart is noise
-        $lv = (float)$L['now']; $over = ($dayX - $lv) * $s;           // > 0: the day's extreme went through the line
-        if (!($over >= -TLH_NEAR * $atrD && $over <= TLH_OVER * $atrD)) continue;
+        $lv = (float)$L['now'];
+        // which extreme sits on the line: Hybrid = today's only; Hero = day, week or month (the biggest one that fits)
+        $anc = null; $ancs = [];
+        foreach ($hero ? tlh_anchors($D, (string)($fr['tz'] ?? 'UTC'), $put) : [['k' => $put ? 'Day High' : 'Day Low', 'x' => $dayX, 'r' => 1]] as $a) {
+            $over = ($a['x'] - $lv) * $s;                              // > 0: that extreme went through the line
+            if ($over >= -TLH_NEAR * $atrD && $over <= TLH_OVER * $atrD) { $ancs[] = $a['k']; if ($anc === null || $a['r'] > $anc['r']) $anc = $a; }
+        }
+        if (!$anc) continue;
         $thr = 0.05 * $atrD; $tol = 0.05 * $atrD; $stage = 0; $brk = null;
         for ($i = max(0, $lc - TLH_WIN + 1); $i <= $lc; $i++) if (((float)$E['c'][$i] - $lv) * $s > $thr) $brk = $i;
         $o = (float)$E['o'][$lc]; $h = (float)$E['h'][$lc]; $l = (float)$E['l'][$lc]; $c = (float)$E['c'][$lc]; $rg = max($h - $l, 1e-12);
@@ -527,7 +554,8 @@ function tlh_row(string $sym, array $row, int $now, array $tfs = TLH_TFS, string
         $zone = tl_match($Z, $lv, 0.06 * $atrD);   // tight, so the label means the zone really sits on the line
         $cand = ['tf' => $k, 'stage' => $stage, 'lv' => $lv, 'n' => (int)$L['touches'], 'dir' => $L['dir'], 'pattern' => $x['pattern'],
                  'zone' => $zone ? ['t' => $zone['t'], 'n' => $zone['n']] : null, 'opp' => $x[$put ? 'sup' : 'res']['now'] ?? null, 'brk' => $brk,
-                 'key' => [$stage >= 4 ? $live : 1, $stage, $zone ? ($zone['t'] === 'strong' ? 2 : 1) : 0, TL_TF_PTS[$k] ?? 0, (int)$L['touches']]];
+                 'anc' => $anc, 'ancs' => array_values(array_unique($ancs)),
+                 'key' => [$stage >= 4 ? $live : 1, $stage, $anc['r'], $zone ? ($zone['t'] === 'strong' ? 2 : 1) : 0, TL_TF_PTS[$k] ?? 0, (int)$L['touches']]];
         if ($best === null || $cand['key'] > $best['key']) $best = $cand;
     }
     if (!$best) return null;
@@ -536,7 +564,7 @@ function tlh_row(string $sym, array $row, int $now, array $tfs = TLH_TFS, string
     $plan = null;
     if ($best['stage'] >= 3) {
         // stop beyond the furthest point of the run through the line (or the day's extreme), a little room added
-        $ext = $dayX; for ($i = max(0, $lc - TLH_WIN + 1); $i < $ne; $i++) $ext = $put ? max($ext, (float)$E['h'][$i]) : min($ext, (float)$E['l'][$i]);
+        $ext = $put ? max($dayX, (float)$best['anc']['x']) : min($dayX, (float)$best['anc']['x']); for ($i = max(0, $lc - TLH_WIN + 1); $i < $ne; $i++) $ext = $put ? max($ext, (float)$E['h'][$i]) : min($ext, (float)$E['l'][$i]);
         $sl = $ext + $s * 0.1 * $atrD; $risk = abs($sl - $px);
         if ($risk > 0) {
             [$r1, $r2] = $hero ? (TLHERO_RR[$best['tf']] ?? [1.5, 2.5]) : [1.5, 2.5];
@@ -565,7 +593,8 @@ function tlh_row(string $sym, array $row, int $now, array $tfs = TLH_TFS, string
             'with4h' => (int)($mtf['d']['4H'] ?? 0) === (int)$mtf['d']['1D'], 'with1w' => (int)($mtf['d']['1W'] ?? 0) === (int)$mtf['d']['1D'],
             'stage' => $best['stage'], 'stage_name' => TLH_STAGE[$best['stage']], 'tf' => $best['tf'], 'etf' => $etf,
             'lv' => round($best['lv'], $d), 'touches' => $best['n'], 'line_dir' => $best['dir'], 'pattern' => $best['pattern'],
-            'day_x' => round($dayX, $d), 'gap_atr' => round(abs($dayX - $best['lv']) / $atrD, 2), 'through' => ($dayX - $best['lv']) * $s > 0,
+            'day_x' => round($dayX, $d), 'anchor' => $best['anc']['k'], 'anchor_x' => round((float)$best['anc']['x'], $d), 'anchors' => $best['ancs'],
+            'gap_atr' => round(abs((float)$best['anc']['x'] - $best['lv']) / $atrD, 2), 'through' => ((float)$best['anc']['x'] - $best['lv']) * $s > 0,
             'zone' => $best['zone'], 'lines' => $hits, 'all' => $all, 'plan' => $plan, 'live' => $live,
             'bar_t' => (int)$E['t'][$lc], 'key' => array_merge($best['key'], [count($pull)]), 'at' => $now];
 }
@@ -573,11 +602,11 @@ function tlh_row(string $sym, array $row, int $now, array $tfs = TLH_TFS, string
 /** Whole-universe hybrid scan (same stepping and caching as tl_scan, shorter row life because stages move fast). */
 function tlh_scan(bool $hero = false): array {
     $dir = T_DATA . '/tl'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
-    $now = t_now(); $ck = $dir . ($hero ? '/_heroscan3.json' : '/_hscan5.json');
+    $now = t_now(); $ck = $dir . ($hero ? '/_heroscan4.json' : '/_hscan5.json');
     $c = t_read_json($ck, null);
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 30 && isset($c['rows'])) return $c;
     $scan = t_scan_load(); $syms = array_keys($scan['rows'] ?? []);
-    $cp = $dir . ($hero ? '/_herorows3.json' : '/_hrows5.json'); $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
+    $cp = $dir . ($hero ? '/_herorows4.json' : '/_hrows5.json'); $cache = t_read_json($cp, []); if (!is_array($cache)) $cache = [];
     $t0 = microtime(true); $done = 0; $fresh = 0; $nobias = 0;
     foreach ($syms as $sym) {
         $old = $cache[$sym] ?? null;

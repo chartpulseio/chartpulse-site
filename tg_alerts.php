@@ -93,8 +93,9 @@ function tga_line_item(array $r): ?string {
     $setup = [5 => 'Failed break', 4 => 'Rejection', 3 => 'At the line'][$st] . ' · ' . $tf . ' ' . $side . ' line';
     $what = [5 => 'price broke the ' . $tf . ' ' . $side . ' line at ' . $lv . ', could not hold and came back',
              4 => 'price touched the ' . $tf . ' ' . $side . ' line at ' . $lv . ' and turned ' . ($put ? 'down' : 'up'),
-             3 => 'today\'s ' . ($put ? 'high' : 'low') . ' is sitting on the ' . $tf . ' ' . $side . ' line at ' . $lv][$st];
-    $why = tga_trend($r) . '; ' . $what . '.' . tga_zone($r['zone']['t'] ?? null);
+             3 => (isset($r['anchor']) && !str_starts_with($r['anchor'], 'Day') ? 'this ' . strtolower(strtok($r['anchor'], ' ')) . '\'s ' : 'today\'s ') . ($put ? 'high' : 'low') . ' is sitting on the ' . $tf . ' ' . $side . ' line at ' . $lv][$st];
+    $why = tga_trend($r) . '; ' . $what . '.' . tga_zone($r['zone']['t'] ?? null)
+         . (isset($r['anchor']) && !str_starts_with($r['anchor'], 'Day') ? ' The ' . strtolower($r['anchor']) . ' is on this line.' : '');
     $p = $r['plan'] ?? null;
     $plan = $p ? [tl_px((float)$p['entry'], $dec), tl_px((float)$p['sl'], $dec), tl_px((float)$p['t1'], $dec)] : null;
     return tga_item($r['bias'], (string)$r['name'], tl_px((float)$r['price'], $dec), $setup, $why, $plan);
@@ -108,7 +109,7 @@ function tga_step(int $now): string {
 
     // ---- Trendline Hero + Hero with 200 EMA (same scan; a row with the 1H 200 EMA on its line goes under Hero with 200 EMA)
     try {
-        $p = tga_full(fn() => tlh_scan(true), '_heroscan3.json'); $ev = []; $ev2 = [];
+        $p = tga_full(fn() => tlh_scan(true), '_heroscan4.json'); $ev = []; $ev2 = [];
         if ((float)($p['meta']['progress'] ?? 0) >= 0.9) {
             foreach ($p['rows'] as $r) {
                 $b = tga_line_item($r); if ($b === null) continue;

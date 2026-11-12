@@ -148,6 +148,7 @@ function gf_scan(bool $force = false): array {
             $dayAt = ($t1['zone_near'] ?? '') === ($call ? 'ATR Low' : 'ATR High') && isset($t1['gap']) && abs((float)$t1['gap']) <= 0.75;
             if ($line && (int)$line['stage'] >= 3) $dayAt = true;   // Hero / Hybrid: today's extreme is on the line
             if ($dayAt) $pz['day'] = $call ? "Today's Day Low" : "Today's Day High";
+            if ($he && isset($he['anchor']) && !str_starts_with((string)$he['anchor'], 'Day') && (int)$he['stage'] >= 1) $pz['wm'] = $he['anchor'] . ' on the line';
             $zn = array_values(array_unique(array_map('strval', (array)($line['zone']['n'] ?? []))));
             $zt = null; foreach (array_merge($tlAt, $L['retest']) as $x) if (!empty($x['z'])) { $zt = $x['z']; if ($zt === 'strong') break; }
             if ($zn) $pz['zone'] = implode(' · ', array_slice($zn, 0, 3));
@@ -158,7 +159,7 @@ function gf_scan(bool $force = false): array {
             if ($emaAt) $pz['ema'] = '200 EMA on the zone';
             $smc = array_values(array_filter($st, fn($x) => $x['grp'] === 'loc' && $x['side'] === $side));
             if ($smc) $pz['smc'] = ($smc[0]['tf'] === '1D' ? 'Daily ' : $smc[0]['tf'] . ' ') . ($smc[0]['setup'] !== '' ? $smc[0]['setup'] : $smc[0]['name']);
-            $nPz = count(array_intersect_key($pz, array_flip(['line', 'retest', 'day', 'zone', 'ema', 'smc'])));
+            $nPz = count(array_intersect_key($pz, array_flip(['line', 'retest', 'day', 'wm', 'zone', 'ema', 'smc'])));
             $hasLine = isset($pz['line']) || isset($pz['retest']) || ($line && (int)$line['stage'] >= 1);
             if (!$hasLine && !$dayAt && !$smc) continue;   // GATE 2: price is nowhere near a zone
 
@@ -226,7 +227,7 @@ function gf_scan(bool $force = false): array {
             // ---- checklist the page shows (✓ / ✗), plain words
             $chk = [
                 ['k' => 'bias', 'ok' => true, 't' => 'Big trend ' . ($call ? 'up' : 'down'), 'd' => 'Daily' . ($B['with4h'] ? ' + 4H' : '') . ($B['with1w'] ? ' + Weekly' : '') . " agree · {$B['n']}/{$B['of']} charts"],
-                ['k' => 'zone', 'ok' => $nPz >= 2, 't' => $nPz >= 3 ? 'Power Zone (' . $nPz . ' levels meet)' : ($nPz === 2 ? 'Double zone' : 'Single level'), 'd' => implode(' · ', array_values(array_intersect_key($pz, array_flip(['line', 'retest', 'day', 'zone', 'ema', 'smc']))))],
+                ['k' => 'zone', 'ok' => $nPz >= 2, 't' => $nPz >= 3 ? 'Power Zone (' . $nPz . ' levels meet)' : ($nPz === 2 ? 'Double zone' : 'Single level'), 'd' => implode(' · ', array_values(array_intersect_key($pz, array_flip(['line', 'retest', 'day', 'wm', 'zone', 'ema', 'smc']))))],
                 ['k' => 'line', 'ok' => $strongLine, 't' => $strongLine ? 'Strong trend line' : 'Small-chart line', 'd' => $line ? GF_TFN[$line['tf']] . ' line, ' . $line['touches'] . ' touches' . (($line['pattern'] ?? '') !== '' ? ' · ' . $line['pattern'] : '') : ($tlAt ? GF_TFN[$tlAt[0]['tf']] . ' line, ' . $tlAt[0]['n'] . ' touches' : 'no line right at price')],
                 ['k' => 'trig', 'ok' => $fired, 't' => $fired ? 'Entry trigger fired' : 'Waiting for the turn', 'd' => $fired ? implode(' · ', $trig) : 'No turn candle yet: wait for a rejection, a failed break or a Tier-1 tick'],
                 ['k' => 'mom', 'ok' => (bool)$mom && !$momAgainst, 't' => $mom ? 'Momentum agrees' : ($momAgainst ? 'Momentum disagrees' : 'Momentum neutral'), 'd' => $mom ? gf_fam($mom) : ($momAgainst ? gf_fam($momAgainst) . ' points the other way' : 'No EMA strategy signal on Daily, 1H or 15m')],
@@ -248,7 +249,7 @@ function gf_scan(bool $force = false): array {
             if ($late) $labels[] = ['risk', 'Data ~' . $late . ' min late'];
 
             $say = ($call ? 'CALL' : 'PUT') . ': big trend ' . ($call ? 'up' : 'down') . ', price at ' . strtolower($nPz >= 3 ? 'a power zone' : ($nPz === 2 ? 'a double zone' : 'a level'))
-                 . ' (' . implode(', ', array_slice(array_values(array_intersect_key($pz, array_flip(['line', 'retest', 'day', 'zone', 'ema', 'smc']))), 0, 3)) . '). '
+                 . ' (' . implode(', ', array_slice(array_values(array_intersect_key($pz, array_flip(['line', 'retest', 'day', 'wm', 'zone', 'ema', 'smc']))), 0, 3)) . '). '
                  . ($fired ? 'The turn has printed: ' . $trig[0] . '.' : ($grade === 'READY' ? 'Get ready: wait for a turn candle at the zone.' : 'Watch only for now.'));
 
             $rank = ['A+' => 6, 'A' => 5, 'B' => 4, 'READY' => 3, 'NEWS' => 2, 'WATCH' => 1][$grade];
