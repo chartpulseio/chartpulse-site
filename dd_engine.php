@@ -902,6 +902,9 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
              'with' => $with, 'against' => $against, 'small_with' => $smallWith,
              'tag' => $smallWith ? 'Small trend agrees (' . implode(', ', array_values(array_intersect(['4H', '1H', '30m'], $with))) . ')' : 'Against the small trend too'];
     if (!$today) { $why = 'no intraday bars for today (cs ' . $cs . ')'; return $zones ? $base + ['status' => 'NEED5M'] : null; }      // ask the scan for fresh 5m bars
+    // stale intraday bars (the cached 5m stop well before now) cannot show a turn that already happened: ask for fresh ones
+    $lastBar = (int)$F5['t'][$n5 - 1];
+    if ($zones && $now - $lastBar > 1200 && ($ce === 0 || $now < $ce)) { $why = 'intraday bars ' . round(($now - $lastBar) / 60) . ' min old'; return $base + ['status' => 'NEED5M']; }
     // has it turned? a fresh 5m change of character after the extreme
     $ch = $ix < $n5 - 2 ? dd_choch($F5, $ix, $n5, $sg, 8) : null;
     $away = ($px - $ext) * $sg;                                        // > 0: price is off the extreme on our side
