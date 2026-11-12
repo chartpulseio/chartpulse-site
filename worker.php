@@ -12,7 +12,7 @@ if (!t_rl('wk', 20)) { http_response_code(429); echo '{"ok":0,"why":"rate"}'; ex
 ignore_user_abort(true); @set_time_limit(60);
 $t0 = microtime(true); $n = 0; $busy = 0;
 while (microtime(true) - $t0 < 40) {
-    try { $r = t_scan_step(false, 32);   // bigger chunk: the per-step cost (scan.json read + write) is paid half as often } catch (Throwable $e) { $r = false; }
+    try { $r = t_scan_step(false, 32); } catch (Throwable $e) { $r = false; }   // 32 per step: scan.json read + write paid half as often
     if ($r) { $n++; continue; }
     // false = nothing due, or another request holds the lock: wait a moment and try again
     $busy++; if ($busy > 6) break; usleep(1500000);
