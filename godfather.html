@@ -89,7 +89,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 .gc-lb i.line,.gc-lb i.mtf{border-color:rgba(110,168,254,.55);color:var(--blue)}
 .gc-lb i.mom,.gc-lb i.news,.gc-lb i.vol,.gc-lb i.ema,.gc-lb i.smc{border-color:rgba(34,171,148,.5);color:var(--up)}.gc-lb i.risk{border-color:var(--dn);color:var(--dn)}
 .gc-say{margin:0 0 10px;color:var(--dim);font-size:14px;line-height:1.5}
-.gc-chk{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:0 0 10px}
+.gc-chk{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin:0 0 10px}
 .gc-chk span{display:grid;place-items:center;height:26px;border-radius:7px;font:600 10.5px/1 var(--mono);letter-spacing:.04em;background:rgba(255,255,255,.05);color:var(--mute);cursor:help}
 .gc-chk span.ok{background:rgba(34,171,148,.16);color:var(--up)}.gc-chk span.no{background:rgba(247,82,95,.08);color:#b86870}
 .gc-plan{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
@@ -163,7 +163,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
   <section class="gf-learn">
     <h2>How to read a card</h2>
     <dl>
-      <dt>A+</dt><dd>Big trend, a Power Zone of 4+ levels with a trend line AND today's high or low in it, a strong line (4H/Daily/Weekly or 3+ touches), a real turn candle at the line or a Tier-1 tick, and a second scanner family agreeing on Daily, 1H or 15m (EMA momentum, volume/VWAP or news), with no Daily momentum scanner against it. The best the board has.</dd>
+      <dt>A+</dt><dd>Big trend, a Power Zone of 4+ levels with a trend line AND today's high or low in it, a strong line (4H/Daily/Weekly or 3+ touches), a real turn candle at the line or a Tier-1 tick, a real-time price feed (markets whose feed runs 15-30 min late are capped at A), and a second scanner family agreeing on Daily, 1H or 15m (EMA momentum, volume/VWAP or news), with no Daily momentum scanner against it. The best the board has.</dd>
       <dt>A</dt><dd>The turn has printed at a double zone (2 levels). A good trade.</dd>
       <dt>B</dt><dd>The turn has printed, but only at a single level. Smaller size, or skip.</dd>
     </dl>
@@ -173,7 +173,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
       <dt>News risk</dt><dd>A fresh high-impact story points against the trade. Wait until it settles.</dd>
     </dl>
     <dl>
-      <dt>T · Z · L · E · M · V · N</dt><dd>The 7 checks on each card: Trend, Zone, Line, Entry trigger, Momentum, Volume, News. Green = passed. Tap "Why" for the plain-words reason.</dd>
+      <dt>T · Z · L · E · M · V · D · N</dt><dd>The 8 checks on each card: Trend, Zone, Line, Entry trigger, Momentum, Volume, live Data, News. Green = passed. Tap "Why" for the plain-words reason.</dd>
       <dt>Fake breakout (trap)</dt><dd>Price closed through the line and then closed back. Breakout traders are trapped and the move often runs hard the other way.</dd>
       <dt>Breakout + retest</dt><dd>A line against the trend broke, and price came back to it. The old line now holds.</dd>
     </dl>
@@ -188,7 +188,7 @@ const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAl
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const fmt = (v, d) => v == null || isNaN(v) ? "–" : Number(v).toLocaleString("en-US", {minimumFractionDigits: Math.min(d, 2), maximumFractionDigits: d});
 const GN = {"A+":["ap","A+"],"A":["a","A"],"B":["b","B"],"READY":["rd","GET<br>READY"],"WATCH":["w","WATCH"],"NEWS":["nr","NEWS<br>RISK"]};
-const CK = {bias:"T",zone:"Z",line:"L",trig:"E",mom:"M",part:"V",news:"N"};
+const CK = {bias:"T",zone:"Z",line:"L",trig:"E",mom:"M",part:"V",data:"D",news:"N"};
 const F = {grade: "top", side: "all", mkt: "all", set: "all", q: ""}; let D = null, shown = 30, open = new Set();
 const TILES = [["top","ap","A+ and A","Best calls now"],["A+","ap","A+","Every check passed"],["A","a","A","Turn at a double zone"],["B","b","B","Turn at one level"],["READY","rd","Get ready","At the zone, no turn yet"],["NEWS","nr","News risk","Blocked by news"]];
 function tiles() {

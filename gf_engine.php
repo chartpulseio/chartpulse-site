@@ -24,6 +24,10 @@ const GF_TTL = 75;                                    // seconds the board stays
 const GF_LINE_TFS = ['1W', '1D', '4H', '1H', '30m', '15m', '10m'];
 const GF_BIG = ['1W' => 3, '1D' => 3, '4H' => 2, '1H' => 1, '30m' => 0, '15m' => 0, '10m' => 0];
 const GF_TFN = ['1W' => 'Weekly', '1D' => 'Daily', '4H' => '4H', '1H' => '1H', '30m' => '30m', '15m' => '15m', '10m' => '10m'];
+// Yahoo's own exchange delay (15-30 min; see the 5 Nov delayed-symbols note). A turn candle that is 20 min old is not an entry.
+const GF_DELAYED_EX = ['LSE' => 20, 'XETRA' => 15, 'EURONEXT' => 15, 'SIX' => 30, 'MIL' => 20, 'BME' => 15, 'JPX' => 20, 'HKEX' => 15, 'SSE' => 30, 'SZSE' => 30, 'CN' => 30,
+    'KRX' => 20, 'TWSE' => 20, 'SGX' => 20, 'ASX' => 20, 'B3' => 15, 'BMV' => 20, 'TADAWUL' => 15, 'JSE' => 15];
+const GF_LATE = 600;      // s: last trade older than this at the fetch, or fetch older than this -> data is late
 const GF_NEAR = 0.35;     // x daily ATR: a line this close to price is part of the zone
 const GF_RETEST = 0.35;   // x daily ATR: a broken line price has come back to
 const GF_STRAT = [
@@ -98,7 +102,7 @@ function gf_scan(bool $force = false): array {
     if (!$lock || !flock($lock, LOCK_EX | LOCK_NB)) { if (is_array($c)) return $c; return ['at' => $now, 'rows' => [], 'meta' => ['progress' => 0]]; }
     try {
         $t0 = microtime(true);
-        $T = []; foreach (t_view_rows(t_scan_load(), $now) as $r) $T[$r['symbol']] = $r;
+        $SC = t_scan_load(); $T = []; foreach (t_view_rows($SC, $now) as $r) $T[$r['symbol']] = $r;
         $TL = []; $tlp = tl_scan(); foreach ($tlp['rows'] as $r) $TL[$r['symbol']] = $r;
         $HE = []; $hp = tlh_scan(true); foreach ($hp['rows'] as $r) $HE[$r['symbol']] = $r;
         $HY = []; $yp = tlh_scan(false); foreach ($yp['rows'] as $r) $HY[$r['symbol']] = $r;
@@ -114,6 +118,11 @@ function gf_scan(bool $force = false): array {
             $B = gf_bias($tl['mtf'] ?? null); if (!$B) continue;   // GATE 1: no clear big trend -> not on the board
             $cnt['bias']++;
             $side = $B['side']; $call = $side === 'CALL';
+            // ---- data freshness: exchange delay (Yahoo) + how old the last trade / last fetch is
+            $raw = $SC['rows'][$sym] ?? []; $ex = t_exchange($sym);
+            $late = 0; if (isset(GF_DELAYED_EX[$ex]) && ($raw['src'] ?? 'yahoo') === 'yahoo') $late = GF_DELAYED_EX[$ex];
+            $fetchAge = $now - (int)($raw['ts'] ?? 0); $tradeLag = (int)($raw['ts'] ?? 0) - (int)($raw['rmt'] ?? ($raw['ts'] ?? 0));
+            if ($fetchAge > GF_LATE || $tradeLag > GF_LATE) $late = max($late, (int)round(max($fetchAge, $tradeLag) / 60));
             $live = !empty($t1['live']); $atrPct = (float)($t1['atr_pct'] ?? 0); $px = (float)($t1['price'] ?? $tl['price']);
             $L = gf_lines($tl, $side, $atrPct);
             $he = $HE[$sym] ?? null; if ($he && gf_side_of($he['bias'] ?? null) !== $side) $he = null;
@@ -193,7 +202,7 @@ function gf_scan(bool $force = false): array {
             $fired = (bool)$trig;
             if (!$live) $grade = 'WATCH';
             elseif ($newsRisk) $grade = 'NEWS';
-            elseif ($realTurn && $nPz >= 4 && $dayAt && $lineAt && $strongLine && ($mom || $orb || $newsBoost) && !$momAgainst) $grade = 'A+';
+            elseif ($late === 0 && $realTurn && $nPz >= 4 && $dayAt && $lineAt && $strongLine && ($mom || $orb || $newsBoost) && !$momAgainst) $grade = 'A+';
             elseif ($fired && $nPz >= 2) $grade = 'A';
             elseif ($fired) $grade = 'B';
             elseif ($nPz >= 2 && ($stage >= 3 || isset($pz['line']) || isset($pz['retest']) || $dayAt)) $grade = 'READY';
@@ -217,6 +226,7 @@ function gf_scan(bool $force = false): array {
                 ['k' => 'trig', 'ok' => $fired, 't' => $fired ? 'Entry trigger fired' : 'Waiting for the turn', 'd' => $fired ? implode(' · ', $trig) : 'No turn candle yet: wait for a rejection, a failed break or a Tier-1 tick'],
                 ['k' => 'mom', 'ok' => (bool)$mom && !$momAgainst, 't' => $mom ? 'Momentum agrees' : ($momAgainst ? 'Momentum disagrees' : 'Momentum neutral'), 'd' => $mom ? gf_fam($mom) : ($momAgainst ? gf_fam($momAgainst) . ' points the other way' : 'No EMA strategy signal on Daily, 1H or 15m')],
                 ['k' => 'part', 'ok' => (bool)$orb, 't' => $orb ? 'Volume / VWAP with it' : 'No volume spike', 'd' => $orb ? gf_fam($orb) . ': ' . $orb[0]['setup'] : 'Range Breakout + VWAP has nothing here (Daily, 1H, 15m)'],
+                ['k' => 'data', 'ok' => $late === 0, 't' => $late ? 'Data ~' . $late . ' min late' : 'Live data', 'd' => $late ? 'This market\'s price feed runs about ' . $late . ' minutes behind, so the turn candle may already be old. Capped at A: check the live chart before acting.' : 'Price feed is real time and fresh'],
                 ['k' => 'news', 'ok' => !$newsRisk, 't' => $newsRisk ? 'News risk' : ($newsBoost ? 'News with it' : 'No news against it'), 'd' => $newsTxt ?? 'No fresh high-impact story'],
             ];
             $labels = [];
@@ -230,6 +240,7 @@ function gf_scan(bool $force = false): array {
             foreach (['1D' => 'Daily', '1H' => '1H', '15m' => '15m'] as $tk => $tn) if (array_filter($mom, fn($x) => $x['tf'] === $tk)) $labels[] = ['mom', $tn . ' momentum'];
             if ($newsBoost) $labels[] = ['news', 'News with it'];
             if ($newsRisk) $labels[] = ['risk', 'News risk'];
+            if ($late) $labels[] = ['risk', 'Data ~' . $late . ' min late'];
 
             $say = ($call ? 'CALL' : 'PUT') . ': big trend ' . ($call ? 'up' : 'down') . ', price at ' . strtolower($nPz >= 3 ? 'a power zone' : ($nPz === 2 ? 'a double zone' : 'a level'))
                  . ' (' . implode(', ', array_slice(array_values(array_intersect_key($pz, array_flip(['line', 'retest', 'day', 'zone', 'ema', 'smc']))), 0, 3)) . '). '
@@ -240,7 +251,7 @@ function gf_scan(bool $force = false): array {
                 'price' => round($px, $d), 'dec' => $d, 'chg' => $t1['change_pct'] ?? null, 'live' => $live, 'side' => $side, 'grade' => $grade,
                 'setup' => $setup[1], 'skind' => $setup[0], 'pz' => $nPz, 'labels' => $labels, 'checks' => $chk, 'say' => $say, 'plan' => $plan,
                 'mtf' => $tl['mtf']['d'] ?? [], 'line_tf' => $line['tf'] ?? ($tlAt[0]['tf'] ?? null), 'stage' => $stage,
-                'news' => $ns ? array_slice($ns['stories'] ?? [], 0, 2) : [],
+                'late' => $late, 'news' => $ns ? array_slice($ns['stories'] ?? [], 0, 2) : [],
                 'key' => [$rank, $live ? 1 : 0, $nPz, $strongLine ? 1 : 0, $extra, count($trig)]];
         }
         usort($rows, fn($a, $b) => $b['key'] <=> $a['key']);
