@@ -852,9 +852,9 @@ function dd_tlrows(): array {
     foreach ((is_array($c) ? $c['rows'] ?? [] : []) as $r) if (isset($r['symbol'])) $m[$r['symbol']] = $r;
     return $m;
 }
-function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $px, int $now): ?array {
+function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $px, int $now, ?string &$why = null): ?array {
     $tl = dd_tlrows()[$sym] ?? null; $mtf = $tl['mtf']['d'] ?? null;
-    if (!is_array($mtf) || empty($mtf['1D'])) return null;
+    if (!is_array($mtf) || empty($mtf['1D'])) { $why = 'no daily trend'; return null; }
     $sg = -(int)$mtf['1D']; $call = $sg > 0;                         // against the daily trend
     $D = $fr['1D']; $nD = count($D['c']); $A = t_atr($D, 14); $aD = (float)end($A); if ($aD <= 0) return null;
     // today's 5m bars
@@ -895,7 +895,7 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
     $zones = array_values($hit); $strong = count($zones) >= 2;
     $trends = []; foreach (['1W', '1D', '4H', '1H', '30m'] as $k) if (isset($mtf[$k])) $trends[$k] = (int)$mtf[$k] > 0 ? 'up' : 'down';
     $base = ['side' => $call ? 'CALL' : 'PUT', 'extreme' => dd_f($ext), 'zones' => $zones, 'strong' => $strong, 'trends' => $trends];
-    if (!$today) return $zones ? $base + ['status' => 'NEED5M'] : null;      // ask the scan for fresh 5m bars
+    if (!$today) { $why = 'no intraday bars for today (cs ' . $cs . ')'; return $zones ? $base + ['status' => 'NEED5M'] : null; }      // ask the scan for fresh 5m bars
     // has it turned? a fresh 5m change of character after the extreme
     $ch = $ix < $n5 - 2 ? dd_choch($F5, $ix, $n5, $sg, 8) : null;
     $away = ($px - $ext) * $sg;                                        // > 0: price is off the extreme on our side
@@ -919,6 +919,7 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
         return $base + ['status' => 'BOUNCE RUN', 'entry' => dd_f($entry), 'sl' => dd_f($sl), 'moved_r' => $risk > 0 ? round(($px - $entry) * $sg / $risk, 1) : null,
                         'at_bar' => (int)$F5['t'][$old[1]]];
     }
+    $why = 'no turn yet: low ' . round($ext, 5) . ', zones ' . count($zones) . ', away ' . round($away / max($a5, 1e-9), 1) . ' bar-ATR, bars ' . ($n5 - $ia);
     return null;
 }
 
@@ -975,7 +976,7 @@ function dd_eval(string $sym, array $row, bool $deep, array $ctx, int $now): ?ar
     $score = $s1['score'] + ($s2['score'] ?? 0) + ($s3['score'] ?? 0);
     $gates = $s1['gates'] + ($s2['gates'] ?? []) + ($s3['gates'] ?? []);
     $status = dd_status($s1, $s2, $s3); $mode = 'trend'; $bo = null;
-    try { $bo = dd_bounce($sym, $fr, $F5, $cs, $ce, $px, $now); } catch (Throwable $e) { dd_log('bounce', $sym . ': ' . $e->getMessage()); }
+    $bwhy = null; try { $bo = dd_bounce($sym, $fr, $F5, $cs, $ce, $px, $now, $bwhy); } catch (Throwable $e) { dd_log('bounce', $sym . ': ' . $e->getMessage()); }
     if ($bo && !in_array($status, ['DRIVE', 'ARMED'], true) && in_array($bo['status'], ['BOUNCE GO', 'BOUNCE READY', 'BOUNCE RUN'], true)) {
         $status = $bo['status']; $mode = 'bounce'; $sg = $bo['side'] === 'CALL' ? 1 : -1;
     }
@@ -986,7 +987,7 @@ function dd_eval(string $sym, array $row, bool $deep, array $ctx, int $now): ?ar
         'class' => dd_class($sym), 'tv' => $row['tv'] ?? dd_tv($sym),
         'side' => $sg < 0 ? 'PUT' : 'CALL',
         'price' => dd_f($px),
-        'status' => $status, 'mode' => $mode, 'bounce' => $bo,
+        'status' => $status, 'mode' => $mode, 'bounce' => $bo, 'bounce_why' => $bo ? null : $bwhy,
         'score' => dd_1($score),
         's1' => $s1['score'], 's2' => $s2['score'] ?? null, 's3' => $s3['score'] ?? null,
         'gates' => $gates,
