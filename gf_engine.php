@@ -121,8 +121,9 @@ function gf_scan(bool $force = false): array {
             // ---- data freshness: exchange delay (Yahoo) + how old the last trade / last fetch is
             $raw = $SC['rows'][$sym] ?? []; $ex = t_exchange($sym);
             $late = 0; if (isset(GF_DELAYED_EX[$ex]) && ($raw['src'] ?? 'yahoo') === 'yahoo') $late = GF_DELAYED_EX[$ex];
-            $fetchAge = $now - (int)($raw['ts'] ?? 0); $tradeLag = (int)($raw['ts'] ?? 0) - (int)($raw['rmt'] ?? ($raw['ts'] ?? 0));
-            if ($fetchAge > GF_LATE || $tradeLag > GF_LATE) $late = max($late, (int)round(max($fetchAge, $tradeLag) / 60));
+            $fetchAge = $now - (int)($raw['ts'] ?? 0); $rmt = (int)($raw['rmt'] ?? 0);
+            $tradeLag = $rmt > 0 ? (int)($raw['ts'] ?? 0) - $rmt : 0;   // some feeds (Alpaca, Upstox) carry no trade time
+            if (!empty($t1['live']) && ($fetchAge > 900 || $tradeLag > GF_LATE)) $late = max($late, (int)round(max($fetchAge, $tradeLag) / 60));   // closed markets: not 'late', just closed
             $live = !empty($t1['live']); $atrPct = (float)($t1['atr_pct'] ?? 0); $px = (float)($t1['price'] ?? $tl['price']);
             $L = gf_lines($tl, $side, $atrPct);
             $he = $HE[$sym] ?? null; if ($he && gf_side_of($he['bias'] ?? null) !== $side) $he = null;
