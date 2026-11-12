@@ -70,10 +70,11 @@ function gf_lines(array $tl, string $side, float $atrPct): array {
 }
 
 /** The 6 strategy scanners, FULL lists on 1D, 1H and 15m bars: symbol => [[name, grp, side, setup, tf], ...]. */
-function gf_read_strats(): array {
-    $by = [];
+function gf_read_strats(?array &$diag = null): array {
+    $by = []; $diag = [];
     foreach (GF_STRAT as $dir => $ids) foreach (['1D', '1H', '15m'] as $tf) {
-        $c = t_read_json(__DIR__ . "/$dir/cache/full_$tf.json", null);
+        $fp = __DIR__ . "/$dir/cache/full_$tf.json"; $c = t_read_json($fp, null);
+        $diag["$dir $tf"] = is_array($c) ? [time() - (int)($c['at'] ?? 0), array_sum(array_map('count', (array)($c['sig'] ?? [])))] : (is_file($fp) ? 'unreadable ' . @filesize($fp) : 'missing');
         if (!is_array($c) && $tf === '1D') {   // first run: fall back to the page caches (top 100)
             foreach ($ids as $id => [$name, $grp]) { $pc = t_read_json(__DIR__ . "/$dir/cache/scan_$id.json", null);
                 foreach ((is_array($pc) ? $pc['data'] ?? [] : []) as $r) if ($sd = gf_side_of($r['bias'] ?? null)) $by[(string)$r['symbol']][] = ['name' => $name, 'grp' => $grp, 'side' => $sd, 'setup' => (string)($r['setup'] ?? ''), 'tf' => '1D']; }
@@ -113,7 +114,7 @@ function gf_scan(bool $force = false): array {
         $E2 = []; $e2 = t_read_json(T_DATA . '/ema200_signals2.json', null);
         foreach ((is_array($e2) ? $e2['signals'] ?? [] : []) as $r) if (isset($r['symbol'])) $E2[$r['symbol']] = $r;
         $DD = t_read_json(T_DATA . '/daydrive/rows.json', []); if (!is_array($DD)) $DD = [];
-        $ST = gf_read_strats(); $feeds = 0; foreach ($ST as $L) $feeds += count($L);
+        $ST = gf_read_strats($fdiag); $feeds = 0; foreach ($ST as $L) $feeds += count($L);
 
         $rows = []; $cnt = ['A+' => 0, 'A' => 0, 'B' => 0, 'READY' => 0, 'WATCH' => 0, 'NEWS' => 0, 'bias' => 0];
         foreach ($TL as $sym => $tl) {
@@ -261,7 +262,7 @@ function gf_scan(bool $force = false): array {
         usort($rows, fn($a, $b) => $b['key'] <=> $a['key']);
         foreach ($rows as &$r) unset($r['key']); unset($r);
         $prog = min((float)($tlp['meta']['progress'] ?? 1), (float)($hp['meta']['progress'] ?? 1), (float)($yp['meta']['progress'] ?? 1));
-        $p = ['at' => $now, 'rows' => $rows, 'meta' => ['universe' => count($T), 'with_bias' => $cnt['bias'], 'strategy_signals' => $feeds, 'counts' => $cnt, 'progress' => $prog,
+        $p = ['at' => $now, 'rows' => $rows, 'meta' => ['universe' => count($T), 'with_bias' => $cnt['bias'], 'strategy_signals' => $feeds, 'feeds' => $fdiag, 'sapi' => PHP_SAPI, 'counts' => $cnt, 'progress' => $prog,
               'took_ms' => (int)round((microtime(true) - $t0) * 1000)]];
         if ($rows || $prog >= 0.9) t_write_json($ck, $p);
         gf_log($rows, $now);
