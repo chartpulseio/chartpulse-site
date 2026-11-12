@@ -1,6 +1,6 @@
 <?php
 // sitemap.xml (served via .htaccess rewrite). Updated 2 Nov 2026.
-// Only indexable URLs. The free scanner pages (day-drive, ema-200) are indexable since 10 Nov 2026.
+// Only indexable URLs. Scanners (12 Nov 2026): the hub, the 8 ChartPulse scanners and the 6 active strategy scanners; removed scanners are not listed.
 // No changefreq / priority (Google ignores them).
 declare(strict_types=1);
 require __DIR__ . '/torus_seo.php';
@@ -22,15 +22,21 @@ $U = [
     ['/scanners/trendline-hero/', $mt('trendline-hero.html')],
     ['/scanners/hero-200-ema/', $mt('hero-200-ema.html')],
     ['/scanners/news/', $mt('news-scanner.html')],
-    ['/affiliates/', $mt('affiliates.html')],
     ['/scanners/ema-200/', $mt('ema200.html')],
-    ['/ema-strategies/', $mt('ema-strategies/index.php')],
     ['/institutional/', $mt('institutional/index.php')],
+    ['/institutional/scanner.php?id=3-liquidity-fvg', $mt('institutional/includes/strategies.php')],
+    ['/institutional/scanner.php?id=1-smc-power-of-3', $mt('institutional/includes/strategies.php')],
+    ['/institutional/scanner.php?id=4-orb-vwap', $mt('institutional/includes/strategies.php')],
+    ['/ema-strategies/', $mt('ema-strategies/index.php')],
+    ['/ema-strategies/scanner.php?id=3-ema-50-21-alignment', $mt('ema-strategies/includes/strategies.php')],
+    ['/ema-strategies/scanner.php?id=7-ema-supertrend-rsi', $mt('ema-strategies/includes/strategies.php')],
+    ['/ema-strategies/scanner.php?id=5-vwap-ema-combo', $mt('ema-strategies/includes/strategies.php')],
     ['/backtesting/', $mt('pro-backtesting.html')],
     ['/desk/', $mt('desk.html')],
     ['/news.html', $mt('news.html')],
     ['/insights.html', $mt('insights.html')],
     ['/pricing.html', $mt('pricing.html')],
+    ['/affiliates/', $mt('affiliates.html')],
     ['/legal/terms', $mt('legal.php')],
     ['/legal/privacy', $mt('legal.php')],
     ['/legal/refund', $mt('legal.php')],

@@ -56,7 +56,7 @@ $title = $pages[$p] . ' · ' . $biz;
 </div></details>
 <details class="nav-dd"><summary>Scanners</summary><div class="nav-menu">
 <a href="/scanner.html" data-p="scanner">Tier-1 Scanner <small>TIER-1</small></a>
-<a href="/scanners/" data-p="scanners">All scanners <small class="badge-live">15</small></a>
+<a href="/scanners/" data-p="scanners">All scanners <small class="badge-live">14</small></a>
 <a href="/scanners/ema-200/" data-p="ema200">200 EMA <small>FREE</small></a>
 <a href="/scanners/day-drive/" data-p="dayDrive">Day Drive <small>FREE</small></a>
 </div></details>
