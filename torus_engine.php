@@ -1267,7 +1267,7 @@ function t_due(array $scan, int $now): array {
             } elseif ($age >= 60 && ($r['ts'] < $ss['since'] || (!empty($r['ce']) && $now >= $r['ce'] && $r['ts'] < $r['ce']))) {
                 $pri[$sym] = [1, -$age];                                    // session just started / trading period rolled over
             } elseif ($age >= ($now - $ss['since'] < 3600 ? 300 : T_REFRESH_QUIET)) {
-                $pri[$sym] = [4, -$age];                                    // open by the clock but no fresh trades yet
+                $pri[$sym] = [$age >= 1800 ? 2 : 4, -$age];               // open by the clock but no fresh trades yet; after 30 min it joins the normal queue (oldest first) so a busy queue can't starve it
             }
         } elseif ($age >= T_REFRESH_CLOSED) $pri[$sym] = [5, -$age];
     }

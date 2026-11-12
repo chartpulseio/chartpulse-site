@@ -13,7 +13,7 @@ if (!defined('T_DATA') && PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 require_once __DIR__ . '/tl_engine.php';
 
 const TGA_MAX = 10;                                  // alerts per message; the rest is a count
-const TGA_QUIET = ['h' => 6 * 3600, 'hero' => 6 * 3600, 'hero2' => 6 * 3600, 't' => 12 * 3600, 'e' => 24 * 3600, 'dd' => 6 * 3600, 'st' => 24 * 3600];
+const TGA_QUIET = ['h' => 6 * 3600, 'hero' => 6 * 3600, 'hero2' => 6 * 3600, 't' => 12 * 3600, 'e' => 24 * 3600, 'dd' => 6 * 3600, 'st' => 24 * 3600, 'gf' => 6 * 3600];
 const TGA_TFS = ['1W', '1D', '4H'];
 const TGA_TFN = ['1W' => 'Weekly', '1D' => 'Daily', '4H' => '4H', '1H' => '1H', '30m' => '30m', '15m' => '15m'];
 // The strategy scanners kept on /scanners (12 Nov 2026): folder => [id => name]
@@ -186,6 +186,19 @@ function tga_step(int $now): string {
         }
         tga_push($S, 'dd', 'Day Drive Scanner', $ev, $now, $sent, $err);
     } catch (Throwable $e) { $err = 'daydrive ' . $e->getMessage(); }
+
+    // ---- God-father Scanner: A+ only (every scanner lined up)
+    try {
+        require_once __DIR__ . '/gf_engine.php';
+        $p = gf_scan(); $ev = [];
+        foreach ($p['rows'] ?? [] as $r) {
+            if ($r['grade'] !== 'A+' || empty($r['live'])) continue;
+            $d = (int)$r['dec']; $pl = $r['plan'];
+            $plan = $pl ? [tl_px((float)$pl['entry'], $d), tl_px((float)$pl['sl'], $d), tl_px((float)$pl['t1'], $d)] : null;
+            $ev[$r['symbol'] . '|' . $r['side']] = [[(int)$r['pz']], tga_item((string)$r['side'], (string)$r['name'], tl_px((float)$r['price'], $d), 'A+ · ' . $r['setup'], (string)$r['say'], $plan)];
+        }
+        tga_push($S, 'gf', 'God-father Scanner', $ev, $now, $sent, $err);
+    } catch (Throwable $e) { $err = 'godfather ' . $e->getMessage(); }
 
     // ---- The 6 strategy scanners on /scanners (daily). Their API rebuilds a stale cache, so call it once per folder.
     $ev = [];
