@@ -325,3 +325,69 @@ function e2_row(string $sym, string $market, array $r, float $price, ?string $tv
         'tag' => 'Entry from 200 EMA',
     ];
 }
+
+// ===========================================================================
+// 200 EMA on five timeframes (owner, 12 Nov 2026): 1D, 4H, 1H, 30m, 15m.
+// For every timeframe: where is price against that chart's own 200 EMA, measured in that chart's own ATR(14)?
+//   in  = price is inside 1 ATR of the 200 EMA (the "ATR zone")
+//   x   = a candle closed across the 200 EMA within the last 5 candles (+1 up, -1 down)
+// 1D / 4H / 1H come from the frames the Tier 1 scanner already has. 15m / 30m need more history than the
+// stored 5-minute bars hold, so they use one Yahoo 15m call per symbol (1 month), refreshed in small rolling steps.
+// ===========================================================================
+const E2_TFS = ['1D', '4H', '1H', '30m', '15m'];
+const E2_TF_MIN = 220;      // candles needed before a 200 EMA is trusted
+const E2_ZONE_ATR = 1.0;    // x ATR of that timeframe
+const E2_X_WIN = 5;         // candles looked back for a close across the EMA
+const E2_M15_TTL = 900;     // a symbol's 15m / 30m reading is refreshed after this many seconds
+const E2_M15_CHUNK = 16;
+
+function e2_tf_stat(?array $F): ?array {
+    $c = $F['c'] ?? null; $n = is_array($c) ? count($c) : 0;
+    if ($n < E2_TF_MIN) return null;
+    $e = e2_ewm($c, 200); $A = e2_atr($F, 14);
+    $px = (float)$c[$n - 1]; $ex = (float)$e[$n - 1]; $ax = (float)$A[$n - 1];
+    if ($ax <= 0 || $ex <= 0) return null;
+    $x = 0; $xb = null;
+    for ($i = $n - 1; $i >= max(1, $n - E2_X_WIN); $i--) {
+        $a = $c[$i] <=> $e[$i]; $b = $c[$i - 1] <=> $e[$i - 1];
+        if ($a !== 0 && $b !== 0 && $a !== $b) { $x = $a; $xb = $n - 1 - $i; break; }
+    }
+    if ($x !== 0 && (($px <=> $ex) !== $x)) { $x = 0; $xb = null; }   // it crossed and already came back: not a breakout
+    $d = ($px - $ex) / $ax;
+    return ['e' => round($ex, 6), 'a' => round($ax, 6), 'd' => round($d, 2), 'in' => abs($d) <= E2_ZONE_ATR, 'x' => $x, 'xb' => $xb];
+}
+
+/** Rolling 15m / 30m refresh. Returns the whole cache: sym => ['at', '15m' => stat|null, '30m' => stat|null]. */
+function e2_m15_step(array $syms, float $budget = 8.0): array {
+    $p = T_DATA . '/ema200_m15.json'; $C = t_read_json($p, []); if (!is_array($C)) $C = [];
+    $now = t_now();
+    if ($now - (int)($C['_step'] ?? 0) < 20) return $C;      // another request stepped it just now
+    $C['_step'] = $now; t_write_json($p, $C);
+    $due = [];
+    foreach ($syms as $s) { $at = (int)($C[$s]['at'] ?? 0); if ($now - $at >= E2_M15_TTL) $due[$s] = $at; }
+    asort($due); $due = array_keys($due);
+    $t0 = microtime(true); $ch = false;
+    while ($due && microtime(true) - $t0 < $budget) {
+        $pick = array_splice($due, 0, E2_M15_CHUNK); $urls = [];
+        foreach ($pick as $s) $urls[$s] = t_url($s, '1mo', '15m');
+        try { $B = t_fetch($urls); } catch (Throwable $e) { $B = []; }
+        foreach ($pick as $s) {
+            [$f] = t_parse($B[$s] ?? null); $row = ['at' => $now, '15m' => null, '30m' => null];
+            if ($f && count($f['t']) >= E2_TF_MIN) { $row['15m'] = e2_tf_stat($f); $row['30m'] = e2_tf_stat(t_resample($f, 1800)); $row['px'] = (float)end($f['c']); }
+            $C[$s] = $row; $ch = true;
+        }
+    }
+    if ($ch) t_write_json($p, $C);
+    return $C;
+}
+
+/** All five timeframes for one symbol. $m = that symbol's entry from e2_m15_step (or null). */
+function e2_tfs(array $fr, ?array $m): array {
+    $o = [];
+    try { $o['1D'] = e2_tf_stat($fr['1D'] ?? null); } catch (Throwable $e) { $o['1D'] = null; }
+    try { $o['4H'] = e2_tf_stat(t_resample($fr['1H'], 14400)); } catch (Throwable $e) { $o['4H'] = null; }
+    try { $o['1H'] = e2_tf_stat($fr['1H'] ?? null); } catch (Throwable $e) { $o['1H'] = null; }
+    $o['30m'] = is_array($m['30m'] ?? null) ? $m['30m'] : null;
+    $o['15m'] = is_array($m['15m'] ?? null) ? $m['15m'] : null;
+    return $o;
+}

@@ -88,6 +88,7 @@ a:hover{text-decoration:underline}
 .mtf b.CALL{color:var(--up)}.mtf b.PUT{color:var(--down)}.mtf b.none{color:var(--ink-faint);font-weight:400}
 .fx{display:flex;flex-wrap:wrap;gap:4px;max-width:520px}
 .fx i{font-style:normal;font:11px/1.5 var(--sans);padding:1px 7px;border-radius:999px;border:1px solid var(--rule);color:var(--ink-faint);white-space:nowrap}
+.fx i.z{border-color:var(--s2c);color:var(--s2c)}.tfx{max-width:360px}.tfx i{white-space:normal}.tfx b{font-weight:700}
 .fx i.g{border-color:rgba(39,165,103,.5);color:var(--up)}.fx i.w{border-color:rgba(212,80,74,.55);color:var(--down)}
 .grade{display:inline-block;padding:4px 9px;border-radius:3px;border:1px solid var(--rule);font:600 11px/1.2 var(--sans);color:var(--ink-dim);white-space:nowrap}
 .grade.a{background:var(--up);border-color:var(--up);color:#04130b}.grade.b{border-color:var(--s2c);color:var(--s2c)}
@@ -165,7 +166,10 @@ a:hover{text-decoration:underline}
   <h1>200 EMA Scanner</h1>
   <p>Daily 200 EMA entries, from the earliest read to the safest. A plain cross is noisy, so each symbol is
      placed in one of four stages instead: price approaching the average, a first trigger near it, a confirmed
-     close through it, and a retest that held. Every row is a daily-timeframe read of the 200 EMA.</p>
+     close through it, and a retest that held. The four stages are read on the daily chart.
+     Each row also says <b>which timeframe (1D, 4H, 1H, 30m, 15m) has price at its own 200 EMA right now</b>:
+     "in the ATR zone" means price is within one ATR of that chart's 200 EMA, and "closed above / below" means a
+     candle on that chart closed across it in the last five candles.</p>
   <ul class="steps">
     <li><b>0</b> Watch · near the EMA</li>
     <li><b>1</b> Early · trigger fired</li>
@@ -180,6 +184,7 @@ a:hover{text-decoration:underline}
     <div class="kpi k-conf"><span>CONFIRMED</span><b id="kConf">–</b></div>
     <div class="kpi k-early"><span>EARLY</span><b id="kEarly">–</b></div>
     <div class="kpi"><span>WATCH</span><b id="kWatch">–</b></div>
+    <div class="kpi"><span>IN ATR ZONE ONLY</span><b id="kZone">–</b></div>
     <div class="kpi"><span>SYMBOLS SCANNED</span><b id="kScan">–</b></div>
     <div class="kpi"><span>SKIPPED · SHORT HISTORY</span><b id="kSkip">–</b></div>
   </div>
@@ -209,6 +214,18 @@ a:hover{text-decoration:underline}
         <button class="chip" data-v="confirmed" aria-pressed="true">Confirmed</button>
         <button class="chip" data-v="early" aria-pressed="true">Early</button>
         <button class="chip" data-v="watch" aria-pressed="true">Watch</button>
+        <button class="chip" data-v="zone" aria-pressed="true">In ATR zone only</button>
+      </div>
+    </div>
+    <div class="grp">
+      <span>TIMEFRAME AT ITS 200 EMA</span>
+      <div class="chips" id="cTf">
+        <button class="chip" data-v="any" aria-pressed="true">Any</button>
+        <button class="chip" data-v="1D" aria-pressed="false">1D</button>
+        <button class="chip" data-v="4H" aria-pressed="false">4H</button>
+        <button class="chip" data-v="1H" aria-pressed="false">1H</button>
+        <button class="chip" data-v="30m" aria-pressed="false">30m</button>
+        <button class="chip" data-v="15m" aria-pressed="false">15m</button>
       </div>
     </div>
     <div class="grp">
@@ -252,8 +269,8 @@ a:hover{text-decoration:underline}
 </div>
 
 <div class="foot">
-  Daily 200 EMA · data from the frames the Tier 1 / Tier 2 scanner already fetched, so this page costs no
-  extra market-data calls · symbols with fewer than 260 daily candles are skipped ·
+200 EMA on 1D, 4H, 1H, 30m and 15m · the ATR is each chart's own ATR(14) · 15m and 30m readings refresh about
+  every 15 minutes and a timeframe needs 220 candles of history (4H is missing on some stocks) · symbols with fewer than 260 daily candles are skipped ·
   updated <span id="upd" class="num">–</span>
 </div>
 
@@ -261,7 +278,7 @@ a:hover{text-decoration:underline}
 (function(){
   'use strict';
   var API = window.EMA200_API || '/ema200_api.php';   // absolute: the page is served from /scanners/ema-200/
-  var state = { side:'ALL', entry:['best','confirmed','early','watch'], score:'', quality:'all', mkt:'all' };
+  var state = { side:'ALL', entry:['best','confirmed','early','watch','zone'], score:'', quality:'all', mkt:'all', tf:'any' };
   var out = document.getElementById('out');
   var seq = 0;
 
@@ -270,7 +287,24 @@ a:hover{text-decoration:underline}
 
   function num(v, dp){ return (v===null||v===undefined||!isFinite(v)) ? '–' : Number(v).toFixed(dp); }
 
-  var STAGE = { 3:'Best', 2:'Confirmed', 1:'Early', 0:'Watch' };
+  var STAGE = { 3:'Best', 2:'Confirmed', 1:'Early', 0:'Watch', '-1':'ATR zone' };
+  var TFS = ['1D','4H','1H','30m','15m'];
+  // Plain words: which timeframe has price inside the ATR zone of its own 200 EMA, and which just closed across it
+  function tfnow(s){
+    var t = s.tfs || {}, inz = [], brk = [], far = [], miss = [];
+    for (var i = 0; i < TFS.length; i++) {
+      var k = TFS[i], q = t[k];
+      if (!q) { miss.push(k); continue; }
+      var ad = Math.abs(q.d).toFixed(1), wh = q.d >= 0 ? 'above' : 'below';
+      if (q.x) brk.push('<i class="'+(q.x>0?'g':'w')+'"><b>'+k+'</b> '+(q.x>0?'▲ closed above':'▼ closed below')+' the 200 EMA '+(q.xb===0?'on this candle':q.xb+' candle'+(q.xb===1?'':'s')+' ago')+' · now '+ad+' ATR '+wh+'</i>');
+      else if (q['in']) inz.push('<i class="z"><b>'+k+'</b> in the ATR zone · '+ad+' ATR '+wh+' the 200 EMA</i>');
+      else far.push(k+' '+ad+' ATR '+wh);
+    }
+    var h = '<span class="fx tfx">' + brk.join('') + inz.join('') + '</span>';
+    if (far.length) h += '<span class="tag">Away from the 200 EMA: '+esc(far.join(' · '))+'</span>';
+    if (miss.length) h += '<span class="tag">No reading yet: '+esc(miss.join(', '))+'</span>';
+    return h;
+  }
 
   var MTF = ['30m','1H','4H','1D','1W'];
   var GRADE = { 3:['a','Top setup'], 2:['b','Good setup'], 1:['c','Basic setup'] };
@@ -283,6 +317,11 @@ a:hover{text-decoration:underline}
   // every quality factor as a plain label: g = good, n = neutral, w = warning
   function why(s){
     var m = s.mtf || {}, f = [], agree = s.signal === 'CALL' ? m.up : m.down;
+    if (s.stage < 0) {
+      f.push(['n','No daily entry stage. Price is only near a 200 EMA']);
+      f.push(s.zone ? ['g',(s.zone.t==='strong'?'★ Strong zone':'Major zone')+' on the daily EMA · '+s.zone.n.join(' + ')] : ['n','No key zone on the daily EMA']);
+      return '<span class="fx"><i class="n">'+esc(f[0][1])+'</i><i class="'+f[1][0]+'">'+esc(f[1][1])+'</i></span>';
+    }
     f.push(s['with'] ? ['g','Trend with you '+agree+'/'+m.n] : (s.against ? ['w','Against the trend'] : ['n','Trend mixed']));
     f.push(s.zone ? ['g',(s.zone.t==='strong'?'★ Strong zone':'Major zone')+' · '+s.zone.n.join(' + ')] : ['n','No key zone on the EMA']);
     f.push(s.stage === 3 ? ['g','Retest held'] : s.stage === 2 ? ['g','Closed through the EMA'] : s.stage === 1 ? ['n','Early trigger'+(s.trigger?': '+s.trigger:'')] : ['n','Near the EMA, no entry yet']);
@@ -296,11 +335,12 @@ a:hover{text-decoration:underline}
   function row(s){
     var st = STAGE[s.stage] || '–', g = GRADE[s.grade] || GRADE[1], d = s.dist_pct;
     return '<tr>'
-      + '<td><span class="sym">'+esc(s.name || s.symbol)+'</span><span class="mkt">'+esc(s.symbol)+' · '+esc(s.market)+'</span><span class="grade '+g[0]+'">'+g[1]+'</span></td>'
-      + '<td><span class="side-'+esc(s.side)+'">'+(s.signal==='CALL'?'▲ CALL':'▼ PUT')+'</span></td>'
+      + '<td><span class="sym">'+esc(s.name || s.symbol)+'</span><span class="mkt">'+esc(s.symbol)+' · '+esc(s.market)+'</span>'+(s.stage<0?'':'<span class="grade '+g[0]+'">'+g[1]+'</span>')+'</td>'
+      + '<td>'+(s.signal?'<span class="side-'+esc(s.side)+'">'+(s.signal==='CALL'?'▲ CALL':'▼ PUT')+'</span>':'<span class="tag">no side</span>')+'</td>'
+      + '<td>'+tfnow(s)+'</td>'
       + '<td>'+mtf(s)+'</td>'
       + '<td><span class="badge b-'+esc(s.entry_type)+'">'+esc(st)+'</span>'
-        + (s.is_entry ? '' : '<span class="tag">watchlist, not an entry</span>') + '</td>'
+        + (s.is_entry ? '' : '<span class="tag">'+(s.stage<0?'not an entry':'watchlist, not an entry')+'</span>') + '</td>'
       + '<td>'+why(s)+'</td>'
       + '<td class="r num hide">'+num(s.ema200,4)+'</td>'
       + '<td class="r num hide">'+num(s.price,4)+'</td>'
@@ -314,6 +354,7 @@ a:hover{text-decoration:underline}
     document.getElementById('kConf').textContent  = c.confirmed|0;
     document.getElementById('kEarly').textContent = c.early|0;
     document.getElementById('kWatch').textContent = c.watch|0;
+    document.getElementById('kZone').textContent  = c.zone|0;
     document.getElementById('kScan').textContent  = d.scanned|0;
     document.getElementById('kSkip').textContent  = d.skipped|0;
     document.getElementById('upd').textContent    = d.updated || '–';
@@ -322,7 +363,7 @@ a:hover{text-decoration:underline}
     if (!sig.length) { out.innerHTML = '<div class="msg">No symbol matches these filters right now.</div>'; return; }
 
     var h = '<table class="tbl"><thead><tr>'
-      + '<th>MARKET · GRADE</th><th>SIDE</th><th>MTF TREND</th><th>STAGE</th><th>WHY IT RANKS HERE</th>'
+      + '<th>MARKET · GRADE</th><th>SIDE</th><th>WHICH TIMEFRAME IS AT ITS 200 EMA</th><th>MTF TREND</th><th>STAGE</th><th>WHY IT RANKS HERE</th>'
       + '<th class="r hide">200 EMA</th><th class="r hide">PRICE</th><th class="r hide">DIST</th>'
       + '</tr></thead><tbody>';
     for (var i = 0; i < sig.length; i++) h += row(sig[i]);
@@ -337,6 +378,7 @@ a:hover{text-decoration:underline}
           + '&entry=' + encodeURIComponent(state.entry.join(','));
     if (state.score !== '') q += '&min_score=' + encodeURIComponent(state.score);
     if (state.quality !== 'all') q += '&quality=' + encodeURIComponent(state.quality);
+    if (state.tf !== 'any') q += '&tf=' + encodeURIComponent(state.tf);
     if (state.mkt !== 'all') q += '&mkt=' + encodeURIComponent(state.mkt);
 
     fetch(API + '?' + q, { headers:{ 'Accept':'application/json' } })
@@ -365,6 +407,11 @@ a:hover{text-decoration:underline}
     var b = e.target.closest('.chip'); if (!b) return;
     [].forEach.call(this.querySelectorAll('.chip'), function(x){ x.setAttribute('aria-pressed', String(x === b)); });
     state.mkt = b.dataset.v; load();
+  });
+  document.getElementById('cTf').addEventListener('click', function(e){
+    var b = e.target.closest('.chip'); if (!b) return;
+    [].forEach.call(this.querySelectorAll('.chip'), function(x){ x.setAttribute('aria-pressed', String(x === b)); });
+    state.tf = b.dataset.v; load();
   });
   document.getElementById('cQual').addEventListener('click', function(e){
     var b = e.target.closest('.chip'); if (!b) return;
