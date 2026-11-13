@@ -24,6 +24,8 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/static/v2/fonts/ibm-plex-sans-400-latin.woff2" crossorigin>
+<link rel="preload" as="image" href="/static/v2/chartpulse-poster-m.jpg" media="(max-width:768px)">
+<link rel="preload" as="image" href="/static/v2/chartpulse-poster-v2.jpg" media="(min-width:769px)">
 <link rel="stylesheet" href="/static/v2/base.css?v=16">
 <link rel="stylesheet" href="/static/v2/cp.css?v=27">
 <link rel="stylesheet" href="/static/v2/odds.css?v=2">
@@ -77,7 +79,8 @@
 
 <!-- ═══ Header v7 — Cinematic space hero ═══ -->
 <section class="cp-hero7" aria-label="ChartPulse hero">
-  <video id="cp-hero7-video" autoplay muted loop playsinline disablepictureinpicture preload="metadata" poster="/static/v2/chartpulse-poster.jpg" aria-hidden="true"><source src="/static/v2/chartpulse-loop.mp4" type="video/mp4"></video>
+  <video id="cp-hero7-video" muted loop playsinline disablepictureinpicture preload="none" aria-hidden="true"><source src="/static/v2/chartpulse-loop-v2.mp4" type="video/mp4"></video>
+  <script>(function(){var v=document.getElementById('cp-hero7-video');if(!v)return;var mob=matchMedia('(max-width:768px)').matches,c=navigator.connection||{};v.poster=mob?'/static/v2/chartpulse-poster-m.jpg':'/static/v2/chartpulse-poster-v2.jpg';if(mob||c.saveData||/2g|3g/.test(c.effectiveType||'')||matchMedia('(prefers-reduced-motion: reduce)').matches)return;addEventListener('load',function(){setTimeout(function(){v.preload='auto';var p=v.play();if(p&&p.catch)p.catch(function(){});},400);});})();</script>
   <div class="shade" aria-hidden="true"></div>
   <canvas id="fx7" aria-hidden="true"></canvas>
   <div class="h7-copy">
