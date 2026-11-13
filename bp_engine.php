@@ -32,7 +32,7 @@ function bp_scan(): array {
         try { foreach (tlh_scan(true)['rows'] as $r) $HE[$r['symbol']] = $r; } catch (Throwable $e) {}
         try { foreach (tlh_scan(false)['rows'] as $r) $HY[$r['symbol']] = $r; } catch (Throwable $e) {}
         $rb = t_read_json(T_DATA . '/rb_scan1.json', null); foreach ((array)($rb['rows'] ?? []) as $r) $RB[$r['symbol']] = $r;
-        $dd = t_read_json(T_DATA . '/daydrive/rows3.json', []); if (is_array($dd)) $DD = $dd;
+        $dd = t_read_json(T_DATA . '/daydrive/rows.json', []); if (is_array($dd)) $DD = $dd;
         try { foreach (sq_scan()['rows'] as $r) $SQ[$r['symbol']] = $r; } catch (Throwable $e) {}
 
         $rows = [];
