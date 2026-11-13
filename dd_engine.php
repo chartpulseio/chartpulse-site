@@ -59,6 +59,7 @@ const DD_SCAN_TTL  = 45;     // the whole payload stays fresh this long
 const DD_DEEP_MAX  = 10;     // symbols per request allowed to fetch fresh 5m bars
 const DD_BUDGET    = 22;     // wall clock for one scan step
 const DD_STEP1_MIN = 23.0;
+const DD_BOUNCE_LINE = 1.0;   // owner, 14 Nov 2026 01:30 IST: daily trend line within 1 x daily ATR of today's high/low (the rule)
 const DD_BOUNCE_W = 0.5;   // owner, 14 Nov 2026: the day's ATR zone = open +/- 1 daily ATR, widened by 0.5 ATR either side (wide zone)   // Step 1 score needed before Step 2 runs
 const DD_VA_PCT    = 0.70;
 const DD_BUCKETS   = 48;
@@ -893,8 +894,16 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
     $zLo = $dOpen + $u * (1 - DD_BOUNCE_W) * $aP; $zHi = $dOpen + $u * (1 + DD_BOUNCE_W) * $aP;
     $stretch = ($ext - $dOpen) * $u / $aP;
     $zn = $call ? 'bottom' : 'top';
-    if (($ext - $zLo) * $u < 0) { $why = 'today\'s ' . ($call ? 'low' : 'high') . ' has not reached the ' . $zn . ' ATR zone (' . round($stretch, 2) . ' x daily ATR from the open, zone starts at ' . (1 - DD_BOUNCE_W) . ')'; return null; }
-    if (($px - $zLo) * $u < 0 || ($px - $zHi) * $u > 0) { $why = 'price has left the ' . $zn . ' ATR zone'; return null; }
+    $inAtr = ($ext - $zLo) * $u >= 0;   // label only (owner, 14 Nov 01:30 IST)
+    // Owner, 14 Nov 2026 01:30 IST: the rule is the DAILY trend line. Today's high must be within 1 x daily ATR of a daily
+    // resistance line (low of a daily support line for a CALL). Wide on purpose so the signal keeps showing for 2-3 days.
+    // A weekly line at the same place is a label.
+    $lineAt = function (string $k) use ($tl, $call, $ext, $aP) {
+        $L = $tl['tf'][$k][$call ? 'sup' : 'res'] ?? null;
+        return (is_array($L) && (int)$L['n'] >= 2 && abs((float)$L['now'] - $ext) <= DD_BOUNCE_LINE * $aP) ? (float)$L['now'] : null;
+    };
+    $dLine = $lineAt('1D'); $wLine = $lineAt('1W');
+    if ($dLine === null) { $why = 'no daily ' . ($call ? 'support' : 'resistance') . ' trend line within 1 x daily ATR of today\'s ' . ($call ? 'low' : 'high'); return null; }
     // zones and lines at today's extreme
     $tol = 0.15 * $aD; $hit = [];
     // a zone counts when today's extreme is on it, or swept through it by up to 0.6 daily ATR (wick below support, back above)
@@ -916,13 +925,14 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
         for ($i = 200, $m = count($D['c']); $i < $m; $i++) $e += ((float)$D['c'][$i] - $e) * $k2;
         if ($on($e)) $hit['ema_d'] = '200 EMA (Daily)';
     }
-    $zones = array_values($hit); $strong = count($zones) >= 2;
+    $zones = array_values($hit); $strong = count($zones) >= 2 || $wLine !== null;   // a weekly line on the same spot = strong label
     $trends = []; foreach (['1W', '1D', '4H', '1H', '30m'] as $k) if (isset($mtf[$k])) $trends[$k] = (int)$mtf[$k] > 0 ? 'up' : 'down';
     // owner, 13 Nov 2026: prefer bounces that the WEAK (small-chart) trend already backs; label the ones that go against it too
     $dir = $call ? 'up' : 'down';
     $with = array_keys(array_filter($trends, fn($v) => $v === $dir)); $against = array_keys(array_filter($trends, fn($v) => $v !== $dir));
     $smallWith = in_array('1H', $with, true) || in_array('30m', $with, true);
-    $base = ['side' => $call ? 'CALL' : 'PUT', 'extreme' => dd_f($ext), 'atr_x' => round($stretch, 2), 'atr_zone' => [dd_f(min($zLo, $zHi)), dd_f(max($zLo, $zHi))], 'zones' => $zones, 'strong' => $strong, 'trends' => $trends,
+    $base = ['side' => $call ? 'CALL' : 'PUT', 'extreme' => dd_f($ext), 'atr_x' => round($stretch, 2), 'atr_zone' => [dd_f(min($zLo, $zHi)), dd_f(max($zLo, $zHi))], 'in_atr' => $inAtr,
+             'd_line' => dd_f($dLine), 'w_line' => $wLine === null ? null : dd_f($wLine), 'zones' => $zones, 'strong' => $strong, 'trends' => $trends,
              'with' => $with, 'against' => $against, 'small_with' => $smallWith,
              'tag' => $smallWith ? 'Small trend agrees (' . implode(', ', array_values(array_intersect(['4H', '1H', '30m'], $with))) . ')' : 'Against the small trend too'];
     if (!$today) { $why = 'no intraday bars for today (cs ' . $cs . ')'; return $base + ['status' => 'NEED5M']; }      // ask the scan for fresh 5m bars
