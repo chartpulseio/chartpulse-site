@@ -932,7 +932,7 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
     $with = array_keys(array_filter($trends, fn($v) => $v === $dir)); $against = array_keys(array_filter($trends, fn($v) => $v !== $dir));
     $smallWith = in_array('1H', $with, true) || in_array('30m', $with, true);
     $base = ['side' => $call ? 'CALL' : 'PUT', 'extreme' => dd_f($ext), 'atr_x' => round($stretch, 2), 'atr_zone' => [dd_f(min($zLo, $zHi)), dd_f(max($zLo, $zHi))], 'in_atr' => $inAtr,
-             'd_line' => dd_f($dLine), 'w_line' => $wLine === null ? null : dd_f($wLine), 'zones' => $zones, 'strong' => $strong, 'trends' => $trends,
+             'd_line' => dd_f($dLine), 'line_atr' => round(abs($px - $dLine) / $aP, 3),   // how far price is from the daily line, in daily ATR (owner, 14 Nov: closest ranks first) 'w_line' => $wLine === null ? null : dd_f($wLine), 'zones' => $zones, 'strong' => $strong, 'trends' => $trends,
              'with' => $with, 'against' => $against, 'small_with' => $smallWith,
              'tag' => $smallWith ? 'Small trend agrees (' . implode(', ', array_values(array_intersect(['4H', '1H', '30m'], $with))) . ')' : 'Against the small trend too'];
     if (!$today) { $why = 'no intraday bars for today (cs ' . $cs . ')'; return $base + ['status' => 'NEED5M']; }      // ask the scan for fresh 5m bars
@@ -1095,10 +1095,16 @@ function dd_scan(string $mkt = 'all', bool $force = false): array {
 
     $list = array_values($rows);
     usort($list, function ($a, $b) {
-        $rank = ['DRIVE' => 0, 'BOUNCE GO' => 1, 'ARMED' => 2, 'BOUNCE READY' => 3, 'TREND OK' => 4, 'BOUNCE RUN' => 5, 'STRUCTURE OK' => 6, 'OFF-HOURS' => 7, 'WATCH' => 8];
+        // Owner, 14 Nov 2026 01:59 IST: the daily trend line is the reversal point. All bounces (GO and READY) rank together,
+        // closest to the daily line first (touched, or crossed but still near); then GO before READY; then the older keys.
+        $rank = ['DRIVE' => 0, 'BOUNCE GO' => 1, 'BOUNCE READY' => 1, 'ARMED' => 2, 'TREND OK' => 4, 'BOUNCE RUN' => 5, 'STRUCTURE OK' => 6, 'OFF-HOURS' => 7, 'WATCH' => 8];
         $x = $rank[$a['status']] ?? 9; $y = $rank[$b['status']] ?? 9;
         if ($x !== $y) return $x <=> $y;
-        if (($a['mode'] ?? '') === 'bounce' && ($b['mode'] ?? '') === 'bounce') {   // bounces: small trend with it first, then more charts with it, then a strong zone
+        if (($a['mode'] ?? '') === 'bounce' && ($b['mode'] ?? '') === 'bounce') {
+            $la = (float)($a['bounce']['line_atr'] ?? 99); $lb = (float)($b['bounce']['line_atr'] ?? 99);
+            if (abs($la - $lb) > 1e-9) return $la <=> $lb;
+            if ($a['status'] !== $b['status']) return $a['status'] === 'BOUNCE GO' ? -1 : 1;
+            // then: small trend with it first, then more charts with it, then a strong zone
             $ka = [!empty($a['bounce']['small_with']) ? 1 : 0, count($a['bounce']['with'] ?? []), !empty($a['bounce']['strong']) ? 1 : 0];
             $kb = [!empty($b['bounce']['small_with']) ? 1 : 0, count($b['bounce']['with'] ?? []), !empty($b['bounce']['strong']) ? 1 : 0];
             if ($ka !== $kb) return $kb <=> $ka;
