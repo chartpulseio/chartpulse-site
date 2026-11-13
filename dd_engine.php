@@ -59,7 +59,7 @@ const DD_SCAN_TTL  = 45;     // the whole payload stays fresh this long
 const DD_DEEP_MAX  = 10;     // symbols per request allowed to fetch fresh 5m bars
 const DD_BUDGET    = 22;     // wall clock for one scan step
 const DD_STEP1_MIN = 23.0;
-const DD_BOUNCE_ATR = 0.7;   // owner, 14 Nov 2026: bounce only when today's high/low is >= 0.7 x daily ATR from today's open (broad top/bottom ATR zone)   // Step 1 score needed before Step 2 runs
+const DD_BOUNCE_W = 0.5;   // owner, 14 Nov 2026: the day's ATR zone = open +/- 1 daily ATR, widened by 0.5 ATR either side (wide zone)   // Step 1 score needed before Step 2 runs
 const DD_VA_PCT    = 0.70;
 const DD_BUCKETS   = 48;
 const DD_EXCLUDE   = ['MKR-USD'];   // owner's standing rule: never shortlist Maker
@@ -885,12 +885,16 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
         $ext = (float)($call ? $F5['l'][$ix] : $F5['h'][$ix]);
         $A5 = t_atr($F5, 14); $a5 = (float)end($A5); if ($a5 <= 0) $a5 = 0.1 * $aD;
     } else { $ix = null; $ext = (float)($call ? $D['l'][$nD - 1] : $D['h'][$nD - 1]); $a5 = 0.1 * $aD; }
-    // Owner, 14 Nov 2026: a day reversal only counts at the day's ATR zone. Today's high must have reached the top ATR zone
-    // (at least DD_BOUNCE_ATR x the daily ATR above today's open); today's low the bottom ATR zone. ATR from the days before today.
+    // Owner, 14 Nov 2026 (01:14 IST): the day's ATR zone. Top level = today's open + 1 daily ATR (ATR from the days before today);
+    // the zone is wide: DD_BOUNCE_W x ATR either side of that level. The signal starts as soon as today's high reaches the zone
+    // (low for a CALL) and stays on while price is inside it, whether it bounces or pushes on; it ends when price leaves the zone.
     $aP = count($A) >= 2 ? (float)$A[count($A) - 2] : $aD; if ($aP <= 0) $aP = $aD;
-    $dOpen = (float)$D['o'][$nD - 1];
-    $stretch = ($call ? $dOpen - $ext : $ext - $dOpen) / $aP;
-    if ($stretch < DD_BOUNCE_ATR) { $why = 'today\'s ' . ($call ? 'low' : 'high') . ' is not in the ' . ($call ? 'bottom' : 'top') . ' ATR zone (' . round($stretch, 2) . ' x daily ATR from the open, needs ' . DD_BOUNCE_ATR . ')'; return null; }
+    $dOpen = (float)$D['o'][$nD - 1]; $u = $call ? -1 : 1;
+    $zLo = $dOpen + $u * (1 - DD_BOUNCE_W) * $aP; $zHi = $dOpen + $u * (1 + DD_BOUNCE_W) * $aP;
+    $stretch = ($ext - $dOpen) * $u / $aP;
+    $zn = $call ? 'bottom' : 'top';
+    if (($ext - $zLo) * $u < 0) { $why = 'today\'s ' . ($call ? 'low' : 'high') . ' has not reached the ' . $zn . ' ATR zone (' . round($stretch, 2) . ' x daily ATR from the open, zone starts at ' . (1 - DD_BOUNCE_W) . ')'; return null; }
+    if (($px - $zLo) * $u < 0 || ($px - $zHi) * $u > 0) { $why = 'price has left the ' . $zn . ' ATR zone'; return null; }
     // zones and lines at today's extreme
     $tol = 0.15 * $aD; $hit = [];
     // a zone counts when today's extreme is on it, or swept through it by up to 0.6 daily ATR (wick below support, back above)
@@ -918,7 +922,7 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
     $dir = $call ? 'up' : 'down';
     $with = array_keys(array_filter($trends, fn($v) => $v === $dir)); $against = array_keys(array_filter($trends, fn($v) => $v !== $dir));
     $smallWith = in_array('1H', $with, true) || in_array('30m', $with, true);
-    $base = ['side' => $call ? 'CALL' : 'PUT', 'extreme' => dd_f($ext), 'atr_x' => round($stretch, 2), 'atr_zone' => dd_f($dOpen + ($call ? -1 : 1) * DD_BOUNCE_ATR * $aP), 'zones' => $zones, 'strong' => $strong, 'trends' => $trends,
+    $base = ['side' => $call ? 'CALL' : 'PUT', 'extreme' => dd_f($ext), 'atr_x' => round($stretch, 2), 'atr_zone' => [dd_f(min($zLo, $zHi)), dd_f(max($zLo, $zHi))], 'zones' => $zones, 'strong' => $strong, 'trends' => $trends,
              'with' => $with, 'against' => $against, 'small_with' => $smallWith,
              'tag' => $smallWith ? 'Small trend agrees (' . implode(', ', array_values(array_intersect(['4H', '1H', '30m'], $with))) . ')' : 'Against the small trend too'];
     if (!$today) { $why = 'no intraday bars for today (cs ' . $cs . ')'; return $base + ['status' => 'NEED5M']; }      // ask the scan for fresh 5m bars
@@ -928,7 +932,8 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
     // has it turned? a fresh 5m change of character after the extreme
     $ch = $ix < $n5 - 2 ? dd_choch($F5, $ix, $n5, $sg, 8) : null;
     $away = ($px - $ext) * $sg;                                        // > 0: price is off the extreme on our side
-    if ($ch && $away > 0 && $away <= 3 * $a5) {
+    if (!$ch && $ix < $n5 - 2) { $ch = dd_choch_first($F5, $ix, $n5, $sg); }   // a turn earlier today still counts while price is in the zone
+    if ($ch && $away > 0) {
         $entry = (float)$ch[2]; $sl = $ext - $sg * 0.15 * $a5; $risk = abs($entry - $sl); if ($risk <= 0) return null;
         $lv = [];
         $vw = dd_vwap($F5, $cs, $ce ?: $cs + 86400); if ($vw) $lv[] = [(float)$vw['value'], 'VWAP'];
@@ -940,16 +945,8 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
         return $base + ['status' => 'BOUNCE GO', 'entry' => dd_f($entry), 'sl' => dd_f($sl), 't1' => dd_f($tp[0]), 't1why' => $tp[1],
                         'rr' => round(abs($tp[0] - $entry) / $risk, 1), 'at_bar' => (int)$F5['t'][$ch[1]]];
     }
-    if (abs($px - $ext) <= 1.0 * $a5) return $base + ['status' => 'BOUNCE READY'];   // zones are a label, not a filter (owner, 14 Nov 2026)
-    // the turn happened earlier today and price has already moved: shown, but marked late (do not chase)
-    $old = $ix < $n5 - 2 ? dd_choch_first($F5, $ix, $n5, $sg) : null;   // the first turn off the extreme, not the latest break
-    if ($old && $away > 0 && ($px - (float)$old[2]) * $sg > 0) {
-        $entry = (float)$old[2]; $sl = $ext - $sg * 0.15 * $a5; $risk = abs($entry - $sl);
-        return $base + ['status' => 'BOUNCE RUN', 'entry' => dd_f($entry), 'sl' => dd_f($sl), 'moved_r' => $risk > 0 ? round(($px - $entry) * $sg / $risk, 1) : null,
-                        'at_bar' => (int)$F5['t'][$old[1]]];
-    }
-    $why = 'no turn yet: low ' . round($ext, 5) . ', zones ' . count($zones) . ', away ' . round($away / max($a5, 1e-9), 1) . ' bar-ATR, bars ' . ($n5 - $ia);
-    return null;
+    // in the zone, no turn yet (or price pushing on): the signal stays active and waits. Zones are a label, not a filter.
+    return $base + ['status' => 'BOUNCE READY'];
 }
 
 function dd_status(array $s1, ?array $s2, ?array $s3): string {
