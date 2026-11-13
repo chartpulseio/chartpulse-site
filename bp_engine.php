@@ -32,7 +32,7 @@ function bp_scan(): array {
         try { foreach (tlh_scan(true)['rows'] as $r) $HE[$r['symbol']] = $r; } catch (Throwable $e) {}
         try { foreach (tlh_scan(false)['rows'] as $r) $HY[$r['symbol']] = $r; } catch (Throwable $e) {}
         $rb = t_read_json(T_DATA . '/rb_scan1.json', null); foreach ((array)($rb['rows'] ?? []) as $r) $RB[$r['symbol']] = $r;
-        $dd = t_read_json(T_DATA . '/daydrive/rows2.json', []); if (is_array($dd)) $DD = $dd;
+        $dd = t_read_json(T_DATA . '/daydrive/rows.json', []); if (is_array($dd)) $DD = $dd;
         try { foreach (sq_scan()['rows'] as $r) $SQ[$r['symbol']] = $r; } catch (Throwable $e) {}
 
         $rows = [];
@@ -51,10 +51,9 @@ function bp_scan(): array {
             }
             if (($h = $HY[$sym] ?? null) && (int)$h['stage'] >= 4 && !empty($h['live'])) { $add($h['bias'], 1, 'Hybrid: ' . strtolower($h['stage_name'])); $tf ??= $h['etf'] ?? $h['tf']; }
             if ($d = $DD[$sym] ?? null) {
-                $s = (string)($d['status'] ?? ''); $sd = $d['side'] ?? null;   // trend status; the bounce rides in $d['bounce'] (14 Nov 2026)
-                if ($s === 'DRIVE') { $add($sd, 2, 'Day Drive: entry ready'); $tf ??= '15m'; }
+                $s = (string)($d['status'] ?? ''); $sd = $d['side'] ?? null;
+                if ($s === 'DRIVE' || $s === 'BOUNCE GO') { $add($sd, 2, 'Day Drive: ' . ($s === 'DRIVE' ? 'entry ready' : 'bounce entry')); $tf ??= '15m'; }
                 elseif ($s === 'ARMED') $add($sd, 1, 'Day Drive: get ready');
-                if (($d['bounce']['status'] ?? '') === 'BOUNCE GO') { $add($d['bounce']['side'] ?? null, 2, 'Day Drive: bounce entry'); $tf ??= '15m'; }
             }
             if (($r = $RB[$sym] ?? null) && !empty($r['live']) && (int)$r['stage'] >= 2) { $add($r['side'], 1, 'Movers Reversal: ' . strtolower($r['stage_name'])); $tf ??= '15m'; }
             $sig = $t1['signal'] ?? null; if ($sig === 'CALL' || $sig === 'PUT') $add($sig, 1, 'Tier-1 ' . $sig);

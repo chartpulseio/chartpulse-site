@@ -113,7 +113,7 @@ function gf_scan(bool $force = false): array {
         $NS = []; try { foreach (ns_scan()['rows'] as $r) $NS[$r['symbol']] = $r; } catch (Throwable $e) {}
         $E2 = []; $e2 = t_read_json(T_DATA . '/ema200_signals2.json', null);
         foreach ((is_array($e2) ? $e2['signals'] ?? [] : []) as $r) if (isset($r['symbol'])) $E2[$r['symbol']] = $r;
-        $DD = t_read_json(T_DATA . '/daydrive/rows2.json', []); if (!is_array($DD)) $DD = [];
+        $DD = t_read_json(T_DATA . '/daydrive/rows.json', []); if (!is_array($DD)) $DD = [];
         $ST = gf_read_strats($fdiag); $feeds = 0; foreach ($ST as $L) $feeds += count($L);
 
         $rows = []; $cnt = ['A+' => 0, 'A' => 0, 'B' => 0, 'READY' => 0, 'WATCH' => 0, 'NEWS' => 0, 'bias' => 0];
