@@ -255,12 +255,13 @@ function bounceWords(r) {
   const b = r.bounce || {}, put = b.side === "PUT", ext = put ? "today's high" : "today's low";
   const against = Object.entries(b.trends || {}).filter(([k, v]) => (v === "up") === put).map(([k]) => k);
   const z = (b.zones || []).length ? (b.strong ? `Reversed from a strong zone: ${b.zones.join(" + ")}.` : `Reversed from ${b.zones.join(" + ")}.`) : "Plain reversal (no key zone at " + ext + ").";
+  const az = b.atr_x != null ? ` Today's ${put ? "high" : "low"} is in the ${put ? "top" : "bottom"} ATR zone (${b.atr_x}× the daily ATR from the open).` : "";
   const NM = {"1W": "Weekly", "1D": "Daily", "4H": "4H", "1H": "1H", "30m": "30m"};
   const now = Object.entries(b.trends || {}).map(([k, v]) => `${NM[k] || k} ${v === "up" ? "UP" : "DOWN"}`).join(", ");
   const tr = (now ? ` Trend now: ${now}.` : "") + (against.length ? ` Still against the ${against.map(k => NM[k] || k).join(", ")} trend: a small, quick trade with one target.` : "")
     + (b.small_with === false ? " The small charts (1H / 30m) are against it too: weaker setup." : b.small_with ? " The small charts already turned with it: preferred." : "");
-  if (r.status === "BOUNCE RUN") return `${z} The turn came earlier today (entry was ${fmt(b.entry)}); price has already moved ${b.moved_r ?? "?"}× the risk. Late: do not chase, wait for a pullback.${tr}`;
-  return r.status === "BOUNCE GO" ? `${z} A 5-minute candle broke the last swing away from ${ext}.${tr}` : `Price is at ${ext} on ${(b.zones || []).join(" + ")}. Waiting for a 5-minute turn.${tr}`;
+  if (r.status === "BOUNCE RUN") return `${z}${az} The turn came earlier today (entry was ${fmt(b.entry)}); price has already moved ${b.moved_r ?? "?"}× the risk. Late: do not chase, wait for a pullback.${tr}`;
+  return r.status === "BOUNCE GO" ? `${z}${az} A 5-minute candle broke the last swing away from ${ext}.${tr}` : `Price is at ${ext}${(b.zones || []).length ? " on " + b.zones.join(" + ") : " (no key zone: plain reversal)"}.${az} Waiting for a 5-minute turn.${tr}`;
 }
 function nextWords(r) {
   if (r.mode === "bounce") return bounceWords(r);
