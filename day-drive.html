@@ -281,35 +281,22 @@ function listShell() {
   $("#ddQ").addEventListener("input", e => { L.q = e.target.value.trim().toLowerCase(); L.show = 60; paint(); });
   $("#ddMore").addEventListener("click", () => { L.show += 60; paint(); });
 }
-/* Owner, 14 Nov 2026: trend setups and bounces are kept apart. A row's bounce lives in r.bounce; on the Bounce tab
-   (and on a detail page opened from it) the row is shown as a bounce. */
-const BST = { "BOUNCE GO": 0, "BOUNCE READY": 1, "BOUNCE RUN": 2 };
-const hasB = r => r.bounce && BST[r.bounce.status] !== undefined;
-const bview = r => Object.assign({}, r, { status: r.bounce.status, mode: "bounce", side: r.bounce.side });
-function bounceRows(all) {
-  return all.filter(hasB).map(bview).sort((a, b) => {
-    const x = BST[a.status] - BST[b.status]; if (x) return x;
-    const ka = [a.bounce.small_with ? 1 : 0, (a.bounce.with || []).length, a.bounce.strong ? 1 : 0, +(a.bounce.rr || 0)];
-    const kb = [b.bounce.small_with ? 1 : 0, (b.bounce.with || []).length, b.bounce.strong ? 1 : 0, +(b.bounce.rr || 0)];
-    for (let i = 0; i < ka.length; i++) if (ka[i] !== kb[i]) return kb[i] - ka[i];
-    return 0;
-  });
-}
 function paint() {
-  const all = L.rows, cnt = s => all.filter(r => r.status === s).length, bcnt = s => all.filter(r => hasB(r) && r.bounce.status === s).length;
+  const all = L.rows, cnt = s => all.filter(r => r.status === s).length;
   $("#ddTiles").innerHTML = [
-    ["hot", cnt("DRIVE"), "Entry ready"], ["warm", cnt("ARMED"), "Get ready"], ["hot", bcnt("BOUNCE GO"), "Bounce entry (own tab)"], ["", cnt("TREND OK"), "Trend agrees"],
+    ["hot", cnt("DRIVE"), "Entry ready"], ["warm", cnt("ARMED"), "Get ready"], ["hot", cnt("BOUNCE GO"), "Bounce entry"], ["", cnt("TREND OK"), "Trend agrees"],
     ["", cnt("STRUCTURE OK"), "Big picture ready"], ["", all.length, "Markets scanned"]
   ].map(([c, v, k]) => `<div class="dd-tile ${c}"><div class="v">${v}</div><div class="k">${k}</div></div>`).join("");
   const through = all.filter(r => r.status !== "WATCH" && r.mode !== "bounce").length;
   $("#ddMsg").innerHTML = all.length && !through ? `<p class="dd-note"><b>No market has passed check 1 right now.</b> That is normal: the weekly trend and a daily rejection candle rarely line up on the same day. The list below is sorted by how close each market is.</p>` : "";
-  let rows = (L.stage === "bounce" ? bounceRows(all) : all).filter(r => L.mkt === "all" || r.class === L.mkt);
-  if (L.stage === "ready") rows = rows.filter(r => r.status === "DRIVE" || r.status === "ARMED");
+  let rows = all.filter(r => L.mkt === "all" || r.class === L.mkt);
+  if (L.stage === "ready") rows = rows.filter(r => r.status === "DRIVE" || r.status === "ARMED" || r.status === "BOUNCE GO");
+  if (L.stage === "bounce") rows = rows.filter(r => r.mode === "bounce");
   if (L.stage === "progress") rows = rows.filter(r => r.status === "TREND OK" || r.status === "STRUCTURE OK" || r.status === "OFF-HOURS");
   if (L.q) rows = rows.filter(r => (r.name + " " + r.symbol + " " + (r.tv || "")).toLowerCase().includes(L.q));
   const head = `<div class="dd-row head"><span>#</span><span>Market</span><span>Idea</span><span>Stage</span><span>Checks 1 · 2 · 3</span><span style="text-align:right">Score</span><span>What it is waiting for</span><span></span></div>`;
   $("#ddList").innerHTML = rows.length ? head + rows.slice(0, L.show).map((r, i) => `
-    <a class="dd-row" href="${BASE}?s=${encodeURIComponent(r.symbol)}${r.mode === "bounce" ? "&v=bounce" : ""}">
+    <a class="dd-row" href="${BASE}?s=${encodeURIComponent(r.symbol)}">
       <span class="dd-rk">${i + 1}</span>
       <span class="dd-nm"><b>${esc(r.name)}</b><small>${esc(r.tv || r.symbol)} · ${esc(r.market || "")}</small></span>
       <span class="dd-sidec"><span class="dd-side ${esc(r.side)}">${r.side === "CALL" ? "▲" : "▼"} ${esc(r.side)}</span></span>
@@ -381,7 +368,7 @@ async function loadDetail(sym) {
   try {
     const r = await fetch(`/dd_api.php?r=symbol&s=${encodeURIComponent(sym)}`, { cache: "no-store" }); const j = await r.json();
     if (!j.row) throw new Error(j.error || "This market could not be read just now.");
-    detail(Q.get("v") === "bounce" && hasB(j.row) ? bview(j.row) : j.row);
+    detail(j.row);
   } catch (e) { app.innerHTML = `<a class="dd-back" href="${BASE}">‹ Day Drive Scanner</a><p class="dd-empty">${esc(e.message)}</p>`; }
 }
 

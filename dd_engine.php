@@ -999,8 +999,9 @@ function dd_eval(string $sym, array $row, bool $deep, array $ctx, int $now): ?ar
     $gates = $s1['gates'] + ($s2['gates'] ?? []) + ($s3['gates'] ?? []);
     $status = dd_status($s1, $s2, $s3); $mode = 'trend'; $bo = null;
     $bwhy = null; try { $bo = dd_bounce($sym, $fr, $F5, $cs, $ce, $px, $now, $bwhy); } catch (Throwable $e) { dd_log('bounce', $sym . ': ' . $e->getMessage()); }
-    // Owner, 14 Nov 2026: the bounce no longer replaces the trend status. Day Drive lists the trend setups as before;
-    // bounces travel in 'bounce' and the page shows them on their own Bounce tab.
+    if ($bo && !in_array($status, ['DRIVE', 'ARMED'], true) && in_array($bo['status'], ['BOUNCE GO', 'BOUNCE READY', 'BOUNCE RUN'], true)) {
+        $status = $bo['status']; $mode = 'bounce'; $sg = $bo['side'] === 'CALL' ? 1 : -1;
+    }
 
     return [
         'symbol' => $sym, 'name' => t_name($sym),
@@ -1041,14 +1042,14 @@ function dd_candidates(array $scan, int $now): array {
 function dd_scan(string $mkt = 'all', bool $force = false): array {
     dd_dir();
     $now = t_now();
-    $ck = DD_DIR . '/scan2.json';
+    $ck = DD_DIR . '/scan.json';
     $c = t_read_json($ck, null);
     if (!$force && is_array($c) && $now - (int)($c['at'] ?? 0) < DD_SCAN_TTL && !empty($c['rows'])) return dd_filter($c, $mkt);
 
     $ctx = dd_context();
     $scan = t_scan_load();
     $cands = dd_candidates($scan, $now);
-    $cacheP = DD_DIR . '/rows2.json';
+    $cacheP = DD_DIR . '/rows.json';
     $cache = t_read_json($cacheP, []);
     if (!is_array($cache)) $cache = [];
 
@@ -1080,7 +1081,7 @@ function dd_scan(string $mkt = 'all', bool $force = false): array {
 
     $list = array_values($rows);
     usort($list, function ($a, $b) {
-        $rank = ['DRIVE' => 0, 'ARMED' => 1, 'TREND OK' => 2, 'STRUCTURE OK' => 3, 'OFF-HOURS' => 4, 'WATCH' => 5];
+        $rank = ['DRIVE' => 0, 'BOUNCE GO' => 1, 'ARMED' => 2, 'BOUNCE READY' => 3, 'TREND OK' => 4, 'BOUNCE RUN' => 5, 'STRUCTURE OK' => 6, 'OFF-HOURS' => 7, 'WATCH' => 8];
         $x = $rank[$a['status']] ?? 9; $y = $rank[$b['status']] ?? 9;
         if ($x !== $y) return $x <=> $y;
         if (($a['mode'] ?? '') === 'bounce' && ($b['mode'] ?? '') === 'bounce') {   // bounces: small trend with it first, then more charts with it, then a strong zone
@@ -1095,7 +1096,7 @@ function dd_scan(string $mkt = 'all', bool $force = false): array {
     $p = [
         'at' => $now, 'rows' => $list,
         'meta' => ['scanned' => $seen, 'deep' => $deep, 'universe' => count($cands),
-                   'drive' => $cnt('DRIVE'), 'armed' => $cnt('ARMED'), 'bounce_go' => count(array_filter($list, fn($r) => ($r['bounce']['status'] ?? '') === 'BOUNCE GO')), 'bounce_ready' => count(array_filter($list, fn($r) => ($r['bounce']['status'] ?? '') === 'BOUNCE READY')),
+                   'drive' => $cnt('DRIVE'), 'armed' => $cnt('ARMED'), 'bounce_go' => $cnt('BOUNCE GO'), 'bounce_ready' => $cnt('BOUNCE READY'),
                    'structure' => count(array_filter($list, fn($r) => !in_array($r['status'], ['WATCH', 'BOUNCE GO', 'BOUNCE READY', 'BOUNCE RUN'], true))),
                    'vix' => $ctx['vix'], 'btc_atr_pct' => $ctx['btc_atr_pct'],
                    'took_ms' => (int)round((microtime(true) - $t0) * 1000)],
