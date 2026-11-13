@@ -7,16 +7,18 @@ $sebi = t_cfg('sebi_registration', ''); $upd = t_cfg('legal_updated', '25 Septem
 $pages = ['terms' => 'Terms & Conditions', 'privacy' => 'Privacy Policy', 'refund' => 'Refund & Cancellation', 'contact' => 'Contact us', 'disclaimer' => 'Risk disclaimer'];
 $p = $_GET['p'] ?? 'terms'; if (!isset($pages[$p])) $p = 'terms';
 $title = $pages[$p] . ' · ' . $biz;
+$descs = ['terms' => 'Terms and conditions for using ChartPulse market scanners, AI Scan, backtesting tools and Tier 2 access.', 'privacy' => 'How ChartPulse collects, uses and protects your data, cookies and Telegram alert details.', 'refund' => 'ChartPulse refund and cancellation policy for Tier 2 subscriptions paid by card, PayPal or USDT.', 'contact' => 'Contact ChartPulse support for help with scanners, alerts, payments, affiliates or your account.', 'disclaimer' => 'Risk disclaimer: ChartPulse signals and scanners are analysis tools, not financial advice. Trading involves risk.'];
+$desc = $descs[$p];
 ?><!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title><?= $e($title) ?></title>
-<meta name="description" content="<?= $e($pages[$p]) ?> for <?= $e($biz) ?>">
+<meta name="description" content="<?= $e($desc) ?>">
 <meta name="theme-color" content="#050506">
 <meta property="og:title" content="<?= $e($title) ?>">
-<meta property="og:description" content="<?= $e($pages[$p]) ?> for <?= $e($biz) ?>">
+<meta property="og:description" content="<?= $e($desc) ?>">
 <meta property="og:type" content="website">
 <link rel="canonical" href="https://chartpulse.io<?= $p === 'contact' ? '/contact/' : '/legal/' . $e($p) ?>">
 <meta property="og:site_name" content="ChartPulse">
@@ -25,7 +27,12 @@ $title = $pages[$p] . ' · ' . $biz;
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://chartpulse.io/static/og.jpg">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 88 88' aria-hidden='true'><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%23F4B740' stroke-width='3'/><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%2322AB94' stroke-width='2.4' transform='rotate(60 44 44)'/><ellipse cx='44' cy='44' rx='32' ry='12.5' fill='none' stroke='%23F7525F' stroke-width='2.4' transform='rotate(-60 44 44)'/><circle cx='44' cy='44' r='4.5' fill='%23EDEDEF'/></svg>">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/static/v2/fonts/ibm-plex-sans-400-latin.woff2" crossorigin>
 <link rel="stylesheet" href="/static/v2/base.css?v=10">
