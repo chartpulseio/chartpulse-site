@@ -51,7 +51,7 @@
     var ran = E.filter(function (e) { return !e.off; }).length;
     var cls = /BULL/i.test(b.label) ? "up" : /BEAR/i.test(b.label) ? "dn" : "nt";
     var pos = Math.max(2, Math.min(98, 50 + (b.score || 0) / 2));
-    var rows = [["Now", p.price], ["Entry", pl.entry], ["Stop", pl.stop], ["Target 1", pl.t1], ["Target 2", pl.t2]].filter(function (r) { return r[1] != null; });
+    var rows = [["Now", p.price], [pl.entry_lo != null ? "Entry (limit)" : "Entry", pl.entry], ["Stop", pl.stop], ["Target 1", pl.t1], ["Target 2", pl.t2]].filter(function (r) { return r[1] != null; });
     var el = document.createElement("section");
     el.className = "aib"; el.setAttribute("aria-label", "AI Scan summary");
     el.innerHTML =

@@ -32,7 +32,7 @@ function lc_context(array $d): string {
     if ($d['news']['n']) { $L[] = "News: {$d['news']['n']} recent headlines, average tone {$d['news']['tone']} (-1 to +1). Headlines:";
         foreach (array_slice($d['news']['top'] ?? [], 0, 8) as $h) $L[] = '- ' . (is_array($h) ? (string)($h['t'] ?? $h['title'] ?? json_encode($h)) : (string)$h); }
     else $L[] = 'News: no recent headlines.';
-    if ($d['plan']) $L[] = "Rule plan: {$d['plan']['direction']} at {$d['plan']['entry']}, stop {$d['plan']['stop']}, targets {$d['plan']['t1']} / {$d['plan']['t2']}.";
+    if ($d['plan']) $L[] = "Rule plan: {$d['plan']['direction']}, limit entry zone " . ($d['plan']['entry_lo'] ?? $d['plan']['entry']) . ' to ' . ($d['plan']['entry_hi'] ?? $d['plan']['entry']) . " (a pullback from the last close, not a market order), stop {$d['plan']['stop']}, targets {$d['plan']['t1']} / {$d['plan']['t2']}.";
     return implode("\n", $L);
 }
 
@@ -103,17 +103,18 @@ function lc_run(string $sym): array {
     $d = td_cached($sym, '1D');
     if (isset($d['error'])) { t_write_json(lc_file($sym), ['status' => 'error', 'at' => $now]); return ['status' => 'error', 'error' => $d['error']]; }
     $ctx = lc_context($d);
-    $base = 'You are part of a professional trading research desk. Use ONLY the data given; never invent prices, events or numbers. Plain English, no hype, no guarantees. Max 120 words, 3-5 short bullet points starting with "- ".';
-    $roles = ['market' => 'You are the technical/market analyst. Read trend, momentum, volatility and levels.',
-        'news' => 'You are the news analyst. Judge what the headlines and their tone mean for the next 1-2 weeks. If there is no news, say so briefly.',
-        'bull' => 'You are the bull researcher. Make the strongest honest case for going long, and name the level that would prove you wrong.',
-        'bear' => 'You are the bear researcher. Make the strongest honest case for going short or staying out, and name the level that would prove you wrong.'];
+    $base = 'You are part of a professional trading research desk. Use ONLY the data given; never invent prices, events or numbers. Every bullet must quote at least one number or price level from the data and say what it means for a trader; no generic textbook remarks. Plain English, no hype, no guarantees. Max 120 words, 3-5 short bullet points starting with "- ".';
+    $roles = ['market' => 'You are the technical/market analyst. Read trend, momentum, volatility and levels, and say which level price must hold and which it must break.',
+        'news' => 'You are the news analyst. Judge what the headlines and their tone mean for the next 1-2 weeks, naming the headline that matters most. If there is no news, say so in one bullet and judge whether the price action alone looks news-driven.',
+        'bull' => 'You are the bull researcher. Make the strongest honest case for going long: where to buy (use the entry zone or a level from the data), where the idea is wrong, and what upside the forecast range allows.',
+        'bear' => 'You are the bear researcher. Make the strongest honest case for going short or staying out: what is weak in the data, where a short would be wrong, and what downside the forecast range allows.'];
     $R = []; foreach ($roles as $k => $s) $R[$k] = lc_req(LC_ANALYST, "$s $base", $ctx, false);
     $A = lc_multi($R, 35);
     if (count(array_filter($A)) < 2) { $R = []; foreach ($roles as $k => $s) $R[$k] = lc_req('gemini-3.1-flash-lite', "$s $base", $ctx, false); $A = lc_multi($R, 35); }   // free-tier quota fallback
     if (count(array_filter($A)) < 2) { t_write_json(lc_file($sym), ['status' => 'error', 'at' => $now]); return ['status' => 'error', 'error' => 'The AI service did not answer. Please try again in a minute.', 'detail' => $GLOBALS['lc_err'] ?? null]; }
     $jsys = 'You are the risk manager who makes the final call for a trading desk. Weigh the analysts and the data; respect the rule vetoes. Use ONLY the data given. '
-        . 'Reply as JSON: {"decision":"BUY"|"HOLD"|"SELL","confidence":"low"|"medium"|"high","summary":"2-3 sentences","risks":["..."],"invalidation":"price level and why"}';
+        . 'Do not answer HOLD just to be safe: say HOLD only when the bull and bear cases are truly balanced or a veto applies, and then say exactly what would turn it into a BUY or a SELL. Never tell the reader to enter at the last close; an entry is the limit zone from the rule plan or a level in the data. '
+        . 'Reply as JSON: {"decision":"BUY"|"HOLD"|"SELL","confidence":"low"|"medium"|"high","summary":"2-3 sentences that name the deciding facts with their numbers","action":"one sentence: the order to place (zone, stop, first target) or why to stand aside","trigger":"the price event that must happen first, with its level","risks":["..."],"invalidation":"price level and why"}';
     $ju = $ctx . "\n\nAnalyst notes:\n" . implode("\n", array_map(fn($k) => strtoupper($k) . ":\n" . ($A[$k] ?: '(no answer)'), array_keys($A)));
     $jt = (string)(lc_multi(['j' => lc_req(LC_JUDGE, $jsys, $ju, true)], 45)['j'] ?? '');
     $jt2 = preg_replace('/^```(?:json)?\s*|\s*```$/', '', trim($jt)); if (($p0 = strpos($jt2, '{')) !== false) $jt2 = substr($jt2, $p0, strrpos($jt2, '}') - $p0 + 1);
@@ -130,6 +131,7 @@ function lc_run(string $sym): array {
     $cut = fn($s, $n) => mb_substr(trim((string)$s), 0, $n);
     $r = ['status' => 'done', 'at' => t_now(), 'price' => $d['params']['price'], 'decision' => $dec, 'confidence' => in_array($J['confidence'] ?? '', ['low', 'medium', 'high'], true) ? $J['confidence'] : 'low',
         'summary' => $cut($J['summary'] ?? '', 600), 'risks' => array_map(fn($x) => $cut($x, 200), array_slice((array)($J['risks'] ?? []), 0, 4)), 'invalidation' => $cut($J['invalidation'] ?? '', 250),
+        'action' => $cut($J['action'] ?? '', 300), 'trigger' => $cut($J['trigger'] ?? '', 250),
         'analysts' => array_map(fn($x) => $cut($x, 1500), $A)];
     t_write_json(lc_file($sym), $r); return $r;
 }

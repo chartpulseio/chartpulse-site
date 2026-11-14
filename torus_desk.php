@@ -195,15 +195,24 @@ function td_analyze(string $sym, string $tf = '1D'): array {
     if ($dir && $mem['n'] >= 20 && (($dir > 0 && $mem['up'] < 0.4) || ($dir < 0 && $mem['up'] > 0.6))) $veto[] = 'Similar past setups mostly went the other way';
     $tier = $veto ? 'skip' : ($mag >= 55 ? 'full' : ($mag >= 35 ? 'half' : 'skip'));
     $a = $I['A'][$i]; $c = $B['c'][$i]; $plan = null;
-    if ($dir) {
-        $sw = $dir > 0 ? min(array_slice($B['l'], -5)) : max(array_slice($B['h'], -5));
-        $sl = $dir > 0 ? min($sw - 0.2 * $a, $c - 1.2 * $a) : max($sw + 0.2 * $a, $c + 1.2 * $a); $R = abs($c - $sl);
-        $plan = ['direction' => $dir > 0 ? 'long' : 'short', 'entry' => t_r($c), 'stop' => t_r($sl), 't1' => t_r($c + $dir * 1.5 * $R), 't2' => t_r($c + $dir * 2.5 * $R), 'risk' => t_r($R)];
-    }
     $cone = td_cone($B, $I, $i); $coneSrc = count($cone) ? 'statistical' : 'none';
     $fc = ml_forecast($sym, $tf, $B['c'], (int)$B['t'][$i], TD_CONE);   // TimesFM 2.5 quantiles from the owner's Space
     if ($fc) { $cone = array_map(fn($q) => ['h' => (int)$q['h'], 'p10' => t_r((float)$q['p10']), 'p25' => t_r((float)$q['p25']), 'p50' => t_r((float)$q['p50']),
         'p75' => t_r((float)$q['p75']), 'p90' => t_r((float)$q['p90'])], $fc); $coneSrc = 'timesfm'; }
+    if ($dir) {
+        // Entry is a pullback zone, never the price on the screen (owner, 15 Nov 2026): the depth is the lower quartile of the
+        // next bar's forecast range (upper quartile for a short), kept between 0.3 and 0.8 ATR; half an ATR when there is no forecast.
+        $q1 = $cone[0] ?? null; $pull = 0.5;
+        if ($q1) $pull = max(0.3, min(0.8, ($dir > 0 ? $c - (float)$q1['p25'] : (float)$q1['p75'] - $c) / max($a, 1e-12)));
+        $en = $c - $dir * $pull * $a; $zl = $en - 0.15 * $a; $zh = $en + 0.15 * $a;
+        $sw = $dir > 0 ? min(array_slice($B['l'], -5)) : max(array_slice($B['h'], -5));
+        $sl = $dir > 0 ? min($sw - 0.2 * $a, $en - 1.0 * $a) : max($sw + 0.2 * $a, $en + 1.0 * $a); $R = abs($en - $sl);
+        $unit = $tf === '1H' ? 'hourly candles' : 'sessions';
+        $plan = ['direction' => $dir > 0 ? 'long' : 'short', 'entry' => t_r($en), 'entry_lo' => t_r($zl), 'entry_hi' => t_r($zh), 'entry_type' => 'limit',
+            'no_chase' => t_r($c + $dir * 0.5 * $a), 'valid_bars' => 2,
+            'entry_note' => ($dir > 0 ? 'Buy a dip into the zone' : 'Sell a bounce into the zone') . ", not the current price. No fill within 2 $unit, or price runs past the no-chase level first: no trade.",
+            'stop' => t_r($sl), 't1' => t_r($en + $dir * 1.5 * $R), 't2' => t_r($en + $dir * 2.5 * $R), 'risk' => t_r($R)];
+    }
     $feas = null;
     if ($plan && count($cone) >= TD_H) { $q = $cone[TD_H - 1];
         $in = fn($p) => $dir > 0 ? ($p <= $q['p75'] ? 'inside the 75% band' : ($p <= $q['p90'] ? 'inside the 90% band' : 'outside the 90% band'))
