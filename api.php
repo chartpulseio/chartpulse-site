@@ -29,7 +29,7 @@ $TFS = ['10M', '1H', '4H', '1D', '1W'];
 
 // Rate limits per visitor per minute (owner, 29 Sep 2026). Pages poll every 3-20 s, so normal use stays far below these.
 $r = is_string($r) ? substr(preg_replace('/[^a-z0-9]/', '', strtolower($r)), 0, 16) : 'scan';
-$RL = ['scan' => 120, 'symbol' => 60, 'bias' => 40, 't2' => 60, 't2price' => 90, 'trades' => 40, 'news' => 30, 'refresh' => 6, 'export' => 6, 'plans' => 30, 'access' => 60, 'health' => 20, 'desk' => 30, 'deskai' => 3, 'desklive' => 12, 'mlfeed' => 20, 'mlpush' => 20];
+$RL = ['scan' => 120, 'symbol' => 60, 'bias' => 40, 't2' => 60, 't2price' => 90, 'trades' => 40, 'news' => 30, 'refresh' => 6, 'export' => 6, 'plans' => 30, 'access' => 60, 'health' => 20, 'desk' => 30, 'deskai' => 3, 'desklive' => 12, 'mlfeed' => 20, 'mlpush' => 20, 'nc' => 120, 'ncpush' => 40];
 if (!t_rl('api', 300) || !t_rl('r:' . $r, $RL[$r] ?? 30)) {
     http_response_code(429); header('Retry-After: 30'); t_json(['error' => 'Too many requests. Please wait a few seconds and try again.']); exit;
 }
@@ -94,6 +94,22 @@ if ($r === 'scan') {
     $in = json_decode((string)file_get_contents('php://input', false, null, 0, 12 * 1024 * 1024), true);
     if (!is_array($in)) { http_response_code(400); t_json(['error' => 'bad json']); exit; }
     t_json(['ok' => true, 'stored' => ml_store_push($in)]);
+} elseif ($r === 'nc' || $r === 'ncpush') {   // Next Candle (owner, 15 Nov 2026): three forecast models, pushed every 5 min by the chartpulse-ml job
+    require_once __DIR__ . '/torus_ml.php'; $f = ml_dir() . '/nc.json';
+    if ($r === 'ncpush') {
+        if (!ml_push_auth()) { http_response_code(403); t_json(['error' => 'forbidden']); exit; }
+        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') { http_response_code(405); t_json(['error' => 'POST only']); exit; }
+        $in = json_decode((string)file_get_contents('php://input', false, null, 0, 3 * 1024 * 1024), true);
+        if (!is_array($in) || !isset($in['rows'], $in['at']) || !is_array($in['rows'])) { http_response_code(400); t_json(['error' => 'bad json']); exit; }
+        $in['at'] = t_now(); t_write_json($f, $in); t_json(['ok' => true, 'rows' => count($in['rows'])]); exit;
+    }
+    $d = t_read_json($f, null); header('Cache-Control: no-store');
+    if (!is_array($d)) { t_json(['at' => 0, 'rows' => [], 'closed' => [], 'recent' => [], 'stats' => null, 'bt' => null, 'age' => null]); exit; }
+    if (empty($_GET['full'])) unset($d['state']);
+    $d['age'] = t_now() - (int)$d['at']; $names = [];
+    foreach (($d['rows'] ?? []) as $x) $names[(string)$x['s']] = t_name((string)$x['s']);
+    foreach (($d['closed'] ?? []) as $x) $names[(string)$x] = t_name((string)$x);
+    $d['names'] = $names; t_json($d);
 } elseif ($r === 'desklive') {   // Live AI view (owner, 5 Oct 2026): 4 Gemini analysts + judge in about 30 s, shared per symbol for 1 hour
     require __DIR__ . '/torus_desk.php'; require_once __DIR__ . '/torus_live.php';
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') { http_response_code(405); t_json(['error' => 'POST only']); exit; }

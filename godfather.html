@@ -16,7 +16,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="/static/v2/fonts.css?v=1">
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=4">
-<script defer src="/static/v2/sitehead.js?v=17"></script>
+<script defer src="/static/v2/sitehead.js?v=18"></script>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"God-father Scanner","item":"https://chartpulse.io/scanners/godfather/"}]},{"@type":"WebApplication","name":"ChartPulse God-father Scanner","url":"https://chartpulse.io/scanners/godfather/","applicationCategory":"FinanceApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@id":"https://chartpulse.io/#org"}}]}</script>
 <style>
 :root{--bg:#050506;--card:#0E0F13;--card2:#15171D;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.15);
@@ -181,6 +181,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
   <p class="gf-foot">For education, not financial advice. Data refreshes about every minute while this page is open. Lines are drawn from 2+ touches on 10m to Weekly charts; the trend uses standard Supertrend (10, 3).</p>
 </main>
 <footer class="gf-ftr"><nav><a href="/scanners/">All scanners</a><a href="/scanner.html">Tier-1 Scanner</a><a href="/scanners/trendline-hero/">Trendline Hero</a><a href="/scanners/hybrid-trend-lines/">Hybrid Trend Lines</a><a href="/scanners/trend-lines/">Trend Line Scanner</a><a href="/scanners/ema-200/">200 EMA</a><a href="/scanners/day-drive/">Day Drive</a><a href="/scanners/news/">News</a><a href="/legal.php">Legal</a></nav></footer>
+<script src="/static/v2/ncchip.js?v=1"></script>
 <script>
 (() => {
 "use strict";
@@ -220,6 +221,7 @@ function card(r) {
     <div class="gc-setup">${esc(r.setup)}${r.line_tf ? ` <em>· ${esc(r.line_tf)} line</em>` : ""}</div>
     <div class="gc-lb">${(r.labels||[]).map(([k,t]) => `<i class="${k}">${esc(t)}</i>`).join("")}</div>
     <p class="gc-say">${esc(r.say)}</p>
+    ${window.CPNC ? CPNC.chip(r.symbol) : ""}
     <div class="gc-chk">${r.checks.map(c => `<span class="${c.ok?"ok":"no"}" title="${esc(c.t + ": " + c.d)}">${CK[c.k]} ${c.ok?"✓":"✗"}</span>`).join("")}</div>
     ${plan}
     <div class="gc-more"><ul>${r.checks.map(c => `<li class="${c.ok?"ok":""}"><i>${c.ok?"✓":"✗"}</i><div><b>${esc(c.t)}</b><p>${esc(c.d)}</p></div></li>`).join("")}</ul>${news}</div>
@@ -252,7 +254,7 @@ async function load() {
   } catch (e) { $("#gfUpd").textContent = "The God-father Scanner is temporarily unavailable. Sorry for the inconvenience. Retrying…"; next = 20; }
   setTimeout(load, (document.hidden ? Math.max(next, 120) : next) * 1000);
 }
-load();
+load(); if (window.CPNC) CPNC.onUpdate(render);
 })();
 </script>
 <script src="/static/v2/tg-join.js?v=1" defer></script>

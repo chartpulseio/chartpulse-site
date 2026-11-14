@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>24-Hour AI Forecast: Forex, Crypto &amp; Gold · ChartPulse</title>
+<meta name="description" content="Free 24-hour AI forecast for forex, crypto and gold: the likely price path and range for the next 24 hours from Chronos-2, TimesFM 2.5 and Moirai 2.0, refreshed every hour and checked a day later.">
+<meta name="theme-color" content="#050506">
+<link rel="canonical" href="https://chartpulse.io/scanners/forecast-24h/">
+<meta property="og:site_name" content="ChartPulse"><meta property="og:type" content="website">
+<meta property="og:title" content="24-Hour AI Forecast · ChartPulse"><meta property="og:description" content="Free 24-hour AI forecast for forex, crypto and gold: the likely price path and range for the next 24 hours from Chronos-2, TimesFM 2.5 and Moirai 2.0, refreshed every hour and checked a day later.">
+<meta property="og:url" content="https://chartpulse.io/scanners/forecast-24h/"><meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
+<link rel="stylesheet" href="/static/v2/sitehead.css?v=4">
+<script defer src="/static/v2/sitehead.js?v=18"></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"24-Hour AI Forecast","item":"https://chartpulse.io/scanners/forecast-24h/"}]},{"@type":"WebPage","url":"https://chartpulse.io/scanners/forecast-24h/","name":"24-Hour AI Forecast · ChartPulse","description":"Free 24-hour AI forecast for forex, crypto and gold: the likely price path and range for the next 24 hours from Chronos-2, TimesFM 2.5 and Moirai 2.0, refreshed every hour and checked a day later.","inLanguage":"en"}]}</script>
+<style>
+:root{--bg:#050506;--card:#0E0F13;--card2:#15171D;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.15);
+  --ink:#EDEDEF;--dim:#A3A5AF;--mute:#6B6D78;--gold:#E9C46A;--gold2:#F6DE9A;--up:#22AB94;--dn:#F7525F;--blue:#6EA8FE;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.gf{max-width:1260px;margin:0 auto;padding:24px 20px 70px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* hero */
+.gf-hero{position:relative;overflow:hidden;padding:34px 30px 30px;border:1px solid rgba(233,196,106,.28);border-radius:22px;
+  background:radial-gradient(120% 140% at 100% 0%,rgba(233,196,106,.16),transparent 55%),radial-gradient(90% 120% at 0% 100%,rgba(34,171,148,.10),transparent 60%),#0A0B0E}
+.gf-hero::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 64px);pointer-events:none}
+.gf-eye{display:inline-flex;align-items:center;gap:8px;font:600 12px/1 var(--mono);letter-spacing:.18em;color:var(--gold);text-transform:uppercase}
+.gf-eye i{width:8px;height:8px;border-radius:50%;background:var(--up);box-shadow:0 0 0 0 rgba(34,171,148,.6);animation:gfp 2s infinite}
+@keyframes gfp{70%{box-shadow:0 0 0 10px rgba(34,171,148,0)}100%{box-shadow:0 0 0 0 rgba(34,171,148,0)}}
+.gf-hero h1{margin:12px 0 10px;font-size:clamp(30px,5vw,54px);line-height:1.04;letter-spacing:-.03em}
+.gf-hero h1 span{background:linear-gradient(100deg,var(--gold2),var(--gold) 45%,#B8893A);-webkit-background-clip:text;background-clip:text;color:transparent}
+.gf-lede{max-width:68ch;margin:0;color:var(--dim);font-size:17px}
+.gf-flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:24px 0 0;padding:0;list-style:none;position:relative;z-index:1}
+.gf-flow li{padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:rgba(14,15,19,.85)}
+.gf-flow span{font:600 11px/1 var(--mono);letter-spacing:.12em;color:var(--gold)}
+.gf-flow b{display:block;margin:6px 0 3px;font-size:14.5px}
+.gf-flow p{margin:0;color:var(--dim);font-size:13px;line-height:1.45}
+
+/* tiles */
+.gf-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:18px 0 0}
+.gf-tile{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card);cursor:pointer;text-align:left;color:inherit;font:inherit}
+.gf-tile:hover{border-color:var(--line2)}.gf-tile.on{border-color:var(--gold);background:rgba(233,196,106,.07)}
+.gf-tile .v{font:600 28px/1.05 var(--mono)}.gf-tile .k{margin-top:4px;color:var(--dim);font-size:13px}
+.gf-tile.ap .v{color:var(--gold)}.gf-tile.a .v{color:var(--up)}.gf-tile.b .v{color:var(--blue)}.gf-tile.nr .v{color:var(--dn)}
+
+/* bar */
+.gf-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:20px 0 12px}
+.gf-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.gf-tabs button,.gf-btn{appearance:none;border:1px solid var(--line2);background:transparent;color:var(--dim);padding:8px 14px;border-radius:999px;font:500 14px/1 var(--sans);cursor:pointer}
+.gf-tabs button.on{background:var(--ink);color:#000;border-color:var(--ink)}
+.gf-tabs button:hover,.gf-btn:hover{color:var(--ink);border-color:var(--ink)}.gf-tabs button.on:hover{color:#000}
+.gf-q{flex:1;min-width:180px;max-width:300px;margin-left:auto;padding:9px 14px;border:1px solid var(--line2);border-radius:999px;background:var(--card);color:var(--ink);font:14px var(--sans)}
+.gf-upd{color:var(--mute);font-size:13px;margin:0 0 10px}
+.gf-prog{height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;margin:12px 0 0}.gf-prog i{display:block;height:100%;background:var(--gold);width:0;transition:width .4s}
+
+/* cards */
+.gf-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.gc{position:relative;display:flex;flex-direction:column;padding:16px 18px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card);min-width:0}
+.gc.g-ap{border-color:rgba(233,196,106,.7);background:linear-gradient(180deg,rgba(233,196,106,.08),transparent 40%),var(--card);box-shadow:0 0 0 1px rgba(233,196,106,.15),0 10px 40px -18px rgba(233,196,106,.45)}
+.gc.g-a{border-color:rgba(34,171,148,.55)}.gc.g-b{border-color:rgba(110,168,254,.45)}.gc.g-nr{border-color:rgba(247,82,95,.5)}
+.gc-top{display:flex;gap:12px;align-items:flex-start}
+.gc-grade{flex:none;display:grid;place-items:center;min-width:56px;height:56px;padding:0 8px;border-radius:14px;font:700 22px/1 var(--mono);border:1px solid var(--line2);color:var(--dim)}
+.g-ap .gc-grade{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1a1300;border:0}
+.g-a .gc-grade{background:var(--up);color:#00130f;border:0}.g-b .gc-grade{border-color:var(--blue);color:var(--blue)}
+.g-rd .gc-grade{border-color:var(--gold);color:var(--gold);font-size:12px;text-align:center;line-height:1.15}
+.g-nr .gc-grade{border-color:var(--dn);color:var(--dn);font-size:12px;text-align:center;line-height:1.15}.g-w .gc-grade{font-size:12px}
+.gc-id{min-width:0;flex:1}
+.gc-id h3{margin:0;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gc-id small{color:var(--mute);font:12px var(--mono)}
+.gc-side{display:inline-block;margin-right:8px;padding:2px 9px;border-radius:6px;font:700 12.5px/1.5 var(--mono);vertical-align:2px}
+.gc-side.CALL{background:var(--up);color:#00130f}.gc-side.PUT{background:var(--dn);color:#1c0003}
+.gc-px{text-align:right;flex:none}.gc-px b{display:block;font:600 15px var(--mono)}.gc-px small{font:12px var(--mono)}
+.up{color:var(--up)}.dn{color:var(--dn)}
+.gc-setup{margin:10px 0 6px;font-weight:600;font-size:14.5px}
+.gc-setup em{font-style:normal;color:var(--mute);font-weight:400}
+.gc-lb{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 8px}
+.gc-lb i{font-style:normal;font-size:11.5px;line-height:1.5;padding:1px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--dim);white-space:nowrap}
+.gc-lb i.pz{border-color:var(--gold);color:var(--gold);background:rgba(233,196,106,.08)}
+.gc-lb i.line,.gc-lb i.mtf{border-color:rgba(110,168,254,.55);color:var(--blue)}
+.gc-lb i.mom,.gc-lb i.news,.gc-lb i.vol,.gc-lb i.ema,.gc-lb i.smc{border-color:rgba(34,171,148,.5);color:var(--up)}.gc-lb i.risk{border-color:var(--dn);color:var(--dn)}
+.gc-say{margin:0 0 10px;color:var(--dim);font-size:14px;line-height:1.5}
+.gc-chk{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin:0 0 10px}
+.gc-chk span{display:grid;place-items:center;height:26px;border-radius:7px;font:600 10.5px/1 var(--mono);letter-spacing:.04em;background:rgba(255,255,255,.05);color:var(--mute);cursor:help}
+.gc-chk span.ok{background:rgba(34,171,148,.16);color:var(--up)}.gc-chk span.no{background:rgba(247,82,95,.08);color:#b86870}
+.gc-plan{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.gc-plan div{padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:#0A0B0E;min-width:0}
+.gc-plan span{display:block;color:var(--mute);font-size:11px}
+.gc-plan b{font:600 13px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.gc-plan .sl b{color:var(--dn)}.gc-plan .tg b{color:var(--up)}
+.gc-foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.gc-mtf{display:flex;gap:3px;align-items:center;margin-right:auto;color:var(--mute);font:11px var(--mono)}
+.gc-mtf i{display:inline-grid;place-items:center;width:30px;height:18px;border-radius:4px;font-style:normal;font-size:10px;background:rgba(255,255,255,.06)}
+.gc-mtf i.u{background:rgba(34,171,148,.22);color:var(--up)}.gc-mtf i.d{background:rgba(247,82,95,.18);color:var(--dn)}
+.gc-foot a,.gc-foot button{padding:7px 12px;border-radius:999px;border:1px solid var(--line2);font:500 13px/1 var(--sans);text-decoration:none;color:var(--ink);background:transparent;cursor:pointer}
+.gc-foot a.pri{background:var(--gold);border-color:var(--gold);color:#1a1300;font-weight:600}
+.gc-foot a:hover,.gc-foot button:hover{border-color:var(--ink)}
+.gc-more{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.gc.open .gc-more{display:block}
+.gc-more ul{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.gc-more li{display:grid;grid-template-columns:20px 1fr;gap:8px;font-size:13.5px}
+.gc-more li i{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font:700 11px/1 var(--sans);font-style:normal;background:rgba(255,255,255,.07);color:var(--mute)}
+.gc-more li.ok i{background:var(--up);color:#00130f}
+.gc-more li b{font-weight:600}.gc-more li p{margin:1px 0 0;color:var(--dim);font-size:12.5px}
+.gc-news{margin:10px 0 0;font-size:12.5px;color:var(--dim)}.gc-news a{color:var(--blue)}
+.gf-empty{grid-column:1/-1;padding:30px 16px;border:1px dashed var(--line2);border-radius:16px;color:var(--dim);text-align:center}
+.gf-more{display:block;margin:16px auto 0}
+.gf-note{margin:16px 0 0;padding:12px 16px;border:1px solid rgba(233,196,106,.35);border-radius:12px;background:rgba(233,196,106,.06);color:var(--dim);font-size:14px}.gf-note b{color:var(--ink)}
+
+/* learn */
+.gf-learn{margin-top:34px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.gf-learn h2{grid-column:1/-1;margin:0;font-size:20px}
+.gf-learn dl{margin:0;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.gf-learn dt{font-weight:600;margin-top:10px}.gf-learn dt:first-child{margin-top:0}
+.gf-learn dd{margin:2px 0 0;color:var(--dim);font-size:14px}
+.gf-foot{margin-top:22px;color:var(--mute);font-size:13px}
+.gf-ftr{max-width:1260px;margin:0 auto;padding:0 20px 40px}.gf-ftr nav{display:flex;flex-wrap:wrap;gap:8px 18px;padding-top:18px;border-top:1px solid var(--line)}.gf-ftr a{color:var(--mute);font-size:13px;text-decoration:none}.gf-ftr a:hover{color:var(--ink)}
+
+@media (max-width:1020px){.gf-flow{grid-template-columns:repeat(2,1fr)}.gf-tiles{grid-template-columns:repeat(3,1fr)}.gf-list{grid-template-columns:1fr}.gf-learn{grid-template-columns:1fr}}
+@media (max-width:560px){.gf{padding:16px 12px 50px}.gf-hero{padding:24px 18px}.gf-flow{grid-template-columns:1fr}.gf-tiles{grid-template-columns:repeat(2,1fr)}
+  .gc-plan{grid-template-columns:repeat(3,minmax(0,1fr))}.gc-chk span{font-size:9px}.gf-q{max-width:none;margin-left:0;flex-basis:100%}}
+@media (prefers-reduced-motion:reduce){.gf-eye i{animation:none}}
+</style><style>.gc.g-sq3{border-color:rgba(233,196,106,.7);box-shadow:0 0 0 1px rgba(233,196,106,.15),0 10px 40px -18px rgba(233,196,106,.45)}.gc.g-sq2{border-color:rgba(34,171,148,.55)}.gc.g-sq1{border-color:rgba(110,168,254,.45)}
+.g-sq3 .gc-grade{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1a1300;border:0;font-size:12px;text-align:center;line-height:1.15}.g-sq2 .gc-grade{background:var(--up);color:#00130f;border:0;font-size:12px;text-align:center;line-height:1.15}.g-sq1 .gc-grade,.g-sq0 .gc-grade{font-size:12px;text-align:center;line-height:1.15}
+.kv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 6px}.kv div{padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:#0A0B0E}.kv span{display:block;color:var(--mute);font-size:11px}.kv b{font:600 13px var(--mono)}
+.why{margin:0 0 8px;padding:0;list-style:none;display:grid;gap:3px;font-size:13px;color:var(--dim)}.why li::before{content:"✓ ";color:var(--up)}.why li.x::before{content:"✗ ";color:var(--dn)}
+.st-tbl{width:100%;border-collapse:collapse;font-size:14px}.st-tbl td,.st-tbl th{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}.st-tbl th{color:var(--mute);font-weight:500;font-size:12px}
+@media (max-width:560px){.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>
+<style>.nc-v{display:flex;gap:6px;margin:0 0 8px;flex-wrap:wrap}.nc-v i{font-style:normal;font:600 12px/1 var(--mono);padding:6px 9px;border-radius:8px;background:rgba(255,255,255,.05);color:var(--mute)}
+.nc-v i.u{background:rgba(34,171,148,.16);color:var(--up)}.nc-v i.d{background:rgba(247,82,95,.12);color:var(--dn)}
+.gc.g-no{opacity:.86}.gc-grade.cd{font-size:15px}.nc-warn{margin:14px 0 0;padding:14px 16px;border:1px solid rgba(247,82,95,.45);border-radius:12px;background:rgba(247,82,95,.07);font-size:14.5px;color:var(--ink)}
+.nc-bar{position:relative;height:8px;border-radius:4px;background:rgba(255,255,255,.07);margin:8px 0 2px}.nc-bar b{position:absolute;top:-3px;width:2px;height:14px;background:var(--gold)}.nc-bar s{position:absolute;top:0;bottom:0;border-radius:4px;background:rgba(110,168,254,.35)}
+.nc-sub{display:flex;justify-content:space-between;color:var(--mute);font:11.5px var(--mono)}</style>
+<style>.fc-svg{display:block;width:100%;height:150px;margin:6px 0 4px}.fc-leg{display:flex;gap:14px;flex-wrap:wrap;color:var(--mute);font:11.5px var(--mono);margin:0 0 8px}.fc-leg i{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}</style>
+</head>
+<body>
+<main class="gf">
+  <section class="gf-hero">
+    <div class="gf-eye"><i></i>AI forecast models · next 24 hours</div>
+    <h1>24-Hour <span>AI Forecast</span></h1>
+    <p class="gf-lede">The likely <b>price path</b> and <b>price range</b> for the next 24 hours on forex, crypto and gold, from three AI forecast models (<b>Chronos-2</b>, <b>TimesFM 2.5</b>, <b>Moirai 2.0</b>). Refreshed every hour from closed 1-hour candles, and checked one day later.</p>
+    <p class="nc-warn"><b>Use the range, not the direction.</b> These models are good at saying <b>how far</b> price may travel (the shaded band) and close to a coin toss on <b>which way</b>. For learning and planning stops and targets, not for bets.</p>
+    <ol class="gf-flow" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+      <li><span>1 · MIDDLE LINE</span><b>Most likely path</b><p>The average of the three models' middle forecasts, hour by hour.</p></li>
+      <li><span>2 · SHADED BAND</span><b>8 in 10 range</b><p>Price is expected to stay inside the band about 8 times out of 10. Outside it = an unusual move.</p></li>
+      <li><span>3 · CHECKED</span><b>A day later</b><p>We count how often the close 24 hours later was inside the band and on the forecast side.</p></li>
+    </ol>
+  </section>
+  <div class="gf-tiles" id="fcTiles" style="grid-template-columns:repeat(4,minmax(0,1fr))"></div>
+  <div class="gf-bar">
+    <div class="gf-tabs" id="fcMkt" role="group" aria-label="Market"><button type="button" data-v="all" class="on">All</button><button type="button" data-v="forex">Forex</button><button type="button" data-v="crypto">Crypto</button><button type="button" data-v="gold">Gold</button></div>
+    <div class="gf-tabs" id="fcSide" role="group" aria-label="Lean"><button type="button" data-v="all" class="on">Any lean</button><button type="button" data-v="1">Leaning up</button><button type="button" data-v="-1">Leaning down</button></div>
+  </div>
+  <p class="gf-upd" id="fcUpd">Reading the models…</p>
+  <div class="gf-list" id="fcList"><p class="gf-empty">Reading the models…</p></div>
+  <section class="gf-learn"><h2>How to use it</h2>
+    <dl><dt>Stops and targets</dt><dd>A stop inside the band is likely to be touched by normal noise. A target far outside the band is unlikely to be reached in a day.</dd></dl>
+    <dl><dt>Leaning up / down</dt><dd>Where the middle line ends after 24 hours compared with the price now. "3 of 3" means all models lean the same way. It is a lean, not a signal.</dd></dl>
+    <dl><dt>Market closed</dt><dd>On weekends forex does not trade. The forecast then starts from Friday's last candle and applies to the first hours after the open.</dd></dl>
+  </section>
+  <p class="gf-note"><b>Not financial advice.</b> Forecasts are model output from past prices only. News can move price far outside any band.</p>
+  <p class="gf-foot">For education, not financial advice.</p>
+</main>
+<footer class="gf-ftr"><nav><a href="/scanners/">All scanners</a><a href="/scanners/next-candle/">Next Candle AI</a><a href="/scanners/godfather/">God-father Scanner</a><a href="/bias/">AI Scan</a><a href="/scanners/binary/">Binary Pulse</a><a href="/legal.php">Legal</a></nav></footer>
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = (v, d) => v == null || isNaN(v) ? "–" : Number(v).toLocaleString("en-US", {minimumFractionDigits: Math.min(d, 2), maximumFractionDigits: d});
+const MN = {chronos2:"Chronos-2", timesfm:"TimesFM 2.5", moirai2:"Moirai 2.0"};
+const F = {mkt:"all", side:"all"}; let D = null;
+const rate = t => !t ? "–" : t.rate == null ? "not enough yet" : t.rate + "%";
+function svg(r){ const P = r.past, n = P.length, m = r.med.length, W = 600, H = 150, all = P.concat(r.lo, r.hi), mn = Math.min(...all), mx = Math.max(...all), sp = (mx - mn) || 1;
+  const x = i => (i / (n + m - 1)) * W, y = v => 8 + (1 - (v - mn) / sp) * (H - 16), pt = (a, o) => a.map((v, i) => `${x(i + o).toFixed(1)},${y(v).toFixed(1)}`);
+  const lo = [r.last].concat(r.lo), hi = [r.last].concat(r.hi), md = [r.last].concat(r.med), col = r.side > 0 ? "#22AB94" : r.side < 0 ? "#F7525F" : "#A3A5AF";
+  return `<svg class="fc-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Last 48 hours and the 24-hour forecast for ${esc(r.s)}">
+    <polygon points="${pt(hi, n - 1).concat(pt(lo, n - 1).reverse()).join(" ")}" fill="rgba(110,168,254,.16)"/>
+    <line x1="${x(n-1)}" x2="${x(n-1)}" y1="0" y2="${H}" stroke="rgba(255,255,255,.18)" stroke-dasharray="3 4"/>
+    <polyline points="${pt(P, 0).join(" ")}" fill="none" stroke="#EDEDEF" stroke-width="1.6" vector-effect="non-scaling-stroke"/>
+    <polyline points="${pt(md, n - 1).join(" ")}" fill="none" stroke="${col}" stroke-width="2.2" stroke-dasharray="6 4" vector-effect="non-scaling-stroke"/></svg>`; }
+function card(r){ const nm = (D.names||{})[r.s] || r.s, up = r.side > 0, e = r.med.length - 1, w = (r.hi[e] - r.lo[e]) / r.last * 100;
+  return `<article class="gc g-${r.agree ? "a" : "b"}"><div class="gc-top"><div class="gc-grade" style="font-size:13px;text-align:center;line-height:1.15">${r.chg >= 0 ? "+" : ""}${r.chg.toFixed(2)}%</div>
+    <div class="gc-id"><h3>${esc(nm)}</h3><small>${esc(r.s)} · ${esc(r.mkt)}${r.open ? "" : " · market closed"}</small></div>
+    <div class="gc-px"><b>${fmt(r.last,r.dec)}</b><small>last 1h close</small></div></div>
+    <div class="gc-setup">${r.side === 0 ? "Flat" : "Leaning " + (up ? "up" : "down")} <em>· ${up ? r.up : r.n - r.up} of ${r.n} models${r.agree ? " agree" : ""}</em></div>
+    ${svg(r)}<div class="fc-leg"><span><i style="background:#EDEDEF"></i>last 48 hours</span><span><i style="background:${up?"#22AB94":"#F7525F"}"></i>middle forecast</span><span><i style="background:rgba(110,168,254,.5)"></i>8-in-10 range</span></div>
+    <div class="kv"><div><span>In 24 hours, middle</span><b>${fmt(r.med[e],r.dec)}</b></div><div><span>Range low</span><b class="dn">${fmt(r.lo[e],r.dec)}</b></div><div><span>Range high</span><b class="up">${fmt(r.hi[e],r.dec)}</b></div><div><span>Range width</span><b>${w.toFixed(2)}%</b></div></div>
+    <div class="nc-v">${Object.entries(r.v).map(([m,v]) => `<i class="${v>0?"u":v<0?"d":""}">${esc(MN[m]||m)} ${v>0?"▲":v<0?"▼":"–"}</i>`).join("")}</div>
+    <div class="gc-foot"><span class="gc-mtf"></span><a href="/desk/?s=${encodeURIComponent(r.s)}">AI Scan</a></div></article>`; }
+function render(){ if (!D) return; const R = D.day || [], ds = D.day_stats || {};
+  $("#fcTiles").innerHTML = [[R.length, "Markets", "forex · crypto · gold"], [R.filter(r => r.agree).length, "All models agree", "same lean"], [rate(ds.range), "Close inside the range", ds.range ? `${ds.range.w} in · ${ds.range.l} out · target about 80%` : "checked a day later"], [rate(ds.dir), "Lean was right", ds.dir ? `${ds.dir.w} right · ${ds.dir.l} wrong` : "checked a day later"]]
+    .map(([v,l,s],i) => `<div class="gf-tile ${i===1?"a":i===2?"ap":""}" style="cursor:default"><div class="v" style="${String(v).length>6?"font-size:17px;line-height:1.7":""}">${esc(v)}</div><div class="k"><b style="color:var(--ink)">${l}</b> · ${esc(s)}</div></div>`).join("");
+  const rows = R.filter(r => (F.mkt === "all" || r.mkt === F.mkt) && (F.side === "all" || String(r.side) === F.side)).sort((a,b) => b.open - a.open || b.agree - a.agree || Math.abs(b.chg) - Math.abs(a.chg));
+  $("#fcList").innerHTML = rows.map(card).join("") || `<p class="gf-empty">${R.length ? "Nothing matches these filters right now." : "The first 24-hour forecast is being prepared. It appears within the hour."}</p>`; }
+function bind(id, key){ $$(`#${id} button`).forEach(b => b.onclick = () => { F[key] = b.dataset.v; $$(`#${id} button`).forEach(x => x.classList.toggle("on", x === b)); render(); }); }
+bind("fcMkt","mkt"); bind("fcSide","side");
+async function load(){ let next = 300;
+  try { const d = await fetch("/api.php?r=nc", {cache:"no-store"}).then(r => r.json()); if (d.error) throw 0; D = d;
+    $("#fcUpd").textContent = d.day_at ? `${(d.day||[]).length} markets · forecast made ${new Date(d.day_at*1000).toLocaleString([], {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})} · refreshed every hour` : "The models have not sent their first forecast yet."; render();
+  } catch (e) { $("#fcUpd").textContent = "This page is temporarily unavailable. Sorry for the inconvenience. Retrying…"; next = 30; }
+  setTimeout(load, next * 1000); }
+load();
+})();
+</script>
+</body>
+</html>

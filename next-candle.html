@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Next Candle AI: 3 Forecast Models Guess the Next 5m Candle · ChartPulse</title>
+<meta name="description" content="Free Next Candle AI: Chronos-2, TimesFM 2.5 and Moirai 2.0 guess whether the next 5-minute forex candle closes up or down. For fun and learning, not for bets. Every guess is graded and the real hit rate is shown.">
+<meta name="theme-color" content="#050506">
+<link rel="canonical" href="https://chartpulse.io/scanners/next-candle/">
+<meta property="og:site_name" content="ChartPulse"><meta property="og:type" content="website">
+<meta property="og:title" content="Next Candle AI · ChartPulse"><meta property="og:description" content="Free Next Candle AI: Chronos-2, TimesFM 2.5 and Moirai 2.0 guess whether the next 5-minute forex candle closes up or down. For fun and learning, not for bets. Every guess is graded and the real hit rate is shown.">
+<meta property="og:url" content="https://chartpulse.io/scanners/next-candle/"><meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
+<link rel="stylesheet" href="/static/v2/sitehead.css?v=4">
+<script defer src="/static/v2/sitehead.js?v=18"></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"Next Candle AI","item":"https://chartpulse.io/scanners/next-candle/"}]},{"@type":"WebPage","url":"https://chartpulse.io/scanners/next-candle/","name":"Next Candle AI · ChartPulse","description":"Free Next Candle AI: Chronos-2, TimesFM 2.5 and Moirai 2.0 guess whether the next 5-minute forex candle closes up or down. For fun and learning, not for bets. Every guess is graded and the real hit rate is shown.","inLanguage":"en"}]}</script>
+<style>
+:root{--bg:#050506;--card:#0E0F13;--card2:#15171D;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.15);
+  --ink:#EDEDEF;--dim:#A3A5AF;--mute:#6B6D78;--gold:#E9C46A;--gold2:#F6DE9A;--up:#22AB94;--dn:#F7525F;--blue:#6EA8FE;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.gf{max-width:1260px;margin:0 auto;padding:24px 20px 70px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* hero */
+.gf-hero{position:relative;overflow:hidden;padding:34px 30px 30px;border:1px solid rgba(233,196,106,.28);border-radius:22px;
+  background:radial-gradient(120% 140% at 100% 0%,rgba(233,196,106,.16),transparent 55%),radial-gradient(90% 120% at 0% 100%,rgba(34,171,148,.10),transparent 60%),#0A0B0E}
+.gf-hero::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 64px);pointer-events:none}
+.gf-eye{display:inline-flex;align-items:center;gap:8px;font:600 12px/1 var(--mono);letter-spacing:.18em;color:var(--gold);text-transform:uppercase}
+.gf-eye i{width:8px;height:8px;border-radius:50%;background:var(--up);box-shadow:0 0 0 0 rgba(34,171,148,.6);animation:gfp 2s infinite}
+@keyframes gfp{70%{box-shadow:0 0 0 10px rgba(34,171,148,0)}100%{box-shadow:0 0 0 0 rgba(34,171,148,0)}}
+.gf-hero h1{margin:12px 0 10px;font-size:clamp(30px,5vw,54px);line-height:1.04;letter-spacing:-.03em}
+.gf-hero h1 span{background:linear-gradient(100deg,var(--gold2),var(--gold) 45%,#B8893A);-webkit-background-clip:text;background-clip:text;color:transparent}
+.gf-lede{max-width:68ch;margin:0;color:var(--dim);font-size:17px}
+.gf-flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:24px 0 0;padding:0;list-style:none;position:relative;z-index:1}
+.gf-flow li{padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:rgba(14,15,19,.85)}
+.gf-flow span{font:600 11px/1 var(--mono);letter-spacing:.12em;color:var(--gold)}
+.gf-flow b{display:block;margin:6px 0 3px;font-size:14.5px}
+.gf-flow p{margin:0;color:var(--dim);font-size:13px;line-height:1.45}
+
+/* tiles */
+.gf-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:18px 0 0}
+.gf-tile{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card);cursor:pointer;text-align:left;color:inherit;font:inherit}
+.gf-tile:hover{border-color:var(--line2)}.gf-tile.on{border-color:var(--gold);background:rgba(233,196,106,.07)}
+.gf-tile .v{font:600 28px/1.05 var(--mono)}.gf-tile .k{margin-top:4px;color:var(--dim);font-size:13px}
+.gf-tile.ap .v{color:var(--gold)}.gf-tile.a .v{color:var(--up)}.gf-tile.b .v{color:var(--blue)}.gf-tile.nr .v{color:var(--dn)}
+
+/* bar */
+.gf-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:20px 0 12px}
+.gf-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.gf-tabs button,.gf-btn{appearance:none;border:1px solid var(--line2);background:transparent;color:var(--dim);padding:8px 14px;border-radius:999px;font:500 14px/1 var(--sans);cursor:pointer}
+.gf-tabs button.on{background:var(--ink);color:#000;border-color:var(--ink)}
+.gf-tabs button:hover,.gf-btn:hover{color:var(--ink);border-color:var(--ink)}.gf-tabs button.on:hover{color:#000}
+.gf-q{flex:1;min-width:180px;max-width:300px;margin-left:auto;padding:9px 14px;border:1px solid var(--line2);border-radius:999px;background:var(--card);color:var(--ink);font:14px var(--sans)}
+.gf-upd{color:var(--mute);font-size:13px;margin:0 0 10px}
+.gf-prog{height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;margin:12px 0 0}.gf-prog i{display:block;height:100%;background:var(--gold);width:0;transition:width .4s}
+
+/* cards */
+.gf-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.gc{position:relative;display:flex;flex-direction:column;padding:16px 18px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card);min-width:0}
+.gc.g-ap{border-color:rgba(233,196,106,.7);background:linear-gradient(180deg,rgba(233,196,106,.08),transparent 40%),var(--card);box-shadow:0 0 0 1px rgba(233,196,106,.15),0 10px 40px -18px rgba(233,196,106,.45)}
+.gc.g-a{border-color:rgba(34,171,148,.55)}.gc.g-b{border-color:rgba(110,168,254,.45)}.gc.g-nr{border-color:rgba(247,82,95,.5)}
+.gc-top{display:flex;gap:12px;align-items:flex-start}
+.gc-grade{flex:none;display:grid;place-items:center;min-width:56px;height:56px;padding:0 8px;border-radius:14px;font:700 22px/1 var(--mono);border:1px solid var(--line2);color:var(--dim)}
+.g-ap .gc-grade{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1a1300;border:0}
+.g-a .gc-grade{background:var(--up);color:#00130f;border:0}.g-b .gc-grade{border-color:var(--blue);color:var(--blue)}
+.g-rd .gc-grade{border-color:var(--gold);color:var(--gold);font-size:12px;text-align:center;line-height:1.15}
+.g-nr .gc-grade{border-color:var(--dn);color:var(--dn);font-size:12px;text-align:center;line-height:1.15}.g-w .gc-grade{font-size:12px}
+.gc-id{min-width:0;flex:1}
+.gc-id h3{margin:0;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gc-id small{color:var(--mute);font:12px var(--mono)}
+.gc-side{display:inline-block;margin-right:8px;padding:2px 9px;border-radius:6px;font:700 12.5px/1.5 var(--mono);vertical-align:2px}
+.gc-side.CALL{background:var(--up);color:#00130f}.gc-side.PUT{background:var(--dn);color:#1c0003}
+.gc-px{text-align:right;flex:none}.gc-px b{display:block;font:600 15px var(--mono)}.gc-px small{font:12px var(--mono)}
+.up{color:var(--up)}.dn{color:var(--dn)}
+.gc-setup{margin:10px 0 6px;font-weight:600;font-size:14.5px}
+.gc-setup em{font-style:normal;color:var(--mute);font-weight:400}
+.gc-lb{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 8px}
+.gc-lb i{font-style:normal;font-size:11.5px;line-height:1.5;padding:1px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--dim);white-space:nowrap}
+.gc-lb i.pz{border-color:var(--gold);color:var(--gold);background:rgba(233,196,106,.08)}
+.gc-lb i.line,.gc-lb i.mtf{border-color:rgba(110,168,254,.55);color:var(--blue)}
+.gc-lb i.mom,.gc-lb i.news,.gc-lb i.vol,.gc-lb i.ema,.gc-lb i.smc{border-color:rgba(34,171,148,.5);color:var(--up)}.gc-lb i.risk{border-color:var(--dn);color:var(--dn)}
+.gc-say{margin:0 0 10px;color:var(--dim);font-size:14px;line-height:1.5}
+.gc-chk{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin:0 0 10px}
+.gc-chk span{display:grid;place-items:center;height:26px;border-radius:7px;font:600 10.5px/1 var(--mono);letter-spacing:.04em;background:rgba(255,255,255,.05);color:var(--mute);cursor:help}
+.gc-chk span.ok{background:rgba(34,171,148,.16);color:var(--up)}.gc-chk span.no{background:rgba(247,82,95,.08);color:#b86870}
+.gc-plan{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.gc-plan div{padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:#0A0B0E;min-width:0}
+.gc-plan span{display:block;color:var(--mute);font-size:11px}
+.gc-plan b{font:600 13px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.gc-plan .sl b{color:var(--dn)}.gc-plan .tg b{color:var(--up)}
+.gc-foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.gc-mtf{display:flex;gap:3px;align-items:center;margin-right:auto;color:var(--mute);font:11px var(--mono)}
+.gc-mtf i{display:inline-grid;place-items:center;width:30px;height:18px;border-radius:4px;font-style:normal;font-size:10px;background:rgba(255,255,255,.06)}
+.gc-mtf i.u{background:rgba(34,171,148,.22);color:var(--up)}.gc-mtf i.d{background:rgba(247,82,95,.18);color:var(--dn)}
+.gc-foot a,.gc-foot button{padding:7px 12px;border-radius:999px;border:1px solid var(--line2);font:500 13px/1 var(--sans);text-decoration:none;color:var(--ink);background:transparent;cursor:pointer}
+.gc-foot a.pri{background:var(--gold);border-color:var(--gold);color:#1a1300;font-weight:600}
+.gc-foot a:hover,.gc-foot button:hover{border-color:var(--ink)}
+.gc-more{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.gc.open .gc-more{display:block}
+.gc-more ul{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.gc-more li{display:grid;grid-template-columns:20px 1fr;gap:8px;font-size:13.5px}
+.gc-more li i{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font:700 11px/1 var(--sans);font-style:normal;background:rgba(255,255,255,.07);color:var(--mute)}
+.gc-more li.ok i{background:var(--up);color:#00130f}
+.gc-more li b{font-weight:600}.gc-more li p{margin:1px 0 0;color:var(--dim);font-size:12.5px}
+.gc-news{margin:10px 0 0;font-size:12.5px;color:var(--dim)}.gc-news a{color:var(--blue)}
+.gf-empty{grid-column:1/-1;padding:30px 16px;border:1px dashed var(--line2);border-radius:16px;color:var(--dim);text-align:center}
+.gf-more{display:block;margin:16px auto 0}
+.gf-note{margin:16px 0 0;padding:12px 16px;border:1px solid rgba(233,196,106,.35);border-radius:12px;background:rgba(233,196,106,.06);color:var(--dim);font-size:14px}.gf-note b{color:var(--ink)}
+
+/* learn */
+.gf-learn{margin-top:34px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.gf-learn h2{grid-column:1/-1;margin:0;font-size:20px}
+.gf-learn dl{margin:0;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.gf-learn dt{font-weight:600;margin-top:10px}.gf-learn dt:first-child{margin-top:0}
+.gf-learn dd{margin:2px 0 0;color:var(--dim);font-size:14px}
+.gf-foot{margin-top:22px;color:var(--mute);font-size:13px}
+.gf-ftr{max-width:1260px;margin:0 auto;padding:0 20px 40px}.gf-ftr nav{display:flex;flex-wrap:wrap;gap:8px 18px;padding-top:18px;border-top:1px solid var(--line)}.gf-ftr a{color:var(--mute);font-size:13px;text-decoration:none}.gf-ftr a:hover{color:var(--ink)}
+
+@media (max-width:1020px){.gf-flow{grid-template-columns:repeat(2,1fr)}.gf-tiles{grid-template-columns:repeat(3,1fr)}.gf-list{grid-template-columns:1fr}.gf-learn{grid-template-columns:1fr}}
+@media (max-width:560px){.gf{padding:16px 12px 50px}.gf-hero{padding:24px 18px}.gf-flow{grid-template-columns:1fr}.gf-tiles{grid-template-columns:repeat(2,1fr)}
+  .gc-plan{grid-template-columns:repeat(3,minmax(0,1fr))}.gc-chk span{font-size:9px}.gf-q{max-width:none;margin-left:0;flex-basis:100%}}
+@media (prefers-reduced-motion:reduce){.gf-eye i{animation:none}}
+</style><style>.gc.g-sq3{border-color:rgba(233,196,106,.7);box-shadow:0 0 0 1px rgba(233,196,106,.15),0 10px 40px -18px rgba(233,196,106,.45)}.gc.g-sq2{border-color:rgba(34,171,148,.55)}.gc.g-sq1{border-color:rgba(110,168,254,.45)}
+.g-sq3 .gc-grade{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1a1300;border:0;font-size:12px;text-align:center;line-height:1.15}.g-sq2 .gc-grade{background:var(--up);color:#00130f;border:0;font-size:12px;text-align:center;line-height:1.15}.g-sq1 .gc-grade,.g-sq0 .gc-grade{font-size:12px;text-align:center;line-height:1.15}
+.kv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 6px}.kv div{padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:#0A0B0E}.kv span{display:block;color:var(--mute);font-size:11px}.kv b{font:600 13px var(--mono)}
+.why{margin:0 0 8px;padding:0;list-style:none;display:grid;gap:3px;font-size:13px;color:var(--dim)}.why li::before{content:"✓ ";color:var(--up)}.why li.x::before{content:"✗ ";color:var(--dn)}
+.st-tbl{width:100%;border-collapse:collapse;font-size:14px}.st-tbl td,.st-tbl th{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}.st-tbl th{color:var(--mute);font-weight:500;font-size:12px}
+@media (max-width:560px){.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>
+<style>.nc-v{display:flex;gap:6px;margin:0 0 8px;flex-wrap:wrap}.nc-v i{font-style:normal;font:600 12px/1 var(--mono);padding:6px 9px;border-radius:8px;background:rgba(255,255,255,.05);color:var(--mute)}
+.nc-v i.u{background:rgba(34,171,148,.16);color:var(--up)}.nc-v i.d{background:rgba(247,82,95,.12);color:var(--dn)}
+.gc.g-no{opacity:.86}.gc-grade.cd{font-size:15px}.nc-warn{margin:14px 0 0;padding:14px 16px;border:1px solid rgba(247,82,95,.45);border-radius:12px;background:rgba(247,82,95,.07);font-size:14.5px;color:var(--ink)}
+.nc-bar{position:relative;height:8px;border-radius:4px;background:rgba(255,255,255,.07);margin:8px 0 2px}.nc-bar b{position:absolute;top:-3px;width:2px;height:14px;background:var(--gold)}.nc-bar s{position:absolute;top:0;bottom:0;border-radius:4px;background:rgba(110,168,254,.35)}
+.nc-sub{display:flex;justify-content:space-between;color:var(--mute);font:11.5px var(--mono)}</style>
+</head>
+<body>
+<main class="gf">
+  <section class="gf-hero">
+    <div class="gf-eye"><i></i>AI forecast models · for fun</div>
+    <h1>Next <span>Candle</span> AI</h1>
+    <p class="gf-lede">Three AI forecast models (<b>Chronos-2</b>, <b>TimesFM 2.5</b>, <b>Moirai 2.0</b>) each guess whether the <b>next 5-minute candle</b> closes up or down. When <b>all three agree on a forex pair</b>, it shows here as a call. Every call is graded against the real candle, and the real hit rate is below.</p>
+    <p class="nc-warn"><b>For fun and learning. Not for bets.</b> In our test this rule was right about <b>54 to 57 times in 100</b>, only a little better than a coin toss, and one model alone was a coin toss. Do not put money on it.</p>
+    <ol class="gf-flow" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+      <li><span>1 · CLOSED CANDLES</span><b>No peeking</b><p>The models only see candles that have already closed. The guess is for the candle that is forming now.</p></li>
+      <li><span>2 · THREE MODELS</span><b>All must agree</b><p>A call needs 3 of 3 the same way, on a forex pair. Anything else is shown as "no call".</p></li>
+      <li><span>3 · GRADED</span><b>Right or wrong</b><p>Five minutes later the real close decides. Wins and losses are counted as they are.</p></li>
+    </ol>
+  </section>
+  <div class="gf-tiles" id="ncTiles" style="grid-template-columns:repeat(4,minmax(0,1fr))"></div>
+  <div class="gf-bar">
+    <div class="gf-tabs" id="ncShow" role="group" aria-label="Show"><button type="button" data-v="sig" class="on">Calls only</button><button type="button" data-v="all">All markets</button></div>
+    <div class="gf-tabs" id="ncSide" role="group" aria-label="Side"><button type="button" data-v="all" class="on">Up + Down</button><button type="button" data-v="1">Up</button><button type="button" data-v="-1">Down</button></div>
+  </div>
+  <p class="gf-upd" id="ncUpd">Reading the models…</p>
+  <div class="gf-list" id="ncList"><p class="gf-empty">Reading the models…</p></div>
+  <section style="margin-top:30px"><h2 style="margin:0 0 6px;font-size:20px">Real results</h2><p style="margin:0 0 10px;color:var(--dim);font-size:14px">Counted live on this page, one row per kind of guess. "Not enough yet" means fewer than 20 graded guesses.</p>
+    <div style="border:1px solid var(--line);border-radius:14px;background:var(--card);overflow-x:auto"><table class="st-tbl"><thead><tr><th>What</th><th>Right</th><th>Wrong</th><th>Hit rate</th></tr></thead><tbody id="ncStats"></tbody></table></div>
+    <h3 style="margin:18px 0 6px;font-size:16px">Last graded calls</h3>
+    <div style="border:1px solid var(--line);border-radius:14px;background:var(--card);overflow-x:auto"><table class="st-tbl"><thead><tr><th>Candle closed</th><th>Market</th><th>Guess</th><th>Before</th><th>Close</th><th>Result</th></tr></thead><tbody id="ncRecent"></tbody></table></div></section>
+  <section class="gf-learn"><h2>How to read this</h2>
+    <dl><dt>What is a call?</dt><dd>All three models expect the next 5-minute close to be on the same side of the last close, on a forex pair.</dd><dt>What is "Strong"?</dt><dd>The models also expect a bigger move than usual (top fifth of recent calls).</dd></dl>
+    <dl><dt>What is the next-hour range?</dt><dd>The price band where the models expect the price to be one hour from now, about 8 times out of 10. It says how far price may travel, not which way.</dd><dt>Why forex only?</dt><dd>That is the only market where the rule held up in both halves of our test. Crypto and gold are shown for interest, without calls.</dd></dl>
+    <dl><dt>How good is it really?</dt><dd id="ncBt">In our walk-forward test on 5-minute candles, all three agreeing on forex was right 54% to 57% of the time.</dd><dt>When is it quiet?</dt><dd>Forex is closed from Friday night to Sunday night (UTC). The page shows calls again when candles start printing.</dd></dl>
+  </section>
+  <p class="gf-note"><b>Not financial advice and not a betting tool.</b> Short-term price direction is close to random; these models are shown so you can watch how AI forecasts behave on live markets.</p>
+  <p class="gf-foot">For education, not financial advice.</p>
+</main>
+<footer class="gf-ftr"><nav><a href="/scanners/">All scanners</a><a href="/scanners/godfather/">God-father Scanner</a><a href="/scanners/binary/">Binary Pulse</a><a href="/bias/">AI Scan</a><a href="/scanners/trendline-hero/">Trendline Hero</a><a href="/scanners/day-drive/">Day Drive</a><a href="/legal.php">Legal</a></nav></footer>
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = (v, d) => v == null || isNaN(v) ? "–" : Number(v).toLocaleString("en-US", {minimumFractionDigits: Math.min(d, 2), maximumFractionDigits: d});
+const MN = {chronos2:"Chronos-2", timesfm:"TimesFM 2.5", moirai2:"Moirai 2.0", kronos:"Kronos"};
+const F = {show:"sig", side:"all"}; let D = null, tick = null;
+const hm = t => new Date(t*1000).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+const rate = t => !t ? "–" : t.rate == null ? "not enough yet" : t.rate + "%";
+function left(r){ const s = r.bar + 600 - Math.floor(Date.now()/1000); return s > 0 ? `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}` : "closed"; }
+function card(r){ const up = r.side > 0, gc = r.sig ? (r.strong ? "ap" : "a") : "no", nm = (D.names||{})[r.s] || r.s;
+  const lo = Math.min(r.h1[0], r.last), hi = Math.max(r.h1[1], r.last), w = (hi - lo) || 1, pc = x => Math.max(0, Math.min(100, (x - lo) / w * 100));
+  return `<article class="gc g-${gc}" data-bar="${r.bar}"><div class="gc-top"><div class="gc-grade cd num" title="Time left in the candle being guessed">${left(r)}</div>
+    <div class="gc-id"><h3>${r.sig ? `<span class="gc-side ${up?"CALL":"PUT"}">${up ? "UP ▲" : "DOWN ▼"}</span>` : ""}${esc(nm)}</h3><small>${esc(r.s)} · ${esc(r.mkt)} · last closed candle ${hm(r.bar+300)}</small></div>
+    <div class="gc-px"><b>${fmt(r.last,r.dec)}</b><small>last close</small></div></div>
+    <div class="gc-setup">${r.sig ? (r.strong ? "Strong call" : "Call") + ` · ${r.n} of ${r.n} models say ${up?"up":"down"}` : r.agree ? `All ${r.n} say ${up?"up":"down"} <em>· no call: outside the tested rule (forex only)</em>` : `Models split ${r.up} up / ${r.n-r.up} down <em>· no call</em>`}</div>
+    <div class="nc-v">${Object.entries(r.v).map(([m,v]) => `<i class="${v>0?"u":v<0?"d":""}">${esc(MN[m]||m)} ${v>0?"▲":v<0?"▼":"–"}</i>`).join("")}</div>
+    <div class="kv" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div><span>Next candle, likely close</span><b>${fmt(r.next[0],r.dec)} – ${fmt(r.next[2],r.dec)}</b></div><div><span>Next hour, likely range</span><b>${fmt(r.h1[0],r.dec)} – ${fmt(r.h1[1],r.dec)}</b></div></div>
+    <div class="nc-bar"><s style="left:${pc(r.h1[0])}%;width:${pc(r.h1[1])-pc(r.h1[0])}%"></s><b style="left:${pc(r.last)}%"></b></div><div class="nc-sub"><span>${fmt(lo,r.dec)}</span><span>gold line = price now · blue = next-hour range</span><span>${fmt(hi,r.dec)}</span></div>
+    <div class="gc-foot"><span class="gc-mtf"></span><a href="/desk/?s=${encodeURIComponent(r.s)}">AI Scan</a></div></article>`; }
+function render(){ if (!D) return; const R = D.rows || [], st = D.stats || {}, ru = st.rule || {};
+  $("#ncTiles").innerHTML = [[R.filter(r => r.sig).length, "Calls now", "all 3 agree · forex"], [R.length, "Markets live", (D.closed||[]).length ? (D.closed.length + " closed") : "5m candles"], [rate(ru.d7), "Hit rate · 7 days", ru.d7 ? `${ru.d7.w} right · ${ru.d7.l} wrong` : "live count"], [rate(ru.d1), "Hit rate · today", ru.d1 ? `${ru.d1.w} right · ${ru.d1.l} wrong` : "live count"]]
+    .map(([v,l,s],i) => `<div class="gf-tile ${i===0?"ap":i>1?"a":""}" style="cursor:default"><div class="v" style="${String(v).length>6?"font-size:17px;line-height:1.7":""}">${esc(v)}</div><div class="k"><b style="color:var(--ink)">${l}</b> · ${esc(s)}</div></div>`).join("");
+  const rows = R.filter(r => (F.show === "all" || r.sig) && (F.side === "all" || String(r.side) === F.side)).sort((a,b) => b.sig - a.sig || b.strong - a.strong || b.agree - a.agree);
+  const fxClosed = !R.some(r => r.mkt === "forex");
+  $("#ncList").innerHTML = rows.map(card).join("") || `<p class="gf-empty">${D.age > 1200 ? "The models are restarting. Calls come back in a few minutes." : fxClosed ? "Forex is closed right now (weekend), so there is no call. Tap <b>All markets</b> to watch the models on crypto and gold." : "No call right now: the three models do not all agree on any forex pair. Tap <b>All markets</b> to see every vote."}</p>`;
+  const row = (n, t) => `<tr><td>${n}</td><td class="up">${t ? t.w : 0}</td><td class="dn">${t ? t.l : 0}</td><td><b>${rate(t)}</b></td></tr>`;
+  $("#ncStats").innerHTML = row("Calls · forex, all 3 agree · 7 days", ru.d7) + row("All 3 agree on crypto / gold (no call) · 7 days", (st.agree||{}).d7) + row("Models split, majority side · 7 days", (st.split||{}).d7)
+    + Object.entries(st.models || {}).map(([m,t]) => row(esc(MN[m]||m) + " alone, every guess", t)).join("") + row("Close 1 hour later inside the next-hour range · 7 days (target about 80%)", (st.range||{}).d7);
+  $("#ncRecent").innerHTML = (D.recent || []).map(e => `<tr><td>${new Date(e.t*1000).toLocaleString([], {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</td><td>${esc(e.s)}</td><td class="${e.side>0?"up":"dn"}">${e.side>0?"UP":"DOWN"}</td><td>${e.last}</td><td>${e.close}</td><td class="${e.res==="win"?"up":e.res==="loss"?"dn":""}"><b>${e.res==="win"?"right":e.res==="loss"?"wrong":"flat"}</b></td></tr>`).join("") || `<tr><td colspan="6" style="color:var(--mute)">No call has been graded yet.</td></tr>`;
+  if (D.bt && D.bt.forex_all_agree) $("#ncBt").textContent = `In our walk-forward test (${D.bt.run}), all three agreeing on forex was right ${D.bt.forex_all_agree[0]}% and ${D.bt.forex_all_agree[1]}% of the time in the two halves; one model alone ${D.bt.single_model[0]}-${D.bt.single_model[1]}%.`;
+}
+function bind(id, key){ $$(`#${id} button`).forEach(b => b.onclick = () => { F[key] = b.dataset.v; $$(`#${id} button`).forEach(x => x.classList.toggle("on", x === b)); render(); }); }
+bind("ncShow","show"); bind("ncSide","side");
+async function load(){ let next = 30;
+  try { const d = await fetch("/api.php?r=nc", {cache:"no-store"}).then(r => r.json()); if (d.error) throw 0; D = d;
+    $("#ncUpd").textContent = d.at ? `${(d.rows||[]).length} markets read by ${(d.models||[]).length} models · updated ${hm(d.at)}${d.age > 1200 ? " · waiting for the next update" : ""}` : "The models have not sent their first reading yet.";
+    const n = (d.rows||[]).filter(r => r.sig).length; document.title = (n ? `(${n}) ` : "") + "Next Candle AI · ChartPulse"; render();
+  } catch (e) { $("#ncUpd").textContent = "This scanner is temporarily unavailable. Sorry for the inconvenience. Retrying…"; next = 20; }
+  setTimeout(load, (document.hidden ? 120 : next) * 1000); }
+load(); clearInterval(tick); tick = setInterval(() => { if (!D) return; $$("#ncList .gc").forEach(a => { const g = a.querySelector(".cd"); if (g) g.textContent = left({bar:+a.dataset.bar}); }); }, 1000);
+})();
+</script>
+</body>
+</html>

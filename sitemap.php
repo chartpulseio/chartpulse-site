@@ -22,6 +22,8 @@ $U = [
     ['/scanners/godfather/', $mt('godfather.html')],
     ['/scanners/squeeze/', $mt('squeeze.html')],
     ['/scanners/binary/', $mt('binary.html')],
+    ['/scanners/next-candle/', $mt('next-candle.html')],
+    ['/scanners/forecast-24h/', $mt('forecast-24h.html')],
     ['/scanners/trendline-hero/', $mt('trendline-hero.html')],
     ['/scanners/hero-200-ema/', $mt('hero-200-ema.html')],
     ['/scanners/news/', $mt('news-scanner.html')],
