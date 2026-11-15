@@ -4,53 +4,58 @@
   "use strict";
   var MENU = [
     { t: "Scanner", href: "/scanner.html", match: ["/scanner.html", "/tier2.html"] },
-    { t: "God-father Scanner", href: "/scanners/godfather/" },
-    { t: "Trend Line Scanners", cols: [{ items: [
-      { t: "Trendline Hero", d: "Trend line + day / week / month high or low, with the big trend", href: "/scanners/trendline-hero/" },
-      { t: "Hero with 200 EMA", d: "Hero setups with the 1H 200 EMA on the line", href: "/scanners/hero-200-ema/" },
-      { t: "Hybrid Trend Lines", d: "Day high or low at a line, with the trend", href: "/scanners/hybrid-trend-lines/" },
-      { t: "Trend Line Scanner", d: "Breakouts and tests on seven timeframes", href: "/scanners/trend-lines/" }
-    ] }] },
-    { t: "Day Drive Scanner", href: "/scanners/day-drive/" },
-    { t: "Movers Reversal Scanner", href: "/movers/" },
-    { t: "200 EMA Scanner", href: "/scanners/ema-200/" },
-    { t: "AI Scanner", href: "/bias/", match: ["/desk/"] },
-    { t: "News Scanner", href: "/scanners/news/" },
+    { t: "God-father", href: "/scanners/godfather/" },
+    { t: "Trend Scanners", cols: [
+      { h: "Trend lines", items: [
+        { t: "Trendline Hero", d: "Trend line + day / week / month high or low, with the big trend", href: "/scanners/trendline-hero/" },
+        { t: "Hero with 200 EMA", d: "Hero setups with the 1H 200 EMA on the line", href: "/scanners/hero-200-ema/" },
+        { t: "Hybrid Trend Lines", d: "Day high or low at a line, with the trend", href: "/scanners/hybrid-trend-lines/" },
+        { t: "Trend Line Scanner", d: "Breakouts and tests on seven timeframes", href: "/scanners/trend-lines/" }
+      ] },
+      { h: "Trend and reversal", items: [
+        { t: "Day Drive Scanner", d: "Trend setups and top / bottom bounces in one list", href: "/scanners/day-drive/" },
+        { t: "200 EMA Scanner", d: "Price meeting its 200 EMA on five timeframes", href: "/scanners/ema-200/" },
+        { t: "Movers Reversal Scanner", d: "Today's biggest movers and which are snapping back", href: "/movers/" }
+      ] }
+    ] },
+    { t: "Strategy Scanners", cols: [
+      { h: "Institutional (smart money)", items: [
+        { t: "Liquidity Sweep + Order Block + FVG", d: "Stop hunt, then order block and fair value gap", href: "/institutional/scanner.php?id=3-liquidity-fvg" },
+        { t: "SMC Power of 3 + OTE", d: "Accumulation, manipulation, distribution with the OTE entry", href: "/institutional/scanner.php?id=1-smc-power-of-3" },
+        { t: "Range Breakout + VWAP + Volume", d: "Opening range break with VWAP and a volume spike", href: "/institutional/scanner.php?id=4-orb-vwap" }
+      ] },
+      { h: "EMA strategies", items: [
+        { t: "EMA 200 + 50 + 21 Alignment", d: "All three EMAs stacked the same way", href: "/ema-strategies/scanner.php?id=3-ema-50-21-alignment" },
+        { t: "EMA 200 + Supertrend + RSI 50", d: "Trend, Supertrend and momentum agreeing", href: "/ema-strategies/scanner.php?id=7-ema-supertrend-rsi" },
+        { t: "VWAP + EMA 200 Combo", d: "Price on the right side of VWAP and the 200 EMA", href: "/ema-strategies/scanner.php?id=5-vwap-ema-combo" }
+      ] }
+    ] },
     { t: "Crypto Scanners", cols: [{ items: [
       { t: "Crypto Arbitrage Scanner", d: "Funding rate arbitrage and price gaps across seven exchanges", href: "/scanners/crypto-arbitrage/" },
       { t: "Liquidation Squeeze Scanner", d: "Crowded longs or shorts at a key zone, and squeezes starting", href: "/scanners/squeeze/" }
     ] }] },
-    { t: "Binary & AI Forecast", cols: [{ items: [
+    { t: "Binary Scanners", cols: [{ items: [
       { t: "Binary Pulse Scanner", d: "Up / down calls with expiry on live forex, crypto and gold", href: "/scanners/binary/" },
-      { t: "Next Candle AI", d: "Four AI forecast models guess the next 5-minute candle. For fun, every guess graded", href: "/scanners/next-candle/" },
-      { t: "24-Hour AI Forecast", d: "Likely price path and range for the next 24 hours, refreshed every hour", href: "/scanners/forecast-24h/" }
+      { t: "Next Candle AI", d: "Four AI forecast models guess the next 5-minute candle. For fun, every guess graded", href: "/scanners/next-candle/" }
     ] }] },
-    { t: "Markets", cols: [{ items: [
-      { t: "AI Scan", d: "Trend direction for every symbol", href: "/bias/" },
-      { t: "Movers Reversal Scanner", d: "Today's biggest movers and which are snapping back", href: "/movers/" },
-      { t: "News & impact", d: "Headlines and what they moved", href: "/news.html" },
-      { t: "Insights", d: "Breadth, volatility and momentum", href: "/insights.html" }
+    { t: "AI & News", cols: [{ items: [
+      { t: "AI Scanner", d: "Bias, four forecast models and the AI committee for any symbol", href: "/bias/", match: ["/desk/"] },
+      { t: "24-Hour AI Forecast", d: "Likely price path and range for the next 24 hours, refreshed every hour", href: "/scanners/forecast-24h/" },
+      { t: "News Scanner", d: "Markets in the news, tone and trend", href: "/scanners/news/" },
+      { t: "AI Backtesting", d: "Type a strategy in plain words, get a backtest", href: "/ai-backtesting/" }
     ] }] },
-    { t: "Tools", cols: [
-      { h: "Free scanners", items: [
-        { t: "All scanners", d: "Fifteen ready-made scans", href: "/scanners/" },
-        { t: "God-father Scanner", d: "Every scanner joined into one A+ call", href: "/scanners/godfather/" },
-        { t: "200 EMA", d: "Price meeting its 200 EMA", href: "/scanners/ema-200/" },
-        { t: "Day Drive", d: "Three checks, weekly chart to 15m entry", href: "/scanners/day-drive/" },
-        { t: "Trend lines", d: "Breakouts and tests on seven timeframes", href: "/scanners/trend-lines/" },
-        { t: "Hybrid trend lines", d: "Day high or low at a line, with the trend", href: "/scanners/hybrid-trend-lines/" },
-        { t: "Trendline Hero", d: "Trend line trades with the big trend, long targets", href: "/scanners/trendline-hero/" },
-        { t: "Hero with 200 EMA", d: "Hero setups with the 1H 200 EMA on the line", href: "/scanners/hero-200-ema/" },
-        { t: "News scanner", d: "Markets in the news, tone and trend", href: "/scanners/news/" }
+    { t: "More", cols: [
+      { h: "Markets", items: [
+        { t: "All scanners", d: "Every scanner on one page", href: "/scanners/" },
+        { t: "News & impact", d: "Headlines and what they moved", href: "/news.html" },
+        { t: "Insights", d: "Breadth, volatility and momentum", href: "/insights.html" }
       ] },
-      { h: "Research", items: [
-        { t: "AI Backtesting", d: "Type a strategy in plain words, get a backtest", href: "/ai-backtesting/" },
+      { h: "Tools", items: [
         { t: "Backtesting", d: "Test your own strategy on history", href: "/backtesting/" },
-        { t: "AI Scan", d: "Forecast, news tone and analyst view for one symbol", href: "/desk/" }
+        { t: "Affiliates", d: "Earn 20% for every trader you bring", href: "/affiliates/" }
       ] }
     ] },
-    { t: "Pricing", href: "/pricing.html" },
-    { t: "Affiliates", href: "/affiliates/" }
+    { t: "Pricing", href: "/pricing.html" }
   ];
   /* affiliate link: ?ref=CODE is remembered for checkout (30 days) and counted once per browser */
   try {
@@ -65,6 +70,7 @@
   var path = location.pathname.replace(/index\.html$/, "");
   var norm = function (p) { return p.replace(/\/+$/, "") || "/"; };
   var isOn = function (href, extra) {
+    if (href.indexOf("?") > 0) return location.pathname + location.search === href;
     var list = [href].concat(extra || []);
     for (var i = 0; i < list.length; i++) {
       var h = norm(list[i]), p = norm(path);
@@ -82,7 +88,7 @@
       m.cols.forEach(function (c) {
         cols += '<div class="cph-col">' + (c.h ? "<p>" + esc(c.h) + "</p>" : "");
         c.items.forEach(function (it) {
-          var on = isOn(it.href); any = any || on;
+          var on = isOn(it.href, it.match); any = any || on;
           cols += '<a href="' + it.href + '"' + (on ? ' class="on" aria-current="page"' : "") + "><b>" + esc(it.t) + "</b><span>" + esc(it.d) + "</span></a>";
         });
         cols += "</div>";
@@ -125,6 +131,15 @@
     var burger = h.querySelector(".cph-burger");
     var setMenu = function (o) { h.classList.toggle("menu", o); burger.setAttribute("aria-expanded", o ? "true" : "false"); document.documentElement.style.overflow = o ? "hidden" : ""; };
     burger.addEventListener("click", function () { setMenu(!h.classList.contains("menu")); });
+    // The full menu shows only when it really fits beside the logo and the buttons; otherwise the header folds to the menu button.
+    var navEl = h.querySelector(".cph-nav"), right = h.querySelector(".cph-right"), logo = h.querySelector(".cph-logo"), need = 0;
+    var fit = function () {
+      if (!need) { h.classList.remove("fold"); need = navEl.scrollWidth; }
+      var room = h.clientWidth - logo.offsetWidth - right.offsetWidth - 110;
+      var fold = window.innerWidth <= 1180 || need > room;
+      if (fold !== h.classList.contains("fold")) { h.classList.toggle("fold", fold); if (!fold) setMenu(false); }
+    };
+    fit(); window.addEventListener("resize", fit); if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { need = 0; fit(); });
 
     // Live count: cp.js fills #hdrLive on the pages that load it; show the pill only once it holds a number.
     var live = h.querySelector("#hdrLive"), num = live.querySelector("b");
