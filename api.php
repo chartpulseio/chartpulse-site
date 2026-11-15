@@ -29,7 +29,7 @@ $TFS = ['10M', '1H', '4H', '1D', '1W'];
 
 // Rate limits per visitor per minute (owner, 29 Sep 2026). Pages poll every 3-20 s, so normal use stays far below these.
 $r = is_string($r) ? substr(preg_replace('/[^a-z0-9]/', '', strtolower($r)), 0, 16) : 'scan';
-$RL = ['scan' => 120, 'symbol' => 60, 'bias' => 40, 't2' => 60, 't2price' => 90, 'trades' => 40, 'news' => 30, 'refresh' => 6, 'export' => 6, 'plans' => 30, 'access' => 60, 'health' => 20, 'desk' => 30, 'deskai' => 3, 'desklive' => 12, 'mlfeed' => 20, 'mlpush' => 20, 'nc' => 120, 'ncpush' => 40, 'nckey' => 6, 'ensfeed' => 40, 'enspush' => 40];
+$RL = ['scan' => 120, 'symbol' => 60, 'bias' => 40, 't2' => 60, 't2price' => 90, 'trades' => 40, 'news' => 30, 'refresh' => 6, 'export' => 6, 'plans' => 30, 'access' => 60, 'health' => 20, 'desk' => 30, 'deskai' => 3, 'desklive' => 12, 'mlfeed' => 20, 'mlpush' => 20, 'nc' => 120, 'ncpush' => 40, 'nckey' => 6, 'ensfeed' => 40, 'enspush' => 40, 'liqpush' => 30];
 if (!t_rl('api', 300) || !t_rl('r:' . $r, $RL[$r] ?? 30)) {
     http_response_code(429); header('Retry-After: 30'); t_json(['error' => 'Too many requests. Please wait a few seconds and try again.']); exit;
 }
@@ -107,7 +107,42 @@ if ($r === 'scan') {
     if (!ml_push_auth() || ($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') { http_response_code(403); t_json(['error' => 'forbidden']); exit; }
     $in = json_decode((string)file_get_contents('php://input', false, null, 0, 512), true); $h = strtolower((string)($in['hash'] ?? ''));
     if (!preg_match('/^[0-9a-f]{64}$/', $h)) { http_response_code(400); t_json(['error' => 'bad hash']); exit; }
-    @file_put_contents(ml_dir() . '/nc.keyhash', $h, LOCK_EX); t_json(['ok' => true]);
+    $nm = ($in['name'] ?? 'nc') === 'liq' ? 'liq' : 'nc'; @file_put_contents(ml_dir() . "/$nm.keyhash", $h, LOCK_EX); t_json(['ok' => true, 'name' => $nm]);
+} elseif ($r === 'liqpush') {   // Order flow phase 2 (owner, 15 Nov 2026): all-exchange liquidations from the Big VPS collector, every 15 s
+    require_once __DIR__ . '/torus_ml.php'; require_once __DIR__ . '/of_engine.php';
+    $kh = trim((string)@file_get_contents(ml_dir() . '/liq.keyhash')); $k = (string)($_SERVER['HTTP_X_NC_KEY'] ?? '');
+    if (!(strlen($kh) === 64 && strlen($k) >= 32 && hash_equals($kh, hash('sha256', $k)))) { http_response_code(403); t_json(['error' => 'forbidden']); exit; }
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') { http_response_code(405); t_json(['error' => 'POST only']); exit; }
+    $in = json_decode((string)file_get_contents('php://input', false, null, 0, 3 * 1024 * 1024), true);
+    if (!is_array($in) || !isset($in['tot'], $in['coins'])) { http_response_code(400); t_json(['error' => 'bad payload']); exit; }
+    $alerts = array_slice((array)($in['alerts'] ?? []), 0, 5); unset($in['alerts']); $in['rx'] = t_now();
+    t_write_json(of_dir() . '/liq.json', $in);
+    $st = t_read_json(of_dir() . '/liq_alert.json', ['last' => 0, 'n' => [], 'div' => [], 'divat' => 0, 'casc' => 0]); $now = t_now(); $sent = 0;
+    $st['n'] = array_values(array_filter((array)$st['n'], fn($t) => $t > $now - 3600));
+    $fm = fn($v) => $v >= 1e9 ? '$' . round($v / 1e9, 2) . 'B' : ($v >= 1e6 ? '$' . round($v / 1e6, 2) . 'M' : '$' . round($v / 1e3) . 'K');
+    $url = 'https://chartpulse.io/scanners/order-flow/';
+    foreach ($alerts as $a) {
+        if (count($st['n']) >= 12) break;   // never more than 12 liquidation alerts an hour
+        $c = preg_replace('/[^A-Z0-9]/', '', strtoupper((string)($a['c'] ?? '')));
+        $msg = '💥 <b>' . $fm((float)$a['v']) . ' ' . $c . ' ' . ((($a['side'] ?? '') === 'long') ? 'LONG' : 'SHORT') . ' liquidated</b> on ' . htmlspecialchars((string)$a['ex']) . ' at ' . (float)$a['px'] . "\n<a href=\"$url" . strtolower($c) . "/\">See the order flow for $c</a>";
+        tg_deliver($msg); $st['n'][] = $now; $sent++;
+    }
+    $h1 = $in['tot']['h1'] ?? []; $tot1 = (float)($h1['long'] ?? 0) + (float)($h1['short'] ?? 0);
+    if ($tot1 >= 75e6 && $now - (int)$st['casc'] > 3 * 3600) {   // liquidation cascade
+        $side = ($h1['long'] ?? 0) >= ($h1['short'] ?? 0) ? 'longs' : 'shorts';
+        tg_deliver('🌊 <b>Liquidation cascade: ' . $fm($tot1) . " in the last hour</b>, mostly $side (Binance, Bybit, OKX).\n<a href=\"$url\">Open Order Flow</a>"); $st['casc'] = $now;
+    }
+    if ($now - (int)$st['divat'] >= 900) {   // divergences on the 4-hour flow, top 30 coins by volume, each coin at most once in 12 h
+        $st['divat'] = $now; $b = of_board(); $lines = [];
+        $st['div'] = array_filter((array)$st['div'], fn($t) => $t > $now - 43200);
+        foreach (array_slice((array)($b['rows'] ?? []), 0, 30) as $row) {
+            if (empty($row['div']) || isset($st['div'][$row['s']])) continue;
+            $lines[] = '• <b>' . $row['coin'] . '</b>: ' . $row['div'] . ' (4h price ' . sprintf('%+.1f', $row['c4']) . '%, delta ' . $fm(abs((float)$row['dv4'])) . ($row['dv4'] < 0 ? ' sold' : ' bought') . ')';
+            $st['div'][$row['s']] = $now;
+        }
+        if ($lines) tg_deliver("🔀 <b>Order flow divergence</b>\n" . implode("\n", array_slice($lines, 0, 6)) . "\n<a href=\"$url\">Open Order Flow</a>");
+    }
+    t_write_json(of_dir() . '/liq_alert.json', $st); t_json(['ok' => true, 'alerts' => $sent]);
 } elseif ($r === 'nc' || $r === 'ncpush') {   // Next Candle (owner, 15 Nov 2026): three forecast models, pushed every 5 min by the chartpulse-ml job
     require_once __DIR__ . '/torus_ml.php'; $f = ml_dir() . '/nc.json';
     if ($r === 'ncpush') {

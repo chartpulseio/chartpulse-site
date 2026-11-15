@@ -128,6 +128,15 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 @media (max-width:560px){.gf{padding:16px 12px 50px}.gf-hero{padding:24px 18px}.gf-flow{grid-template-columns:1fr}.gf-tiles{grid-template-columns:repeat(2,1fr)}
   .gc-plan{grid-template-columns:repeat(3,minmax(0,1fr))}.gc-chk span{font-size:9px}.gf-q{max-width:none;margin-left:0;flex-basis:100%}}
 @media (prefers-reduced-motion:reduce){.gf-eye i{animation:none}}
+.of-lx{display:grid;grid-template-columns:1.25fr 1fr;gap:12px}
+.of-lt{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.of-lt div{padding:10px 12px;border-radius:12px;background:#0A0B0E;border:1px solid var(--line)}
+.of-lt span{display:block;color:var(--mute);font-size:11.5px}.of-lt b{font:600 18px var(--mono);display:block}.of-lt small{font:12px var(--mono)}
+.of-lsplit{height:6px;border-radius:3px;background:#22AB94;overflow:hidden;margin-top:6px}.of-lsplit i{display:block;height:100%;background:#F7525F}
+.of-lhist{width:100%;height:150px;display:block}
+.of-lex{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;font:12px var(--mono);color:var(--mute)}.of-lex span{padding:4px 8px;border:1px solid var(--line);border-radius:8px}
+.of-lc{width:100%;border-collapse:collapse;font:12.5px var(--mono)}.of-lc td,.of-lc th{padding:5px 4px;border-top:1px solid var(--line);text-align:right}.of-lc th{color:var(--mute);font:500 11.5px var(--sans)}.of-lc td:first-child,.of-lc th:first-child{text-align:left}.of-lc tr[data-s]{cursor:pointer}.of-lc tr[data-s]:hover{background:#ffffff08}
+@media(max-width:900px){.of-lx{grid-template-columns:1fr}.of-lt b{font-size:15px}}
 </style>
 <style>
 .of-sel{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:18px 0 10px}
@@ -242,8 +251,16 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 
   <div class="of-grid" style="margin-top:12px">
     <div class="of-card"><h3>Long vs short</h3><p class="sub">Above 1 = more longs (or more buying). Line = last ~150 periods.</p><div class="of-ratio" id="ofRatio"></div></div>
-    <div class="of-card"><h3>Liquidations <small style="color:var(--mute);font-weight:400">· live from OKX</small></h3><p class="sub" id="ofLiqSub">Positions force-closed on OKX.</p><div class="of-tot" id="ofLiqTot"></div><div class="of-liq" id="ofLiq"></div></div>
+    <div class="of-card"><h3>Liquidations <small style="color:var(--mute);font-weight:400" id="ofLiqSrc">· live</small></h3><p class="sub" id="ofLiqSub">Positions force-closed on OKX.</p><div class="of-tot" id="ofLiqTot"></div><div class="of-liq" id="ofLiq"></div></div>
   </div>
+
+  <h2 class="of-h2" id="liquidations">Liquidations · Binance + Bybit + OKX</h2>
+  <p class="of-p" id="ofLxSub">Every forced close on the three biggest futures exchanges, collected live around the clock. Red = longs force-sold, green = shorts force-bought.</p>
+  <div class="of-lx">
+    <div class="of-card"><div class="of-lt" id="ofLxTot"></div><h3>Last 24 hours, hour by hour</h3><canvas class="of-lhist" id="ofLxHist"></canvas><div class="of-lex" id="ofLxEx"></div></div>
+    <div class="of-card"><h3>Biggest liquidations</h3><p class="sub">Single orders of $20K or more, newest first.</p><div class="of-liq" id="ofLxBig" style="max-height:330px"></div></div>
+  </div>
+  <div class="of-card" style="margin-top:12px"><h3>Most liquidated coins · 24h</h3><p class="sub">Click a coin to open its order flow above.</p><div style="overflow:auto"><table class="of-lc"><thead><tr><th>Coin</th><th>1h</th><th>4h</th><th>24h total</th><th>Longs</th><th>Shorts</th><th>Biggest</th></tr></thead><tbody id="ofLxCoins"></tbody></table></div></div>
 
   <h2 class="of-h2">Market board · top 60 perpetuals</h2>
   <p class="of-p">One line per coin: price move, who is aggressive (delta), and whether new money is coming in (open interest). Click a coin to open it above.</p>
@@ -258,7 +275,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
     <dl><dt>Price and open interest together</dt><dd><b>Up + OI up</b>: new longs. <b>Up + OI down</b>: short covering. <b>Down + OI up</b>: new shorts. <b>Down + OI down</b>: longs closing or liquidated.</dd><dt>Funding</dt><dd>Positive funding means longs pay shorts: the crowd leans long. Very high funding often comes before a flush.</dd></dl>
     <dl><dt>Liquidation heatmap</dt><dd>Price is often pulled toward large clusters, because forced orders there add fuel. It is an estimate made from open interest, as every liquidation heatmap is.</dd><dt>Order book walls</dt><dd>Big resting orders can slow price, but they can be pulled at any time. Treat them as hints, not floors.</dd></dl>
   </section>
-  <p class="gf-note"><b>Sources.</b> Delta, CVD, open interest, ratios and the order book come from Binance (futures and spot); live liquidations from OKX. Data refreshes every 45-90 seconds. Not financial advice.</p>
+  <p class="gf-note"><b>Sources.</b> Delta, CVD, open interest, ratios and the order book come from Binance (futures and spot); liquidations are collected live from Binance, Bybit and OKX (Binance sends at most one liquidation per coin per second, so its totals are a floor). Data refreshes every 20-90 seconds. Not financial advice.</p>
   <p class="gf-foot">For education, not financial advice.</p>
 </main>
 <footer class="gf-ftr"><nav><a href="/scanners/">All scanners</a><a href="/scanners/squeeze/">Liquidation Squeeze Scanner</a><a href="/scanners/crypto-arbitrage/">Crypto Arbitrage Scanner</a><a href="/scanners/godfather/">God-father Scanner</a><a href="/bias/">AI Scan</a><a href="/legal.php">Legal</a></nav></footer>
@@ -273,7 +290,8 @@ const px = v => { v = Number(v); if (!isFinite(v)) return "–"; const a = Math.
 const cls = v => v > 0 ? "up" : v < 0 ? "dn" : "";
 const ago = t => { const s = Math.max(0, Math.floor(Date.now()/1000) - t); return s < 60 ? s + "s ago" : s < 3600 ? Math.floor(s/60) + "m ago" : Math.floor(s/3600) + "h ago"; };
 const params = new URLSearchParams(location.search);
-const S = { sym: ((params.get("s") || "BTC").toUpperCase().replace(/USDT$/, "")) + "USDT", tf: ["5m","15m","1h","4h"].includes(params.get("tf")) ? params.get("tf") : "15m", B: null, D: null, f: "all", sort: "vol", dir: -1 };
+const PC = (location.pathname.match(/\/order-flow\/([a-z0-9]{1,15})\/?$/i) || [])[1];
+const S = { sym: ((params.get("s") || PC || "BTC").toUpperCase().replace(/USDT$/, "")) + "USDT", tf: ["5m","15m","1h","4h"].includes(params.get("tf")) ? params.get("tf") : "15m", B: null, D: null, f: "all", sort: "vol", dir: -1 };
 const QUICK = ["BTC","ETH","SOL","XRP","BNB","DOGE","HYPE","SUI"];
 let ch = null, timer = 0, btimer = 0;
 
@@ -354,6 +372,13 @@ function panels(D) {
     return `<div><span>${t}</span><b class="${v == null ? "" : v >= ref ? "up" : "dn"}">${v == null ? "–" : v.toFixed(2)}</b><small>${note(v)}${v0 != null ? ` · ${v >= v0 ? "rising" : "falling"}` : ""}</small><canvas data-k="${k}"></canvas></div>`; };
   $("#ofRatio").innerHTML = item("acc", "All accounts L/S", R.acc || [], 1, v => v == null ? "" : `${(v / (1 + v) * 100).toFixed(0)}% long`) + item("top", "Top traders L/S", R.top || [], 1, v => v == null ? "" : `${(v / (1 + v) * 100).toFixed(0)}% long`) + item("taker", "Taker buy/sell", R.taker || [], 1, v => v == null ? "" : v >= 1 ? "buyers lead" : "sellers lead");
   $$("#ofRatio canvas").forEach(c => spark(c, (R[c.dataset.k] || []), 1));
+  const X = D.liqx;
+  if (X && (X.row || X.big.length)) { const r = X.row || { h1: [0, 0], h24: [0, 0] }; $("#ofLiqSrc").textContent = "· Binance + Bybit + OKX";
+    $("#ofLiqTot").innerHTML = `<div><span>Longs liquidated 24h</span><b class="dn">${usd(r.h24[0])}</b></div><div><span>Shorts liquidated 24h</span><b class="up">${usd(r.h24[1])}</b></div><div><span>Last hour</span><b>${usd(r.h1[0] + r.h1[1])}</b></div>`;
+    $("#ofLiqSub").textContent = `All three exchanges, collected live${X.since ? " since " + ago(X.since) : ""}. Below: single liquidations of $20K or more.`;
+    $("#ofLiq").innerHTML = X.big.map(z => `<p><span style="color:var(--mute)">${ago(z.t)}</span><span class="${z.side === "long" ? "dn" : "up"}">${z.side === "long" ? "LONG" : "SHORT"}</span><span>${px(z.px)} · ${z.ex}</span><b>${usd(z.v)}</b></p>`).join("") || '<p style="display:block;color:var(--mute)">No single liquidation of $20K+ for this coin in the last 24 hours.</p>';
+    return; }
+  $("#ofLiqSrc").textContent = "· live from OKX";
   const q = D.liq;
   if (q && q.n) { $("#ofLiqTot").innerHTML = `<div><span>Longs liquidated</span><b class="dn">${usd(q.long)}</b></div><div><span>Shorts liquidated</span><b class="up">${usd(q.short)}</b></div>`;
     $("#ofLiqSub").textContent = `Last ${q.n} liquidations on OKX${q.since ? ", since " + ago(q.since) : ""}. Red = a long was force-sold, green = a short was force-bought.`;
@@ -427,9 +452,29 @@ async function loadBoard() { clearTimeout(btimer);
     $("#ofUpd").textContent = `${B.rows.length} coins · ${B.src} · updated ${new Date(B.at * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`; renderBoard();
   } catch (e) { $("#ofUpd").textContent = "The market board is temporarily unavailable. Sorry for the inconvenience. Retrying…"; }
   btimer = setTimeout(loadBoard, (document.hidden ? 300 : 90) * 1000); }
-function start() { loadSym(); loadBoard(); }
+
+/* ---------- all-exchange liquidations ---------- */
+let ltimer = 0;
+function hist(cv, H) { const r = cv.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); cv.width = r.width * d; cv.height = r.height * d; const x = cv.getContext("2d"); x.scale(d, d);
+  if (!H.length) return; const W = r.width, Hh = r.height - 16, mx = Math.max(...H.map(z => Math.max(z[1], z[2])), 1), bw = W / H.length, mid = Hh / 2;
+  x.fillStyle = "rgba(255,255,255,.12)"; x.fillRect(0, mid, W, 1);
+  H.forEach((z, i) => { const a = z[1] / mx * (mid - 2), b = z[2] / mx * (mid - 2); x.fillStyle = "#F7525F"; x.fillRect(i * bw + 1, mid + 1, bw - 2, a); x.fillStyle = "#22AB94"; x.fillRect(i * bw + 1, mid - b, bw - 2, b); });
+  x.fillStyle = "#8A8F98"; x.font = "11px ui-monospace,monospace"; [0, Math.floor(H.length / 2), H.length - 1].forEach(i => { const t = new Date(H[i][0] * 1000); x.fillText(t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), Math.min(W - 40, i * bw), r.height - 2); });
+  x.fillText("shorts ▲", 2, 11); x.fillText("longs ▼", 2, Hh - 2); }
+async function loadLiq() { clearTimeout(ltimer);
+  try { const L = await fetch("/of_api.php?r=liq", { cache: "no-store" }).then(r => r.json()); if (L.error) throw new Error(L.error); S.L = L;
+    const T = L.tot, cell = (k, t) => { const v = T[k], a = v.long + v.short; return `<div><span>${t}</span><b>${usd(a)}</b><small><span class="dn">L ${usd(v.long)}</span> · <span class="up">S ${usd(v.short)}</span></small><div class="of-lsplit"><i style="width:${(v.long / (a || 1) * 100).toFixed(1)}%"></i></div></div>`; };
+    $("#ofLxTot").innerHTML = cell("h1", "Last hour") + cell("h4", "Last 4 hours") + cell("h24", (Date.now() / 1000 - L.since > 82800) ? "Last 24 hours" : "Since " + ago(L.since));
+    hist($("#ofLxHist"), L.hours);
+    $("#ofLxEx").innerHTML = Object.entries(L.ex).map(([e, v]) => `<span>${e}: <b style="color:var(--ink)">${usd(v.long + v.short)}</b>${v.age != null && v.age > 600 ? " · quiet" : ""}</span>`).join("") + `<span>${L.fresh ? "live · updated " + ago(L.at) : "feed delayed, last update " + ago(L.at)}</span>`;
+    $("#ofLxBig").innerHTML = L.big.slice(0, 60).map(z => `<p style="grid-template-columns:52px 46px 60px 1fr auto"><span style="color:var(--mute)">${ago(z.t)}</span><b style="cursor:pointer" data-c="${esc(z.c)}">${esc(z.c)}</b><span class="${z.side === "long" ? "dn" : "up"}">${z.side === "long" ? "LONG" : "SHORT"}</span><span style="color:var(--mute)">${z.ex} · ${px(z.px)}</span><b>${usd(z.v)}</b></p>`).join("") || '<p style="display:block;color:var(--mute)">No big liquidations yet.</p>';
+    $("#ofLxCoins").innerHTML = L.coins.slice(0, 25).map(c => `<tr data-s="${esc(c.c)}"><td><b>${esc(c.c)}</b></td><td>${usd(c.h1[0] + c.h1[1])}</td><td>${usd(c.h4[0] + c.h4[1])}</td><td><b>${usd(c.h24[0] + c.h24[1])}</b></td><td class="dn">${usd(c.h24[0])}</td><td class="up">${usd(c.h24[1])}</td><td>${usd(c.max)}</td></tr>`).join("");
+    $$("#ofLxCoins tr[data-s], #ofLxBig [data-c]").forEach(e => e.onclick = () => pick(e.dataset.s || e.dataset.c));
+  } catch (e) { $("#ofLxSub").textContent = "The all-exchange liquidation feed is starting up or briefly unavailable. Retrying…"; }
+  ltimer = setTimeout(loadLiq, (document.hidden ? 120 : 20) * 1000); }
+function start() { loadSym(); loadBoard(); loadLiq(); }
 if (window.LightweightCharts) start(); else { const t0 = Date.now(), w = setInterval(() => { if (window.LightweightCharts || Date.now() - t0 > 8000) { clearInterval(w); start(); } }, 100); }
-let rz = 0; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (S.D) { drawHeat(S.D); $$("#ofRatio canvas").forEach(c => spark(c, (S.D.ls || {})[c.dataset.k] || [], 1)); } }, 150); });
+let rz = 0; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (S.L) hist($("#ofLxHist"), S.L.hours); if (S.D) { drawHeat(S.D); $$("#ofRatio canvas").forEach(c => spark(c, (S.D.ls || {})[c.dataset.k] || [], 1)); } }, 150); });
 })();
 </script>
 <script src="/static/v2/tg-join.js?v=1" defer></script>
