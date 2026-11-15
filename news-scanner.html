@@ -15,7 +15,7 @@
 <meta property="og:image" content="https://chartpulse.io/static/og.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="/static/v2/fonts.css?v=1">
-<link rel="stylesheet" href="/static/v2/sitehead.css?v=6">
+<link rel="stylesheet" href="/static/v2/sitehead.css?v=7">
 <link rel="stylesheet" href="/static/v2/trendlines.css?v=3">
 <script defer src="/static/v2/sitehead.js?v=20"></script>
 <script type="application/ld+json" id="cp-ld">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"News Scanner","item":"https://chartpulse.io/scanners/news/"}]},{"@type":"WebApplication","name":"News Scanner","url":"https://chartpulse.io/scanners/news/","applicationCategory":"FinanceApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Markets in the news in the last 48 hours with headline tone, impact, price move since the news and the trend."}]}</script>
@@ -198,7 +198,8 @@ a.dd-row:hover{background:var(--card2)}
 }
 
 /* hybrid scanner cards */
-.hy-list{display:grid;gap:12px}
+.hy-list{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.hy{min-width:0;overflow-wrap:anywhere}
 .hy{display:block;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:inherit;text-decoration:none}
 a.hy:hover{background:var(--card2)}
 .hy.s5,.hy.s4{border-color:rgba(233,196,106,.6)}.hy.s3{border-color:rgba(34,171,148,.55)}

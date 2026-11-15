@@ -18,7 +18,7 @@
 <meta name="twitter:description" content="Free hybrid trend line scanner: PUT setups where the day high meets a resistance line in a downtrend, CALL setups where the day low meets support in an uptrend.">
 <meta name="twitter:image" content="https://chartpulse.io/static/og.jpg">
 <link rel="stylesheet" href="/static/v2/fonts.css?v=1">
-<link rel="stylesheet" href="/static/v2/sitehead.css?v=6">
+<link rel="stylesheet" href="/static/v2/sitehead.css?v=7">
 <script defer src="/static/v2/sitehead.js?v=20"></script>
 <script type="application/ld+json" id="cp-ld">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"Hybrid Trend Lines","item":"https://chartpulse.io/scanners/hybrid-trend-lines/"}]},{"@type":"WebApplication","name":"Hybrid Trend Line Scanner","url":"https://chartpulse.io/scanners/hybrid-trend-lines/","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"Free hybrid trend line scanner: PUT setups where the day high meets a resistance line in a downtrend, CALL setups where the day low meets support in an uptrend.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@id":"https://chartpulse.io/#org"}}]}</script>
 <style>
@@ -200,7 +200,8 @@ a.dd-row:hover{background:var(--card2)}
 }
 
 /* hybrid scanner cards */
-.hy-list{display:grid;gap:12px}
+.hy-list{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
+.hy{min-width:0;overflow-wrap:anywhere}
 .hy{display:block;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:inherit;text-decoration:none}
 a.hy:hover{background:var(--card2)}
 .hy.s5,.hy.s4{border-color:rgba(233,196,106,.6)}.hy.s3{border-color:rgba(34,171,148,.55)}

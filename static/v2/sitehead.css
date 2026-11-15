@@ -76,3 +76,7 @@
 
 @media (max-width:560px){.cph{padding:0 12px;gap:6px}.cph .cph-logo{font-size:16px;gap:8px}.cph-search{width:38px;padding:0;justify-content:center}.cph-search span,.cph-search kbd{display:none}.cph-cta{padding:0 12px;font-size:13.5px}}
 @media (max-width:380px){.cph-search{display:none}}
+/* Floating buttons (Telegram, Ask ChartPulse): out of the way of the scanner's bottom bar on phones, hidden while the menu is open. */
+@media (max-width:900px){body:has(.rail) .cptg-btn{bottom:78px!important}body:has(.rail) .cptg-pan{bottom:132px!important}body:has(.rail) #cp-launch{bottom:78px!important}}
+@media (max-width:560px){#cp-launch{padding:0 12px!important;height:42px!important;font-size:13px!important}.cptg-btn{padding:9px 11px!important}}
+html:has(.cph.menu) .cptg-btn,html:has(.cph.menu) .cptg-pan,html:has(.cph.menu) #cp-launch{display:none!important}
