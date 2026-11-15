@@ -31,7 +31,7 @@ function lc_context(array $d): string {
     if ($last) $L[] = ($d['modules']['TimesFM'] === 'live' ? 'TimesFM AI' : 'Statistical') . " forecast ({$last['h']} days): median {$last['p50']}, 80% range {$last['p10']} to {$last['p90']}.";
     if (!empty($d['ens'])) { $e = $d['ens'];
         $L[] = "Four AI forecast models, {$e['h']} trading days ahead, each one's middle forecast versus the last close: " . implode('; ', array_map(fn($m) => "{$m['name']} " . ($m['d10'] >= 0 ? '+' : '') . "{$m['d10']}% (to {$m['end']})", $e['models'])) . '.';
-        $L[] = "Model lean: {$e['up']} up, {$e['down']} down of {$e['n']}" . ($e['agree'] ? ' (all agree)' : ' (split)') . ". Average middle forecast {$e['end']} (" . ($e['d10'] >= 0 ? '+' : '') . "{$e['d10']}%)."
+        $L[] = "Model lean: {$e['up']} up, {$e['down']} down of {$e['n']}" . ($e['agree'] ? ' (all agree)' : ' (split)') . ". Middle forecast of the four {$e['end']} (" . ($e['d10'] >= 0 ? '+' : '') . "{$e['d10']}%)."
             . ($e['band'] ? " Range the models expect to hold about 8 times in 10 after {$e['h']} days: {$e['band'][0]} to {$e['band'][1]}." : '') . ($e['day1'] ? " Next session's range: {$e['day1'][0]} to {$e['day1'][1]}." : '');
         $L[] = 'How to weigh the models: in our own test their direction was right only about half the time alone and a little better when all agree; their range was accurate. Use the range to judge the stop and targets, and the lean as one vote.'; }
     if ($d['news']['n']) { $L[] = "News: {$d['news']['n']} recent headlines, average tone {$d['news']['tone']} (-1 to +1). Headlines:";

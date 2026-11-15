@@ -344,7 +344,7 @@ function ens_view(string $sym): ?array {
         $p = []; $l = []; $u = [];
         foreach ($j['m'] as $k => $q) { $p[] = $q['p50'][$h]; if ($k !== 'timesfm' && isset($q['p10'][$h], $q['p90'][$h])) { $l[] = $q['p10'][$h]; $u[] = $q['p90'][$h]; } }   // TimesFM's band runs too wide in our test
         if (!$l) foreach ($j['m'] as $q) if (isset($q['p10'][$h], $q['p90'][$h])) { $l[] = $q['p10'][$h]; $u[] = $q['p90'][$h]; }
-        $path[] = array_sum($p) / count($p); $lo[] = $l ? array_sum($l) / count($l) : null; $hi[] = $u ? array_sum($u) / count($u) : null;
+        sort($p); $c = count($p); $path[] = $c % 2 ? $p[intdiv($c, 2)] : ($p[$c / 2 - 1] + $p[$c / 2]) / 2;   // median: one wild model must not move the middle $lo[] = $l ? array_sum($l) / count($l) : null; $hi[] = $u ? array_sum($u) / count($u) : null;
     }
     if ($lo[0] !== null) for ($h = 1; $h < $H; $h++) {      // never narrower than the checked one-day band grown with the square root of time
         $k = sqrt($h + 1); $lo[$h] = min($lo[$h] ?? INF, $path[$h] - ($path[0] - $lo[0]) * $k); $hi[$h] = max($hi[$h] ?? -INF, $path[$h] + ($hi[0] - $path[0]) * $k); }
