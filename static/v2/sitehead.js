@@ -40,7 +40,7 @@
     { t: "More", cols: [
       { h: "Markets", items: [
         { t: "News Scanner", d: "Markets in the news, tone and trend", href: "/scanners/news/" },
-        { t: "All scanners", d: "Every scanner on one page", href: "/scanners/" },
+        { t: "All scanners", d: "Every scanner on one page", href: "/scanners/", exact: true },
         { t: "News & impact", d: "Headlines and what they moved", href: "/news.html" },
         { t: "Insights", d: "Breadth, volatility and momentum", href: "/insights.html" }
       ] },
@@ -63,7 +63,8 @@
   var CHEV = '<svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1.5 3.5 5 7l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var path = location.pathname.replace(/index\.html$/, "");
   var norm = function (p) { return p.replace(/\/+$/, "") || "/"; };
-  var isOn = function (href, extra) {
+  var isOn = function (href, extra, exact) {
+    if (exact) return norm(path) === norm(href);
     if (href.indexOf("?") > 0) return location.pathname + location.search === href;
     var list = [href].concat(extra || []);
     for (var i = 0; i < list.length; i++) {
@@ -82,7 +83,7 @@
       m.cols.forEach(function (c) {
         cols += '<div class="cph-col">' + (c.h ? "<p>" + esc(c.h) + "</p>" : "");
         c.items.forEach(function (it) {
-          var on = isOn(it.href, it.match); any = any || on;
+          var on = isOn(it.href, it.match, it.exact); any = any || on;
           cols += '<a href="' + it.href + '"' + (on ? ' class="on" aria-current="page"' : "") + "><b>" + esc(it.t) + "</b><span>" + esc(it.d) + "</span></a>";
         });
         cols += "</div>";
