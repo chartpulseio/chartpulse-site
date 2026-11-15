@@ -5,19 +5,15 @@
   var MENU = [
     { t: "Scanner", href: "/scanner.html", match: ["/scanner.html", "/tier2.html"] },
     { t: "God-father", href: "/scanners/godfather/" },
-    { t: "Trend Scanners", cols: [
-      { h: "Trend lines", items: [
-        { t: "Trendline Hero", d: "Trend line + day / week / month high or low, with the big trend", href: "/scanners/trendline-hero/" },
-        { t: "Hero with 200 EMA", d: "Hero setups with the 1H 200 EMA on the line", href: "/scanners/hero-200-ema/" },
-        { t: "Hybrid Trend Lines", d: "Day high or low at a line, with the trend", href: "/scanners/hybrid-trend-lines/" },
-        { t: "Trend Line Scanner", d: "Breakouts and tests on seven timeframes", href: "/scanners/trend-lines/" }
-      ] },
-      { h: "Trend and reversal", items: [
-        { t: "Day Drive Scanner", d: "Trend setups and top / bottom bounces in one list", href: "/scanners/day-drive/" },
-        { t: "200 EMA Scanner", d: "Price meeting its 200 EMA on five timeframes", href: "/scanners/ema-200/" },
-        { t: "Movers Reversal Scanner", d: "Today's biggest movers and which are snapping back", href: "/movers/" }
-      ] }
-    ] },
+    { t: "200 EMA", href: "/scanners/ema-200/" },
+    { t: "Day Drive", href: "/scanners/day-drive/" },
+    { t: "Trend Scanners", cols: [{ items: [
+      { t: "Trendline Hero", d: "Trend line + day / week / month high or low, with the big trend", href: "/scanners/trendline-hero/" },
+      { t: "Hero with 200 EMA", d: "Hero setups with the 1H 200 EMA on the line", href: "/scanners/hero-200-ema/" },
+      { t: "Hybrid Trend Lines", d: "Day high or low at a line, with the trend", href: "/scanners/hybrid-trend-lines/" },
+      { t: "Trend Line Scanner", d: "Breakouts and tests on seven timeframes", href: "/scanners/trend-lines/" },
+      { t: "Movers Reversal Scanner", d: "Today's biggest movers and which are snapping back", href: "/movers/" }
+    ] }] },
     { t: "Strategy Scanners", cols: [
       { h: "Institutional (smart money)", items: [
         { t: "Liquidity Sweep + Order Block + FVG", d: "Stop hunt, then order block and fair value gap", href: "/institutional/scanner.php?id=3-liquidity-fvg" },
@@ -34,18 +30,16 @@
       { t: "Crypto Arbitrage Scanner", d: "Funding rate arbitrage and price gaps across seven exchanges", href: "/scanners/crypto-arbitrage/" },
       { t: "Liquidation Squeeze Scanner", d: "Crowded longs or shorts at a key zone, and squeezes starting", href: "/scanners/squeeze/" }
     ] }] },
-    { t: "Binary Scanners", cols: [{ items: [
-      { t: "Binary Pulse Scanner", d: "Up / down calls with expiry on live forex, crypto and gold", href: "/scanners/binary/" },
-      { t: "Next Candle AI", d: "Four AI forecast models guess the next 5-minute candle. For fun, every guess graded", href: "/scanners/next-candle/" }
-    ] }] },
-    { t: "AI & News", cols: [{ items: [
-      { t: "AI Scanner", d: "Bias, four forecast models and the AI committee for any symbol", href: "/bias/", match: ["/desk/"] },
+    { t: "Binary Scanner", href: "/scanners/binary/" },
+    { t: "AI Forecast", cols: [{ items: [
+      { t: "Next Candle AI", d: "Four AI forecast models guess the next 5-minute candle. For fun, every guess graded", href: "/scanners/next-candle/" },
       { t: "24-Hour AI Forecast", d: "Likely price path and range for the next 24 hours, refreshed every hour", href: "/scanners/forecast-24h/" },
-      { t: "News Scanner", d: "Markets in the news, tone and trend", href: "/scanners/news/" },
-      { t: "AI Backtesting", d: "Type a strategy in plain words, get a backtest", href: "/ai-backtesting/" }
+      { t: "AI Scanner", d: "Bias, four forecast models and the AI committee for any symbol", href: "/bias/", match: ["/desk/"] }
     ] }] },
+    { t: "AI Backtesting", href: "/ai-backtesting/" },
     { t: "More", cols: [
       { h: "Markets", items: [
+        { t: "News Scanner", d: "Markets in the news, tone and trend", href: "/scanners/news/" },
         { t: "All scanners", d: "Every scanner on one page", href: "/scanners/" },
         { t: "News & impact", d: "Headlines and what they moved", href: "/news.html" },
         { t: "Insights", d: "Breadth, volatility and momentum", href: "/insights.html" }
@@ -135,11 +129,11 @@
     var navEl = h.querySelector(".cph-nav"), right = h.querySelector(".cph-right"), logo = h.querySelector(".cph-logo"), need = 0;
     var fit = function () {
       if (!need) { h.classList.remove("fold"); need = navEl.scrollWidth; }
-      var room = h.clientWidth - logo.offsetWidth - right.offsetWidth - 110;
+      var room = h.clientWidth - logo.offsetWidth - right.offsetWidth - 84;
       var fold = window.innerWidth <= 1180 || need > room;
       if (fold !== h.classList.contains("fold")) { h.classList.toggle("fold", fold); if (!fold) setMenu(false); }
     };
-    fit(); window.addEventListener("resize", fit); if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { need = 0; fit(); });
+    fit(); window.addEventListener("resize", function () { need = 0; fit(); }); if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { need = 0; fit(); });
 
     // Live count: cp.js fills #hdrLive on the pages that load it; show the pill only once it holds a number.
     var live = h.querySelector("#hdrLive"), num = live.querySelector("b");
