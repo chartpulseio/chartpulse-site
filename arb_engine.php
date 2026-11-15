@@ -77,6 +77,7 @@ function arb_market(): array {
     foreach ((array)($J['bitget_p']['data'] ?? []) as $x) if (is_array($x) && isset($x['symbol'], $x['fundingRate']) && $x['fundingRate'] !== '')
         $perp('bitget', (string)$x['symbol'], arb_f($x['fundingRate']), $bg[$x['symbol']][0] ?? 0.0, $bg[$x['symbol']][1] ?? 0, arb_f($x['markPrice'] ?? $x['lastPr'] ?? 0), arb_f($x['indexPrice'] ?? 0), arb_f($x['usdtVolume'] ?? 0));
     $ok = []; foreach (ARB_EX as $ex => $_) $ok[$ex] = ['spot' => count($S[$ex] ?? []), 'perp' => count($P[$ex] ?? [])];
+    $ok['bitget']['periods'] = count($bg);
     return [$S, $P, $ok];
 }
 
@@ -135,7 +136,7 @@ function arb_scan(): array {
 
         $out = ['at' => $now, 'fund' => array_slice($fund, 0, 120), 'cross' => array_slice($cross, 0, 120), 'gaps' => array_slice($G, 0, 120),
             'meta' => ['exchanges' => $ok, 'coins' => count($F), 'spot_coins' => count($all), 'fee_gap' => ARB_FEE_GAP * 100, 'fee_carry' => ARB_FEE_CARRY * 100,
-                       'n' => ['fund' => count($fund), 'cross' => count($cross), 'gaps' => count($G)], 'bitget_periods' => count($bg)]];
+                       'n' => ['fund' => count($fund), 'cross' => count($cross), 'gaps' => count($G)]]];
         t_write_json($ck, $out); return $out;
     } finally { flock($lock, LOCK_UN); fclose($lock); }
 }
