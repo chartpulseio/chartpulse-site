@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Free Crypto Arbitrage Scanner: Funding Rate &amp; Exchange Price Gaps · ChartPulse</title>
+<meta name="description" content="Free crypto arbitrage scanner: funding rate arbitrage (spot + perpetual, and exchange vs exchange) and price gaps for the same coin across Bybit, Binance, OKX, KuCoin, Gate, MEXC and Bitget. Updated every minute.">
+<meta name="theme-color" content="#050506">
+<link rel="canonical" href="https://chartpulse.io/scanners/crypto-arbitrage/">
+<meta property="og:site_name" content="ChartPulse"><meta property="og:type" content="website">
+<meta property="og:title" content="Crypto Arbitrage Scanner · ChartPulse"><meta property="og:description" content="Free crypto arbitrage scanner: funding rate arbitrage (spot + perpetual, and exchange vs exchange) and price gaps for the same coin across Bybit, Binance, OKX, KuCoin, Gate, MEXC and Bitget. Updated every minute.">
+<meta property="og:url" content="https://chartpulse.io/scanners/crypto-arbitrage/"><meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
+<link rel="stylesheet" href="/static/v2/sitehead.css?v=4">
+<script defer src="/static/v2/sitehead.js?v=19"></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"Crypto Arbitrage Scanner","item":"https://chartpulse.io/scanners/crypto-arbitrage/"}]},{"@type":"WebPage","url":"https://chartpulse.io/scanners/crypto-arbitrage/","name":"Crypto Arbitrage Scanner · ChartPulse","description":"Free crypto arbitrage scanner: funding rate arbitrage (spot + perpetual, and exchange vs exchange) and price gaps for the same coin across Bybit, Binance, OKX, KuCoin, Gate, MEXC and Bitget. Updated every minute.","inLanguage":"en"},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is funding rate arbitrage?","acceptedAnswer":{"@type":"Answer","text":"You hold the coin on spot and short the same amount on its perpetual future. Price moves cancel out, and while funding is positive the short side is paid funding every few hours."}},{"@type":"Question","name":"What is a crypto price gap?","acceptedAnswer":{"@type":"Answer","text":"The same coin can be bought on one exchange for less than it can be sold for on another. The gap must be bigger than both trading fees and the transfer cost, and deposits and withdrawals must be open on both exchanges."}}]}]}</script>
+<style>
+:root{--bg:#050506;--card:#0E0F13;--card2:#15171D;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.15);
+  --ink:#EDEDEF;--dim:#A3A5AF;--mute:#6B6D78;--gold:#E9C46A;--gold2:#F6DE9A;--up:#22AB94;--dn:#F7525F;--blue:#6EA8FE;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.gf{max-width:1260px;margin:0 auto;padding:24px 20px 70px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* hero */
+.gf-hero{position:relative;overflow:hidden;padding:34px 30px 30px;border:1px solid rgba(233,196,106,.28);border-radius:22px;
+  background:radial-gradient(120% 140% at 100% 0%,rgba(233,196,106,.16),transparent 55%),radial-gradient(90% 120% at 0% 100%,rgba(34,171,148,.10),transparent 60%),#0A0B0E}
+.gf-hero::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 64px);pointer-events:none}
+.gf-eye{display:inline-flex;align-items:center;gap:8px;font:600 12px/1 var(--mono);letter-spacing:.18em;color:var(--gold);text-transform:uppercase}
+.gf-eye i{width:8px;height:8px;border-radius:50%;background:var(--up);box-shadow:0 0 0 0 rgba(34,171,148,.6);animation:gfp 2s infinite}
+@keyframes gfp{70%{box-shadow:0 0 0 10px rgba(34,171,148,0)}100%{box-shadow:0 0 0 0 rgba(34,171,148,0)}}
+.gf-hero h1{margin:12px 0 10px;font-size:clamp(30px,5vw,54px);line-height:1.04;letter-spacing:-.03em}
+.gf-hero h1 span{background:linear-gradient(100deg,var(--gold2),var(--gold) 45%,#B8893A);-webkit-background-clip:text;background-clip:text;color:transparent}
+.gf-lede{max-width:68ch;margin:0;color:var(--dim);font-size:17px}
+.gf-flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:24px 0 0;padding:0;list-style:none;position:relative;z-index:1}
+.gf-flow li{padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:rgba(14,15,19,.85)}
+.gf-flow span{font:600 11px/1 var(--mono);letter-spacing:.12em;color:var(--gold)}
+.gf-flow b{display:block;margin:6px 0 3px;font-size:14.5px}
+.gf-flow p{margin:0;color:var(--dim);font-size:13px;line-height:1.45}
+
+/* tiles */
+.gf-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:18px 0 0}
+.gf-tile{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card);cursor:pointer;text-align:left;color:inherit;font:inherit}
+.gf-tile:hover{border-color:var(--line2)}.gf-tile.on{border-color:var(--gold);background:rgba(233,196,106,.07)}
+.gf-tile .v{font:600 28px/1.05 var(--mono)}.gf-tile .k{margin-top:4px;color:var(--dim);font-size:13px}
+.gf-tile.ap .v{color:var(--gold)}.gf-tile.a .v{color:var(--up)}.gf-tile.b .v{color:var(--blue)}.gf-tile.nr .v{color:var(--dn)}
+
+/* bar */
+.gf-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:20px 0 12px}
+.gf-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.gf-tabs button,.gf-btn{appearance:none;border:1px solid var(--line2);background:transparent;color:var(--dim);padding:8px 14px;border-radius:999px;font:500 14px/1 var(--sans);cursor:pointer}
+.gf-tabs button.on{background:var(--ink);color:#000;border-color:var(--ink)}
+.gf-tabs button:hover,.gf-btn:hover{color:var(--ink);border-color:var(--ink)}.gf-tabs button.on:hover{color:#000}
+.gf-q{flex:1;min-width:180px;max-width:300px;margin-left:auto;padding:9px 14px;border:1px solid var(--line2);border-radius:999px;background:var(--card);color:var(--ink);font:14px var(--sans)}
+.gf-upd{color:var(--mute);font-size:13px;margin:0 0 10px}
+.gf-prog{height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;margin:12px 0 0}.gf-prog i{display:block;height:100%;background:var(--gold);width:0;transition:width .4s}
+
+/* cards */
+.gf-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.gc{position:relative;display:flex;flex-direction:column;padding:16px 18px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card);min-width:0}
+.gc.g-ap{border-color:rgba(233,196,106,.7);background:linear-gradient(180deg,rgba(233,196,106,.08),transparent 40%),var(--card);box-shadow:0 0 0 1px rgba(233,196,106,.15),0 10px 40px -18px rgba(233,196,106,.45)}
+.gc.g-a{border-color:rgba(34,171,148,.55)}.gc.g-b{border-color:rgba(110,168,254,.45)}.gc.g-nr{border-color:rgba(247,82,95,.5)}
+.gc-top{display:flex;gap:12px;align-items:flex-start}
+.gc-grade{flex:none;display:grid;place-items:center;min-width:56px;height:56px;padding:0 8px;border-radius:14px;font:700 22px/1 var(--mono);border:1px solid var(--line2);color:var(--dim)}
+.g-ap .gc-grade{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1a1300;border:0}
+.g-a .gc-grade{background:var(--up);color:#00130f;border:0}.g-b .gc-grade{border-color:var(--blue);color:var(--blue)}
+.g-rd .gc-grade{border-color:var(--gold);color:var(--gold);font-size:12px;text-align:center;line-height:1.15}
+.g-nr .gc-grade{border-color:var(--dn);color:var(--dn);font-size:12px;text-align:center;line-height:1.15}.g-w .gc-grade{font-size:12px}
+.gc-id{min-width:0;flex:1}
+.gc-id h3{margin:0;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gc-id small{color:var(--mute);font:12px var(--mono)}
+.gc-side{display:inline-block;margin-right:8px;padding:2px 9px;border-radius:6px;font:700 12.5px/1.5 var(--mono);vertical-align:2px}
+.gc-side.CALL{background:var(--up);color:#00130f}.gc-side.PUT{background:var(--dn);color:#1c0003}
+.gc-px{text-align:right;flex:none}.gc-px b{display:block;font:600 15px var(--mono)}.gc-px small{font:12px var(--mono)}
+.up{color:var(--up)}.dn{color:var(--dn)}
+.gc-setup{margin:10px 0 6px;font-weight:600;font-size:14.5px}
+.gc-setup em{font-style:normal;color:var(--mute);font-weight:400}
+.gc-lb{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 8px}
+.gc-lb i{font-style:normal;font-size:11.5px;line-height:1.5;padding:1px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--dim);white-space:nowrap}
+.gc-lb i.pz{border-color:var(--gold);color:var(--gold);background:rgba(233,196,106,.08)}
+.gc-lb i.line,.gc-lb i.mtf{border-color:rgba(110,168,254,.55);color:var(--blue)}
+.gc-lb i.mom,.gc-lb i.news,.gc-lb i.vol,.gc-lb i.ema,.gc-lb i.smc{border-color:rgba(34,171,148,.5);color:var(--up)}.gc-lb i.risk{border-color:var(--dn);color:var(--dn)}
+.gc-say{margin:0 0 10px;color:var(--dim);font-size:14px;line-height:1.5}
+.gc-chk{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin:0 0 10px}
+.gc-chk span{display:grid;place-items:center;height:26px;border-radius:7px;font:600 10.5px/1 var(--mono);letter-spacing:.04em;background:rgba(255,255,255,.05);color:var(--mute);cursor:help}
+.gc-chk span.ok{background:rgba(34,171,148,.16);color:var(--up)}.gc-chk span.no{background:rgba(247,82,95,.08);color:#b86870}
+.gc-plan{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.gc-plan div{padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:#0A0B0E;min-width:0}
+.gc-plan span{display:block;color:var(--mute);font-size:11px}
+.gc-plan b{font:600 13px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.gc-plan .sl b{color:var(--dn)}.gc-plan .tg b{color:var(--up)}
+.gc-foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.gc-mtf{display:flex;gap:3px;align-items:center;margin-right:auto;color:var(--mute);font:11px var(--mono)}
+.gc-mtf i{display:inline-grid;place-items:center;width:30px;height:18px;border-radius:4px;font-style:normal;font-size:10px;background:rgba(255,255,255,.06)}
+.gc-mtf i.u{background:rgba(34,171,148,.22);color:var(--up)}.gc-mtf i.d{background:rgba(247,82,95,.18);color:var(--dn)}
+.gc-foot a,.gc-foot button{padding:7px 12px;border-radius:999px;border:1px solid var(--line2);font:500 13px/1 var(--sans);text-decoration:none;color:var(--ink);background:transparent;cursor:pointer}
+.gc-foot a.pri{background:var(--gold);border-color:var(--gold);color:#1a1300;font-weight:600}
+.gc-foot a:hover,.gc-foot button:hover{border-color:var(--ink)}
+.gc-more{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.gc.open .gc-more{display:block}
+.gc-more ul{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.gc-more li{display:grid;grid-template-columns:20px 1fr;gap:8px;font-size:13.5px}
+.gc-more li i{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font:700 11px/1 var(--sans);font-style:normal;background:rgba(255,255,255,.07);color:var(--mute)}
+.gc-more li.ok i{background:var(--up);color:#00130f}
+.gc-more li b{font-weight:600}.gc-more li p{margin:1px 0 0;color:var(--dim);font-size:12.5px}
+.gc-news{margin:10px 0 0;font-size:12.5px;color:var(--dim)}.gc-news a{color:var(--blue)}
+.gf-empty{grid-column:1/-1;padding:30px 16px;border:1px dashed var(--line2);border-radius:16px;color:var(--dim);text-align:center}
+.gf-more{display:block;margin:16px auto 0}
+.gf-note{margin:16px 0 0;padding:12px 16px;border:1px solid rgba(233,196,106,.35);border-radius:12px;background:rgba(233,196,106,.06);color:var(--dim);font-size:14px}.gf-note b{color:var(--ink)}
+
+/* learn */
+.gf-learn{margin-top:34px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.gf-learn h2{grid-column:1/-1;margin:0;font-size:20px}
+.gf-learn dl{margin:0;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.gf-learn dt{font-weight:600;margin-top:10px}.gf-learn dt:first-child{margin-top:0}
+.gf-learn dd{margin:2px 0 0;color:var(--dim);font-size:14px}
+.gf-foot{margin-top:22px;color:var(--mute);font-size:13px}
+.gf-ftr{max-width:1260px;margin:0 auto;padding:0 20px 40px}.gf-ftr nav{display:flex;flex-wrap:wrap;gap:8px 18px;padding-top:18px;border-top:1px solid var(--line)}.gf-ftr a{color:var(--mute);font-size:13px;text-decoration:none}.gf-ftr a:hover{color:var(--ink)}
+
+@media (max-width:1020px){.gf-flow{grid-template-columns:repeat(2,1fr)}.gf-tiles{grid-template-columns:repeat(3,1fr)}.gf-list{grid-template-columns:1fr}.gf-learn{grid-template-columns:1fr}}
+@media (max-width:560px){.gf{padding:16px 12px 50px}.gf-hero{padding:24px 18px}.gf-flow{grid-template-columns:1fr}.gf-tiles{grid-template-columns:repeat(2,1fr)}
+  .gc-plan{grid-template-columns:repeat(3,minmax(0,1fr))}.gc-chk span{font-size:9px}.gf-q{max-width:none;margin-left:0;flex-basis:100%}}
+@media (prefers-reduced-motion:reduce){.gf-eye i{animation:none}}
+</style><style>.gc.g-sq3{border-color:rgba(233,196,106,.7);box-shadow:0 0 0 1px rgba(233,196,106,.15),0 10px 40px -18px rgba(233,196,106,.45)}.gc.g-sq2{border-color:rgba(34,171,148,.55)}.gc.g-sq1{border-color:rgba(110,168,254,.45)}
+.g-sq3 .gc-grade{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1a1300;border:0;font-size:12px;text-align:center;line-height:1.15}.g-sq2 .gc-grade{background:var(--up);color:#00130f;border:0;font-size:12px;text-align:center;line-height:1.15}.g-sq1 .gc-grade,.g-sq0 .gc-grade{font-size:12px;text-align:center;line-height:1.15}
+.kv{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 0 6px}.kv div{padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:#0A0B0E}.kv span{display:block;color:var(--mute);font-size:11px}.kv b{font:600 13px var(--mono)}
+.why{margin:0 0 8px;padding:0;list-style:none;display:grid;gap:3px;font-size:13px;color:var(--dim)}.why li::before{content:"✓ ";color:var(--up)}.why li.x::before{content:"✗ ";color:var(--dn)}
+.st-tbl{width:100%;border-collapse:collapse;font-size:14px}.st-tbl td,.st-tbl th{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}.st-tbl th{color:var(--mute);font-weight:500;font-size:12px}
+@media (max-width:560px){.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}</style>
+<style>.nc-v{display:flex;gap:6px;margin:0 0 8px;flex-wrap:wrap}.nc-v i{font-style:normal;font:600 12px/1 var(--mono);padding:6px 9px;border-radius:8px;background:rgba(255,255,255,.05);color:var(--mute)}
+.nc-v i.u{background:rgba(34,171,148,.16);color:var(--up)}.nc-v i.d{background:rgba(247,82,95,.12);color:var(--dn)}
+.gc.g-no{opacity:.86}.gc-grade.cd{font-size:15px}.nc-warn{margin:14px 0 0;padding:14px 16px;border:1px solid rgba(247,82,95,.45);border-radius:12px;background:rgba(247,82,95,.07);font-size:14.5px;color:var(--ink)}
+.nc-bar{position:relative;height:8px;border-radius:4px;background:rgba(255,255,255,.07);margin:8px 0 2px}.nc-bar b{position:absolute;top:-3px;width:2px;height:14px;background:var(--gold)}.nc-bar s{position:absolute;top:0;bottom:0;border-radius:4px;background:rgba(110,168,254,.35)}
+.nc-sub{display:flex;justify-content:space-between;color:var(--mute);font:11.5px var(--mono)}</style>
+<style>.ar-wrap{border:1px solid var(--line);border-radius:14px;background:var(--card);overflow-x:auto}.ar-tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:760px}
+.ar-tbl th{position:sticky;top:0;background:var(--card2);color:var(--mute);font-weight:500;font-size:12px;text-align:left;padding:10px 12px;white-space:nowrap;cursor:pointer;user-select:none}
+.ar-tbl th.on{color:var(--gold)}.ar-tbl td{padding:9px 12px;border-top:1px solid var(--line);white-space:nowrap}.ar-tbl td.num,.ar-tbl th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.ar-tbl tr:hover td{background:rgba(255,255,255,.025)}.ar-coin{font-weight:600}.ar-ex{display:inline-block;padding:1px 8px;border-radius:999px;border:1px solid var(--line2);font-size:12px;color:var(--dim)}
+.ar-ex.b{border-color:rgba(34,171,148,.5);color:var(--up)}.ar-ex.s{border-color:rgba(247,82,95,.5);color:var(--dn)}.ar-tag{font:600 10.5px/1 var(--mono);padding:3px 6px;border-radius:5px;background:rgba(233,196,106,.12);color:var(--gold);margin-left:6px}
+.ar-tag.w{background:rgba(247,82,95,.12);color:var(--dn)}.ar-how{margin:0 0 12px;padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--dim);font-size:14px}.ar-how b{color:var(--ink)}
+.ar-src{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 0}.ar-src i{font-style:normal;font:11.5px var(--mono);padding:2px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--mute)}.ar-src i.ok{border-color:rgba(34,171,148,.5);color:var(--up)}</style>
+</head>
+<body>
+<main class="gf">
+  <section class="gf-hero">
+    <div class="gf-eye"><i></i>Crypto · hedged, no direction</div>
+    <h1>Crypto <span>Arbitrage</span> Scanner</h1>
+    <p class="gf-lede">Two kinds of crypto arbitrage on one page, free: <b>funding rate arbitrage</b> (get paid funding while price moves cancel out) and <b>exchange price gaps</b> (the same coin cheaper on one exchange than another). Read from seven exchanges, refreshed every minute.</p>
+    <ol class="gf-flow" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+      <li><span>1 · FUNDING CARRY</span><b>Spot + perpetual</b><p>Buy the coin, short the same amount on its perpetual. While funding is positive, the short is paid.</p></li>
+      <li><span>2 · FUNDING SPREAD</span><b>Exchange vs exchange</b><p>Short the perpetual where funding is high, long it where funding is low. You keep the difference.</p></li>
+      <li><span>3 · PRICE GAP</span><b>Buy here, sell there</b><p>Cheapest ask on one exchange against the highest bid on another, after trading fees.</p></li>
+    </ol>
+  </section>
+  <div class="gf-tiles" id="arTiles" style="grid-template-columns:repeat(4,minmax(0,1fr))"></div>
+  <div class="gf-bar">
+    <div class="gf-tabs" id="arTab" role="group" aria-label="View"><button type="button" data-v="fund" class="on">Funding · spot + perp</button><button type="button" data-v="cross">Funding · exchange vs exchange</button><button type="button" data-v="gaps">Price gaps</button></div>
+    <input class="gf-q" id="arQ" type="search" placeholder="Find a coin…" aria-label="Find a coin">
+  </div>
+  <p class="gf-upd" id="arUpd">Reading the exchanges…</p>
+  <p class="ar-how" id="arHow"></p>
+  <div class="ar-wrap"><table class="ar-tbl"><thead id="arHead"></thead><tbody id="arBody"><tr><td style="color:var(--mute)">Reading the exchanges…</td></tr></tbody></table></div>
+  <div class="ar-src" id="arSrc"></div>
+  <section class="gf-learn"><h2>Before you trade any of these</h2>
+    <dl><dt>Funding changes</dt><dd>The rate shown is the current one. It is reset every 1, 4 or 8 hours and can turn negative. The yearly figure only says what you would earn <b>if it stayed the same</b>.</dd><dt>Fees first</dt><dd>"Days to cover fees" is how long funding must stay at this level just to pay for opening and closing both sides.</dd></dl>
+    <dl><dt>Price gaps are often closed doors</dt><dd>A big gap usually means deposits or withdrawals are paused on one exchange, or the two tickers are different coins. This page cannot see that. Check both exchanges before sending money.</dd><dt>Speed and size</dt><dd>Small gaps disappear in seconds and the best price only holds for a small amount.</dd></dl>
+    <dl><dt>How is this different from the Squeeze scanner?</dt><dd>The <a href="/scanners/squeeze/" style="color:var(--blue)">Liquidation Squeeze Scanner</a> uses funding to find crowded traders at a chart level and gives a CALL or PUT. This page gives no direction: both sides are hedged and you look at the yield or the gap.</dd><dt>Margin risk</dt><dd>A short perpetual can be liquidated in a sharp rally even when the spot coin covers it. Keep spare margin.</dd></dl>
+  </section>
+  <p class="gf-note"><b>Not financial advice.</b> Numbers come from public exchange tickers and can be seconds old. Nothing here is a guaranteed profit.</p>
+  <p class="gf-foot">For education, not financial advice.</p>
+</main>
+<footer class="gf-ftr"><nav><a href="/scanners/">All scanners</a><a href="/scanners/squeeze/">Liquidation Squeeze Scanner</a><a href="/scanners/godfather/">God-father Scanner</a><a href="/bias/">AI Scan</a><a href="/scanners/binary/">Binary Pulse</a><a href="/legal.php">Legal</a></nav></footer>
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const px = v => v == null ? "–" : v >= 100 ? v.toLocaleString("en-US", {maximumFractionDigits: 2}) : v >= 1 ? v.toFixed(4) : v.toPrecision(4);
+const usd = v => v >= 1e9 ? "$" + (v/1e9).toFixed(1) + "B" : v >= 1e6 ? "$" + (v/1e6).toFixed(1) + "M" : "$" + Math.round(v/1e3) + "K";
+const pct = (v, d = 2) => v == null ? "–" : (v > 0 ? "+" : "") + Number(v).toFixed(d) + "%";
+const intv = r => (r.int_known === 0 ? "~" : "") + (r.int % 1 ? r.int.toFixed(1) : r.int) + "h";
+const next = t => { if (!t) return "–"; const s = t - Math.floor(Date.now()/1000); return s <= 0 ? "now" : s >= 3600 ? Math.floor(s/3600) + "h " + Math.floor(s%3600/60) + "m" : Math.floor(s/60) + "m"; };
+const V = {
+  fund: { how: "<b>Spot + perpetual.</b> Buy the coin on spot and short the same amount on the perpetual at the exchange shown. You are paid the funding rate each period while it stays positive. Yearly % assumes today's rate holds, which it rarely does.",
+    cols: [["coin","Coin"],["ex","Short perp on"],["rate","Funding / period","num"],["int","Period","num"],["day","Per day","num"],["apr","Per year (if it holds)","num"],["fee_days","Days to cover fees","num"],["basis","Perp vs index","num"],["next","Next funding","num"],["vol","Perp volume 24h","num"],["spot","Spot on"]],
+    row: r => `<td class="ar-coin">${esc(r.coin)}</td><td><span class="ar-ex s">${esc(r.ex)}</span>${r.same ? '<span class="ar-tag">spot here too</span>' : ""}</td><td class="num up">${pct(r.rate, 4)}</td><td class="num">${intv(r)}</td><td class="num up">${pct(r.day, 3)}</td><td class="num"><b>${pct(r.apr, 1)}</b></td><td class="num">${r.fee_days ?? "–"}</td><td class="num">${pct(r.basis, 3)}</td><td class="num">${next(r.next)}</td><td class="num">${usd(r.vol)}</td><td>${r.spot.slice(0,4).map(esc).join(", ")}${r.spot.length > 4 ? " +" + (r.spot.length - 4) : ""}</td>` },
+  cross: { how: "<b>Exchange vs exchange.</b> Short the perpetual on the exchange with the higher funding and go long the same amount where funding is lower. Price moves cancel; you keep the difference in funding. Both sides need margin.",
+    cols: [["coin","Coin"],["short_ex","Short on"],["short_rate","Funding there","num"],["long_ex","Long on"],["long_rate","Funding there","num"],["day","Difference / day","num"],["apr","Per year (if it holds)","num"],["fee_days","Days to cover fees","num"],["px_gap","Price gap now","num"],["vol","Smaller volume 24h","num"],["n","Exchanges","num"]],
+    row: r => `<td class="ar-coin">${esc(r.coin)}</td><td><span class="ar-ex s">${esc(r.short_ex)}</span></td><td class="num">${pct(r.short_rate, 4)} <small style="color:var(--mute)">/${r.short_int}h</small></td><td><span class="ar-ex b">${esc(r.long_ex)}</span></td><td class="num">${pct(r.long_rate, 4)} <small style="color:var(--mute)">/${r.long_int}h</small></td><td class="num up">${pct(r.day, 3)}</td><td class="num"><b>${pct(r.apr, 1)}</b></td><td class="num">${r.fee_days ?? "–"}</td><td class="num">${pct(r.px_gap, 3)}</td><td class="num">${usd(r.vol)}</td><td class="num">${r.n}</td>` },
+  gaps: { how: "<b>Price gap.</b> Buy at the ask on the cheaper exchange, sell at the bid on the dearer one. \"After fees\" takes off about 0.1% per trade; transfer cost is extra. A gap of 2% or more almost always means a transfer is blocked: check before you send anything.",
+    cols: [["coin","Coin"],["buy_ex","Buy on"],["buy","Ask","num"],["sell_ex","Sell on"],["sell","Bid","num"],["gap","Gap","num"],["net","After fees","num"],["vol","Smaller volume 24h","num"],["n","Exchanges","num"]],
+    row: r => `<td class="ar-coin">${esc(r.coin)}${r.big ? '<span class="ar-tag w">check transfers</span>' : ""}</td><td><span class="ar-ex b">${esc(r.buy_ex)}</span></td><td class="num">${px(r.buy)}</td><td><span class="ar-ex s">${esc(r.sell_ex)}</span></td><td class="num">${px(r.sell)}</td><td class="num">${pct(r.gap, 3)}</td><td class="num ${r.net > 0 ? "up" : "dn"}"><b>${pct(r.net, 3)}</b></td><td class="num">${usd(r.vol)}</td><td class="num">${r.n}</td>` }
+};
+const F = {tab: "fund", q: "", sort: null, dir: -1}; let D = null;
+function render(){ if (!D) return; const v = V[F.tab], n = (D.meta || {}).n || {}, f = D.fund || [], g = D.gaps || [];
+  $("#arTiles").innerHTML = [[n.fund ?? 0, "Funding carries", "8%+ a year at today's rate"], [n.cross ?? 0, "Funding spreads", "between exchanges"], [n.gaps ?? 0, "Price gaps", "0.2%+ before fees"], [f[0] ? pct(f[0].apr, 0) : "–", "Top funding now", f[0] ? f[0].coin + " on " + f[0].ex : "per year, if it holds"]]
+    .map(([a,l,s],i) => `<div class="gf-tile ${i===3?"ap":i===0?"a":""}" style="cursor:default"><div class="v">${esc(a)}</div><div class="k"><b style="color:var(--ink)">${l}</b> · ${esc(s)}</div></div>`).join("");
+  $("#arHow").innerHTML = v.how;
+  $("#arHead").innerHTML = "<tr>" + v.cols.map(([k,l,c]) => `<th class="${c||""} ${F.sort===k?"on":""}" data-k="${k}">${l}${F.sort===k?(F.dir<0?" ▼":" ▲"):""}</th>`).join("") + "</tr>";
+  let rows = (D[F.tab] || []).filter(r => !F.q || r.coin.toLowerCase().includes(F.q));
+  if (F.sort) rows = rows.slice().sort((a,b) => { const x = a[F.sort], y = b[F.sort]; return (typeof x === "string" ? String(x).localeCompare(String(y)) : (x ?? -1e18) - (y ?? -1e18)) * F.dir; });
+  $("#arBody").innerHTML = rows.map(r => "<tr>" + v.row(r) + "</tr>").join("") || `<tr><td colspan="${v.cols.length}" style="color:var(--mute);padding:26px;text-align:center">${F.q ? "No coin matches that search in this view." : "Nothing clears the filter right now. This view fills when funding or gaps widen."}</td></tr>`;
+  $$("#arHead th").forEach(th => th.onclick = () => { const k = th.dataset.k; if (F.sort === k) F.dir = -F.dir; else { F.sort = k; F.dir = -1; } render(); });
+  const ex = (D.meta || {}).exchanges || {}, nm = {bybit:"Bybit",binance:"Binance",okx:"OKX",kucoin:"KuCoin",gate:"Gate",mexc:"MEXC",bitget:"Bitget"};
+  $("#arSrc").innerHTML = Object.entries(ex).map(([k,x]) => `<i class="${x.spot||x.perp?"ok":""}" title="${x.spot} spot pairs, ${x.perp} perpetuals">${nm[k]||k}${x.spot||x.perp?"":" · no data"}</i>`).join("");
+}
+$$("#arTab button").forEach(b => b.onclick = () => { F.tab = b.dataset.v; F.sort = null; F.dir = -1; $$("#arTab button").forEach(x => x.classList.toggle("on", x === b)); history.replaceState(null, "", "#" + F.tab); render(); });
+$("#arQ").oninput = e => { F.q = e.target.value.trim().toLowerCase(); render(); };
+const h = location.hash.slice(1); if (V[h]) { F.tab = h; $$("#arTab button").forEach(x => x.classList.toggle("on", x.dataset.v === h)); }
+async function load(){ let nx = 45;
+  try { const d = await fetch("/arb_api.php", {cache:"no-store"}).then(r => r.json()); if (d.error) throw 0; D = d; const m = d.meta || {};
+    const live = Object.values(m.exchanges || {}).filter(x => x.spot || x.perp).length;
+    $("#arUpd").textContent = `${live} exchanges · ${m.coins || 0} perpetuals · ${m.spot_coins || 0} spot coins · updated ${new Date(d.at*1000).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit"})}`; render();
+  } catch (e) { $("#arUpd").textContent = "This scanner is temporarily unavailable. Sorry for the inconvenience. Retrying…"; nx = 20; }
+  setTimeout(load, (document.hidden ? 180 : nx) * 1000); }
+load();
+})();
+</script>
+<script src="/static/v2/tg-join.js?v=1" defer></script>
+</body>
+</html>

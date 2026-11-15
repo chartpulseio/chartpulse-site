@@ -73,6 +73,7 @@ RewriteRule ^scanners/movers-reversal/?$                 /movers/               
 RewriteRule ^reversal\.html$                             /movers/                     [R=301,L]
 RewriteRule ^scanners/godfather/?$                       /godfather.html              [L]
 RewriteRule ^scanners/squeeze/?$                         /squeeze.html                [L]
+RewriteRule ^scanners/crypto-arbitrage/?$                /crypto-arbitrage.html       [L]
 RewriteRule ^scanners/binary/?$                          /binary.html                 [L]
 RewriteRule ^scanners/next-candle/?$                     /next-candle.html            [L]
 RewriteRule ^scanners/forecast-24h/?$                    /forecast-24h.html           [L]
