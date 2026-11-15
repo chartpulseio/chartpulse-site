@@ -15,7 +15,7 @@
     chip: function (s) {
       var r = M[s]; if (!r) return "";
       var up = r.up, n = r.n, c = r.agree ? (r.side > 0 ? "#22AB94" : "#F7525F") : "#A3A5AF";
-      return '<div style="margin:0 0 8px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:#A3A5AF" title="Three AI forecast models (Chronos-2, TimesFM 2.5, Moirai 2.0). A label for interest, not part of this call.">'
+      return '<div style="margin:0 0 8px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;color:#A3A5AF" title="Four AI forecast models (Kronos, Chronos-2, TimesFM 2.5, Moirai 2.0). A label for interest, not part of this call.">'
         + '<span style="display:inline-block;padding:1px 8px;border-radius:999px;border:1px solid ' + c + ';color:' + c + ';margin-right:6px">AI next 5m: ' + (r.agree ? n + "/" + n + (r.side > 0 ? " up" : " down") : up + " up · " + (n - up) + " down") + "</span>"
         + '<span style="display:inline-block;padding:1px 8px;border-radius:999px;border:1px solid rgba(110,168,254,.55);color:#6EA8FE">AI next-hour range ' + f(r.h1[0], r.dec) + " – " + f(r.h1[1], r.dec) + "</span></div>";
     },

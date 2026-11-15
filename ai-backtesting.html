@@ -122,6 +122,9 @@ pre{margin:0;padding:14px;border-radius:12px;background:#0B0C0F;border:1px solid
       <div class="kv" id="kv"></div>
       <h2 id="mcH" hidden>If the same trades came in a different order</h2>
       <div class="kv" id="mc"></div>
+      <h2 id="rbH" hidden>Robustness check: skill or luck?</h2>
+      <div id="rbS"></div>
+      <div class="kv" id="rb"></div>
       <h2>Every trade</h2>
       <div class="card scroll" style="padding:4px 8px"><table><thead><tr><th>Entry</th><th>Exit</th><th>Side</th><th class="r">Entry price</th><th class="r">Exit price</th><th class="r">Result</th><th class="r">Bars</th><th>Closed by</th></tr></thead><tbody id="trades"></tbody></table></div>
       <p class="hint" id="trN" style="margin-top:8px"></p>
@@ -221,6 +224,9 @@ pre{margin:0;padding:14px;border-radius:12px;background:#0B0C0F;border:1px solid
     $("#kv").innerHTML = K.map(function (x) { return tile(x[1], x[0]); }).join("");
     var mc = r.monte_carlo; $("#mcH").hidden = !mc;
     $("#mc").innerHTML = mc ? tile(n2(mc.final_equity_p5, 0), "Unlucky case (worst 5%)") + tile(n2(mc.final_equity_median, 0), "Typical end value") + tile(n2(mc.final_equity_p95, 0), "Lucky case (best 5%)") + tile(pct(mc.bad_case_drawdown_pct), "Bad-case fall", "neg") + tile(n2(mc.prob_loss_pct, 0) + "%", "Chance of ending with a loss") + tile(n2(mc.runs, 0), "Re-shuffles run") : "";
+    var rb = r.robustness; $("#rbH").hidden = !rb;
+    $("#rbS").innerHTML = rb ? '<div class="verdict ' + (rb.grade === "pass" ? "good" : rb.grade === "maybe" ? "weak" : "bad") + '" style="margin:0 0 10px"><b>' + esc(rb.grade === "pass" ? "Passed" : rb.grade === "maybe" ? "Not proven" : "Could be luck") + '</b><p>' + esc(rb.say) + '</p></div>' : "";
+    $("#rb").innerHTML = rb ? tile(n2(rb.psr_pct, 0) + "%", "Chance the edge is real<br>(probabilistic Sharpe)", rb.psr_pct >= 95 ? "pos" : rb.psr_pct < 80 ? "neg" : "") + tile(n2(rb.dsr10_pct, 0) + "%", "Same, if this was the best<br>of 10 tries (deflated)", rb.dsr10_pct >= 95 ? "pos" : rb.dsr10_pct < 80 ? "neg" : "") + tile(n2(rb.final_p5, 0), "Unlucky streaks case<br>(worst 5%, block bootstrap)", rb.final_p5 >= cap ? "pos" : "neg") + tile(n2(rb.final_median, 0), "Typical end value") + tile(pct(rb.bad_drawdown_pct), "Bad-case fall with streaks", "neg") + tile(n2(rb.prob_loss_pct, 0) + "%", "Chance of ending with a loss") : "";
     $("#trades").innerHTML = (r.trades || []).map(function (t) { return "<tr><td class='num'>" + esc(t.entry_time) + "</td><td class='num'>" + esc(t.exit_time) + "</td><td>" + (t.side === "short" || t.side === -1 ? "Short" : "Long") + "</td><td class='r num'>" + n2(t.entry, 4).replace(/\.?0+$/, "") + "</td><td class='r num'>" + n2(t.exit, 4).replace(/\.?0+$/, "") + "</td><td class='r num " + cls(t.ret_pct) + "'>" + pct(t.ret_pct, 2) + "</td><td class='r num'>" + esc(t.bars) + "</td><td>" + esc(WHY[t.reason] || t.reason) + "</td></tr>"; }).join("") || '<tr><td colspan="8" style="color:var(--mute)">No trades.</td></tr>';
     $("#trN").textContent = r.trades_total > (r.trades || []).length ? "Showing the first " + r.trades.length + " of " + r.trades_total + " trades." : "";
     $("#json").textContent = JSON.stringify(j.strategy, null, 2);

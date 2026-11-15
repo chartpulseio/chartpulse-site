@@ -524,6 +524,7 @@ function bt_handle_backtest($q)
         'trades' => $shown,
         'trades_total' => count($trades),
         'monte_carlo' => count($trades) >= 10 ? bt_monte_carlo($trades, $st['capital']) : null,
+        'robustness' => count($trades) >= 10 ? bt_robustness($trades, $st['capital']) : null,
         'notes' => bt_notes($m, $trades, $strategy),
     ];
 }

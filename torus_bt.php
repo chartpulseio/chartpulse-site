@@ -394,3 +394,54 @@ function bt_walk_forward($d, $strategyTpl, $grid, $trainBars, $testBars, $score 
 }
 
 }
+
+/* ------------------------------------------------------------ robustness check (owner, 15 Nov 2026)
+ * Same methods as the TimeMachine-QuantOptimizer repo (MIT): a Politis-Romano stationary bootstrap of the trade returns
+ * (keeps winning / losing streaks together, unlike the plain shuffle above), the Probabilistic Sharpe Ratio (is the
+ * Sharpe above zero once skew, fat tails and the small sample are counted) and the Deflated Sharpe Ratio (the same,
+ * if the strategy was the best of 10 tries). Written here in PHP so it runs on the shared host with no extra service. */
+function bt_ncdf($x) { $t = 1 / (1 + 0.2316419 * abs($x)); $d = 0.3989422804014327 * exp(-$x * $x / 2);
+    $p = $d * $t * (0.319381530 + $t * (-0.356563782 + $t * (1.781477937 + $t * (-1.821255978 + $t * 1.330274429)))); return $x >= 0 ? 1 - $p : $p; }
+function bt_nppf($p) {   // Acklam's inverse normal
+    $a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.3577518672690, -30.66479806614716, 2.506628277459239];
+    $b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572];
+    $c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+    $d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
+    $p = min(max($p, 1e-12), 1 - 1e-12);
+    if ($p < 0.02425) { $q = sqrt(-2 * log($p)); return ((((($c[0]*$q+$c[1])*$q+$c[2])*$q+$c[3])*$q+$c[4])*$q+$c[5]) / (((($d[0]*$q+$d[1])*$q+$d[2])*$q+$d[3])*$q+1); }
+    if ($p > 1 - 0.02425) return -bt_nppf(1 - $p);
+    $q = $p - 0.5; $r = $q * $q;
+    return ((((($a[0]*$r+$a[1])*$r+$a[2])*$r+$a[3])*$r+$a[4])*$r+$a[5])*$q / ((((($b[0]*$r+$b[1])*$r+$b[2])*$r+$b[3])*$r+$b[4])*$r+1);
+}
+function bt_robustness($trades, $capital = 10000.0, $runs = 1000, $seed = 7)
+{
+    $r = []; foreach ($trades as $t) $r[] = (float)$t['ret'];
+    $n = count($r); if ($n < 10) return null;
+    $mu = array_sum($r) / $n; $m2 = $m3 = $m4 = 0.0;
+    foreach ($r as $x) { $e = $x - $mu; $m2 += $e * $e; $m3 += $e ** 3; $m4 += $e ** 4; }
+    $m2 /= $n; $m3 /= $n; $m4 /= $n; $sd = sqrt($m2);
+    $sr = $sd > 0 ? $mu / $sd : 0.0; $skew = $sd > 0 ? $m3 / $sd ** 3 : 0.0; $kurt = $sd > 0 ? $m4 / $m2 ** 2 : 3.0;
+    $den = sqrt(max(1e-9, 1 - $skew * $sr + ($kurt - 1) / 4 * $sr * $sr));
+    $psr = bt_ncdf(($sr - 0.0) * sqrt($n - 1) / $den);
+    $N = 10; $g = 0.5772156649; $v = 1 / ($n - 1);                     // benchmark: the best Sharpe expected from 10 tries of a strategy with no edge
+    $sr0 = sqrt($v) * ((1 - $g) * bt_nppf(1 - 1 / $N) + $g * bt_nppf(1 - 1 / ($N * M_E)));
+    $dsr = bt_ncdf(($sr - $sr0) * sqrt($n - 1) / $den);
+    mt_srand($seed); $L = max(2.0, pow($n, 1 / 3)); $pNew = 1 / $L; $fin = []; $dds = []; $loss = 0;
+    for ($k = 0; $k < $runs; $k++) {
+        $eq = $capital; $pk = $capital; $dd = 0.0; $i = mt_rand(0, $n - 1);
+        for ($j = 0; $j < $n; $j++) {
+            if ($j > 0) $i = (mt_rand() / mt_getrandmax() < $pNew) ? mt_rand(0, $n - 1) : ($i + 1) % $n;
+            $eq *= 1 + $r[$i]; $pk = max($pk, $eq); if ($pk > 0) $dd = min($dd, ($eq - $pk) / $pk * 100);
+        }
+        $fin[] = $eq; $dds[] = $dd; if ($eq < $capital) $loss++;
+    }
+    $p5 = bt_pct($fin, 5); $pl = $loss / $runs * 100;
+    $grade = ($psr >= 0.95 && $p5 > $capital) ? 'pass' : (($psr >= 0.8 && $pl < 35) ? 'maybe' : 'luck');
+    $say = ['pass' => 'Passed: the edge is unlikely to be luck, and even an unlucky order of these trades ends in profit.',
+            'maybe' => 'Not proven: the result leans positive, but luck could explain it. Test more years or another market.',
+            'luck' => 'Could be luck: with this many trades and this spread of results, a strategy with no edge could look the same.'][$grade];
+    return ['method' => 'stationary bootstrap + probabilistic / deflated Sharpe (TimeMachine-QuantOptimizer methods)', 'trades' => $n, 'runs' => $runs, 'block' => round($L, 1),
+        'psr_pct' => bt_fin($psr * 100), 'dsr10_pct' => bt_fin($dsr * 100), 'sharpe_per_trade' => bt_fin($sr), 'skew' => bt_fin($skew), 'kurtosis' => bt_fin($kurt),
+        'final_p5' => bt_fin($p5), 'final_median' => bt_fin(bt_pct($fin, 50)), 'final_p95' => bt_fin(bt_pct($fin, 95)),
+        'bad_drawdown_pct' => bt_fin(bt_pct($dds, 5)), 'prob_loss_pct' => bt_fin($pl), 'grade' => $grade, 'say' => $say];
+}
