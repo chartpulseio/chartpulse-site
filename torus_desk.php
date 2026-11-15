@@ -243,6 +243,7 @@ function td_analyze(string $sym, string $tf = '1D'): array {
             'ema20_dist' => round(($c - $I['E20'][$i]) / max($a, 1e-12), 2), 'vol_ann' => round($vol, 1),
             'atr_pctile' => round(count(array_filter($ap, fn($x) => $x <= $cur)) / count($ap) * 100), 'hi20' => t_r($pt['hi']), 'lo20' => t_r($pt['lo'])],
         'cone' => $cone, 'feasibility' => $feas, 'plan' => $plan,
+        'ens' => $tf === '1D' ? ens_view($sym) : null,
         'memory' => ['n' => $mem['n'], 'pool' => $mem['pool'] ?? 0, 'scope' => $memSrc, 'up' => isset($mem['up']) ? round($mem['up'] * 100, 1) : null, 'avg_move' => isset($mem['avg_move']) ? round($mem['avg_move'], 2) : null,
             'avg_mfe' => isset($mem['avg_mfe']) ? round($mem['avg_mfe'], 2) : null, 'avg_mae' => isset($mem['avg_mae']) ? round($mem['avg_mae'], 2) : null,
             'win' => isset($mem['win']) ? round($mem['win'] * 100, 1) : null, 'avg_run' => isset($mem['avg_run']) ? round($mem['avg_run'], 1) : null, 'hist' => $mem['hist'] ?? [], 'h' => TD_H,
@@ -255,6 +256,7 @@ function td_analyze(string $sym, string $tf = '1D'): array {
         'modules' => ['data' => 'live',
             'TimesFM' => $coneSrc === 'timesfm' ? 'live' : ($coneSrc === 'statistical' ? 'fallback' : 'unavailable'),
             'Setup memory' => $mem['n'] >= 30 ? 'live' : ($mem['n'] ? 'low sample' : 'unavailable'),
+            'Forecast models' => ($tf === '1D' && ($en = ens_view($sym))) ? $en['n'] . ' live' : 'queued',
             'FinBERT' => !$news['n'] ? 'no data' : (($news['src'] ?? '') === 'finbert' ? 'live' : 'fallback'), 'judge' => 'live'],
         'sources' => ['scenario' => $coneSrc, 'memory' => $memSrc, 'news' => $news['src'] ?? 'lexicon'],
     ];

@@ -29,6 +29,11 @@ function lc_context(array $d): string {
         'Factor scores: ' . implode(', ', array_map(fn($f) => "{$f['name']} {$f['value']}", $d['factors'])) . '.'];
     if ($m['n']) $L[] = "Similar past setups: {$m['n']}, price higher {$m['h']} bars later {$m['up']}% of the time, average move {$m['avg_move']}%.";
     if ($last) $L[] = ($d['modules']['TimesFM'] === 'live' ? 'TimesFM AI' : 'Statistical') . " forecast ({$last['h']} days): median {$last['p50']}, 80% range {$last['p10']} to {$last['p90']}.";
+    if (!empty($d['ens'])) { $e = $d['ens'];
+        $L[] = "Four AI forecast models, {$e['h']} trading days ahead, each one's middle forecast versus the last close: " . implode('; ', array_map(fn($m) => "{$m['name']} " . ($m['d10'] >= 0 ? '+' : '') . "{$m['d10']}% (to {$m['end']})", $e['models'])) . '.';
+        $L[] = "Model lean: {$e['up']} up, {$e['down']} down of {$e['n']}" . ($e['agree'] ? ' (all agree)' : ' (split)') . ". Average middle forecast {$e['end']} (" . ($e['d10'] >= 0 ? '+' : '') . "{$e['d10']}%)."
+            . ($e['band'] ? " Range the models expect to hold about 8 times in 10 after {$e['h']} days: {$e['band'][0]} to {$e['band'][1]}." : '') . ($e['day1'] ? " Next session's range: {$e['day1'][0]} to {$e['day1'][1]}." : '');
+        $L[] = 'How to weigh the models: in our own test their direction was right only about half the time alone and a little better when all agree; their range was accurate. Use the range to judge the stop and targets, and the lean as one vote.'; }
     if ($d['news']['n']) { $L[] = "News: {$d['news']['n']} recent headlines, average tone {$d['news']['tone']} (-1 to +1). Headlines:";
         foreach (array_slice($d['news']['top'] ?? [], 0, 8) as $h) $L[] = '- ' . (is_array($h) ? (string)($h['t'] ?? $h['title'] ?? json_encode($h)) : (string)$h); }
     else $L[] = 'News: no recent headlines.';
@@ -108,11 +113,13 @@ function lc_run(string $sym): array {
         'news' => 'You are the news analyst. Judge what the headlines and their tone mean for the next 1-2 weeks, naming the headline that matters most. If there is no news, say so in one bullet and judge whether the price action alone looks news-driven.',
         'bull' => 'You are the bull researcher. Make the strongest honest case for going long: where to buy (use the entry zone or a level from the data), where the idea is wrong, and what upside the forecast range allows.',
         'bear' => 'You are the bear researcher. Make the strongest honest case for going short or staying out: what is weak in the data, where a short would be wrong, and what downside the forecast range allows.'];
+    if (!empty($d['ens'])) $roles['forecast'] = 'You are the forecast-model analyst. Four AI forecast models (Chronos-2, TimesFM 2.5, Moirai 2.0, Kronos) have each projected this instrument. Say what each one expects and whether they agree. Then test the rule plan against their range: is the stop inside the range price normally travels (likely to be hit by noise), is target 1 inside the range (reachable), is target 2 outside it? Say plainly how much weight the lean deserves.';
     $R = []; foreach ($roles as $k => $s) $R[$k] = lc_req(LC_ANALYST, "$s $base", $ctx, false);
     $A = lc_multi($R, 35);
     if (count(array_filter($A)) < 2) { $R = []; foreach ($roles as $k => $s) $R[$k] = lc_req('gemini-3.1-flash-lite', "$s $base", $ctx, false); $A = lc_multi($R, 35); }   // free-tier quota fallback
     if (count(array_filter($A)) < 2) { t_write_json(lc_file($sym), ['status' => 'error', 'at' => $now]); return ['status' => 'error', 'error' => 'The AI service did not answer. Please try again in a minute.', 'detail' => $GLOBALS['lc_err'] ?? null]; }
     $jsys = 'You are the risk manager who makes the final call for a trading desk. Weigh the analysts and the data; respect the rule vetoes. Use ONLY the data given. '
+        . 'When forecast-model data is given, name the model lean (how many of the four point which way) in the summary, use their range to judge whether the stop and first target are realistic, and count the lean as one vote that matters more only when all four agree. '
         . 'Do not answer HOLD just to be safe: say HOLD only when the bull and bear cases are truly balanced or a veto applies, and then say exactly what would turn it into a BUY or a SELL. Never tell the reader to enter at the last close; an entry is the limit zone from the rule plan or a level in the data. '
         . 'Reply as JSON: {"decision":"BUY"|"HOLD"|"SELL","confidence":"low"|"medium"|"high","summary":"2-3 sentences that name the deciding facts with their numbers","action":"one sentence: the order to place (zone, stop, first target) or why to stand aside","trigger":"the price event that must happen first, with its level","risks":["..."],"invalidation":"price level and why"}';
     $ju = $ctx . "\n\nAnalyst notes:\n" . implode("\n", array_map(fn($k) => strtoupper($k) . ":\n" . ($A[$k] ?: '(no answer)'), array_keys($A)));
@@ -132,6 +139,6 @@ function lc_run(string $sym): array {
     $r = ['status' => 'done', 'at' => t_now(), 'price' => $d['params']['price'], 'decision' => $dec, 'confidence' => in_array($J['confidence'] ?? '', ['low', 'medium', 'high'], true) ? $J['confidence'] : 'low',
         'summary' => $cut($J['summary'] ?? '', 600), 'risks' => array_map(fn($x) => $cut($x, 200), array_slice((array)($J['risks'] ?? []), 0, 4)), 'invalidation' => $cut($J['invalidation'] ?? '', 250),
         'action' => $cut($J['action'] ?? '', 300), 'trigger' => $cut($J['trigger'] ?? '', 250),
-        'analysts' => array_map(fn($x) => $cut($x, 1500), $A)];
+        'analysts' => array_map(fn($x) => $cut($x, 1500), $A), 'ens' => $d['ens'] ?? null];
     t_write_json(lc_file($sym), $r); return $r;
 }

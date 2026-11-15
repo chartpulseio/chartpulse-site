@@ -295,3 +295,62 @@ function ml_store_push(array $in): array {
     }
     return $n;
 }
+
+/* ---- AI Scan ensemble (owner, 15 Nov 2026): 10-day forecasts from Chronos-2, TimesFM 2.5, Moirai 2.0 and Kronos for every symbol,
+   pushed in small batches by the chartpulse-ml job (nc/live.py ens_block). One file per symbol in cp_data/ml/ens/. ---- */
+const ENS_FRESH = 20 * 3600;      // a forecast is redone after 20 hours
+const ENS_NAMES = ['chronos2' => 'Chronos-2', 'timesfm' => 'TimesFM 2.5', 'moirai2' => 'Moirai 2.0', 'kronos' => 'Kronos'];
+function ens_dir(): string { $d = ml_dir() . '/ens'; if (!is_dir($d)) @mkdir($d, 0755, true); return $d; }
+function ens_file(string $sym): string { return ens_dir() . '/' . preg_replace('/[^A-Za-z0-9._-]/', '_', $sym) . '.json'; }
+/** Work list for the job: symbols people opened first, then the oldest; skipped symbols rest for three days. */
+function ens_feed(int $n): array {
+    $now = t_now(); $age = []; $req = t_read_json(ml_dir() . '/req.json', []); if (!is_array($req)) $req = [];
+    foreach (array_keys(t_symbols()) as $s) {
+        if (str_starts_with($s, 'MCX:')) continue;
+        $f = ens_file($s); $at = is_file($f) ? (int)filemtime($f) : 0;
+        if ($now - $at < ENS_FRESH) continue;
+        if ($at && $now - $at < 3 * 86400) { $j = t_read_json($f, null); if (is_array($j) && !empty($j['skip'])) continue; }
+        $age[$s] = ($now - (int)($req[$s] ?? 0) < 86400 ? -1e12 : 0) + $at;      // opened in the last day: front of the queue
+    }
+    asort($age); return ['syms' => array_slice(array_keys($age), 0, max(1, min(60, $n))), 'left' => count($age)];
+}
+function ens_store(array $rows): int {
+    $n = 0; $S = t_symbols();
+    foreach ($rows as $sym => $r) {
+        if (!isset($S[$sym]) || !is_array($r)) continue;
+        if (!empty($r['skip'])) { t_write_json(ens_file($sym), ['skip' => 1, 'at' => t_now()]); $n++; continue; }
+        if (empty($r['m']) || !is_array($r['m']) || !is_numeric($r['last'] ?? null)) continue;
+        $m = [];
+        foreach ($r['m'] as $k => $q) { if (!isset(ENS_NAMES[$k]) || !is_array($q['p50'] ?? null) || count($q['p50']) < 5) continue;
+            $m[$k] = array_map(fn($a) => array_map('floatval', array_slice((array)$a, 0, 10)), array_intersect_key($q, ['p10' => 1, 'p50' => 1, 'p90' => 1])); }
+        if (!$m) continue;
+        t_write_json(ens_file($sym), ['at' => t_now(), 't' => (int)($r['t'] ?? 0), 'last' => (float)$r['last'], 'm' => $m]); $n++;
+    }
+    return $n;
+}
+/** What the four models say about one symbol, ready for the page and the committee. Null when there is no fresh forecast. */
+function ens_view(string $sym): ?array {
+    $j = t_read_json(ens_file($sym), null);
+    if (!is_array($j) || empty($j['m']) || t_now() - (int)($j['at'] ?? 0) > 4 * 86400) return null;
+    $last = (float)$j['last']; if ($last <= 0) return null;
+    $M = []; $up = 0; $dn = 0; $H = 10;
+    foreach (ENS_NAMES as $k => $name) { $q = $j['m'][$k] ?? null; if (!$q) continue; $H = min($H, count($q['p50']));
+        $d5 = ($q['p50'][min(4, count($q['p50']) - 1)] / $last - 1) * 100; $d10 = (end($q['p50']) / $last - 1) * 100; $dir = abs($d10) < 0.05 ? 0 : ($d10 > 0 ? 1 : -1);
+        if ($dir > 0) $up++; elseif ($dir < 0) $dn++;
+        $M[] = ['k' => $k, 'name' => $name, 'd5' => round($d5, 2), 'd10' => round($d10, 2), 'dir' => $dir, 'end' => t_r((float)end($q['p50']))]; }
+    if (!$M) return null;
+    $path = []; $lo = []; $hi = [];
+    for ($h = 0; $h < $H; $h++) {
+        $p = []; $l = []; $u = [];
+        foreach ($j['m'] as $k => $q) { $p[] = $q['p50'][$h]; if ($k !== 'timesfm' && isset($q['p10'][$h], $q['p90'][$h])) { $l[] = $q['p10'][$h]; $u[] = $q['p90'][$h]; } }   // TimesFM's band runs too wide in our test
+        if (!$l) foreach ($j['m'] as $q) if (isset($q['p10'][$h], $q['p90'][$h])) { $l[] = $q['p10'][$h]; $u[] = $q['p90'][$h]; }
+        $path[] = array_sum($p) / count($p); $lo[] = $l ? array_sum($l) / count($l) : null; $hi[] = $u ? array_sum($u) / count($u) : null;
+    }
+    if ($lo[0] !== null) for ($h = 1; $h < $H; $h++) {      // never narrower than the checked one-day band grown with the square root of time
+        $k = sqrt($h + 1); $lo[$h] = min($lo[$h] ?? INF, $path[$h] - ($path[0] - $lo[0]) * $k); $hi[$h] = max($hi[$h] ?? -INF, $path[$h] + ($hi[0] - $path[0]) * $k); }
+    $n = count($M); $lean = $up > $dn ? 1 : ($dn > $up ? -1 : 0);
+    return ['at' => (int)$j['at'], 't' => (int)$j['t'], 'last' => t_r($last), 'n' => $n, 'up' => $up, 'down' => $dn, 'lean' => $lean, 'agree' => ($up === $n || $dn === $n) && $n >= 3,
+        'd10' => round((end($path) / $last - 1) * 100, 2), 'end' => t_r((float)end($path)), 'h' => $H,
+        'day1' => $lo[0] !== null ? [t_r($lo[0]), t_r($hi[0])] : null, 'band' => $lo[$H - 1] !== null ? [t_r($lo[$H - 1]), t_r($hi[$H - 1])] : null,
+        'models' => $M, 'path' => array_map('t_r', $path), 'lo' => array_map(fn($x) => $x === null ? null : t_r($x), $lo), 'hi' => array_map(fn($x) => $x === null ? null : t_r($x), $hi)];
+}
