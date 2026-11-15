@@ -27,6 +27,7 @@
       ] }
     ] },
     { t: "Crypto Scanners", cols: [{ items: [
+      { t: "Crypto Order Flow", d: "CVD, open interest, order book, liquidations and the liquidation heatmap", href: "/scanners/order-flow/" },
       { t: "Crypto Arbitrage Scanner", d: "Funding rate arbitrage and price gaps across seven exchanges", href: "/scanners/crypto-arbitrage/" },
       { t: "Liquidation Squeeze Scanner", d: "Crowded longs or shorts at a key zone, and squeezes starting", href: "/scanners/squeeze/" }
     ] }] },

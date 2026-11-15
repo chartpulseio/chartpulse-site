@@ -122,14 +122,16 @@ function of_symbol(string $s, string $tf): array {
 function of_book(?array $D, float $px): ?array {
     if (!$D || empty($D['bids']) || empty($D['asks']) || $px <= 0) return null;
     $band = []; $walls = ['bid' => [], 'ask' => []];
-    foreach ([.5, 1, 2, 5] as $b) $band[(string)$b] = [0.0, 0.0];
+    foreach ([.1, .25, .5, 1] as $b) $band[(string)$b] = [0.0, 0.0];
     foreach (['bids' => 0, 'asks' => 1] as $side => $j) foreach ($D[$side] as $l) { $p = of_f($l[0]); $v = $p * of_f($l[1]); $dist = abs($p / $px - 1) * 100;
         foreach ($band as $b => $_) if ($dist <= (float)$b) $band[$b][$j] += $v;
         $walls[$j ? 'ask' : 'bid'][] = [of_px($p), round($v), of_r($dist, 2)]; }
     foreach ($walls as $k => $w) { usort($w, fn($a, $b) => $b[1] <=> $a[1]); $walls[$k] = array_slice($w, 0, 6); }
-    $out = []; foreach ($band as $b => [$bid, $ask]) $out[] = ['pct' => (float)$b, 'bid' => round($bid), 'ask' => round($ask), 'imb' => $bid + $ask > 0 ? of_r(($bid - $ask) / ($bid + $ask) * 100, 1) : 0.0];
-    $far = end($D['bids']); $farA = end($D['asks']);
-    return ['bands' => $out, 'walls' => $walls, 'reach' => [of_r(abs(of_f($far[0]) / $px - 1) * 100, 2), of_r(abs(of_f($farA[0]) / $px - 1) * 100, 2)]];
+    $far = end($D['bids']); $farA = end($D['asks']); $reach = min(abs(of_f($far[0]) / $px - 1), abs(of_f($farA[0]) / $px - 1)) * 100;
+    $out = []; foreach ($band as $b => [$bid, $ask]) if ((float)$b <= $reach + .001) $out[] = ['pct' => (float)$b, 'bid' => round($bid), 'ask' => round($ask), 'imb' => $bid + $ask > 0 ? of_r(($bid - $ask) / ($bid + $ask) * 100, 1) : 0.0];
+    $tb = 0.0; $ta = 0.0; foreach ($D['bids'] as $l) $tb += of_f($l[0]) * of_f($l[1]); foreach ($D['asks'] as $l) $ta += of_f($l[0]) * of_f($l[1]);
+    if (!$out || end($out)['pct'] < $reach - .01) $out[] = ['pct' => of_r($reach, 2), 'bid' => round($tb), 'ask' => round($ta), 'imb' => $tb + $ta > 0 ? of_r(($tb - $ta) / ($tb + $ta) * 100, 1) : 0.0, 'all' => 1];
+    return ['bands' => $out, 'walls' => $walls, 'reach' => of_r($reach, 2)];
 }
 /** OKX filled liquidations: side of the position that was closed, size in USDT, time. */
 function of_liqs(?array $J, ?array $I): ?array {
@@ -142,7 +144,7 @@ function of_liqs(?array $J, ?array $I): ?array {
             $t = (int)(of_f($d['ts'] ?? 0) / 1000); if ($now - $t <= 86400) $tot[$long ? 'long' : 'short'] += $v;
             $L[] = ['t' => $t, 'side' => $long ? 'long' : 'short', 'px' => of_px($p), 'v' => round($v)]; } }
     usort($L, fn($a, $b) => $b['t'] <=> $a['t']);
-    return ['src' => 'OKX', 'list' => array_slice($L, 0, 40), 'long' => round($tot['long']), 'short' => round($tot['short']), 'n' => count($L)];
+    return ['src' => 'OKX', 'list' => array_slice($L, 0, 40), 'long' => round($tot['long']), 'short' => round($tot['short']), 'n' => count($L), 'since' => $L ? end($L)['t'] : null];
 }
 /** Estimated liquidation map from open-interest changes (see the note at the top). Grid rows = price buckets, cols = time. */
 function of_map(array $K, array $O, float $px): ?array {

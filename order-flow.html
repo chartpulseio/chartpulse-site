@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Free Crypto Order Flow: CVD, Liquidation Heatmap, Open Interest &amp; Order Book · ChartPulse</title>
+<meta name="description" content="Free crypto order flow: CVD and buy vs sell delta (futures and spot), open interest, long/short ratios, order book walls, live liquidations and an estimated liquidation heatmap for Bitcoin, Ethereum and the top 60 perpetuals. No sign-up.">
+<meta name="theme-color" content="#050506">
+<link rel="canonical" href="https://chartpulse.io/scanners/order-flow/">
+<meta property="og:site_name" content="ChartPulse"><meta property="og:type" content="website">
+<meta property="og:title" content="Crypto Order Flow · ChartPulse"><meta property="og:description" content="Free crypto order flow: CVD and buy vs sell delta (futures and spot), open interest, long/short ratios, order book walls, live liquidations and an estimated liquidation heatmap for Bitcoin, Ethereum and the top 60 perpetuals. No sign-up.">
+<meta property="og:url" content="https://chartpulse.io/scanners/order-flow/"><meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
+<link rel="stylesheet" href="/static/v2/sitehead.css?v=8">
+<script defer src="/static/v2/sitehead.js?v=23"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"ChartPulse","item":"https://chartpulse.io/"},{"@type":"ListItem","position":2,"name":"Scanners","item":"https://chartpulse.io/scanners/"},{"@type":"ListItem","position":3,"name":"Crypto Order Flow","item":"https://chartpulse.io/scanners/order-flow/"}]},{"@type":"WebApplication","name":"Crypto Order Flow","url":"https://chartpulse.io/scanners/order-flow/","applicationCategory":"FinanceApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Free crypto order flow: CVD and buy vs sell delta (futures and spot), open interest, long/short ratios, order book walls, live liquidations and an estimated liquidation heatmap for Bitcoin, Ethereum and the top 60 perpetuals. No sign-up."},{"@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is CVD in crypto?","acceptedAnswer":{"@type":"Answer","text":"Cumulative volume delta adds up, candle by candle, how much was bought by traders hitting the ask minus how much was sold by traders hitting the bid. Rising CVD means aggressive buyers are in control."}},{"@type":"Question","name":"How is the liquidation heatmap made?","acceptedAnswer":{"@type":"Answer","text":"It is an estimate, like every liquidation heatmap. Each rise in open interest is treated as new positions opened at that price with a mix of 10x to 100x leverage; their liquidation prices stay on the map until price trades through them or open interest falls."}},{"@type":"Question","name":"What does price up with open interest down mean?","acceptedAnswer":{"@type":"Answer","text":"Short covering: the rise is driven by short sellers closing positions rather than new buyers, which often runs out of fuel sooner than a rise on new longs."}}]}]}</script>
+<style>
+:root{--bg:#050506;--card:#0E0F13;--card2:#15171D;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.15);
+  --ink:#EDEDEF;--dim:#A3A5AF;--mute:#6B6D78;--gold:#E9C46A;--gold2:#F6DE9A;--up:#22AB94;--dn:#F7525F;--blue:#6EA8FE;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.gf{max-width:1260px;margin:0 auto;padding:24px 20px 70px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* hero */
+.gf-hero{position:relative;overflow:hidden;padding:34px 30px 30px;border:1px solid rgba(233,196,106,.28);border-radius:22px;
+  background:radial-gradient(120% 140% at 100% 0%,rgba(233,196,106,.16),transparent 55%),radial-gradient(90% 120% at 0% 100%,rgba(34,171,148,.10),transparent 60%),#0A0B0E}
+.gf-hero::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,transparent 1px 64px);pointer-events:none}
+.gf-eye{display:inline-flex;align-items:center;gap:8px;font:600 12px/1 var(--mono);letter-spacing:.18em;color:var(--gold);text-transform:uppercase}
+.gf-eye i{width:8px;height:8px;border-radius:50%;background:var(--up);box-shadow:0 0 0 0 rgba(34,171,148,.6);animation:gfp 2s infinite}
+@keyframes gfp{70%{box-shadow:0 0 0 10px rgba(34,171,148,0)}100%{box-shadow:0 0 0 0 rgba(34,171,148,0)}}
+.gf-hero h1{margin:12px 0 10px;font-size:clamp(30px,5vw,54px);line-height:1.04;letter-spacing:-.03em}
+.gf-hero h1 span{background:linear-gradient(100deg,var(--gold2),var(--gold) 45%,#B8893A);-webkit-background-clip:text;background-clip:text;color:transparent}
+.gf-lede{max-width:68ch;margin:0;color:var(--dim);font-size:17px}
+.gf-flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:24px 0 0;padding:0;list-style:none;position:relative;z-index:1}
+.gf-flow li{padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:rgba(14,15,19,.85)}
+.gf-flow span{font:600 11px/1 var(--mono);letter-spacing:.12em;color:var(--gold)}
+.gf-flow b{display:block;margin:6px 0 3px;font-size:14.5px}
+.gf-flow p{margin:0;color:var(--dim);font-size:13px;line-height:1.45}
+
+/* tiles */
+.gf-tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin:18px 0 0}
+.gf-tile{padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--card);cursor:pointer;text-align:left;color:inherit;font:inherit}
+.gf-tile:hover{border-color:var(--line2)}.gf-tile.on{border-color:var(--gold);background:rgba(233,196,106,.07)}
+.gf-tile .v{font:600 28px/1.05 var(--mono)}.gf-tile .k{margin-top:4px;color:var(--dim);font-size:13px}
+.gf-tile.ap .v{color:var(--gold)}.gf-tile.a .v{color:var(--up)}.gf-tile.b .v{color:var(--blue)}.gf-tile.nr .v{color:var(--dn)}
+
+/* bar */
+.gf-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:20px 0 12px}
+.gf-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.gf-tabs button,.gf-btn{appearance:none;border:1px solid var(--line2);background:transparent;color:var(--dim);padding:8px 14px;border-radius:999px;font:500 14px/1 var(--sans);cursor:pointer}
+.gf-tabs button.on{background:var(--ink);color:#000;border-color:var(--ink)}
+.gf-tabs button:hover,.gf-btn:hover{color:var(--ink);border-color:var(--ink)}.gf-tabs button.on:hover{color:#000}
+.gf-q{flex:1;min-width:180px;max-width:300px;margin-left:auto;padding:9px 14px;border:1px solid var(--line2);border-radius:999px;background:var(--card);color:var(--ink);font:14px var(--sans)}
+.gf-upd{color:var(--mute);font-size:13px;margin:0 0 10px}
+.gf-prog{height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;margin:12px 0 0}.gf-prog i{display:block;height:100%;background:var(--gold);width:0;transition:width .4s}
+
+/* cards */
+.gf-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.gc{position:relative;display:flex;flex-direction:column;padding:16px 18px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card);min-width:0}
+.gc.g-ap{border-color:rgba(233,196,106,.7);background:linear-gradient(180deg,rgba(233,196,106,.08),transparent 40%),var(--card);box-shadow:0 0 0 1px rgba(233,196,106,.15),0 10px 40px -18px rgba(233,196,106,.45)}
+.gc.g-a{border-color:rgba(34,171,148,.55)}.gc.g-b{border-color:rgba(110,168,254,.45)}.gc.g-nr{border-color:rgba(247,82,95,.5)}
+.gc-top{display:flex;gap:12px;align-items:flex-start}
+.gc-grade{flex:none;display:grid;place-items:center;min-width:56px;height:56px;padding:0 8px;border-radius:14px;font:700 22px/1 var(--mono);border:1px solid var(--line2);color:var(--dim)}
+.g-ap .gc-grade{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1a1300;border:0}
+.g-a .gc-grade{background:var(--up);color:#00130f;border:0}.g-b .gc-grade{border-color:var(--blue);color:var(--blue)}
+.g-rd .gc-grade{border-color:var(--gold);color:var(--gold);font-size:12px;text-align:center;line-height:1.15}
+.g-nr .gc-grade{border-color:var(--dn);color:var(--dn);font-size:12px;text-align:center;line-height:1.15}.g-w .gc-grade{font-size:12px}
+.gc-id{min-width:0;flex:1}
+.gc-id h3{margin:0;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gc-id small{color:var(--mute);font:12px var(--mono)}
+.gc-side{display:inline-block;margin-right:8px;padding:2px 9px;border-radius:6px;font:700 12.5px/1.5 var(--mono);vertical-align:2px}
+.gc-side.CALL{background:var(--up);color:#00130f}.gc-side.PUT{background:var(--dn);color:#1c0003}
+.gc-px{text-align:right;flex:none}.gc-px b{display:block;font:600 15px var(--mono)}.gc-px small{font:12px var(--mono)}
+.up{color:var(--up)}.dn{color:var(--dn)}
+.gc-setup{margin:10px 0 6px;font-weight:600;font-size:14.5px}
+.gc-setup em{font-style:normal;color:var(--mute);font-weight:400}
+.gc-lb{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 8px}
+.gc-lb i{font-style:normal;font-size:11.5px;line-height:1.5;padding:1px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--dim);white-space:nowrap}
+.gc-lb i.pz{border-color:var(--gold);color:var(--gold);background:rgba(233,196,106,.08)}
+.gc-lb i.line,.gc-lb i.mtf{border-color:rgba(110,168,254,.55);color:var(--blue)}
+.gc-lb i.mom,.gc-lb i.news,.gc-lb i.vol,.gc-lb i.ema,.gc-lb i.smc{border-color:rgba(34,171,148,.5);color:var(--up)}.gc-lb i.risk{border-color:var(--dn);color:var(--dn)}
+.gc-say{margin:0 0 10px;color:var(--dim);font-size:14px;line-height:1.5}
+.gc-chk{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin:0 0 10px}
+.gc-chk span{display:grid;place-items:center;height:26px;border-radius:7px;font:600 10.5px/1 var(--mono);letter-spacing:.04em;background:rgba(255,255,255,.05);color:var(--mute);cursor:help}
+.gc-chk span.ok{background:rgba(34,171,148,.16);color:var(--up)}.gc-chk span.no{background:rgba(247,82,95,.08);color:#b86870}
+.gc-plan{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.gc-plan div{padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:#0A0B0E;min-width:0}
+.gc-plan span{display:block;color:var(--mute);font-size:11px}
+.gc-plan b{font:600 13px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.gc-plan .sl b{color:var(--dn)}.gc-plan .tg b{color:var(--up)}
+.gc-foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.gc-mtf{display:flex;gap:3px;align-items:center;margin-right:auto;color:var(--mute);font:11px var(--mono)}
+.gc-mtf i{display:inline-grid;place-items:center;width:30px;height:18px;border-radius:4px;font-style:normal;font-size:10px;background:rgba(255,255,255,.06)}
+.gc-mtf i.u{background:rgba(34,171,148,.22);color:var(--up)}.gc-mtf i.d{background:rgba(247,82,95,.18);color:var(--dn)}
+.gc-foot a,.gc-foot button{padding:7px 12px;border-radius:999px;border:1px solid var(--line2);font:500 13px/1 var(--sans);text-decoration:none;color:var(--ink);background:transparent;cursor:pointer}
+.gc-foot a.pri{background:var(--gold);border-color:var(--gold);color:#1a1300;font-weight:600}
+.gc-foot a:hover,.gc-foot button:hover{border-color:var(--ink)}
+.gc-more{display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.gc.open .gc-more{display:block}
+.gc-more ul{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.gc-more li{display:grid;grid-template-columns:20px 1fr;gap:8px;font-size:13.5px}
+.gc-more li i{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font:700 11px/1 var(--sans);font-style:normal;background:rgba(255,255,255,.07);color:var(--mute)}
+.gc-more li.ok i{background:var(--up);color:#00130f}
+.gc-more li b{font-weight:600}.gc-more li p{margin:1px 0 0;color:var(--dim);font-size:12.5px}
+.gc-news{margin:10px 0 0;font-size:12.5px;color:var(--dim)}.gc-news a{color:var(--blue)}
+.gf-empty{grid-column:1/-1;padding:30px 16px;border:1px dashed var(--line2);border-radius:16px;color:var(--dim);text-align:center}
+.gf-more{display:block;margin:16px auto 0}
+.gf-note{margin:16px 0 0;padding:12px 16px;border:1px solid rgba(233,196,106,.35);border-radius:12px;background:rgba(233,196,106,.06);color:var(--dim);font-size:14px}.gf-note b{color:var(--ink)}
+
+/* learn */
+.gf-learn{margin-top:34px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.gf-learn h2{grid-column:1/-1;margin:0;font-size:20px}
+.gf-learn dl{margin:0;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card)}
+.gf-learn dt{font-weight:600;margin-top:10px}.gf-learn dt:first-child{margin-top:0}
+.gf-learn dd{margin:2px 0 0;color:var(--dim);font-size:14px}
+.gf-foot{margin-top:22px;color:var(--mute);font-size:13px}
+.gf-ftr{max-width:1260px;margin:0 auto;padding:0 20px 40px}.gf-ftr nav{display:flex;flex-wrap:wrap;gap:8px 18px;padding-top:18px;border-top:1px solid var(--line)}.gf-ftr a{color:var(--mute);font-size:13px;text-decoration:none}.gf-ftr a:hover{color:var(--ink)}
+
+@media (max-width:1020px){.gf-flow{grid-template-columns:repeat(2,1fr)}.gf-tiles{grid-template-columns:repeat(3,1fr)}.gf-list{grid-template-columns:1fr}.gf-learn{grid-template-columns:1fr}}
+@media (max-width:560px){.gf{padding:16px 12px 50px}.gf-hero{padding:24px 18px}.gf-flow{grid-template-columns:1fr}.gf-tiles{grid-template-columns:repeat(2,1fr)}
+  .gc-plan{grid-template-columns:repeat(3,minmax(0,1fr))}.gc-chk span{font-size:9px}.gf-q{max-width:none;margin-left:0;flex-basis:100%}}
+@media (prefers-reduced-motion:reduce){.gf-eye i{animation:none}}
+</style>
+<style>
+.of-sel{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:18px 0 10px}
+.of-sel .gf-q{max-width:220px;margin-left:0}
+.of-chips{display:flex;flex-wrap:wrap;gap:6px}
+.of-chips button{appearance:none;border:1px solid var(--line2);background:transparent;color:var(--dim);padding:6px 11px;border-radius:999px;font:600 12.5px/1 var(--mono);cursor:pointer}
+.of-chips button:hover{color:var(--ink);border-color:var(--ink)}
+.of-chips button.on{background:var(--gold);border-color:var(--gold);color:#1a1300}
+.of-top{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:baseline;margin:6px 0 12px}
+.of-top h2{margin:0;font-size:26px;letter-spacing:-.02em}
+.of-top .px{font:600 24px var(--mono)}
+.of-top small{color:var(--mute);font-size:13px}
+.of-grid{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:12px}
+.of-card{border:1px solid var(--line);border-radius:16px;background:var(--card);padding:14px 16px;min-width:0}
+.of-card h3{margin:0 0 4px;font-size:15px}
+.of-card .sub{margin:0 0 10px;color:var(--mute);font-size:12.5px}
+.of-say{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.of-say li{position:relative;padding-left:22px;font-size:14.5px;line-height:1.45;color:var(--dim)}
+.of-say li b{color:var(--ink)}
+.of-say li::before{content:"";position:absolute;left:4px;top:7px;width:8px;height:8px;border-radius:50%;background:var(--mute)}
+.of-say li.u::before{background:var(--up)}.of-say li.d::before{background:var(--dn)}.of-say li.w::before{background:var(--gold)}
+.of-ch{position:relative;width:100%}
+.of-ch .lab{position:absolute;left:8px;top:6px;z-index:3;font:600 11px var(--mono);color:var(--mute);pointer-events:none;letter-spacing:.04em}
+.of-ch .lab i{font-style:normal;margin-right:10px}
+#ofPrice{height:330px}#ofDelta{height:150px}#ofOi{height:110px}
+.of-ch+.of-ch{border-top:1px solid var(--line)}
+.of-hm{position:relative;height:330px}
+.of-hm canvas{width:100%;height:100%;display:block;border-radius:10px}
+.of-legend{display:flex;gap:8px;align-items:center;margin-top:8px;color:var(--mute);font-size:12px}
+.of-legend i{flex:1;height:8px;border-radius:4px;background:linear-gradient(90deg,#0c0f1d,#3b1f6b,#8a2c86,#e0583f,#f6c84a,#fffbe0)}
+.of-near{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.of-near div{font-size:13px}
+.of-near b{display:block;font-size:12px;color:var(--mute);font-weight:500;margin-bottom:4px}
+.of-near p{margin:0 0 3px;display:flex;justify-content:space-between;gap:8px;font-family:var(--mono)}
+.of-book .row{display:grid;grid-template-columns:62px 1fr 64px;gap:8px;align-items:center;margin:0 0 8px;font-size:12.5px}
+.of-book .bar{display:flex;height:16px;border-radius:5px;overflow:hidden;background:#1a1c22}
+.of-book .bar i{display:block;height:100%}
+.of-book .bar i.b{background:rgba(34,171,148,.75)}.of-book .bar i.a{background:rgba(247,82,95,.7)}
+.of-walls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;font:12.5px var(--mono)}
+.of-walls p{margin:0 0 3px;display:flex;justify-content:space-between}
+.of-ratio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.of-ratio div{padding:10px;border:1px solid var(--line);border-radius:12px;background:#0A0B0E}
+.of-ratio span{display:block;color:var(--mute);font-size:11.5px}
+.of-ratio b{display:block;font:600 19px var(--mono);margin:3px 0}
+.of-ratio small{color:var(--dim);font-size:11.5px}
+.of-ratio canvas{display:block;width:100%;height:34px;margin-top:6px}
+.of-liq{max-height:260px;overflow:auto;font:12.5px var(--mono)}
+.of-liq p{margin:0;padding:5px 2px;display:grid;grid-template-columns:60px 70px 1fr auto;gap:8px;border-top:1px solid var(--line)}
+.of-tot{display:flex;gap:8px;margin:0 0 8px}
+.of-tot div{flex:1;padding:8px 10px;border-radius:10px;background:#0A0B0E;border:1px solid var(--line)}
+.of-tot span{display:block;color:var(--mute);font-size:11.5px}.of-tot b{font:600 16px var(--mono)}
+.of-tbl-w{border:1px solid var(--line);border-radius:16px;background:var(--card);overflow-x:auto}
+.of-tbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:900px}
+.of-tbl th{position:sticky;top:0;background:var(--card2);color:var(--mute);font-weight:500;font-size:12px;text-align:right;padding:10px;white-space:nowrap;cursor:pointer;user-select:none}
+.of-tbl th:first-child,.of-tbl td:first-child,.of-tbl th.l,.of-tbl td.l{text-align:left}
+.of-tbl th.on{color:var(--gold)}
+.of-tbl td{padding:9px 10px;border-top:1px solid var(--line);text-align:right;white-space:nowrap;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.of-tbl tr{cursor:pointer}.of-tbl tr:hover td{background:rgba(255,255,255,.03)}.of-tbl tr.on td{background:rgba(233,196,106,.06)}
+.of-tbl td.coin{font-family:var(--sans);font-weight:600}
+.of-rd{display:inline-block;padding:2px 8px;border-radius:999px;font:500 12px var(--sans)}
+.of-rd.u{background:rgba(34,171,148,.14);color:var(--up)}.of-rd.d{background:rgba(247,82,95,.12);color:var(--dn)}.of-rd.n{background:rgba(255,255,255,.06);color:var(--dim)}
+.of-dv{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:999px;background:rgba(233,196,106,.14);color:var(--gold);font:500 11.5px var(--sans)}
+.of-dl{display:inline-flex;align-items:center;gap:6px;justify-content:flex-end}
+.of-dl i{display:inline-block;width:40px;height:6px;border-radius:3px;background:#1a1c22;position:relative;overflow:hidden}
+.of-dl i s{position:absolute;top:0;bottom:0}
+.of-h2{margin:30px 0 4px;font-size:21px}
+.of-p{margin:0 0 12px;color:var(--dim);font-size:14px}
+.of-wait{display:grid;place-items:center;height:100%;color:var(--mute);font-size:13px}
+@media (max-width:1020px){.of-grid{grid-template-columns:1fr}}
+@media (max-width:640px){#ofPrice{height:260px}#ofDelta{height:130px}#ofOi{height:96px}.of-hm{height:280px}.of-ratio{grid-template-columns:1fr 1fr 1fr}.of-ratio b{font-size:16px}.of-near,.of-walls{grid-template-columns:1fr 1fr}.of-top h2{font-size:22px}.of-top .px{font-size:20px}.gf-tiles{grid-template-columns:repeat(2,minmax(0,1fr))!important}.gf-flow{grid-template-columns:1fr!important}.of-sel .gf-q{max-width:none;flex:1 1 100%}}
+</style>
+</head>
+<body>
+<main class="gf">
+  <section class="gf-hero">
+    <div class="gf-eye"><i></i>Crypto order flow · free · live</div>
+    <h1>Crypto <span>Order Flow</span></h1>
+    <p class="gf-lede">See who is really moving price. <b>Buyers vs sellers</b> (CVD, futures and spot), <b>new money in or out</b> (open interest), <b>where the walls are</b> (order book) and <b>where leveraged traders get liquidated</b> (heatmap and live liquidations). Every number explained in plain words. No sign-up, no paywall.</p>
+    <ol class="gf-flow" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+      <li><span>1 · DELTA &amp; CVD</span><b>Who is aggressive</b><p>Market buys minus market sells, each candle, and its running total.</p></li>
+      <li><span>2 · OPEN INTEREST</span><b>New money or exits</b><p>Rising with price = new positions. Falling = traders closing out.</p></li>
+      <li><span>3 · ORDER BOOK</span><b>Where size waits</b><p>Bids vs asks near price, and the biggest walls on each side.</p></li>
+      <li><span>4 · LIQUIDATIONS</span><b>Where stops get forced</b><p>Live liquidations, and an estimated map of the levels still waiting.</p></li>
+    </ol>
+  </section>
+
+  <div class="gf-tiles" id="ofTiles" style="grid-template-columns:repeat(4,minmax(0,1fr))"></div>
+
+  <div class="of-sel">
+    <input class="gf-q" id="ofQ" type="search" placeholder="Any coin: BTC, SOL, PEPE…" aria-label="Find a coin" list="ofList"><datalist id="ofList"></datalist>
+    <div class="of-chips" id="ofChips"></div>
+    <div class="gf-tabs" id="ofTf" role="group" aria-label="Timeframe" style="margin-left:auto"><button type="button" data-v="5m">5m</button><button type="button" data-v="15m" class="on">15m</button><button type="button" data-v="1h">1h</button><button type="button" data-v="4h">4h</button></div>
+  </div>
+
+  <div class="of-top"><h2 id="ofName">BTC</h2><span class="px" id="ofPx">–</span><small id="ofMeta">Loading…</small></div>
+
+  <div class="of-grid">
+    <div class="of-card" style="padding:0;overflow:hidden">
+      <div class="of-ch" id="ofPrice"><div class="lab"><i>PRICE</i></div></div>
+      <div class="of-ch" id="ofDelta"><div class="lab"><i>DELTA (bars)</i><i style="color:#E9C46A">FUTURES CVD</i><i style="color:#6EA8FE">SPOT CVD</i></div></div>
+      <div class="of-ch" id="ofOi"><div class="lab"><i>OPEN INTEREST (USDT)</i></div></div>
+    </div>
+    <div class="of-card"><h3>What the flow says</h3><p class="sub" id="ofSayWhen">Reading…</p><ul class="of-say" id="ofSay"></ul></div>
+  </div>
+
+  <div class="of-grid" style="margin-top:12px">
+    <div class="of-card"><h3>Liquidation heatmap <small style="color:var(--mute);font-weight:400">· estimated</small></h3><p class="sub">Brighter = more leveraged positions would be force-closed at that price. Built from open interest changes; a model, not exchange data.</p>
+      <div class="of-hm"><canvas id="ofHm"></canvas></div><div class="of-legend">less<i></i>more</div>
+      <div class="of-near" id="ofNear"></div></div>
+    <div class="of-card of-book"><h3>Order book</h3><p class="sub" id="ofBookSub">Bids (buyers waiting) vs asks (sellers waiting) near price, Binance futures.</p><div id="ofBook"></div><div class="of-walls" id="ofWalls"></div></div>
+  </div>
+
+  <div class="of-grid" style="margin-top:12px">
+    <div class="of-card"><h3>Long vs short</h3><p class="sub">Above 1 = more longs (or more buying). Line = last ~150 periods.</p><div class="of-ratio" id="ofRatio"></div></div>
+    <div class="of-card"><h3>Liquidations <small style="color:var(--mute);font-weight:400">· live from OKX</small></h3><p class="sub" id="ofLiqSub">Positions force-closed on OKX.</p><div class="of-tot" id="ofLiqTot"></div><div class="of-liq" id="ofLiq"></div></div>
+  </div>
+
+  <h2 class="of-h2">Market board · top 60 perpetuals</h2>
+  <p class="of-p">One line per coin: price move, who is aggressive (delta), and whether new money is coming in (open interest). Click a coin to open it above.</p>
+  <div class="gf-bar" style="margin-top:0">
+    <div class="gf-tabs" id="ofF" role="group" aria-label="Filter"><button type="button" data-v="all" class="on">All</button><button type="button" data-v="up">Buyers in control</button><button type="button" data-v="dn">Sellers in control</button><button type="button" data-v="nl">New longs</button><button type="button" data-v="ns">New shorts</button><button type="button" data-v="div">Divergence</button></div>
+  </div>
+  <p class="gf-upd" id="ofUpd">Reading the market…</p>
+  <div class="of-tbl-w"><table class="of-tbl"><thead id="ofHead"></thead><tbody id="ofBody"><tr><td colspan="11" style="text-align:center;color:var(--mute)">Reading the market…</td></tr></tbody></table></div>
+
+  <section class="gf-learn"><h2>How to read order flow</h2>
+    <dl><dt>Delta and CVD</dt><dd>Delta is market buys minus market sells in one candle. CVD adds them up. <b>Price up with CVD up</b> is a healthy move; <b>price up while CVD falls</b> means the rise is not backed by buyers.</dd><dt>Futures vs spot CVD</dt><dd>Spot buying is real coins changing hands; futures can be leverage. Moves led by spot tend to last longer.</dd></dl>
+    <dl><dt>Price and open interest together</dt><dd><b>Up + OI up</b>: new longs. <b>Up + OI down</b>: short covering. <b>Down + OI up</b>: new shorts. <b>Down + OI down</b>: longs closing or liquidated.</dd><dt>Funding</dt><dd>Positive funding means longs pay shorts: the crowd leans long. Very high funding often comes before a flush.</dd></dl>
+    <dl><dt>Liquidation heatmap</dt><dd>Price is often pulled toward large clusters, because forced orders there add fuel. It is an estimate made from open interest, as every liquidation heatmap is.</dd><dt>Order book walls</dt><dd>Big resting orders can slow price, but they can be pulled at any time. Treat them as hints, not floors.</dd></dl>
+  </section>
+  <p class="gf-note"><b>Sources.</b> Delta, CVD, open interest, ratios and the order book come from Binance (futures and spot); live liquidations from OKX. Data refreshes every 45-90 seconds. Not financial advice.</p>
+  <p class="gf-foot">For education, not financial advice.</p>
+</main>
+<footer class="gf-ftr"><nav><a href="/scanners/">All scanners</a><a href="/scanners/squeeze/">Liquidation Squeeze Scanner</a><a href="/scanners/crypto-arbitrage/">Crypto Arbitrage Scanner</a><a href="/scanners/godfather/">God-father Scanner</a><a href="/bias/">AI Scan</a><a href="/legal.php">Legal</a></nav></footer>
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const usd = v => { if (v == null || !isFinite(v)) return "–"; const a = Math.abs(v), s = v < 0 ? "-" : ""; return s + "$" + (a >= 1e9 ? (a/1e9).toFixed(2) + "B" : a >= 1e6 ? (a/1e6).toFixed(1) + "M" : a >= 1e3 ? (a/1e3).toFixed(0) + "K" : a.toFixed(0)); };
+const pct = (v, d = 2) => v == null || !isFinite(v) ? "–" : (v > 0 ? "+" : "") + Number(v).toFixed(d) + "%";
+const px = v => { v = Number(v); if (!isFinite(v)) return "–"; const a = Math.abs(v); return v.toLocaleString("en-US", {maximumFractionDigits: a >= 1000 ? 2 : a >= 10 ? 3 : a >= 1 ? 4 : 6}); };
+const cls = v => v > 0 ? "up" : v < 0 ? "dn" : "";
+const ago = t => { const s = Math.max(0, Math.floor(Date.now()/1000) - t); return s < 60 ? s + "s ago" : s < 3600 ? Math.floor(s/60) + "m ago" : Math.floor(s/3600) + "h ago"; };
+const params = new URLSearchParams(location.search);
+const S = { sym: ((params.get("s") || "BTC").toUpperCase().replace(/USDT$/, "")) + "USDT", tf: ["5m","15m","1h","4h"].includes(params.get("tf")) ? params.get("tf") : "15m", B: null, D: null, f: "all", sort: "vol", dir: -1 };
+const QUICK = ["BTC","ETH","SOL","XRP","BNB","DOGE","HYPE","SUI"];
+let ch = null, timer = 0, btimer = 0;
+
+/* ---------- charts (Lightweight Charts) ---------- */
+function makeCharts() {
+  if (ch || !window.LightweightCharts) return;
+  const L = window.LightweightCharts, base = { layout: { background: { color: "transparent" }, textColor: "#8A8C96", fontFamily: "IBM Plex Mono, monospace", fontSize: 11 },
+    grid: { vertLines: { color: "rgba(255,255,255,.04)" }, horzLines: { color: "rgba(255,255,255,.04)" } }, rightPriceScale: { borderColor: "rgba(255,255,255,.08)", minimumWidth: 78 },
+    timeScale: { borderColor: "rgba(255,255,255,.08)", timeVisible: true, secondsVisible: false }, crosshair: { mode: 0 },
+    localization: { timeFormatter: t => new Date(t * 1000).toLocaleString([], { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }), priceFormatter: p => Math.abs(p) >= 1e6 ? usd(p) : px(p) },
+    handleScroll: { vertTouchDrag: false } };
+  const mk = (id, extra) => L.createChart(document.getElementById(id), Object.assign({}, base, extra || {}));
+  const cP = mk("ofPrice"), cD = mk("ofDelta", { timeScale: { visible: false } }), cO = mk("ofOi", { timeScale: { visible: false } });
+  cP.applyOptions({ timeScale: { visible: true } });
+  const candles = cP.addCandlestickSeries({ upColor: "#22AB94", downColor: "#F7525F", borderVisible: false, wickUpColor: "#22AB94", wickDownColor: "#F7525F" });
+  const delta = cD.addHistogramSeries({ priceScaleId: "left", priceFormat: { type: "volume" } });
+  cD.applyOptions({ leftPriceScale: { visible: false } });
+  const cvd = cD.addLineSeries({ color: "#E9C46A", lineWidth: 2, priceLineVisible: false, lastValueVisible: true, priceFormat: { type: "volume" } });
+  const scvd = cD.addLineSeries({ color: "#6EA8FE", lineWidth: 2, priceScaleId: "spot", priceLineVisible: false, lastValueVisible: false });
+  cD.priceScale("spot").applyOptions({ visible: false });
+  const oi = cO.addAreaSeries({ lineColor: "#9D8CFF", topColor: "rgba(157,140,255,.25)", bottomColor: "rgba(157,140,255,0)", lineWidth: 2, priceLineVisible: false, priceFormat: { type: "volume" } });
+  const all = [cP, cD, cO]; let busy = false;
+  all.forEach(c => c.timeScale().subscribeVisibleLogicalRangeChange(r => { if (busy || !r) return; busy = true; all.forEach(o => o !== c && o.timeScale().setVisibleLogicalRange(r)); busy = false; }));
+  const fit = () => all.forEach(c => { const el = c.chartElement().parentElement; c.applyOptions({ width: el.clientWidth, height: el.clientHeight }); });
+  new ResizeObserver(fit).observe($("#ofPrice")); fit();
+  ch = { cP, cD, cO, candles, delta, cvd, scvd, oi, all };
+}
+function drawCharts(D) {
+  makeCharts(); if (!ch) return;
+  const C = D.c.filter(r => !r[8]);   // finished candles only
+  ch.candles.setData(C.map(r => ({ time: r[0], open: r[1], high: r[2], low: r[3], close: r[4] })));
+  ch.delta.setData(C.map(r => ({ time: r[0], value: r[6], color: r[6] >= 0 ? "rgba(34,171,148,.55)" : "rgba(247,82,95,.55)" })));
+  ch.cvd.setData(C.map(r => ({ time: r[0], value: r[7] })));
+  const tset = new Set(C.map(r => r[0]));
+  ch.scvd.setData((D.spot || []).filter(r => tset.has(r[0])).map(r => ({ time: r[0], value: r[2] })));
+  const fo = (D.oi || []).filter(r => tset.has(r[0])); ch.oi.setData(fo.map(r => ({ time: r[0], value: r[1] })));
+  const n = C.length; ch.all.forEach(c => c.timeScale().setVisibleLogicalRange({ from: Math.max(0, n - 140), to: n + 3 }));
+}
+
+/* ---------- heatmap (canvas) ---------- */
+const PAL = [[12,15,29],[59,31,107],[138,44,134],[224,88,63],[246,200,74],[255,251,224]];
+const col = v => { const x = Math.min(1, Math.max(0, v)) * (PAL.length - 1), i = Math.floor(x), f = x - i, a = PAL[i], b = PAL[Math.min(PAL.length - 1, i + 1)]; return [0,1,2].map(k => Math.round(a[k] + (b[k] - a[k]) * f)); };
+function drawHeat(D) {
+  const cv = $("#ofHm"), M = D.map, r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); const x = cv.getContext("2d"); x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const W = r.width, H = r.height, AX = 64; x.fillStyle = "#0c0f1d"; x.fillRect(0, 0, W, H);
+  if (!M) { x.fillStyle = "#6B6D78"; x.font = "13px IBM Plex Sans, sans-serif"; x.fillText("Not enough open-interest history for this coin yet.", 14, 24); $("#ofNear").innerHTML = ""; return; }
+  const cols = M.g.length, rows = M.rows, cw = (W - AX) / cols, rh = H / rows, img = x.createImageData(Math.max(1, Math.round((W - AX) * dpr)), Math.max(1, Math.round(H * dpr)));
+  for (let py = 0; py < img.height; py++) { const row = rows - 1 - Math.floor(py / dpr / rh); for (let pxl = 0; pxl < img.width; pxl++) { const c = Math.min(cols - 1, Math.floor(pxl / dpr / cw)), v = Math.pow((M.g[c][row] || 0) / 255, .55), k = col(v), o = (py * img.width + pxl) * 4; img.data[o] = k[0]; img.data[o+1] = k[1]; img.data[o+2] = k[2]; img.data[o+3] = 255; } }
+  x.putImageData(img, 0, 0);
+  const y = p => H - (p - M.lo) / (M.hi - M.lo) * H, tidx = new Map(M.t.map((t, i) => [t, i]));
+  x.beginPath(); let first = true; x.strokeStyle = "rgba(255,255,255,.9)"; x.lineWidth = 1.4;
+  D.c.forEach(r => { const i = tidx.get(r[0]); if (i == null) return; const X = (i + .5) * cw, Y = y(r[4]); first ? x.moveTo(X, Y) : x.lineTo(X, Y); first = false; }); x.stroke();
+  const P = D.px, yp = y(P); x.setLineDash([4, 4]); x.strokeStyle = "rgba(233,196,106,.9)"; x.beginPath(); x.moveTo(0, yp); x.lineTo(W - AX, yp); x.stroke(); x.setLineDash([]);
+  x.fillStyle = "#07080A"; x.fillRect(W - AX, 0, AX, H); x.fillStyle = "#8A8C96"; x.font = "11px IBM Plex Mono, monospace"; x.textBaseline = "middle";
+  for (let k = 0; k <= 6; k++) { const p = M.lo + (M.hi - M.lo) * k / 6; x.fillText(px(p), W - AX + 6, Math.min(H - 8, Math.max(8, y(p)))); }
+  x.fillStyle = "#E9C46A"; x.fillRect(W - AX, yp - 9, AX, 18); x.fillStyle = "#1a1300"; x.fillText(px(P), W - AX + 6, yp);
+  const L = (a, t) => `<div><b>${t}</b>${a.length ? a.map(z => `<p><span>${px(z[0])}</span><span class="${z[3] === "short" ? "up" : "dn"}">${usd(z[1])}</span><span style="color:var(--mute)">${pct(z[2], 1)}</span></p>`).join("") : '<p style="color:var(--mute)">none in range</p>'}</div>`;
+  $("#ofNear").innerHTML = L(M.near.above, "Biggest clusters above (shorts at risk)") + L(M.near.below, "Biggest clusters below (longs at risk)");
+}
+
+/* ---------- side panels ---------- */
+function spark(cv, a, ref) {
+  const r = cv.getBoundingClientRect(), d = Math.min(2, devicePixelRatio || 1); cv.width = r.width * d; cv.height = r.height * d; const x = cv.getContext("2d"); x.scale(d, d);
+  if (a.length < 2) return; const v = a.map(z => z[1]), mn = Math.min(...v, ref), mx = Math.max(...v, ref), W = r.width, H = r.height, Y = q => H - 2 - (q - mn) / ((mx - mn) || 1) * (H - 4);
+  x.strokeStyle = "rgba(255,255,255,.15)"; x.setLineDash([3, 3]); x.beginPath(); x.moveTo(0, Y(ref)); x.lineTo(W, Y(ref)); x.stroke(); x.setLineDash([]);
+  x.strokeStyle = v[v.length - 1] >= ref ? "#22AB94" : "#F7525F"; x.lineWidth = 1.5; x.beginPath(); v.forEach((q, i) => { const X = i / (v.length - 1) * W; i ? x.lineTo(X, Y(q)) : x.moveTo(X, Y(q)); }); x.stroke();
+}
+function panels(D) {
+  const b = D.book;
+  if (b) { const mx = Math.max(...b.bands.map(z => z.bid + z.ask));
+    $("#ofBook").innerHTML = b.bands.map(z => `<div class="row"><span style="color:var(--mute)">${z.all ? "all " + z.pct + "%" : "±" + z.pct + "%"}</span><div class="bar"><i class="b" style="width:${(z.bid / (z.bid + z.ask || 1) * 100).toFixed(1)}%"></i><i class="a" style="flex:1"></i></div><span class="${cls(z.imb)}" style="text-align:right">${pct(z.imb, 0)}</span></div><div style="display:flex;justify-content:space-between;margin:-5px 0 9px 70px;font:11.5px var(--mono);color:var(--mute)"><span>bids ${usd(z.bid)}</span><span>asks ${usd(z.ask)}</span></div>`).join("");
+    const w = (a, t, c) => `<div><b style="display:block;color:var(--mute);font:500 12px var(--sans);margin-bottom:4px">${t}</b>${a.map(z => `<p><span>${px(z[0])}</span><span class="${c}">${usd(z[1])}</span></p>`).join("")}</div>`;
+    $("#ofWalls").innerHTML = w(b.walls.bid.slice(0, 5), "Biggest bid walls", "up") + w(b.walls.ask.slice(0, 5), "Biggest ask walls", "dn");
+    $("#ofBookSub").textContent = `Bids (buyers waiting) vs asks (sellers waiting), Binance futures. Book shown out to ±${b.reach}% of price.`;
+  } else { $("#ofBook").innerHTML = '<p class="sub">Order book not available right now.</p>'; $("#ofWalls").innerHTML = ""; }
+  const R = D.ls || {}, item = (k, t, a, ref, note) => { const v = a.length ? a[a.length - 1][1] : null, v0 = a.length > 12 ? a[a.length - 13][1] : null;
+    return `<div><span>${t}</span><b class="${v == null ? "" : v >= ref ? "up" : "dn"}">${v == null ? "–" : v.toFixed(2)}</b><small>${note(v)}${v0 != null ? ` · ${v >= v0 ? "rising" : "falling"}` : ""}</small><canvas data-k="${k}"></canvas></div>`; };
+  $("#ofRatio").innerHTML = item("acc", "All accounts L/S", R.acc || [], 1, v => v == null ? "" : `${(v / (1 + v) * 100).toFixed(0)}% long`) + item("top", "Top traders L/S", R.top || [], 1, v => v == null ? "" : `${(v / (1 + v) * 100).toFixed(0)}% long`) + item("taker", "Taker buy/sell", R.taker || [], 1, v => v == null ? "" : v >= 1 ? "buyers lead" : "sellers lead");
+  $$("#ofRatio canvas").forEach(c => spark(c, (R[c.dataset.k] || []), 1));
+  const q = D.liq;
+  if (q && q.n) { $("#ofLiqTot").innerHTML = `<div><span>Longs liquidated</span><b class="dn">${usd(q.long)}</b></div><div><span>Shorts liquidated</span><b class="up">${usd(q.short)}</b></div>`;
+    $("#ofLiqSub").textContent = `Last ${q.n} liquidations on OKX${q.since ? ", since " + ago(q.since) : ""}. Red = a long was force-sold, green = a short was force-bought.`;
+    $("#ofLiq").innerHTML = q.list.map(z => `<p><span style="color:var(--mute)">${ago(z.t)}</span><span class="${z.side === "long" ? "dn" : "up"}">${z.side === "long" ? "LONG" : "SHORT"}</span><span>${px(z.px)}</span><b>${usd(z.v)}</b></p>`).join("");
+  } else { $("#ofLiqTot").innerHTML = ""; $("#ofLiqSub").textContent = "No recent OKX liquidations for this coin (or OKX does not list it)."; $("#ofLiq").innerHTML = ""; }
+}
+/* ---------- plain-words reading ---------- */
+function say(D) {
+  const C = D.c.filter(r => !r[8]), n = C.length, k = Math.min(16, n - 1), a = C[n - 1 - k], z = C[n - 1], out = [];
+  const pch = (z[4] / a[4] - 1) * 100; let buy = 0, vol = 0; for (let i = n - k; i < n; i++) { vol += C[i][5]; buy += (C[i][5] + C[i][6]) / 2; }
+  const dl = vol ? (2 * buy - vol) / vol * 100 : 0, span = { "5m": "80 minutes", "15m": "4 hours", "1h": "16 hours", "4h": "2.7 days" }[D.tf];
+  out.push([dl > 5 ? "u" : dl < -5 ? "d" : "", `Over the last ${span}, <b>${dl >= 0 ? "buyers" : "sellers"}</b> were more aggressive: net ${dl >= 0 ? "buying" : "selling"} of <b>${usd(Math.abs(2 * buy - vol))}</b> (${pct(dl, 1)} of volume) while price moved <b class="${cls(pch)}">${pct(pch)}</b>.`]);
+  if (pch > .4 && dl < -5) out.push(["w", "<b>Warning:</b> price rose while more was sold than bought. The move is not backed by buyers and can fade."]);
+  if (pch < -.4 && dl > 5) out.push(["w", "<b>Absorption:</b> price fell even though buyers were aggressive. Sellers with limit orders are soaking up the buying; watch for a turn if they run out."]);
+  const O = (D.oi || []).filter(r => r[0] >= a[0]); if (O.length > 2) { const oc = (O[O.length - 1][1] / O[0][1] - 1) * 100;
+    const t = pch > 0 && oc > .5 ? ["u", "New longs are opening: price and open interest are both rising."] : pch > 0 && oc < -.5 ? ["u", "Short covering: price is up but open interest is falling, so shorts are closing. This kind of rise often fades sooner."] : pch < 0 && oc > .5 ? ["d", "New shorts are opening: price falls while open interest rises."] : pch < 0 && oc < -.5 ? ["d", "Longs are closing or being liquidated: price and open interest are both falling."] : ["", "Open interest is little changed: no big wave of new positions."];
+    out.push([t[0], `${t[1]} Open interest <b class="${cls(oc)}">${pct(oc)}</b>.`]); }
+  const sp = (D.spot || []); if (sp.length > k + 1) { const sd = sp[sp.length - 1][2] - sp[Math.max(0, sp.length - 1 - k)][2], fd = z[7] - a[7];
+    if (Math.sign(sd) !== Math.sign(fd) && Math.abs(sd) > 0) out.push(["w", `Spot and futures disagree: spot CVD is <b>${sd > 0 ? "rising" : "falling"}</b> while futures CVD is <b>${fd > 0 ? "rising" : "falling"}</b>. Spot buyers are usually the stronger hand.`]);
+    else out.push([sd > 0 ? "u" : "d", `Spot and futures agree: both CVDs are ${sd > 0 ? "rising (real buying on spot too)" : "falling (selling on spot too)"}.`]); }
+  if (D.fr != null) out.push([Math.abs(D.fr) >= .03 ? "w" : "", `Funding is <b>${pct(D.fr, 4)}</b> per period: ${D.fr > .03 ? "longs are crowded and paying a lot" : D.fr > 0 ? "longs pay shorts a normal amount" : D.fr < -.01 ? "shorts are crowded and paying longs" : "close to neutral"}.`]);
+  const M = D.map; if (M && (M.near.above[0] || M.near.below[0])) { const up = M.near.above[0], dn = M.near.below[0];
+    out.push(["", `Nearest big liquidation pools (estimated): ${up ? `<b>${px(up[0])}</b> above (${pct(up[2], 1)})` : "none above"} and ${dn ? `<b>${px(dn[0])}</b> below (${pct(dn[2], 1)})` : "none below"}. Price often gets pulled toward the bigger one.`]); }
+  const b = D.book && D.book.bands[0]; if (b) out.push([b.imb > 15 ? "u" : b.imb < -15 ? "d" : "", `Right at price (±${b.pct}%) the book leans <b>${b.imb >= 0 ? "to buyers" : "to sellers"}</b> (${pct(b.imb, 0)}). Walls can be pulled, so treat this as a hint.`]);
+  const T = D.ls && D.ls.top, A = D.ls && D.ls.acc; if (T && T.length && A && A.length) { const t = T[T.length - 1][1], g = A[A.length - 1][1];
+    if ((t > 1) !== (g > 1)) out.push(["w", `Big traders and the crowd disagree: top traders are ${t > 1 ? "net long" : "net short"} while most accounts are ${g > 1 ? "long" : "short"}. The crowd is often on the wrong side.`]); }
+  $("#ofSay").innerHTML = out.map(([c, t]) => `<li class="${c}">${t}</li>`).join("");
+  $("#ofSayWhen").textContent = `${D.tf} candles · updated ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+/* ---------- loading ---------- */
+async function loadSym(soft) {
+  clearTimeout(timer); const want = S.sym + S.tf;
+  if (!soft) { $("#ofName").textContent = S.sym.replace(/USDT$/, ""); $("#ofMeta").textContent = "Loading…"; }
+  try { const D = await fetch(`/of_api.php?r=sym&s=${encodeURIComponent(S.sym)}&tf=${S.tf}`, { cache: "no-store" }).then(r => r.json());
+    if (want !== S.sym + S.tf) return; if (D.error) throw new Error(D.error); S.D = D;
+    const C = D.c, f = C[C.length - 1], p0 = C[Math.max(0, C.length - 1 - ({ "5m": 288, "15m": 96, "1h": 24, "4h": 6 })[D.tf])];
+    $("#ofName").textContent = D.coin; $("#ofPx").textContent = px(D.px);
+    $("#ofMeta").innerHTML = `<span class="${cls(D.px - p0[4])}">${pct((D.px / p0[4] - 1) * 100)}</span> 24h · funding ${pct(D.fr, 4)} · Binance perpetual`;
+    document.title = `${D.coin} Order Flow: CVD, Liquidations, OI · ChartPulse`;
+    drawCharts(D); drawHeat(D); panels(D); say(D); $$("#ofChips button").forEach(b => b.classList.toggle("on", b.dataset.v + "USDT" === S.sym));
+  } catch (e) { $("#ofMeta").textContent = "This coin's order flow is not available right now. Binance futures may not list it."; }
+  timer = setTimeout(() => loadSym(true), (document.hidden ? 180 : 45) * 1000);
+}
+function pick(sym) { S.sym = sym.toUpperCase().replace(/USDT$/, "") + "USDT"; const u = new URL(location.href); u.searchParams.set("s", S.sym.replace(/USDT$/, "")); if (S.tf !== "15m") u.searchParams.set("tf", S.tf); else u.searchParams.delete("tf"); history.replaceState(null, "", u); loadSym(); renderBoard(); window.scrollTo({ top: $(".of-sel").offsetTop - 70, behavior: "smooth" }); }
+$("#ofChips").innerHTML = QUICK.map(c => `<button type="button" data-v="${c}">${c}</button>`).join("");
+$$("#ofChips button").forEach(b => b.onclick = () => pick(b.dataset.v));
+$("#ofQ").addEventListener("change", e => { const v = e.target.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, ""); if (v) pick(v); e.target.value = ""; });
+$("#ofQ").addEventListener("keydown", e => { if (e.key === "Enter") e.target.dispatchEvent(new Event("change")); });
+$$("#ofTf button").forEach(b => { b.classList.toggle("on", b.dataset.v === S.tf); b.onclick = () => { S.tf = b.dataset.v; $$("#ofTf button").forEach(x => x.classList.toggle("on", x === b)); const u = new URL(location.href); if (S.tf === "15m") u.searchParams.delete("tf"); else u.searchParams.set("tf", S.tf); history.replaceState(null, "", u); loadSym(); }; });
+
+/* ---------- board ---------- */
+const COLS = [["coin","Coin","l"],["px","Price"],["c1","1h"],["c4","4h"],["c24","24h"],["d1","Delta 1h"],["d4","Delta 4h"],["oi4","OI 4h"],["oi","Open interest"],["fr","Funding"],["read","What is happening","l"]];
+const bar = v => { const w = Math.min(50, Math.abs(v) * 1.2); return `<span class="of-dl"><span class="${cls(v)}">${pct(v, 1)}</span><i><s style="${v >= 0 ? "left:50%" : "right:50%"};width:${w}%;background:${v >= 0 ? "#22AB94" : "#F7525F"}"></s></i></span>`; };
+function renderBoard() {
+  const B = S.B; if (!B) return; const R = B.rows;
+  const nl = R.filter(r => r.read === "New longs pushing up").length, ns = R.filter(r => r.read === "New shorts pushing down").length, dv = R.filter(r => r.div).length, btc = R.find(r => r.s === "BTCUSDT");
+  $("#ofTiles").innerHTML = [[btc ? pct(btc.d1, 1) : "–", "BTC delta · 1h", btc ? (btc.d1 >= 0 ? "buyers lead" : "sellers lead") : "", btc && btc.d1 >= 0 ? "a" : "nr"], [nl, "New longs pushing", "price + OI up, 4h", "a"], [ns, "New shorts pushing", "price down + OI up, 4h", "nr"], [dv, "Divergences", "price and delta disagree", "ap"]]
+    .map(([v, l, s, c]) => `<div class="gf-tile ${c}" style="cursor:default"><div class="v">${esc(v)}</div><div class="k"><b style="color:var(--ink)">${l}</b> · ${esc(s)}</div></div>`).join("");
+  $("#ofHead").innerHTML = "<tr>" + COLS.map(([k, t, c]) => `<th class="${c || ""} ${S.sort === k ? "on" : ""}" data-k="${k}">${t}${S.sort === k ? (S.dir < 0 ? " ▼" : " ▲") : ""}</th>`).join("") + "</tr>";
+  const F = S.f, rows = R.filter(r => F === "all" || (F === "up" && r.d1 >= 8) || (F === "dn" && r.d1 <= -8) || (F === "nl" && r.read === "New longs pushing up") || (F === "ns" && r.read === "New shorts pushing down") || (F === "div" && r.div))
+    .sort((a, b) => { const x = a[S.sort], y = b[S.sort]; return (typeof x === "string" ? String(x).localeCompare(String(y)) : ((x ?? -1e18) - (y ?? -1e18))) * S.dir; });
+  $("#ofBody").innerHTML = rows.map(r => `<tr data-s="${r.s}" class="${r.s === S.sym ? "on" : ""}"><td class="coin">${esc(r.coin)}</td><td>${px(r.px)}</td><td class="${cls(r.c1)}">${pct(r.c1)}</td><td class="${cls(r.c4)}">${pct(r.c4)}</td><td class="${cls(r.c24)}">${pct(r.c24)}</td><td>${bar(r.d1)}</td><td>${bar(r.d4)}</td><td class="${cls(r.oi4)}">${pct(r.oi4)}</td><td>${usd(r.oi)}</td><td class="${r.fr > .03 ? "dn" : r.fr < -.01 ? "up" : ""}">${pct(r.fr, 4)}</td><td class="l"><span class="of-rd ${r.tone > 0 ? "u" : r.tone < 0 ? "d" : "n"}">${esc(r.read)}</span>${r.div ? `<span class="of-dv">${esc(r.div)}</span>` : ""}</td></tr>`).join("") || `<tr><td colspan="11" style="text-align:center;color:var(--mute);padding:24px">No coin matches this filter right now.</td></tr>`;
+  $$("#ofHead th").forEach(th => th.onclick = () => { const k = th.dataset.k; if (S.sort === k) S.dir = -S.dir; else { S.sort = k; S.dir = -1; } renderBoard(); });
+  $$("#ofBody tr[data-s]").forEach(tr => tr.onclick = () => pick(tr.dataset.s));
+  $("#ofList").innerHTML = R.map(r => `<option value="${esc(r.coin)}">`).join("");
+}
+$$("#ofF button").forEach(b => b.onclick = () => { S.f = b.dataset.v; $$("#ofF button").forEach(x => x.classList.toggle("on", x === b)); renderBoard(); });
+async function loadBoard() { clearTimeout(btimer);
+  try { const B = await fetch("/of_api.php?r=board", { cache: "no-store" }).then(r => r.json()); if (B.error) throw 0; S.B = B; if (S.sort === "vol") { S.sort = "oi"; }
+    $("#ofUpd").textContent = `${B.rows.length} coins · ${B.src} · updated ${new Date(B.at * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`; renderBoard();
+  } catch (e) { $("#ofUpd").textContent = "The market board is temporarily unavailable. Sorry for the inconvenience. Retrying…"; }
+  btimer = setTimeout(loadBoard, (document.hidden ? 300 : 90) * 1000); }
+function start() { loadSym(); loadBoard(); }
+if (window.LightweightCharts) start(); else { const t0 = Date.now(), w = setInterval(() => { if (window.LightweightCharts || Date.now() - t0 > 8000) { clearInterval(w); start(); } }, 100); }
+let rz = 0; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { if (S.D) { drawHeat(S.D); $$("#ofRatio canvas").forEach(c => spark(c, (S.D.ls || {})[c.dataset.k] || [], 1)); } }, 150); });
+})();
+</script>
+<script src="/static/v2/tg-join.js?v=1" defer></script>
+</body>
+</html>
