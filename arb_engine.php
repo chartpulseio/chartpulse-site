@@ -42,6 +42,7 @@ function arb_market(): array {
         'gate_s' => 'https://api.gateio.ws/api/v4/spot/tickers', 'gate_p' => 'https://api.gateio.ws/api/v4/futures/usdt/tickers', 'gate_c' => 'https://api.gateio.ws/api/v4/futures/usdt/contracts',
         'mexc_s' => 'https://api.mexc.com/api/v3/ticker/24hr',
         'bitget_s' => 'https://api.bitget.com/api/v2/spot/market/tickers', 'bitget_p' => 'https://api.bitget.com/api/v2/mix/market/tickers?productType=USDT-FUTURES',
+        'bitget_f' => 'https://api.bitget.com/api/v2/mix/market/current-fund-rate?productType=USDT-FUTURES',
     ];
     $R = t_fetch_multi($U, $codes); $J = [];
     foreach ($U as $k => $_) { $j = isset($R[$k]) && $R[$k] ? json_decode((string)$R[$k], true) : null; $J[$k] = is_array($j) ? $j : []; }
@@ -72,8 +73,9 @@ function arb_market(): array {
         $perp('gate', (string)$x['contract'], arb_f($x['funding_rate']), $c[0], $c[1], arb_f($x['mark_price'] ?? $x['last'] ?? 0), arb_f($x['index_price'] ?? 0), arb_f($x['volume_24h_quote'] ?? $x['volume_24h_settle'] ?? 0)); }
     $spot('mexc', $J['mexc_s'], 'symbol', 'bidPrice', 'askPrice', 'quoteVolume');
     $spot('bitget', (array)($J['bitget_s']['data'] ?? []), 'symbol', 'bidPr', 'askPr', 'usdtVolume');
+    $bg = []; foreach ((array)($J['bitget_f']['data'] ?? []) as $x) if (is_array($x) && isset($x['symbol'])) $bg[(string)$x['symbol']] = [arb_f($x['fundingRateInterval'] ?? 0), (int)(arb_f($x['nextUpdate'] ?? 0) / 1000)];
     foreach ((array)($J['bitget_p']['data'] ?? []) as $x) if (is_array($x) && isset($x['symbol'], $x['fundingRate']) && $x['fundingRate'] !== '')
-        $perp('bitget', (string)$x['symbol'], arb_f($x['fundingRate']), 0.0, 0, arb_f($x['markPrice'] ?? $x['lastPr'] ?? 0), arb_f($x['indexPrice'] ?? 0), arb_f($x['usdtVolume'] ?? 0));
+        $perp('bitget', (string)$x['symbol'], arb_f($x['fundingRate']), $bg[$x['symbol']][0] ?? 0.0, $bg[$x['symbol']][1] ?? 0, arb_f($x['markPrice'] ?? $x['lastPr'] ?? 0), arb_f($x['indexPrice'] ?? 0), arb_f($x['usdtVolume'] ?? 0));
     $ok = []; foreach (ARB_EX as $ex => $_) $ok[$ex] = ['spot' => count($S[$ex] ?? []), 'perp' => count($P[$ex] ?? [])];
     return [$S, $P, $ok];
 }
@@ -96,6 +98,9 @@ function arb_scan(): array {
         }
         $fund = []; $cross = [];
         foreach ($F as $b => $L) {
+            // An exchange that does not publish its funding period gets the period the other exchanges use for this coin (they usually match).
+            $ki = []; foreach ($L as $q) if ($q['known']) $ki[] = $q['int'];
+            if ($ki) { sort($ki); $bi2 = $ki[intdiv(count($ki), 2)]; foreach ($L as $ex => $q) if (!$q['known']) { $L[$ex]['int'] = $bi2; $L[$ex]['day'] = $q['fr'] * 24 / $bi2 * 100; } }
             $spotOn = []; foreach ($S as $ex => $M) if (isset($M[$b]) && $M[$b][2] >= ARB_MIN_SPOT) $spotOn[] = ARB_EX[$ex];
             uasort($L, fn($a, $z) => $z['day'] <=> $a['day']); $hi = array_key_first($L); $lo = array_key_last($L); $x = $L[$hi];
             if ($x['day'] * 365 >= 8 && $spotOn) {
@@ -103,8 +108,9 @@ function arb_scan(): array {
                     'basis' => $x['basis'] === null ? null : $r($x['basis'], 3), 'next' => $x['next'], 'vol' => round($x['vol']), 'spot' => $spotOn, 'same' => in_array(ARB_EX[$hi], $spotOn, true) ? 1 : 0,
                     'fee_days' => $x['day'] > 0 ? $r(ARB_FEE_CARRY * 100 / $x['day'], 1) : null];
             }
-            if (count($L) >= 2 && $hi !== $lo) { $y = $L[$lo]; $d = $x['day'] - $y['day'];
-                if ($d * 365 >= 10) $cross[] = ['coin' => $b, 'short_ex' => ARB_EX[$hi], 'short_rate' => $r($x['fr'] * 100), 'short_int' => $x['int'], 'long_ex' => ARB_EX[$lo], 'long_rate' => $r($y['fr'] * 100), 'long_int' => $y['int'],
+            if (count($L) >= 2 && $hi !== $lo) { $y = $L[$lo]; $d = $x['day'] - $y['day']; $pg = $y['px'] > 0 ? abs($x['px'] / $y['px'] - 1) : 1;
+                // both periods must be published, both rates live (an exact 0 is a paused market), and the two contracts must price the same thing
+                if ($d * 365 >= 10 && $x['known'] && $y['known'] && $x['fr'] != 0.0 && $y['fr'] != 0.0 && $pg <= 0.01) $cross[] = ['coin' => $b, 'short_ex' => ARB_EX[$hi], 'short_rate' => $r($x['fr'] * 100), 'short_int' => $x['int'], 'long_ex' => ARB_EX[$lo], 'long_rate' => $r($y['fr'] * 100), 'long_int' => $y['int'],
                     'day' => $r($d), 'apr' => $r($d * 365, 1), 'px_gap' => $y['px'] > 0 ? $r(($x['px'] / $y['px'] - 1) * 100, 3) : null, 'vol' => round(min($x['vol'], $y['vol'])), 'n' => count($L),
                     'fee_days' => $d > 0 ? $r(0.2 / $d, 1) : null]; }
         }
@@ -129,7 +135,7 @@ function arb_scan(): array {
 
         $out = ['at' => $now, 'fund' => array_slice($fund, 0, 120), 'cross' => array_slice($cross, 0, 120), 'gaps' => array_slice($G, 0, 120),
             'meta' => ['exchanges' => $ok, 'coins' => count($F), 'spot_coins' => count($all), 'fee_gap' => ARB_FEE_GAP * 100, 'fee_carry' => ARB_FEE_CARRY * 100,
-                       'n' => ['fund' => count($fund), 'cross' => count($cross), 'gaps' => count($G)]]];
+                       'n' => ['fund' => count($fund), 'cross' => count($cross), 'gaps' => count($G)], 'bitget_periods' => count($bg)]];
         t_write_json($ck, $out); return $out;
     } finally { flock($lock, LOCK_UN); fclose($lock); }
 }
