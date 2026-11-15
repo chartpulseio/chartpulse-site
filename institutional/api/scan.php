@@ -17,7 +17,7 @@ $id = (string)($_GET['id'] ?? '');
 if (!isset($SCANNERS[$id])) { http_response_code(400); echo json_encode(['error' => 'Unknown scanner.']); exit; }
 try {
     require_once __DIR__ . '/../includes/strategies.php';
-    $tf = (string)($_GET['tf'] ?? '1D'); if (!in_array($tf, ['15m', '1H', '4H', '1D', '1W'], true)) $tf = '1D';
+    $tf = (string)($_GET['tf'] ?? '1D'); if (!in_array($tf, basename(dirname(__DIR__)) === 'ema-strategies' ? ['1H', '4H', '1D'] : ['15m', '1H', '4H', '1D', '1W'], true)) $tf = '1D';
     echo json_encode(ta_get(dirname(__DIR__) . '/cache', scan_map(), SCAN_MIN_BARS, $id, $tf));
 } catch (Throwable $e) {
     http_response_code(503);

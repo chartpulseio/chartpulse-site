@@ -214,8 +214,10 @@ function strat_scanner(string $dir, array $SCANNERS, string $id): void {
   </section>
   <div class="gf-tiles" id="stTiles" style="grid-template-columns:repeat(4,minmax(0,1fr))"></div>
   <div class="gf-bar">
-    <div class="gf-tabs st-tf" id="stTf" role="group" aria-label="Timeframe"><button type="button" data-v="15m">15 min</button><button type="button" data-v="1H">1 hour</button><button type="button" data-v="4H">4 hour</button><button type="button" data-v="1D" class="on">Daily</button><button type="button" data-v="1W">Weekly</button></div>
+    <?php $tfs = $dir === 'ema-strategies' ? ['1H' => '1 hour', '4H' => '4 hour', '1D' => 'Daily'] : ['15m' => '15 min', '1H' => '1 hour', '4H' => '4 hour', '1D' => 'Daily', '1W' => 'Weekly']; ?>
+    <div class="gf-tabs st-tf" id="stTf" role="group" aria-label="Timeframe"><?php foreach ($tfs as $k => $v): ?><button type="button" data-v="<?= $k ?>"<?= $k === '1D' ? ' class="on"' : '' ?>><?= $v ?></button><?php endforeach; ?></div>
   </div>
+  <?php if ($dir === 'ema-strategies'): ?><p class="gf-upd" style="margin:-4px 0 10px">15 min and weekly are not offered here: the 200 EMA needs more candles than we keep on those charts, so the result would not be reliable.</p><?php endif; ?>
   <div class="gf-bar" style="margin-top:0">
     <div class="gf-tabs" id="stSide" role="group" aria-label="Side"><button type="button" data-v="all" class="on">CALL + PUT</button><button type="button" data-v="CALL">CALL</button><button type="button" data-v="PUT">PUT</button></div>
     <div class="gf-tabs" id="stMkt" role="group" aria-label="Market"></div>
@@ -236,12 +238,13 @@ function strat_scanner(string $dir, array $SCANNERS, string $id): void {
 <script>
 (() => {
 "use strict";
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const ID = <?= json_encode($id) ?>, TFS = {"15m": "15 min", "1H": "1 hour", "4H": "4 hour", "1D": "Daily", "1W": "Weekly"};
-let TF = (new URLSearchParams(location.search).get("tf") || "").toUpperCase().replace("15M", "15m"); if (!TFS[TF]) { try { TF = localStorage.getItem("cp_strat_tf") || "1D"; } catch (e) { TF = "1D"; } } if (!TFS[TF]) TF = "1D";
+const OK = $$("#stTf button").map(b => b.dataset.v);
+let TF = (new URLSearchParams(location.search).get("tf") || "").toUpperCase().replace("15M", "15m"); if (!OK.includes(TF)) { try { TF = localStorage.getItem("cp_strat_tf") || "1D"; } catch (e) { TF = "1D"; } } if (!OK.includes(TF)) TF = "1D";
 const API = () => "api/scan.php?id=" + encodeURIComponent(ID) + "&tf=" + encodeURIComponent(TF);
 const BAR = () => ({"15m": "15-minute", "1H": "1-hour", "4H": "4-hour", "1D": "daily", "1W": "weekly"})[TF];
 const words = s => TF === "1D" ? s : String(s || "").replace(/\s*\(daily\)/gi, "").replace(/(\d+)-day/g, "$1-candle").replace(/\bdaily\b/gi, BAR());
-const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const px = v => v == null || isNaN(v) ? "–" : Math.abs(v) >= 100 ? Number(v).toLocaleString("en-US", {maximumFractionDigits: 2}) : Math.abs(v) >= 1 ? Number(v).toFixed(Math.abs(v) >= 10 ? 2 : 4) : Number(v).toPrecision(4);
 const nice = s => String(s).replace(/^\^/, "").replace(/(=X|=F|-USD)$/, "").replace(/\.[A-Z]{1,3}$/, "");
