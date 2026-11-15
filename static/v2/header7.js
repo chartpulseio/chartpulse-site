@@ -139,7 +139,7 @@
   try {
     fetch('/api.php?r=scan').then(function (r) { return r.json(); }).then(function (d) {
       var seen = {}, top = (d.rows || []).filter(function (r) { return r.symbol && r.strength != null; }).sort(function (a, b) { return (b.strength || 0) - (a.strength || 0); })
-        .map(function (r) { return short(r.symbol); }).filter(function (n) { if (n.length < 2 || seen[n]) return false; seen[n] = 1; return true; }).slice(0, 14);
+        .map(function (r) { return short(r.symbol); }).filter(function (n) { if (!/^[A-Z]{2,8}$/.test(n) || seen[n]) return false; seen[n] = 1; return true; })   // readable tickers only, no numeric exchange codes.slice(0, 14);
       if (top.length >= 6) { NAMES = top.concat(NAMES).slice(0, 14); for (var i = 0; i < MS.length; i++) MS[i].name = NAMES[i]; if (still) { born = performance.now() - 5000; kick(); } }
     }).catch(function () {});
   } catch (e) {}
