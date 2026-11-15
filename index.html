@@ -24,12 +24,10 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/static/v2/fonts/ibm-plex-sans-400-latin.woff2" crossorigin>
-<link rel="preload" as="image" href="/static/v2/chartpulse-poster-m.jpg" media="(max-width:768px)">
-<link rel="preload" as="image" href="/static/v2/chartpulse-poster-v2.jpg" media="(min-width:769px)">
 <link rel="stylesheet" href="/static/v2/base.css?v=16">
 <link rel="stylesheet" href="/static/v2/cp.css?v=27">
 <link rel="stylesheet" href="/static/v2/odds.css?v=2">
-<link rel="stylesheet" href="/static/v2/header7.css?v=3">
+<link rel="stylesheet" href="/static/v2/header7.css?v=4">
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://chartpulse.io/#org","name":"ChartPulse","url":"https://chartpulse.io/","alternateName":["ChartPulse.io","Chart Pulse"],"logo":{"@type":"ImageObject","url":"https://chartpulse.io/logo-512.png","width":512,"height":512},"image":"https://chartpulse.io/static/og.jpg"},{"@type":"WebSite","@id":"https://chartpulse.io/#site","name":"ChartPulse","alternateName":"ChartPulse.io","url":"https://chartpulse.io/","publisher":{"@id":"https://chartpulse.io/#org"},"description":"Live trend bias, market movers and a rule-based signal scanner for stocks, indices, futures, forex and crypto."}]}</script>
 <script defer src="/static/v2/consent.js?v=2"></script>
 <link rel="stylesheet" href="/static/v2/premium.css?v=2">
@@ -79,8 +77,6 @@
 
 <!-- ═══ Header v7 — Cinematic space hero ═══ -->
 <section class="cp-hero7" aria-label="ChartPulse hero">
-  <video id="cp-hero7-video" muted loop playsinline disablepictureinpicture preload="none" aria-hidden="true"><source src="/static/v2/chartpulse-loop-v2.mp4" type="video/mp4"></video>
-  <script>(function(){var v=document.getElementById('cp-hero7-video');if(!v)return;var mob=matchMedia('(max-width:768px)').matches,c=navigator.connection||{};v.poster=mob?'/static/v2/chartpulse-poster-m.jpg':'/static/v2/chartpulse-poster-v2.jpg';if(mob||c.saveData||/2g|3g/.test(c.effectiveType||'')||matchMedia('(prefers-reduced-motion: reduce)').matches)return;addEventListener('load',function(){setTimeout(function(){v.preload='auto';var p=v.play();if(p&&p.catch)p.catch(function(){});},400);});})();</script>
   <div class="shade" aria-hidden="true"></div>
   <canvas id="fx7" aria-hidden="true"></canvas>
   <div class="h7-copy">
@@ -247,7 +243,7 @@
 </footer>
 <script defer src="/static/v2/cp.js?v=101"></script>
 <script defer src="/static/v2/home.js?v=17"></script>
-<script defer src="/static/v2/header7.js?v=2"></script>
+<script defer src="/static/v2/header7.js?v=3"></script>
 <script defer src="/static/v2/cp-launcher.js?v=1"></script>
 <script>
 // Keyboard shortcuts for homepage

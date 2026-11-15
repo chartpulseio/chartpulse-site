@@ -282,3 +282,7 @@
   .cp-hero7 #fx7, .cp-hero7 .shade{ display: none !important; }
   .cp-hero7 .h7-h1 .l2{ -webkit-text-fill-color: #111; color: #111; background: none; }
 }
+
+@media (max-width: 480px){
+  .cp-hero7 .h7-chip{ font-size: 10.5px; letter-spacing: 0; padding: 6px 10px; white-space: nowrap; max-width: 100%; }
+}
