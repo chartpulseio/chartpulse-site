@@ -60,13 +60,15 @@
 /* Folded header (menu button): set by sitehead.js whenever the full menu does not fit, on any screen width. */
 .cph.fold .cph-burger{display:inline-flex}
 .cph.fold .cph-live{display:none}
-.cph.fold .cph-nav{position:fixed;top:64px;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:stretch;gap:0;padding:10px 14px 28px;overflow-y:auto;background:var(--h-bg);border-top:1px solid var(--h-line)}
+.cph.fold .cph-nav{position:absolute;top:100%;left:0;right:0;bottom:auto;height:calc(100vh - 64px);height:calc(100dvh - 64px);display:none;flex-direction:column;align-items:stretch;gap:0;padding:10px 14px 28px;overflow-y:auto;background:var(--h-bg);border-top:1px solid var(--h-line)}
 .cph.fold.menu .cph-nav{display:flex}
 .cph.fold .cph-nav>a,.cph.fold .cph-dd>button{height:48px;width:100%;justify-content:space-between;font-size:16px;color:var(--h-ink);border-radius:10px}
 .cph.fold .cph-nav>a.on{box-shadow:inset 2px 0 0 var(--h-acc);border-radius:0 10px 10px 0}
 .cph.fold .cph-panel,.cph.fold .cph-panel.two{position:static;display:none;grid-template-columns:1fr;min-width:0;margin:0 0 6px;padding:4px 0 4px 8px;border:0;border-radius:0;box-shadow:none;background:none}
 .cph.fold .cph-col>p{margin:10px 10px 4px}
 .cph.fold .cph-right{gap:8px}
+.cph.fold .cph-nav>*{flex:none}
+.cph.fold .cph-panel a{padding:11px 10px}
 .cph.fold .cph-panel .cph-col+.cph-col{margin-top:4px}
 .cph.fold .cph-dd.open .cph-panel{display:grid}
 @media (max-width:420px){.cph-cta{padding:0 12px}.cph .cph-logo{margin-right:6px}}

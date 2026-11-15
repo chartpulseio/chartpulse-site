@@ -41,7 +41,7 @@ $desc = $descs[$p];
 <script defer src="/static/v2/consent.js?v=2"></script>
 <link rel="stylesheet" href="/static/v2/premium.css?v=2">
 <link rel="stylesheet" href="/static/v2/fonts.css?v=1">
-<link rel="stylesheet" href="/static/v2/sitehead.css?v=5">
+<link rel="stylesheet" href="/static/v2/sitehead.css?v=6">
 <script defer src="/static/v2/sitehead.js?v=20"></script>
 </head>
 <body class="site legal-page" data-page="legal">
