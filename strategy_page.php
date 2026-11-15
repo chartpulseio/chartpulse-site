@@ -91,6 +91,8 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 .gf-tabs{display:flex;flex-wrap:wrap;gap:6px}
 .gf-tabs button,.gf-btn{appearance:none;border:1px solid var(--line2);background:transparent;color:var(--dim);padding:8px 14px;border-radius:999px;font:500 14px/1 var(--sans);cursor:pointer}
 .gf-tabs button.on{background:var(--ink);color:#000;border-color:var(--ink)}
+.st-tf::before{content:"Timeframe";align-self:center;margin-right:4px;color:var(--mute);font:600 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase}
+.st-tf button.on{background:var(--gold);border-color:var(--gold);color:#1a1300}.st-tf button.on:hover{color:#1a1300}
 .gf-tabs button:hover,.gf-btn:hover{color:var(--ink);border-color:var(--ink)}.gf-tabs button.on:hover{color:#000}
 .gf-q{flex:1;min-width:180px;max-width:300px;margin-left:auto;padding:9px 14px;border:1px solid var(--line2);border-radius:999px;background:var(--card);color:var(--ink);font:14px var(--sans)}
 .gf-upd{color:var(--mute);font-size:13px;margin:0 0 10px}
@@ -202,7 +204,7 @@ function strat_scanner(string $dir, array $SCANNERS, string $id): void {
     strat_head($c['name'] . ' Scanner', $c['name'] . ' scanner on the daily chart, free. ' . $E['plain'], "https://chartpulse.io/$dir/scanner.php?id=$id"); ?>
 <main class="gf">
   <section class="gf-hero">
-    <div class="gf-eye"><i></i><?= strat_e($grp) ?> · daily chart</div>
+    <div class="gf-eye"><i></i><?= strat_e($grp) ?> · <span id="stTfEye">daily chart</span></div>
     <h1><?= strat_e($c['name']) ?></h1>
     <p class="gf-lede"><?= strat_e($E['plain']) ?></p>
     <?php if ($E['steps']): ?><ol class="gf-flow" style="grid-template-columns:repeat(3,minmax(0,1fr))">
@@ -212,6 +214,9 @@ function strat_scanner(string $dir, array $SCANNERS, string $id): void {
   </section>
   <div class="gf-tiles" id="stTiles" style="grid-template-columns:repeat(4,minmax(0,1fr))"></div>
   <div class="gf-bar">
+    <div class="gf-tabs st-tf" id="stTf" role="group" aria-label="Timeframe"><button type="button" data-v="15m">15 min</button><button type="button" data-v="1H">1 hour</button><button type="button" data-v="4H">4 hour</button><button type="button" data-v="1D" class="on">Daily</button><button type="button" data-v="1W">Weekly</button></div>
+  </div>
+  <div class="gf-bar" style="margin-top:0">
     <div class="gf-tabs" id="stSide" role="group" aria-label="Side"><button type="button" data-v="all" class="on">CALL + PUT</button><button type="button" data-v="CALL">CALL</button><button type="button" data-v="PUT">PUT</button></div>
     <div class="gf-tabs" id="stMkt" role="group" aria-label="Market"></div>
     <input class="gf-q" id="stQ" type="search" placeholder="Find a symbol…" aria-label="Find a symbol">
@@ -221,8 +226,9 @@ function strat_scanner(string $dir, array $SCANNERS, string $id): void {
   <button type="button" class="gf-btn gf-more" id="stMore" hidden>Show more</button>
   <section class="gf-learn"><h2>How to read a card</h2>
     <dl><dt>CALL / PUT</dt><dd>CALL means the setup points up, PUT means it points down.</dd><dt>The number in the box</dt><dd>How cleanly the setup formed, out of 100. 85 or more is marked strong.</dd></dl>
-    <dl><dt>Entry</dt><dd>The last daily close, where the setup was confirmed.</dd><dt>Stop-loss</dt><dd>1.5 times the daily average range (ATR) against the trade. If price reaches it, the idea is wrong.</dd></dl>
-    <dl><dt>Target</dt><dd>3 times the ATR in the trade direction, unless a nearer level is stated in the setup.</dd><dt>Best for</dt><dd><?= strat_e($c['for']) ?>. Timeframe: <?= strat_e($c['tf']) ?>.</dd></dl>
+    <dl><dt>Entry</dt><dd>The close of the last finished candle on the timeframe you picked, where the setup was confirmed.</dd><dt>Stop-loss</dt><dd>1.5 times the average candle range (ATR) of that timeframe against the trade. If price reaches it, the idea is wrong.</dd></dl>
+    <dl><dt>Which timeframe?</dt><dd><b>15 min / 1 hour</b>: intraday trades, levels close together, many signals. <b>4 hour</b>: trades over a few days. <b>Daily / Weekly</b>: swing and position trades, wider stops, fewer signals.</dd><dt>Same strategy, every timeframe</dt><dd>The rules do not change, only the candle size. "10-day range" becomes "10-candle range" on smaller charts.</dd></dl>
+    <dl><dt>Target</dt><dd>3 times the ATR in the trade direction, unless a nearer level is stated in the setup.</dd><dt>Best for</dt><dd><?= strat_e($c['for']) ?>. Built for the <?= strat_e(strtolower($c['tf'])) ?> chart; the other timeframes use the same rules.</dd></dl>
   </section>
   <p class="gf-note"><b>Not measured.</b> No win rate has been measured for this scanner, so none is claimed. It lists setups; it does not manage the trade. Educational, not financial advice.</p>
   <p class="gf-foot">For education, not financial advice.</p>
@@ -230,7 +236,11 @@ function strat_scanner(string $dir, array $SCANNERS, string $id): void {
 <script>
 (() => {
 "use strict";
-const ID = <?= json_encode($id) ?>, API = "api/scan.php?id=" + encodeURIComponent(ID);
+const ID = <?= json_encode($id) ?>, TFS = {"15m": "15 min", "1H": "1 hour", "4H": "4 hour", "1D": "Daily", "1W": "Weekly"};
+let TF = (new URLSearchParams(location.search).get("tf") || "").toUpperCase().replace("15M", "15m"); if (!TFS[TF]) { try { TF = localStorage.getItem("cp_strat_tf") || "1D"; } catch (e) { TF = "1D"; } } if (!TFS[TF]) TF = "1D";
+const API = () => "api/scan.php?id=" + encodeURIComponent(ID) + "&tf=" + encodeURIComponent(TF);
+const BAR = () => ({"15m": "15-minute", "1H": "1-hour", "4H": "4-hour", "1D": "daily", "1W": "weekly"})[TF];
+const words = s => TF === "1D" ? s : String(s || "").replace(/\s*\(daily\)/gi, "").replace(/(\d+)-day/g, "$1-candle").replace(/\bdaily\b/gi, BAR());
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const px = v => v == null || isNaN(v) ? "–" : Math.abs(v) >= 100 ? Number(v).toLocaleString("en-US", {maximumFractionDigits: 2}) : Math.abs(v) >= 1 ? Number(v).toFixed(Math.abs(v) >= 10 ? 2 : 4) : Number(v).toPrecision(4);
@@ -238,9 +248,9 @@ const nice = s => String(s).replace(/^\^/, "").replace(/(=X|=F|-USD)$/, "").repl
 const F = {side: "all", mkt: "all", q: ""}; let D = null, shown = 24, timer = 0;
 function card(r) { const call = r.bias === "CALL", sc = +r.score || 0, g = sc >= 85 ? "ap" : sc >= 75 ? "a" : "b", risk = Math.abs(r.entry - r.sl), rr = risk > 0 ? Math.abs(r.tp - r.entry) / risk : null;
   return `<article class="gc g-${g}"><div class="gc-top"><div class="gc-grade num" title="Setup quality out of 100">${sc}</div>
-    <div class="gc-id"><h3><span class="gc-side ${call ? "CALL" : "PUT"}">${call ? "CALL ▲" : "PUT ▼"}</span>${esc(nice(r.symbol))}</h3><small>${esc(r.symbol)} · ${esc(r.market || "")}${sc >= 85 ? " · strong setup" : ""}</small></div>
-    <div class="gc-px"><b>${px(r.price ?? r.entry)}</b><small class="${(r.change || 0) >= 0 ? "up" : "dn"}">${(r.change || 0) >= 0 ? "+" : ""}${esc(r.change ?? 0)}% today</small></div></div>
-    <div class="gc-setup">${esc(r.setup)} <em>· ${esc(r.tag || "")}</em></div>
+    <div class="gc-id"><h3><span class="gc-side ${call ? "CALL" : "PUT"}">${call ? "CALL ▲" : "PUT ▼"}</span>${esc(nice(r.symbol))}</h3><small>${esc(r.symbol)} · ${esc(r.market || "")} · ${TFS[TF].toLowerCase()}${sc >= 85 ? " · strong setup" : ""}</small></div>
+    <div class="gc-px"><b>${px(r.price ?? r.entry)}</b><small class="${(r.change || 0) >= 0 ? "up" : "dn"}">${(r.change || 0) >= 0 ? "+" : ""}${esc(r.change ?? 0)}% ${TF === "1D" ? "today" : "last candle"}</small></div></div>
+    <div class="gc-setup">${esc(words(r.setup))} <em>· ${esc(r.tag || "")}</em></div>
     <div class="st-bar" title="Setup quality ${sc} of 100"><i style="width:${Math.min(100, sc)}%"></i></div>
     <div class="kv"><div><span>Entry</span><b>${px(r.entry)}</b></div><div><span>Stop-loss</span><b class="dn">${px(r.sl)}</b></div><div><span>Target</span><b class="up">${px(r.tp)}</b></div><div><span>Reward for 1 risked</span><b>${rr ? rr.toFixed(1) : "–"}</b></div></div>
     <p class="st-say"><b>In simple words:</b> the setup points ${call ? "up" : "down"}. ${call ? "Buy" : "Sell"} idea near <b>${px(r.entry)}</b>, wrong if price ${call ? "falls" : "rises"} to <b>${px(r.sl)}</b>, aim for <b>${px(r.tp)}</b>.</p>
@@ -254,14 +264,20 @@ function render() { if (!D) return; const R = D.data || [];
   const rows = R.filter(r => (F.side === "all" || r.bias === F.side) && (F.mkt === "all" || r.market === F.mkt) && (!F.q || (r.symbol + " " + (r.market || "")).toLowerCase().includes(F.q)));
   $("#stList").innerHTML = rows.slice(0, shown).map(card).join("") || `<p class="gf-empty">${R.length ? "Nothing matches these filters. Clear the search or pick All markets." : "No setup right now. This scanner refreshes on its own; clean setups do not form every day."}</p>`;
   const more = $("#stMore"); more.hidden = rows.length <= shown; more.textContent = `Show more (${rows.length - shown} left)`; }
+function setTf(v, push) { TF = v; D = null; shown = 24; $$("#stTf button").forEach(x => x.classList.toggle("on", x.dataset.v === TF)); $("#stTfEye").textContent = TFS[TF].toLowerCase() + (TF === "1D" || TF === "1W" ? " chart" : " chart · intraday");
+  try { localStorage.setItem("cp_strat_tf", TF); } catch (e) {} if (push) { const u = new URL(location.href); if (TF === "1D") u.searchParams.delete("tf"); else u.searchParams.set("tf", TF); history.replaceState(null, "", u); }
+  $("#stTiles").innerHTML = ""; $("#stList").innerHTML = `<p class="gf-empty">Scanning the ${TFS[TF].toLowerCase()} chart…</p>`; }
+$$("#stTf button").forEach(b => b.onclick = () => { if (b.dataset.v === TF) return; setTf(b.dataset.v, true); load(); });
+setTf(TF, false);
 $$("#stSide button").forEach(b => b.onclick = () => { F.side = b.dataset.v; shown = 24; $$("#stSide button").forEach(x => x.classList.toggle("on", x === b)); render(); });
 $("#stQ").oninput = e => { F.q = e.target.value.trim().toLowerCase(); shown = 24; render(); };
 $("#stMore").onclick = () => { shown += 24; render(); };
-async function load() { clearTimeout(timer); let nx = 120;
-  try { const j = await fetch(API, {cache: "no-store"}).then(r => r.json());
+async function load() { clearTimeout(timer); let nx = TF === "15m" ? 60 : 120;
+  const want = TF;
+  try { const j = await fetch(API(), {cache: "no-store"}).then(r => r.json()); if (want !== TF) return;
     if (j.error) throw new Error(j.error);
-    if (j.status === "updating") { $("#stUpd").textContent = "Building the first scan, this takes a few seconds…"; nx = 8; }
-    else { D = j; $("#stUpd").textContent = `${(j.data || []).length} setups · ${j.scanned || "–"} symbols scanned · updated ${j.updated || ""} · refreshes every 2 minutes`; render(); }
+    if (j.status === "updating") { $("#stUpd").textContent = `Building the ${TFS[TF].toLowerCase()} scan for every market. The first one takes up to two minutes…`; nx = 8; }
+    else { D = j; $("#stUpd").textContent = `${(j.data || []).length} setups · ${j.scanned || "–"} symbols scanned · ${TFS[TF].toLowerCase()} chart · updated ${j.updated || ""} · refreshes on its own`; render(); }
   } catch (e) { $("#stUpd").textContent = "This scanner is temporarily unavailable. Sorry for the inconvenience. Retrying…"; if (!D) $("#stList").innerHTML = '<p class="gf-empty">This scanner is temporarily unavailable. Please check back in a little while.</p>'; nx = 30; }
   timer = setTimeout(load, (document.hidden ? 300 : nx) * 1000); }
 load();

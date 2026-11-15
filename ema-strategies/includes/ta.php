@@ -113,7 +113,10 @@ function ta_boot(): bool {
 }
 function ta_bars(string $sym, int $minBars, string $tf = '1D'): ?array {
     $fr = t_read_frames($sym);
+    if (!$fr) return null;
     if ($tf === '15m') $d = !empty($fr['5m']['t']) ? t_resample($fr['5m'], 900) : null;
+    elseif ($tf === '4H') $d = !empty($fr['1H']['t']) ? t_resample($fr['1H'], 14400) : null;
+    elseif ($tf === '1W') $d = !empty($fr['1D']['t']) ? t_weekly($fr['1D'], (string)($fr['tz'] ?? 'UTC')) : null;
     else $d = $fr[$tf === '1H' ? '1H' : '1D'] ?? null;
     if (!$d || empty($d['c']) || empty($d['h']) || empty($d['l'])) return null;
     $c = array_map('floatval', array_values($d['c'])); $n = count($c);
@@ -127,10 +130,10 @@ function ta_bars(string $sym, int $minBars, string $tf = '1D'): ?array {
     return ['o' => $o, 'h' => $h, 'l' => $l, 'c' => $c, 'v' => $v];
 }
 /** Runs every strategy over the whole universe. $map: scanner id => callable(B, X): ?array */
-function ta_scan_all(array $map, int $minBars): array {
+function ta_scan_all(array $map, int $minBars, string $tf = '1D'): array {
     $res = array_fill_keys(array_keys($map), []); $scanned = 0; $err = null;
     foreach (t_symbols() as $sym => $market) {
-        $B = ta_bars((string)$sym, $minBars); if (!$B) continue;
+        $B = ta_bars((string)$sym, $minBars, $tf); if (!$B) continue;
         $scanned++;
         $X = ta_ctx($B); $n = $X['n']; if ($X['atr'][$n - 1] === null) continue;
         $pc = $B['c'][$n - 2]; $chg = $pc > 0 ? round(($B['c'][$n - 1] - $pc) / $pc * 100, 2) : 0.0;
@@ -144,35 +147,38 @@ function ta_scan_all(array $map, int $minBars): array {
     foreach ($res as $id => $rows) { usort($rows, fn($a, $b) => $b['score'] <=> $a['score']); $res[$id] = $rows; }
     return [$res, $scanned, $err];
 }
-/** Returns the cached scan for one scanner id, rebuilding the whole folder's cache when stale. Never throws. */
-function ta_get(string $dir, array $map, int $minBars, string $id): array {
-    $f = "$dir/scan_$id.json";
+/** Timeframes a visitor can pick on a strategy page (owner, 15 Nov 2026) and how long each scan stays fresh (seconds). */
+const TA_TFS = ['15m' => 300, '1H' => 600, '4H' => 900, '1D' => TA_STALE, '1W' => 3600];
+/** Returns the cached scan for one scanner id on one timeframe, rebuilding that timeframe for the whole folder when stale. Never throws. */
+function ta_get(string $dir, array $map, int $minBars, string $id, string $tf = '1D'): array {
+    if (!isset(TA_TFS[$tf])) $tf = '1D';
+    $f = $tf === '1D' ? "$dir/scan_$id.json" : "$dir/scan_{$tf}_$id.json";
     $read = function () use ($f) { $j = is_file($f) ? json_decode((string)@file_get_contents($f), true) : null; return is_array($j) ? $j : null; };
     $age = is_file($f) ? time() - filemtime($f) : PHP_INT_MAX;
-    if ($age < TA_STALE) return $read() ?? ['error' => TA_SORRY];
+    if ($age < TA_TFS[$tf]) return ($read() ?? ['error' => TA_SORRY]) + ['tf' => $tf];
     if (!is_dir($dir)) @mkdir($dir, 0755, true);
-    $lock = @fopen("$dir/.lock", 'c');
+    $lock = @fopen($tf === '1D' ? "$dir/.lock" : "$dir/.lock_$tf", 'c');
     if ($lock && flock($lock, LOCK_EX | LOCK_NB)) {
         try {
-            @set_time_limit(90); @ini_set('memory_limit', '256M');
+            @set_time_limit($tf === '1D' ? 90 : 170); @ini_set('memory_limit', '256M');
             if (!ta_boot()) throw new RuntimeException('data layer not found');
-            [$res, $scanned, $err] = ta_scan_all($map, $minBars);
-            if ($err) @file_put_contents("$dir/errors.log", date('c') . ' strategy error ' . $err . "\n", FILE_APPEND);
+            $min = in_array($tf, ['1D', '1W'], true) ? $minBars : max($minBars, 80);
+            [$res, $scanned, $err] = ta_scan_all($map, $min, $tf);
+            if ($err) @file_put_contents("$dir/errors.log", date('c') . " strategy error $tf " . $err . "\n", FILE_APPEND);
             $when = (new DateTime('now', new DateTimeZone('Asia/Kolkata')))->format('d M H:i') . ' IST';
             foreach ($res as $sid => $rows) {
-                $out = ['updated' => $when, 'count' => count($rows), 'scanned' => $scanned, 'data' => array_slice($rows, 0, 100)];
-                @file_put_contents("$dir/scan_$sid.json.tmp", json_encode($out)); @rename("$dir/scan_$sid.json.tmp", "$dir/scan_$sid.json");
+                $g = $tf === '1D' ? "$dir/scan_$sid.json" : "$dir/scan_{$tf}_$sid.json";
+                $out = ['updated' => $when, 'tf' => $tf, 'count' => count($rows), 'scanned' => $scanned, 'data' => array_slice($rows, 0, 100)];
+                @file_put_contents("$g.tmp", json_encode($out)); @rename("$g.tmp", $g);
             }
         } catch (Throwable $e) {
-            @file_put_contents("$dir/errors.log", date('c') . ' ' . $e->getMessage() . "\n", FILE_APPEND);
+            @file_put_contents("$dir/errors.log", date('c') . " $tf " . $e->getMessage() . "\n", FILE_APPEND);
         }
         flock($lock, LOCK_UN);
     }
     if ($lock) fclose($lock);
-    return $read() ?? ['updated' => null, 'count' => 0, 'data' => [], 'status' => 'updating'];
+    return ($read() ?? ['updated' => null, 'count' => 0, 'data' => [], 'status' => 'updating']) + ['tf' => $tf];
 }
-
-// ---- God-father feed (owner, 12 Nov 2026): the FULL result list (not the page's top 100), on 1D, 1H or 15m bars.
 const TA_FULL_TTL = ['1D' => 900, '1H' => 600, '15m' => 300];
 /** Scans only $ids on timeframe $tf; caches {at, tf, sig: {id: [[symbol, bias, score, setup], ...]}}. Never throws. */
 function ta_get_full(string $dir, array $map, int $minBars, array $ids, string $tf): array {
