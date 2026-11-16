@@ -79,6 +79,7 @@ pre{margin:0;padding:14px;border-radius:12px;background:#0B0C0F;border:1px solid
 [hidden]{display:none!important}
 @media(max-width:900px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.opts{grid-template-columns:repeat(2,minmax(0,1fr))}.und,.how{grid-template-columns:minmax(0,1fr)}.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.can{columns:1}}
+.ask{margin-top:14px;padding:16px 18px;border:1px solid var(--gold,#E9C46A);border-radius:14px;background:rgba(233,196,106,.06)}.ask p{margin:0 0 10px}.ask .opts{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.ask .opts button{padding:8px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:#14161b;color:inherit;cursor:pointer;font:inherit}.ask .opts button:hover{border-color:var(--gold,#E9C46A)}.ask .own{display:flex;gap:8px}.ask .own input{flex:1;padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:#0c0d10;color:inherit;font:inherit}
 </style>
 </head>
 <body>
@@ -99,6 +100,7 @@ pre{margin:0;padding:14px;border-radius:12px;background:#0B0C0F;border:1px solid
     </div>
     <div class="go"><button class="btn" id="run" type="submit">Run backtest</button><span class="hint" id="st">Takes a few seconds. Costs are included.</span></div>
     <div class="err" id="err" hidden></div>
+    <div class="ask" id="ask" hidden></div>
   </form>
 
   <section id="res" hidden>
@@ -233,13 +235,23 @@ pre{margin:0;padding:14px;border-radius:12px;background:#0B0C0F;border:1px solid
     $("#res").hidden = false; $("#res").scrollIntoView({ behavior: "smooth", block: "start" });
   }
   $("#tabs").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; [].forEach.call(this.children, function (x) { x.classList.toggle("on", x === b); }); $("#pro").hidden = b.dataset.t !== "pro"; });
+  function askUser(j) {
+    var a = $("#ask");
+    a.innerHTML = (j.plain ? "<p><b>I understood:</b> " + esc(j.plain) + "</p>" : "") + "<p><b>" + esc(j.question) + "</b></p><div class='opts'>" + (j.options || []).map(function (o) { return "<button type='button'>" + esc(o) + "</button>"; }).join("") + "</div><div class='own'><input placeholder='Or type your answer'><button type='button' class='btn'>Answer</button></div>";
+    a.hidden = false; a.scrollIntoView({ behavior: "smooth", block: "center" });
+    function answer(v) { v = (v || "").trim(); if (!v) return; $("#txt").value = $("#txt").value.trim() + "\n(" + v + ")"; a.hidden = true; $("#run").click(); }
+    a.querySelectorAll(".opts button").forEach(function (b) { b.onclick = function () { answer(b.textContent); }; });
+    var inp = a.querySelector(".own input"); a.querySelector(".own button").onclick = function () { answer(inp.value); };
+    inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); answer(inp.value); } });
+  }
   $("#f").addEventListener("submit", function (e) {
-    e.preventDefault(); var txt = $("#txt").value.trim(), er = $("#err"); er.hidden = true;
+    e.preventDefault(); var txt = $("#txt").value.trim(), er = $("#err"); er.hidden = true; $("#ask").hidden = true;
     if (txt.length < 8) { er.textContent = "Write your strategy first, or tap one of the examples."; er.hidden = false; return; }
     var t0 = Date.now(); var b = $("#run"); b.disabled = true; b.innerHTML = '<span class="spin"></span> Testing…'; $("#st").textContent = "Reading your rules and running the test…";
     fetch("/ai_backtest.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: txt, symbol: $("#sym").value, timeframe: $("#tf").value, years: $("#yrs").value, capital: +$("#cap").value || 10000 }) })
       .then(function (r) { return r.json().catch(function () { return { error: "The backtest could not be read. Please try again." }; }); })
       .then(function (j) {
+        if (j.clarify) { $("#st").textContent = ""; askUser(j); return; }
         if (j.error) { er.innerHTML = (j.plain ? "<b>How I read it:</b> " + esc(j.plain) + "<br><br>" : "") + esc(j.error) + (j.missed && j.missed.length ? "<br><span style='opacity:.8'>Not understood: " + esc(j.missed.join(" · ")) + "</span>" : ""); er.hidden = false; $("#st").textContent = ""; return; }
         $("#st").textContent = "Done in " + n2((Date.now() - t0) / 1000, 1) + " s."; render(j);
       })

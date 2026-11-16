@@ -286,7 +286,8 @@ function aib_read_json($txt) {
     return ['strategy' => $o['strategy'], 'missed' => array_slice(array_values(array_filter(array_map('strval', (array)($o['missed'] ?? [])))), 0, 6),
             'symbol' => is_string($o['symbol'] ?? null) ? strtoupper($o['symbol']) : null, 'timeframe' => is_string($o['timeframe'] ?? null) ? strtolower($o['timeframe']) : null,
             'years' => is_numeric($o['years'] ?? null) ? (float)$o['years'] : null,
-            'plain' => mb_substr(trim((string)($o['plain'] ?? '')), 0, 600), 'question' => mb_substr(trim((string)($o['question'] ?? '')), 0, 400),
+            'plain' => mb_substr(trim((string)($o['plain'] ?? '')), 0, 600), 'plain_user' => mb_substr(trim((string)($o['plain_user'] ?? '')), 0, 600), 'blocking' => !empty($o['blocking']),
+            'options' => array_slice(array_values(array_filter(array_map(fn($x) => mb_substr(trim((string)$x), 0, 40), (array)($o['options'] ?? [])))), 0, 5), 'question' => mb_substr(trim((string)($o['question'] ?? '')), 0, 400),
             'assumptions' => array_slice(array_values(array_filter(array_map(fn($x) => mb_substr(trim((string)$x), 0, 220), (array)($o['assumptions'] ?? [])))), 0, 6)];
 }
 function aib_post($url, $body, $hdr, $timeout = 14) {
@@ -305,13 +306,13 @@ function aib_post($url, $body, $hdr, $timeout = 14) {
 function aib_parse_ai($text, $ctx = '') {
     $groq = aib_key('groq'); $gem = aib_key('gemini');
     if ($groq === '' && $gem === '') return [null, null];
-    $cf = bt_dir('ai') . '/p2_' . md5($text . '|' . $ctx) . '.json';
+    $cf = bt_dir('ai') . '/p3_' . md5($text . '|' . $ctx) . '.json';
     if (is_file($cf) && time() - filemtime($cf) < 30 * 86400) { $j = json_decode((string)@file_get_contents($cf), true); if (is_array($j) && isset($j['p'])) return [$j['p'], $j['by']]; }
     $capf = bt_dir('ai') . '/cap_' . gmdate('Ymd') . '.txt'; $n = (int)@file_get_contents($capf);
     if ($n >= 1500) return [null, null]; @file_put_contents($capf, (string)($n + 1), LOCK_EX);
     $codes = implode(', ', array_keys(aib_symbols()['codes']));
     $sys = "You are the strategy reader of a backtesting engine. A trader describes a strategy in ANY language (English, Hindi, Hinglish, Urdu, Spanish, Arabic, anything), often in short trader slang with typos. First understand what they mean like an experienced trader would, then express it as engine rules. Output ONLY one JSON object.\n"
-      . "Shape: {\"plain\": the strategy restated as clear simple English steps, \"assumptions\": [short English notes for every gap you filled with a sensible default], \"question\": empty string, or ONE short clarifying question written in the SAME language and script the user wrote in (Hinglish stays Hinglish, Hindi stays Devanagari) if something important is truly impossible to guess, \"symbol\": code or null, \"timeframe\": one of 5m 15m 30m 1h 4h 1d 1w or null, \"years\": number or null, \"strategy\": {\"rules\": {\"entry_long\": [rule], \"exit_long\": [rule], \"entry_short\": [rule], \"exit_short\": [rule]}, \"risk\": {optional keys}}, \"missed\": [short English strings for parts the engine cannot express]}\n"
+      . "Shape: {\"plain\": the strategy restated as clear simple English steps, \"plain_user\": the same restatement written in the user's own language and script (1-3 short sentences, friendly), \"blocking\": true only if a missing detail would change the test a lot and cannot be defaulted sensibly, \"options\": [2-5 very short answer choices for the question, in the user's language], \"assumptions\": [short English notes for every gap you filled with a sensible default], \"question\": empty string, or ONE short clarifying question written in the SAME language and script the user wrote in (Hinglish stays Hinglish, Hindi stays Devanagari) if something important is truly impossible to guess, \"symbol\": code or null, \"timeframe\": one of 5m 15m 30m 1h 4h 1d 1w or null, \"years\": number or null, \"strategy\": {\"rules\": {\"entry_long\": [rule], \"exit_long\": [rule], \"entry_short\": [rule], \"exit_short\": [rule]}, \"risk\": {optional keys}}, \"missed\": [short English strings for parts the engine cannot express]}\n"
       . "rule = {\"left\": operand, \"op\": one of > < >= <= crosses_above crosses_below, \"right\": operand}. All rules in one list must be true together (AND). Max 10 per list.\n"
       . "operand = {\"value\": number} OR {\"ind\": name, \"period\": int, optional \"period2\", \"period3\", \"mult\", \"src\", \"tf\", \"back\", \"offset\"}.\n"
       . "ind names: open high low close volume hl2 hlc3 ohlc4 (no period); sma ema wma rsi atr atr_pct stdev bb_upper bb_lower bb_mid bb_width highest lowest macd macd_signal macd_hist adx plus_di minus_di supertrend supertrend_dir stoch_k stoch_d vwap roc (period required).\n"
@@ -325,7 +326,7 @@ function aib_parse_ai($text, $ctx = '') {
       . "risk keys (numbers): stop_loss_pct, take_profit_pct, stop_loss_atr, take_profit_atr, trail_pct, trail_atr, max_bars, atr_period. 2 means 2%. Reward:risk 1:2 with a 2% stop = take_profit_pct 4.\n"
       . "Only add the side(s) the user asked for. Prefer a reasonable interpretation with assumptions over returning nothing; leave entry lists empty only if there is truly no trading idea, and then ask the question.\n"
       . "Example: 'when mtf bear - then day high se put leni hai .. when there is any strong zone like pdh' -> plain 'Trade short (put) when the higher timeframes are bearish and price rejects the previous day high.' strategy entry_short: [close < ema50 tf 1h, close < ema50 tf 4h, high >= high tf 1D offset 0.997, close < high tf 1D], risk stop_loss_atr 1.5 take_profit_atr 3.\n"
-      . "symbol must be one of: $codes (or null if the user named none).";
+      . "symbol must be one of: $codes (or null if the user named none). If no market is named and the form has none, set symbol null and ask which market (question + options with popular choices fitting the strategy, e.g. Nifty 50, Bank Nifty, Bitcoin, Gold, EUR/USD); this counts as blocking.";
     $user = mb_substr($text, 0, 1500) . ($ctx !== '' ? "\n\n(Form settings: $ctx)" : '');
     $got = null; $by = null; $fallback = null;
     if ($groq !== '') foreach (['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'] as $model) {
@@ -439,6 +440,13 @@ try {
     $ftf = strtolower(trim((string)($q['timeframe'] ?? ''))); $fsy = strtoupper(trim((string)($q['symbol'] ?? '')));
     $ctx = trim(($ftf !== '' && $ftf !== 'auto' ? "chart timeframe $ftf" : '') . ($fsy !== '' && $fsy !== 'AUTO' ? ", market $fsy" : ''), ', ');
     [$ai, $aiBy] = aib_parse_ai($text, $ctx);
+    $fsyAuto = ($fsy === '' || $fsy === 'AUTO');
+    if ($ai && empty($q['no_ask']) && (($ai['blocking'] && $ai['question'] !== '') || ($fsyAuto && empty($ai['symbol'])))) {
+        $qq = $ai['question'] !== '' ? $ai['question'] : 'Which market should I test this on?';
+        $opts = $ai['options'] ?: ['Nifty 50', 'Bank Nifty', 'Bitcoin', 'Gold', 'EUR/USD'];
+        aib_log($text, ['ok' => false, 'by' => $aiBy, 'clarify' => $qq, 'plain' => $ai['plain']]);
+        aib_out(['clarify' => true, 'question' => $qq, 'options' => $opts, 'plain' => $ai['plain_user'] !== '' ? $ai['plain_user'] : $ai['plain'], 'engine' => $aiBy]);
+    }
     if ($ai) {
         try { $strategy = bt_validate_strategy(aib_clean($ai['strategy'])); $P = $ai; $engine = $aiBy; }
         catch (Throwable $e) {
@@ -504,7 +512,7 @@ try {
     if ($P['missed']) $warn[] = 'Some parts could not be turned into a rule and were left out: "' . implode('", "', $P['missed']) . '".';
     aib_log($text, ['ok' => true, 'by' => $engine, 'plain' => (string)($P['plain'] ?? ''), 'trades' => $n]);
     aib_out(['ok' => true, 'engine' => $engine,
-        'understood' => ['plain' => (string)($P['plain'] ?? ''), 'symbol' => $sym, 'name' => $S['codes'][$sym] ?? $sym, 'timeframe' => $tf, 'from' => $res['from'] ?? $req['start'], 'to' => $res['to'] ?? $req['end'],
+        'understood' => ['plain' => (string)(($P['plain_user'] ?? '') !== '' ? $P['plain_user'] : ($P['plain'] ?? '')), 'symbol' => $sym, 'name' => $S['codes'][$sym] ?? $sym, 'timeframe' => $tf, 'from' => $res['from'] ?? $req['start'], 'to' => $res['to'] ?? $req['end'],
                          'lines' => $lines, 'risk' => aib_say_risk($strategy['risk']), 'costs' => 'Costs included: 0.1% commission and 0.05% slippage per side. Full capital on each trade.'],
         'missed' => $P['missed'], 'warnings' => $warn, 'strategy' => $strategy, 'request' => ['symbol' => $sym, 'timeframe' => $tf, 'start' => $req['start'], 'end' => $req['end']],
         'verdict' => aib_verdict($res['metrics'] ?? [], $n), 'result' => $res, 'took_ms' => (int)round((microtime(true) - $t0) * 1000)]);
