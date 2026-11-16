@@ -29,8 +29,8 @@ $TFS = ['10M', '1H', '4H', '1D', '1W'];
 
 // Rate limits per visitor per minute (owner, 29 Sep 2026). Pages poll every 3-20 s, so normal use stays far below these.
 $r = is_string($r) ? substr(preg_replace('/[^a-z0-9]/', '', strtolower($r)), 0, 16) : 'scan';
-$RL = ['scan' => 120, 'symbol' => 60, 'bias' => 40, 't2' => 60, 't2price' => 90, 'trades' => 40, 'news' => 30, 'refresh' => 6, 'export' => 6, 'plans' => 30, 'access' => 60, 'health' => 20, 'desk' => 30, 'deskai' => 3, 'desklive' => 12, 'mlfeed' => 20, 'mlpush' => 20, 'nc' => 120, 'ncpush' => 40, 'nckey' => 6, 'ensfeed' => 40, 'enspush' => 40, 'liqpush' => 30, 'liqbn' => 6];
-if (!t_rl('api', 300) || !t_rl('r:' . $r, $RL[$r] ?? 30)) {
+$RL = ['scan' => 120, 'symbol' => 60, 'bias' => 40, 't2' => 60, 't2price' => 90, 'trades' => 40, 'news' => 30, 'refresh' => 6, 'export' => 6, 'plans' => 30, 'access' => 60, 'health' => 20, 'desk' => 30, 'deskai' => 3, 'desklive' => 12, 'mlfeed' => 20, 'mlpush' => 20, 'nc' => 120, 'ncpush' => 40, 'nckey' => 6, 'ensfeed' => 40, 'enspush' => 40, 'liqpush' => 40, 'liqbn' => 8];
+if ((!in_array($r, ['liqpush', 'liqbn', 'ncpush', 'enspush'], true) && !t_rl('api', 300)) || !t_rl('r:' . $r, $RL[$r] ?? 30)) {
     http_response_code(429); header('Retry-After: 30'); t_json(['error' => 'Too many requests. Please wait a few seconds and try again.']); exit;
 }
 

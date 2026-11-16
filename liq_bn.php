@@ -8,7 +8,7 @@ function lbn_listen(int $secs = 50): array {
     $s = @stream_socket_client('ssl://fstream.binance.com:443', $en, $es, 10, STREAM_CLIENT_CONNECT, $ctx);
     if (!$s) return ['error' => "connect: $es"];
     $key = base64_encode(random_bytes(16));
-    fwrite($s, "GET /ws/!forceOrder@arr HTTP/1.1\r\nHost: fstream.binance.com\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: $key\r\nSec-WebSocket-Version: 13\r\nUser-Agent: chartpulse-liq\r\n\r\n");
+    fwrite($s, "GET /market/ws/!forceOrder@arr HTTP/1.1\r\nHost: fstream.binance.com\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: $key\r\nSec-WebSocket-Version: 13\r\nUser-Agent: chartpulse-liq\r\n\r\n");
     $hdr = ''; while (!feof($s) && !str_contains($hdr, "\r\n\r\n")) { $c = fread($s, 1024); if ($c === false || $c === '') break; $hdr .= $c; }
     if (!preg_match('~^HTTP/1\.1 101~', $hdr)) { fclose($s); return ['error' => 'handshake: ' . strtok($hdr, "\r\n")]; }
     $buf = substr($hdr, strpos($hdr, "\r\n\r\n") + 4); $ev = []; $end = microtime(true) + $secs;
