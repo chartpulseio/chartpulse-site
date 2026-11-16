@@ -275,6 +275,8 @@ function aib_clean($st) {
     if (isset($st['risk']) && is_array($st['risk'])) foreach ($st['risk'] as $k => $v) if ($v === null || $v === '' || $v === 0 || $v === false) unset($st['risk'][$k]);
     return $st;
 }
+function aib_has_entry($g) { $r = $g['strategy']['rules'] ?? []; return !empty($r['entry_long']) || !empty($r['entry_short']); }
+function aib_log($text, $out) { $f = bt_dir('ai') . '/recent.json'; $L = json_decode((string)@file_get_contents($f), true) ?: []; array_unshift($L, ['at' => gmdate('c'), 'text' => mb_substr($text, 0, 300)] + $out); @file_put_contents($f, json_encode(array_slice($L, 0, 30), JSON_UNESCAPED_UNICODE), LOCK_EX); }
 /** Model answer text -> our parse shape, or null. */
 function aib_read_json($txt) {
     $txt = trim((string)$txt);
@@ -325,21 +327,26 @@ function aib_parse_ai($text, $ctx = '') {
       . "Example: 'when mtf bear - then day high se put leni hai .. when there is any strong zone like pdh' -> plain 'Trade short (put) when the higher timeframes are bearish and price rejects the previous day high.' strategy entry_short: [close < ema50 tf 1h, close < ema50 tf 4h, high >= high tf 1D offset 0.999, close < high tf 1D], risk stop_loss_atr 1.5 take_profit_atr 3.\n"
       . "symbol must be one of: $codes (or null if the user named none).";
     $user = mb_substr($text, 0, 1500) . ($ctx !== '' ? "\n\n(Form settings: $ctx)" : '');
-    $got = null; $by = null;
+    $got = null; $by = null; $fallback = null;
     if ($groq !== '') foreach (['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'] as $model) {
         $j = aib_post('https://api.groq.com/openai/v1/chat/completions', json_encode(['model' => $model, 'temperature' => 0, 'max_tokens' => 2048,
             'response_format' => ['type' => 'json_object']] + (str_starts_with($model, 'qwen/') ? ['reasoning_format' => 'hidden'] : ['reasoning_effort' => 'low']) + ['messages' => [['role' => 'system', 'content' => $sys], ['role' => 'user', 'content' => $user]]], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             ['Authorization: Bearer ' . $groq]);
-        if ($got = aib_read_json($j['choices'][0]['message']['content'] ?? '')) { $by = 'groq'; break; }
+        $g = aib_read_json($j['choices'][0]['message']['content'] ?? '');
+        if ($g && aib_has_entry($g)) { $got = $g; $by = 'groq'; break; }
+        if ($g && !$fallback) $fallback = [$g, 'groq'];
     }
-    if (!$got && $gem !== '') foreach (['gemini-3.5-flash-lite', 'gemini-3.5-flash'] as $model) {
+    if (!$got && $gem !== '') foreach (['gemini-3.5-flash', 'gemini-3.5-flash-lite'] as $model) {
         $j = aib_post("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent", json_encode(['systemInstruction' => ['parts' => [['text' => $sys]]],
             'contents' => [['role' => 'user', 'parts' => [['text' => $user]]]], 'generationConfig' => ['temperature' => 0, 'maxOutputTokens' => 2048, 'responseMimeType' => 'application/json']], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             ['x-goog-api-key: ' . $gem]);
         $txt = ''; foreach (($j['candidates'][0]['content']['parts'] ?? []) as $p) $txt .= (string)($p['text'] ?? '');
-        if ($got = aib_read_json($txt)) { $by = 'gemini'; break; }
+        $g = aib_read_json($txt);
+        if ($g && aib_has_entry($g)) { $got = $g; $by = 'gemini'; break; }
+        if ($g && !$fallback) $fallback = [$g, 'gemini'];
     }
     if ($got) @file_put_contents($cf, json_encode(['p' => $got, 'by' => $by]), LOCK_EX);
+    elseif ($fallback) return $fallback;
     return [$got, $by];
 }
 
@@ -399,7 +406,7 @@ function aib_verdict($m, $n) {
 try {
     if (($_GET['a'] ?? '') === 'status') {   // which readers are set up, and the last provider error (no key is ever shown)
         $e = json_decode((string)@file_get_contents(bt_dir('ai') . '/last_error.json'), true);
-        $o = ['groq' => aib_key('groq') !== '', 'gemini' => aib_key('gemini') !== '', 'last_error' => is_array($e) ? $e : null];
+        $o = ['groq' => aib_key('groq') !== '', 'gemini' => aib_key('gemini') !== '', 'last_error' => is_array($e) ? $e : null, 'recent' => array_slice(json_decode((string)@file_get_contents(bt_dir('ai') . '/recent.json'), true) ?: [], 0, 10)];
         if (!empty($_GET['ping'])) {   // one tiny real call to each provider that has a key
             bt_rate('aiping', 6, 600);
             $msg = 'Reply with the single word OK.';
@@ -444,6 +451,7 @@ try {
         $P = aib_parse_local($text);
         try { $strategy = bt_validate_strategy($P['strategy']); }
         catch (BtError $e) {
+            aib_log($text, ['ok' => false, 'by' => $aiBy, 'plain' => $ai['plain'] ?? '', 'q' => $ai['question'] ?? '']);
             if ($ai && ($ai['question'] || $ai['plain'])) aib_fail($ai['question'] !== '' ? $ai['question'] : 'I understood the idea but could not turn it into testable rules yet. Add one detail, for example the indicator or level for entry and where to exit.',
                 422, ['missed' => $ai['missed'], 'plain' => $ai['plain'], 'engine' => $aiBy]);
             aib_fail('I could not find a clear entry rule in that. Say when to buy or sell in simple words, in any language. Example: "Buy when the 20 EMA crosses above the 50 EMA" or "Sell short when price rejects the previous day high".',
@@ -476,6 +484,7 @@ try {
     if (!$strategy['rules']['exit_long'] && $strategy['rules']['entry_long'] && !$strategy['risk']) $warn[] = 'You gave no exit and no stop-loss, so a trade only closes at the end of the data. Add "sell when ..." or a stop-loss.';
     foreach ((array)($P['assumptions'] ?? []) as $a) $warn[] = 'Assumed: ' . $a;
     if ($P['missed']) $warn[] = 'Some parts could not be turned into a rule and were left out: "' . implode('", "', $P['missed']) . '".';
+    aib_log($text, ['ok' => true, 'by' => $engine, 'plain' => (string)($P['plain'] ?? ''), 'trades' => $n]);
     aib_out(['ok' => true, 'engine' => $engine,
         'understood' => ['plain' => (string)($P['plain'] ?? ''), 'symbol' => $sym, 'name' => $S['codes'][$sym] ?? $sym, 'timeframe' => $tf, 'from' => $res['from'] ?? $req['start'], 'to' => $res['to'] ?? $req['end'],
                          'lines' => $lines, 'risk' => aib_say_risk($strategy['risk']), 'costs' => 'Costs included: 0.1% commission and 0.05% slippage per side. Full capital on each trade.'],
@@ -485,9 +494,10 @@ try {
 } catch (BtLimit $e) {
     header('Retry-After: ' . (int)$e->retry); aib_fail($e->getMessage(), 429, ['retry_after' => (int)$e->retry]);
 } catch (BtError $e) {
+    if (isset($text)) aib_log($text, ['ok' => false, 'err' => $e->getMessage()]);
     aib_fail($e->getMessage(), 422);
 } catch (BtData $e) {
-    $m = $e->getMessage();
+    $m = $e->getMessage(); if (isset($text)) aib_log($text, ['ok' => false, 'err' => 'data: ' . $m]);
     if ($m === 'not-found' || $m === 'crypto-not-found') aib_fail('That market was not found. Pick one from the list.', 404);
     if ($m === 'crypto-blocked' || $m === 'crypto-error') aib_fail('Crypto data is unavailable right now. Please try again shortly.', 503);
     aib_fail($m, 503);
