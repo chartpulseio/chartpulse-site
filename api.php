@@ -109,7 +109,7 @@ if ($r === 'scan') {
     if (!preg_match('/^[0-9a-f]{64}$/', $h)) { http_response_code(400); t_json(['error' => 'bad hash']); exit; }
     $nm = ($in['name'] ?? 'nc') === 'liq' ? 'liq' : 'nc'; @file_put_contents(ml_dir() . "/$nm.keyhash", $h, LOCK_EX); t_json(['ok' => true, 'name' => $nm]);
 } elseif ($r === 'fchpush') {   // forecast history for AI Backtesting, from the chartpulse-ml GitHub job (OIDC)
-    require_once __DIR__ . '/torus_fch.php';
+    require_once __DIR__ . '/torus_ml.php'; require_once __DIR__ . '/torus_fch.php';
     if (!ml_push_auth() || ($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') { http_response_code(403); t_json(['error' => 'forbidden']); exit; }
     $in = json_decode((string)file_get_contents('php://input', false, null, 0, 12 * 1024 * 1024), true);
     $o = fch_store(is_array($in) ? $in : []); if (isset($o['error'])) http_response_code(400); t_json($o);

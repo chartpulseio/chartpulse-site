@@ -6,10 +6,11 @@
  * Backtest indicators:  ai_votes = models saying up minus models saying down (-4..4)
  *                       ai_move  = average expected next-candle move in %   (both known at the close of candle t)
  */
-require_once __DIR__ . '/torus_ml.php';
+require_once __DIR__ . '/torus_paths.php';
 const FCH_MODELS = ['chronos2' => 'Chronos-2', 'timesfm' => 'TimesFM 2.5', 'moirai2' => 'Moirai 2.0', 'kronos' => 'Kronos'];
 const FCH_TFS = ['1h' => 3600, '1d' => 86400];
-function fch_dir(): string { $d = ml_dir() . '/fch'; if (!is_dir($d)) @mkdir($d, 0755, true); return $d; }
+function fch_dir(): string { $d = cp_data_dir() . '/ml/fch'; if (!is_dir($d)) @mkdir($d, 0755, true); return $d; }
+function fch_rj(string $f) { $j = is_file($f) ? json_decode((string)@file_get_contents($f), true) : null; return is_array($j) ? $j : null; }
 function fch_key(string $sym): string { return preg_replace('/[^A-Z0-9]/', '', strtoupper($sym)); }
 function fch_store(array $in): array {
     $m = (string)($in['model'] ?? ''); $tf = (string)($in['tf'] ?? ''); $sym = (string)($in['sym'] ?? '');
@@ -17,7 +18,7 @@ function fch_store(array $in): array {
     $rows = [];
     foreach ($in['rows'] as $r) if (is_array($r) && count($r) === 3 && is_numeric($r[0]) && is_numeric($r[1]) && is_numeric($r[2]) && $r[1] > 0) $rows[] = [(int)$r[0], (float)$r[1], (float)$r[2]];
     if (count($rows) < 50) return ['error' => 'too few rows'];
-    t_write_json(fch_dir() . '/' . fch_key($sym) . "_{$tf}_$m.json", ['at' => time(), 'sym' => $sym, 'tf' => $tf, 'model' => $m, 'rows' => $rows]);
+    $f = fch_dir() . '/' . fch_key($sym) . "_{$tf}_$m.json"; @file_put_contents($f . '.tmp', json_encode(['at' => time(), 'sym' => $sym, 'tf' => $tf, 'model' => $m, 'rows' => $rows]), LOCK_EX); @rename($f . '.tmp', $f);
     return ['ok' => true, 'rows' => count($rows)];
 }
 /** Which markets / timeframes have history: [sym => [tf => [models]]] */
@@ -36,7 +37,7 @@ function fch_align(array $d): array {
     if (!isset(FCH_TFS[$tf])) return $cache[$ck] = $out;
     $step = FCH_TFS[$tf]; $acc = array_fill(0, $len, null);
     foreach (array_keys(FCH_MODELS) as $m) {
-        $j = t_read_json(fch_dir() . '/' . fch_key($sym) . "_{$tf}_$m.json", null); if (!is_array($j)) continue;
+        $j = fch_rj(fch_dir() . '/' . fch_key($sym) . "_{$tf}_$m.json"); if (!is_array($j)) continue;
         $R = $j['rows']; $k = 0; $nR = count($R);
         for ($i = 0; $i < $len; $i++) {
             $t = (int)$d['t'][$i];
