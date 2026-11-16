@@ -69,6 +69,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 .gc-grade{flex:none;display:grid;place-items:center;min-width:56px;height:56px;padding:0 8px;border-radius:14px;font:700 22px/1 var(--mono);border:1px solid var(--line2);color:var(--dim)}
 .g-ap .gc-grade{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#1a1300;border:0}
 .g-a .gc-grade{background:var(--up);color:#00130f;border:0}.g-b .gc-grade{border-color:var(--blue);color:var(--blue)}
+.g-a.g-dn .gc-grade{background:var(--dn);color:#1a0003}.g-b.g-dn .gc-grade{border-color:var(--dn);color:var(--dn)}.g-b.g-upc .gc-grade{border-color:var(--up);color:var(--up)}
 .g-rd .gc-grade{border-color:var(--gold);color:var(--gold);font-size:12px;text-align:center;line-height:1.15}
 .g-nr .gc-grade{border-color:var(--dn);color:var(--dn);font-size:12px;text-align:center;line-height:1.15}.g-w .gc-grade{font-size:12px}
 .gc-id{min-width:0;flex:1}
@@ -187,10 +188,10 @@ function svg(r){ const P = r.past, n = P.length, m = r.med.length, W = 600, H = 
     <polyline points="${pt(P, 0).join(" ")}" fill="none" stroke="#EDEDEF" stroke-width="1.6" vector-effect="non-scaling-stroke"/>
     <polyline points="${pt(md, n - 1).join(" ")}" fill="none" stroke="${col}" stroke-width="2.2" stroke-dasharray="6 4" vector-effect="non-scaling-stroke"/></svg>`; }
 function card(r){ const nm = (D.names||{})[r.s] || r.s, up = r.side > 0, e = r.med.length - 1, w = (r.hi[e] - r.lo[e]) / r.last * 100;
-  return `<article class="gc g-${r.agree ? "a" : "b"}"><div class="gc-top"><div class="gc-grade" style="font-size:13px;text-align:center;line-height:1.15">${r.chg >= 0 ? "+" : ""}${r.chg.toFixed(2)}%</div>
+  return `<article class="gc g-${r.agree ? "a" : "b"} ${r.chg < 0 ? "g-dn" : "g-upc"}"><div class="gc-top"><div class="gc-grade" style="font-size:13px;text-align:center;line-height:1.15">${r.chg >= 0 ? "+" : ""}${r.chg.toFixed(2)}%</div>
     <div class="gc-id"><h3>${esc(nm)}</h3><small>${esc(r.s)} · ${esc(r.mkt)}${r.open ? "" : " · market closed"}</small></div>
-    <div class="gc-px"><b>${fmt(r.last,r.dec)}</b><small>last 1h close</small></div></div>
-    <div class="gc-setup">${r.side === 0 ? "Flat" : "Leaning " + (up ? "up" : "down")} <em>· ${up ? r.up : r.n - r.up} of ${r.n} models${r.agree ? " agree" : ""}</em></div>
+    <div class="gc-px"><b>${fmt(r.last,r.last >= 1000 ? 2 : r.dec)}</b><small>last 1h close</small></div></div>
+    <div class="gc-setup">${r.side === 0 ? "Flat" : "Leaning " + (up ? "up" : "down")} <em>· ${r.agree ? `all ${r.n} models agree` : `models split: ${up ? r.up : r.n - r.up} of ${r.n} lean this way, the average path decides`}</em></div>
     ${svg(r)}<div class="fc-leg"><span><i style="background:#EDEDEF"></i>last 48 hours</span><span><i style="background:${up?"#22AB94":"#F7525F"}"></i>middle forecast</span><span><i style="background:rgba(110,168,254,.5)"></i>8-in-10 range</span></div>
     <div class="kv"><div><span>In 24 hours, middle</span><b>${fmt(r.med[e],r.dec)}</b></div><div><span>Range low</span><b class="dn">${fmt(r.lo[e],r.dec)}</b></div><div><span>Range high</span><b class="up">${fmt(r.hi[e],r.dec)}</b></div><div><span>Range width</span><b>${w.toFixed(2)}%</b></div></div>
     <div class="nc-v">${Object.entries(r.v).map(([m,v]) => `<i class="${v>0?"u":v<0?"d":""}">${esc(MN[m]||m)} ${v>0?"▲":v<0?"▼":"–"}</i>`).join("")}</div>
