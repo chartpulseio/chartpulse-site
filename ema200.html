@@ -258,7 +258,7 @@ a:hover{text-decoration:underline}
   <div id="out"><div class="msg">Loading…</div></div>
 
 <p class="note">
-    <b>How rows are ranked.</b> Only signals inside the <b>ATR zone</b> (price within 1 daily ATR of the 200 EMA) are ranked. Older signals where price has already moved further away stay at the bottom marked <b>Out of ATR zone</b>: do not chase them. Best setups come first. A <b>Top setup</b> has the bigger trend with it (MTF
+    <b>How rows are ranked.</b> Only signals inside the <b>ATR zone</b> (price within 1 daily ATR of the 200 EMA) are ranked. Rows where price is touching or about to touch the 200 EMA (within 0.3 ATR, or today's candle crossed the line) always come first, even without a stage. Older signals where price has already moved further away stay at the bottom marked <b>Out of ATR zone</b>: do not chase them. Best setups come first. A <b>Top setup</b> has the bigger trend with it (MTF
     trend on 30m, 1H, 4H, 1D and 1W, at least 4 of 5 agreeing), a Confirmed or Best stage, a key zone sitting
     on the 200 EMA (today's high or low, previous day high, low or close, weekly or monthly high or low, a
     pivot or a Fibonacci level) and at least two of the three filters. A <b>Good setup</b> has the trend with
@@ -337,7 +337,7 @@ a:hover{text-decoration:underline}
   function row(s){
     var st = STAGE[s.stage] || '–', g = GRADE[s.grade] || GRADE[1], d = s.dist_pct;
     return '<tr>'
-      + '<td><span class="sym">'+esc(s.name || s.symbol)+'</span><span class="mkt">'+esc(s.symbol)+' · '+esc(s.market)+'</span>'+(s.stage<0?'':(s.ungraded?'<span class="grade oz" title="'+esc(s.ungraded)+'">Out of ATR zone · '+Math.abs(s.atr_d||0).toFixed(1)+' ATR away</span>':'<span class="grade '+g[0]+'">'+g[1]+'</span>'))+'</td>'
+      + '<td><span class="sym">'+esc(s.name || s.symbol)+'</span><span class="mkt">'+esc(s.symbol)+' · '+esc(s.market)+'</span>'+(s.touch?'<span class="grade a" style="margin-right:4px">Touching 200 EMA · '+Math.abs(s.atr_d||0).toFixed(2)+' ATR</span>':'')+(s.stage<0?'':(s.ungraded?'<span class="grade oz" title="'+esc(s.ungraded)+'">Out of ATR zone · '+Math.abs(s.atr_d||0).toFixed(1)+' ATR away</span>':'<span class="grade '+g[0]+'">'+g[1]+'</span>'))+'</td>'
       + '<td>'+(s.signal?'<span class="side-'+esc(s.side)+'">'+(s.signal==='CALL'?'▲ CALL':'▼ PUT')+'</span>':'<span class="tag">no side</span>')+'</td>'
       + '<td>'+tfnow(s)+'</td>'
       + '<td>'+mtf(s)+'</td>'

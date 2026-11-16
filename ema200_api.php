@@ -32,7 +32,7 @@ try { $M15 = e2_m15_step(array_keys(t_symbols()), 8.0); } catch (\Throwable $e) 
 
 if (is_file(E2_CACHE)) {
     $cached = json_decode((string)file_get_contents(E2_CACHE), true);
-    if ($cached && isset($cached['ts']) && $now - $cached['ts'] < E2_STALE && ($cached['v'] ?? 0) === 4) $all = $cached;
+    if ($cached && isset($cached['ts']) && $now - $cached['ts'] < E2_STALE && ($cached['v'] ?? 0) === 5) $all = $cached;
 }
 
 if ($all === null) {
@@ -85,18 +85,23 @@ if ($all === null) {
         // Older signals where price has already run away are kept at the bottom, ungraded, marked "out of zone".
         $dq = $tfs['1D'] ?? null; $row['atr_d'] = $dq ? (float)$dq['d'] : null;
         $row['in_zone'] = $dq ? (bool)$dq['in'] : false;
+        // owner, 16 Nov 2026 (later): anything about to touch the 200 EMA must be ranked, at the top.
+        //   touch = within 0.3 daily ATR of the EMA, or today's candle already crossed the EMA line
+        $hiT = (float)end($d['h']); $loT = (float)end($d['l']); $exT = (float)$r['ema200'];
+        $row['touch'] = $dq && (abs((float)$dq['d']) <= 0.3 || ($loT <= $exT && $hiT >= $exT));
+        if ($row['touch']) { $row['in_zone'] = true; if ($row['grade'] < 1 && $stage >= -1) $row['grade'] = 1; }
         if (!$row['in_zone']) { $row['grade'] = 0; $row['ungraded'] = 'Out of the ATR zone: price is ' . ($dq ? abs(round($dq['d'], 1)) : '?') . ' ATR from the 200 EMA'; }
         $rows[] = $row;
     }
 
     // Best setups first: grade, then stage (Best > Confirmed > Early > Watch), then a strong zone, then filters agreeing
     $zr = fn($x) => $x['zone'] ? ($x['zone']['t'] === 'strong' ? 2 : 1) : 0;
-    usort($rows, fn($a, $b) => [(int)$b['in_zone'], $b['grade'], $b['stage'], $b['nx'], $b['nin'], $zr($b), $b['strength']] <=> [(int)$a['in_zone'], $a['grade'], $a['stage'], $a['nx'], $a['nin'], $zr($a), $a['strength']]);
+    usort($rows, fn($a, $b) => [(int)$b['in_zone'], (int)$b['touch'], $b['grade'], $b['stage'], $b['nx'], $b['nin'], $zr($b), $b['strength']] <=> [(int)$a['in_zone'], (int)$a['touch'], $a['grade'], $a['stage'], $a['nx'], $a['nin'], $zr($a), $a['strength']]);
 
     $all = [
         'updated' => gmdate('Y-m-d\TH:i:s\Z'),
         'scanned' => $scanned, 'skipped' => $skipped,
-        'signals' => $rows, 'ts' => $now, 'v' => 4,
+        'signals' => $rows, 'ts' => $now, 'v' => 5,
     ];
     @file_put_contents(E2_CACHE, json_encode($all, JSON_UNESCAPED_SLASHES));
 }
