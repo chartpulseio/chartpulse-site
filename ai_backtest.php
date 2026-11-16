@@ -319,12 +319,12 @@ function aib_parse_ai($text, $ctx = '') {
       . "Trader vocabulary: PDH / previous day high / kal ka high = {ind:high, tf:1D}; PDL = {ind:low, tf:1D}; PDC = {ind:close, tf:1D}; previous week high/low = tf 1W. Day high so far is NOT available; use PDH when they say day high on a level. "
       . "MTF / multi-timeframe bearish = price below EMA 50 on two higher timeframes than the chart, e.g. for a 15m or 30m chart: close < {ema 50 tf 1h} AND close < {ema 50 tf 4h} (mention this in assumptions); bullish is the mirror. Trend up/down alone = close vs EMA 200. "
       . "put / PE / sell / short / bechna = entry_short; call / CE / buy / long / lena / khareedna = entry_long. Options can only be tested as the underlying going down (put) or up (call); say so in assumptions. "
-      . "Rejection / sell at a strong zone or level L (like PDH): high >= L*0.999 (offset 0.999) AND close < L. Bounce / buy at support L: low <= L*1.001 AND close > L. Breakout above L: close crosses_above L. "
+      . "Rejection / sell at a strong zone or level L (like PDH): high >= L*0.997 (offset 0.997, a zone not an exact line) AND close < L. Bounce / buy at support L: low <= L*1.003 AND close > L. Breakout above L: close crosses_above L. "
       . "If no exit is given, add a sensible one and state it in assumptions: for level trades stop_loss_atr 1.5 and take_profit_atr 3; otherwise stop_loss_pct 2 and take_profit_pct 4.\n"
       . "Defaults: rsi 14; macd 12/26/9; bollinger 20, mult 2; supertrend 10, mult 3 (supertrend_dir 1 up, -1 down); stoch 14/1/3; adx 14; vwap 20. highest/lowest = previous n bars. src may be volume.\n"
       . "risk keys (numbers): stop_loss_pct, take_profit_pct, stop_loss_atr, take_profit_atr, trail_pct, trail_atr, max_bars, atr_period. 2 means 2%. Reward:risk 1:2 with a 2% stop = take_profit_pct 4.\n"
       . "Only add the side(s) the user asked for. Prefer a reasonable interpretation with assumptions over returning nothing; leave entry lists empty only if there is truly no trading idea, and then ask the question.\n"
-      . "Example: 'when mtf bear - then day high se put leni hai .. when there is any strong zone like pdh' -> plain 'Trade short (put) when the higher timeframes are bearish and price rejects the previous day high.' strategy entry_short: [close < ema50 tf 1h, close < ema50 tf 4h, high >= high tf 1D offset 0.999, close < high tf 1D], risk stop_loss_atr 1.5 take_profit_atr 3.\n"
+      . "Example: 'when mtf bear - then day high se put leni hai .. when there is any strong zone like pdh' -> plain 'Trade short (put) when the higher timeframes are bearish and price rejects the previous day high.' strategy entry_short: [close < ema50 tf 1h, close < ema50 tf 4h, high >= high tf 1D offset 0.997, close < high tf 1D], risk stop_loss_atr 1.5 take_profit_atr 3.\n"
       . "symbol must be one of: $codes (or null if the user named none).";
     $user = mb_substr($text, 0, 1500) . ($ctx !== '' ? "\n\n(Form settings: $ctx)" : '');
     $got = null; $by = null; $fallback = null;
@@ -473,13 +473,31 @@ try {
             'capital' => is_numeric($q['capital'] ?? null) ? (float)$q['capital'] : 10000, 'commission' => 0.001, 'slippage' => 0.0005, 'size' => 1.0];
     bt_check_tfs($strategy, $tf);
     $res = bt_handle_backtest($req);
+    $diag = [];
+    if ((int)($res['trades_total'] ?? 0) === 0) {
+        // no trade: try a longer history first (intraday charts only have ~2 months), then explain which rule blocked it
+        if (in_array($tf, ['5m', '15m', '30m'], true)) {
+            try { $r2 = $req; $r2['timeframe'] = '1h'; $r2['start'] = gmdate('Y-m-d', $end - 2 * 365 * 86400); bt_check_tfs($strategy, '1h'); $x = bt_handle_backtest($r2);
+                if ((int)($x['trades_total'] ?? 0) > 0) { $diag[] = "On the $tf chart there are only about 2 months of data and the rules never lined up, so this shows the 1-hour chart over 2 years instead."; $res = $x; $req = $r2; $tf = '1h'; } }
+            catch (Throwable $e) { }
+        }
+        if ((int)($res['trades_total'] ?? 0) === 0) foreach (['entry_long', 'entry_short'] as $k) {
+            $L = $strategy['rules'][$k]; if (count($L) < 2) continue; $cnt = [];
+            foreach ($L as $i => $rule) {
+                $one = $strategy; $one['rules'] = ['entry_long' => [], 'exit_long' => [], 'entry_short' => [], 'exit_short' => []]; $one['rules'][$k] = [$rule];
+                try { $x = bt_handle_backtest(['strategy' => $one] + $req); $cnt[$i] = (int)($x['trades_total'] ?? 0); } catch (Throwable $e) { $cnt[$i] = null; }
+                $diag[] = 'Alone, "' . aib_say_rule($rule) . '" gave ' . ($cnt[$i] === null ? 'no answer' : $cnt[$i] . ' trades') . '.';
+            }
+            $diag[] = 'All of them together gave 0 trades. Loosen the rule with the fewest trades, try a longer period, or a 1-hour or 4-hour chart.';
+        }
+    }
 
     $lines = [];
     foreach (['entry_long' => 'Buy (go long) when', 'exit_long' => 'Sell (close the long) when', 'entry_short' => 'Go short when', 'exit_short' => 'Close the short when'] as $k => $lab) {
         if ($strategy['rules'][$k]) $lines[] = ['k' => $k, 'label' => $lab, 'rules' => array_map('aib_say_rule', $strategy['rules'][$k])];
     }
     $n = (int)($res['trades_total'] ?? 0);
-    $warn = [];
+    $warn = $diag;
     if ($symGuess) $warn[] = 'You did not name a market, so this ran on SPY (S&P 500 ETF). Pick a market above to change it.';
     if (!$strategy['rules']['exit_long'] && $strategy['rules']['entry_long'] && !$strategy['risk']) $warn[] = 'You gave no exit and no stop-loss, so a trade only closes at the end of the data. Add "sell when ..." or a stop-loss.';
     foreach ((array)($P['assumptions'] ?? []) as $a) $warn[] = 'Assumed: ' . $a;
