@@ -60,6 +60,7 @@ const DD_DEEP_MAX  = 10;     // symbols per request allowed to fetch fresh 5m ba
 const DD_BUDGET    = 22;     // wall clock for one scan step
 const DD_STEP1_MIN = 23.0;
 const DD_BOUNCE_LINE = 1.0;   // owner, 14 Nov 2026 01:30 IST: daily trend line within 1 x daily ATR of today's high/low (the rule)
+const DD_FAKE = 0.5;        // owner, 17 Nov 2026: beyond the daily line by up to 0.5 x daily ATR = fake-out zone; price further out = breakout (not ranked)
 const DD_BOUNCE_W = 0.5;   // owner, 14 Nov 2026: the day's ATR zone = open +/- 1 daily ATR, widened by 0.5 ATR either side (wide zone)   // Step 1 score needed before Step 2 runs
 const DD_VA_PCT    = 0.70;
 const DD_BUCKETS   = 48;
@@ -904,6 +905,13 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
     };
     $dLine = $lineAt('1D'); $wLine = $lineAt('1W');
     if ($dLine === null) { $why = 'no daily ' . ($call ? 'support' : 'resistance') . ' trend line within 1 x daily ATR of today\'s ' . ($call ? 'low' : 'high'); return null; }
+    // Owner, 17 Nov 2026: touch vs fake-out. pen = how far today's extreme went THROUGH the daily line, cur = where price is now
+    // (both in daily ATR, > 0 = beyond the line). Price more than 0.5 ATR beyond the line = breakout: not our syllabus, not ranked.
+    // Once price comes back inside that 0.5 ATR band it is a fake-out again and gets an entry plan.
+    $pen = ($dLine - $ext) * $sg / $aP; $cur = ($dLine - $px) * $sg / $aP;
+    if ($cur > DD_FAKE) { $why = 'breakout: price is ' . round($cur, 2) . ' x ATR beyond the daily line (fake-out zone is 0.5 ATR)'; return null; }
+    $kind = $pen > 0.05 ? 'fakeout' : 'touch';
+    $lineN = (int)($tl['tf']['1D'][$call ? 'sup' : 'res']['n'] ?? 2);
     // zones and lines at today's extreme
     $tol = 0.15 * $aD; $hit = [];
     // a zone counts when today's extreme is on it, or swept through it by up to 0.6 daily ATR (wick below support, back above)
@@ -932,18 +940,48 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
     $with = array_keys(array_filter($trends, fn($v) => $v === $dir)); $against = array_keys(array_filter($trends, fn($v) => $v !== $dir));
     $smallWith = in_array('1H', $with, true) || in_array('30m', $with, true);
     $base = ['side' => $call ? 'CALL' : 'PUT', 'extreme' => dd_f($ext), 'atr_x' => round($stretch, 2), 'atr_zone' => [dd_f(min($zLo, $zHi)), dd_f(max($zLo, $zHi))], 'in_atr' => $inAtr,
-             'd_line' => dd_f($dLine), 'line_atr' => round(abs($px - $dLine) / $aP, 3),   // how far price is from the daily line, in daily ATR (owner, 14 Nov: closest ranks first) 'w_line' => $wLine === null ? null : dd_f($wLine), 'zones' => $zones, 'strong' => $strong, 'trends' => $trends,
+             'd_line' => dd_f($dLine), 'line_atr' => round(abs($px - $dLine) / $aP, 3),   // how far price is from the daily line, in daily ATR (owner, 14 Nov: closest ranks first)
+             'w_line' => $wLine === null ? null : dd_f($wLine), 'zones' => $zones, 'strong' => $strong, 'trends' => $trends,
+             'kind' => $kind, 'pen' => round($pen, 2), 'line_n' => $lineN, 'back' => $cur <= 0,
              'with' => $with, 'against' => $against, 'small_with' => $smallWith,
              'tag' => $smallWith ? 'Small trend agrees (' . implode(', ', array_values(array_intersect(['4H', '1H', '30m'], $with))) . ')' : 'Against the small trend too'];
     if (!$today) { $why = 'no intraday bars for today (cs ' . $cs . ')'; return $base + ['status' => 'NEED5M']; }      // ask the scan for fresh 5m bars
     // stale intraday bars (the cached 5m stop well before now) cannot show a turn that already happened: ask for fresh ones
     $lastBar = (int)$F5['t'][$n5 - 1];
     if ($now - $lastBar > 1200 && ($ce === 0 || $now < $ce)) { $why = 'intraday bars ' . round(($now - $lastBar) / 60) . ' min old'; return $base + ['status' => 'NEED5M']; }
-    // has it turned? a fresh 5m change of character after the extreme
+    // ---- the reversal ladder (owner, 17 Nov 2026): 1 at the line, 2 rejection candle, 3 5m CHoCH, 4 retest hold ----
     $ch = $ix < $n5 - 2 ? dd_choch($F5, $ix, $n5, $sg, 8) : null;
     $away = ($px - $ext) * $sg;                                        // > 0: price is off the extreme on our side
     if (!$ch && $ix < $n5 - 2) { $ch = dd_choch_first($F5, $ix, $n5, $sg); }   // a turn earlier today still counts while price is in the zone
-    if ($ch && $away > 0) {
+    $rej = dd_rej($F5, $ix, $n5, $sg);
+    if ($rej === null) { $G15 = t_resample($F5, 900); $n15 = count($G15['t'] ?? []); $i15 = null; for ($i = 0; $i < $n15; $i++) if ((int)$G15['t'][$i] >= (int)$F5['t'][$ix] - 900) { $i15 = $i; break; } if ($i15 !== null) { $r15 = dd_rej($G15, $i15, $n15, $sg); if ($r15) $rej = $r15 + ['tf' => '15m']; } }
+    $turn = $ch && $away > 0;
+    $ret = null;
+    if ($turn) for ($i = (int)$ch[1] + 1; $i < $n5 - 1; $i++) {
+        $v = (float)($call ? $F5['l'][$i] : $F5['h'][$i]);
+        $piv = $call ? ($v < (float)$F5['l'][$i - 1] && $v <= (float)$F5['l'][$i + 1]) : ($v > (float)$F5['h'][$i - 1] && $v >= (float)$F5['h'][$i + 1]);
+        if ($piv && ($v - $ext) * $sg > 0.05 * $a5 && ($px - $v) * $sg > 0) $ret = $v;   // newest higher low (lower high for a PUT) that held
+    }
+    $stage = $ret !== null ? 4 : ($turn ? 3 : ($rej ? 2 : 1));
+    // confirmations (labels; more of them ranks higher, none of them is a filter)
+    $conf = [];
+    if ($kind === 'fakeout') $conf[] = $cur <= 0 ? 'Fake-out: back ' . ($call ? 'above' : 'below') . ' the line' : 'Fake-out: back inside 0.5 ATR';
+    if ($zones) $conf[] = 'Key zone: ' . implode(' + ', $zones);
+    if ($wLine !== null) $conf[] = 'Weekly line too';
+    if ($smallWith) $conf[] = 'Small trend turned (' . implode(', ', array_values(array_intersect(['4H', '1H', '30m'], $with))) . ')';
+    try {
+        $R = dd_rsi_s(array_map('floatval', $F5['c']));
+        $pv = null; for ($i = max(1, $ix - 48); $i < $ix - 1; $i++) {
+            $v = (float)($call ? $F5['l'][$i] : $F5['h'][$i]);
+            $isP = $call ? ($v < (float)$F5['l'][$i - 1] && $v <= (float)$F5['l'][$i + 1]) : ($v > (float)$F5['h'][$i - 1] && $v >= (float)$F5['h'][$i + 1]);
+            if ($isP && ($pv === null || ($call ? $v < $pv[1] : $v > $pv[1]))) $pv = [$i, $v];
+        }
+        if ($pv && ($pv[1] - $ext) * $sg > 0 && ((float)$R[$ix] - (float)$R[$pv[0]]) * $sg > 2) $conf[] = 'RSI divergence (5m)';
+    } catch (Throwable $e) {}
+    if ($rej && !empty($rej['vol'])) $conf[] = 'Volume spike on the rejection';
+    $ladder = ['stage' => $stage, 'ticks' => [1, $rej ? 1 : 0, $turn ? 1 : 0, $ret !== null ? 1 : 0], 'rej' => $rej ? ($rej['what'] . ' (' . ($rej['tf'] ?? '5m') . ')') : null,
+               'retest' => $ret === null ? null : dd_f($ret), 'conf' => $conf];
+    if ($turn) {
         $entry = (float)$ch[2]; $sl = $ext - $sg * 0.15 * $a5; $risk = abs($entry - $sl); if ($risk <= 0) return null;
         $lv = [];
         $vw = dd_vwap($F5, $cs, $ce ?: $cs + 86400); if ($vw) $lv[] = [(float)$vw['value'], 'VWAP'];
@@ -952,11 +990,31 @@ function dd_bounce(string $sym, array $fr, array $F5, int $cs, int $ce, float $p
         $tp = null;
         foreach ($lv as [$p, $nm]) { $d = ($p - $entry) * $sg; if ($d >= 0.8 * $risk && ($tp === null || $d < ($tp[0] - $entry) * $sg)) $tp = [$p, $nm]; }
         if ($tp === null) $tp = [$entry + $sg * 1.5 * $risk, '1.5 x the risk'];
-        return $base + ['status' => 'BOUNCE GO', 'entry' => dd_f($entry), 'sl' => dd_f($sl), 't1' => dd_f($tp[0]), 't1why' => $tp[1],
+        return $base + $ladder + ['status' => 'BOUNCE GO', 'entry' => dd_f($entry), 'sl' => dd_f($sl), 't1' => dd_f($tp[0]), 't1why' => $tp[1],
                         'rr' => round(abs($tp[0] - $entry) / $risk, 1), 'at_bar' => (int)$F5['t'][$ch[1]]];
     }
-    // in the zone, no turn yet (or price pushing on): the signal stays active and waits. Zones are a label, not a filter.
-    return $base + ['status' => 'BOUNCE READY'];
+    // at the line, no 5m turn yet (or price pushing on inside the fake-out band): the signal stays active and waits
+    return $base + $ladder + ['status' => 'BOUNCE READY'];
+}
+
+/**
+ * Rejection candle at the extreme (owner, 17 Nov 2026): from the extreme's bar on, a candle with a long wick toward the
+ * extreme (>= 50% of its range) that closed in the far 40% of its range, or an engulfing candle the other way.
+ */
+function dd_rej(array $F, int $from, int $n, int $sg): ?array {
+    $out = null;
+    for ($i = max(1, $from); $i < $n; $i++) {
+        $o = (float)$F['o'][$i]; $h = (float)$F['h'][$i]; $l = (float)$F['l'][$i]; $c = (float)$F['c'][$i]; $rg = $h - $l; if ($rg <= 0) continue;
+        $wick = $sg > 0 ? min($o, $c) - $l : $h - max($o, $c);
+        $pin = $wick >= 0.5 * $rg && ($sg > 0 ? $c >= $l + 0.6 * $rg : $c <= $h - 0.6 * $rg);
+        $po = (float)$F['o'][$i - 1]; $pc = (float)$F['c'][$i - 1];
+        $eng = $sg > 0 ? ($c > $o && $pc < $po && $c >= $po && $o <= $pc) : ($c < $o && $pc > $po && $c <= $po && $o >= $pc);
+        if (!$pin && !$eng) continue;
+        $vol = false; $v = (float)($F['v'][$i] ?? 0);
+        if ($v > 0 && $i >= 20) { $avg = array_sum(array_map('floatval', array_slice($F['v'], $i - 20, 20))) / 20; $vol = $avg > 0 && $v >= 1.5 * $avg; }
+        $out = ['what' => $pin ? ($sg > 0 ? 'long lower wick' : 'long upper wick') : 'engulfing candle', 'at' => (int)$F['t'][$i], 'vol' => $vol];
+    }
+    return $out;
 }
 
 function dd_status(array $s1, ?array $s2, ?array $s3): string {
@@ -1013,7 +1071,7 @@ function dd_eval(string $sym, array $row, bool $deep, array $ctx, int $now): ?ar
     $gates = $s1['gates'] + ($s2['gates'] ?? []) + ($s3['gates'] ?? []);
     $status = dd_status($s1, $s2, $s3); $mode = 'trend'; $bo = null;
     $bwhy = null; try { $bo = dd_bounce($sym, $fr, $F5, $cs, $ce, $px, $now, $bwhy); } catch (Throwable $e) { dd_log('bounce', $sym . ': ' . $e->getMessage()); }
-    if ($bo && !in_array($status, ['DRIVE', 'ARMED'], true) && in_array($bo['status'], ['BOUNCE GO', 'BOUNCE READY', 'BOUNCE RUN'], true)) {
+    if ($bo && in_array($bo['status'], ['BOUNCE GO', 'BOUNCE READY'], true)) {   // owner, 17 Nov 2026: the reversal always wins on Day Drive
         $status = $bo['status']; $mode = 'bounce'; $sg = $bo['side'] === 'CALL' ? 1 : -1;
     }
 
@@ -1060,6 +1118,8 @@ function dd_scan(string $mkt = 'all', bool $force = false): array {
     $c = t_read_json($ck, null);
     if (!$force && is_array($c) && $now - (int)($c['at'] ?? 0) < DD_SCAN_TTL && !empty($c['rows'])) return dd_filter($c, $mkt);
 
+    // owner, 17 Nov 2026: the old Day Drive copies' files are deleted for good (nothing reads them)
+    foreach (['scan2', 'rows2', 'scan3', 'rows3'] as $f) if (is_file(DD_DIR . "/$f.json")) @unlink(DD_DIR . "/$f.json");
     $ctx = dd_context();
     $scan = t_scan_load();
     $cands = dd_candidates($scan, $now);
@@ -1095,20 +1155,23 @@ function dd_scan(string $mkt = 'all', bool $force = false): array {
 
     $list = array_values($rows);
     usort($list, function ($a, $b) {
-        // Owner, 14 Nov 2026 01:59 IST: the daily trend line is the reversal point. All bounces (GO and READY) rank together,
-        // closest to the daily line first (touched, or crossed but still near); then GO before READY; then the older keys.
-        $rank = ['DRIVE' => 0, 'BOUNCE GO' => 1, 'BOUNCE READY' => 1, 'ARMED' => 2, 'TREND OK' => 4, 'BOUNCE RUN' => 5, 'STRUCTURE OK' => 6, 'OFF-HOURS' => 7, 'WATCH' => 8];
-        $x = $rank[$a['status']] ?? 9; $y = $rank[$b['status']] ?? 9;
-        if ($x !== $y) return $x <=> $y;
-        if (($a['mode'] ?? '') === 'bounce' && ($b['mode'] ?? '') === 'bounce') {
+        // Owner, 17 Nov 2026: Day Drive's attention is the reversal at the daily trend line. Every bounce ranks above the
+        // trend setups. Order: fake-out + retest > fake-out + CHoCH > touch + retest > touch + CHoCH > rejection candle
+        // (fake-out, then touch) > at the line (fake-out, then touch). Then more confirmations, more line touches, closer to the line.
+        $ab = ($a['mode'] ?? '') === 'bounce'; $bb = ($b['mode'] ?? '') === 'bounce';
+        if ($ab !== $bb) return $ab ? -1 : 1;
+        if ($ab && $bb) {
+            $ga = dd_bgroup($a['bounce'] ?? []); $gb = dd_bgroup($b['bounce'] ?? []);
+            if ($ga !== $gb) return $ga <=> $gb;
+            $ka = [(int)($a['bounce']['stage'] ?? 1), count($a['bounce']['conf'] ?? []), (int)($a['bounce']['line_n'] ?? 2)];
+            $kb = [(int)($b['bounce']['stage'] ?? 1), count($b['bounce']['conf'] ?? []), (int)($b['bounce']['line_n'] ?? 2)];
+            if ($ka !== $kb) return $kb <=> $ka;
             $la = (float)($a['bounce']['line_atr'] ?? 99); $lb = (float)($b['bounce']['line_atr'] ?? 99);
             if (abs($la - $lb) > 1e-9) return $la <=> $lb;
-            if ($a['status'] !== $b['status']) return $a['status'] === 'BOUNCE GO' ? -1 : 1;
-            // then: small trend with it first, then more charts with it, then a strong zone
-            $ka = [!empty($a['bounce']['small_with']) ? 1 : 0, count($a['bounce']['with'] ?? []), !empty($a['bounce']['strong']) ? 1 : 0];
-            $kb = [!empty($b['bounce']['small_with']) ? 1 : 0, count($b['bounce']['with'] ?? []), !empty($b['bounce']['strong']) ? 1 : 0];
-            if ($ka !== $kb) return $kb <=> $ka;
         }
+        $rank = ['DRIVE' => 0, 'ARMED' => 2, 'TREND OK' => 4, 'STRUCTURE OK' => 6, 'OFF-HOURS' => 7, 'WATCH' => 8];
+        $x = $rank[$a['status']] ?? 9; $y = $rank[$b['status']] ?? 9;
+        if ($x !== $y) return $x <=> $y;
         return (float)$b['score'] <=> (float)$a['score'];
     });
 
@@ -1124,6 +1187,14 @@ function dd_scan(string $mkt = 'all', bool $force = false): array {
     ];
     t_write_json($ck, $p);
     return dd_filter($p, $mkt);
+}
+
+/** Rank group of a bounce (owner, 17 Nov 2026), 0 = best. */
+function dd_bgroup(array $b): int {
+    $f = ($b['kind'] ?? '') === 'fakeout'; $st = (int)($b['stage'] ?? 1);
+    if ($st >= 3) return $f ? 0 : 1;
+    if ($st === 2) return $f ? 2 : 3;
+    return $f ? 4 : 5;
 }
 
 function dd_filter(array $p, string $mkt): array {

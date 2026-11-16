@@ -146,6 +146,10 @@ a.dd-row:hover{background:var(--card2)}
 }
 @media (max-width:560px){.dd{padding:20px 14px 48px}.dd-steps{grid-template-columns:1fr}.dd-tiles{grid-template-columns:repeat(2,1fr)}.dd-score{text-align:left;width:100%}}
 @media (prefers-reduced-motion:no-preference){.dd-prog i::after{transition:width .5s ease}}
+.dd-lad{display:flex;gap:4px;align-items:center}.dd-lad i{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 4px;border-radius:5px;font:600 10.5px var(--mono);font-style:normal;background:rgba(255,255,255,.06);color:var(--mute);border:1px solid var(--line)}.dd-lad i.on{background:rgba(34,171,148,.16);color:#22AB94;border-color:rgba(34,171,148,.55)}
+.dd-kind{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;font-style:normal;font-size:11.5px;font-weight:600;white-space:nowrap}.dd-kind.fake{background:rgba(244,183,64,.14);color:#F4B740;border:1px solid rgba(244,183,64,.5)}.dd-kind.touch{background:rgba(181,123,255,.12);color:#C9A2FF;border:1px solid rgba(181,123,255,.45)}
+.dd-ladder{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}.dd-ladder div{padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)}.dd-ladder div.on{border-color:rgba(34,171,148,.55);background:rgba(34,171,148,.07)}.dd-ladder b{display:block;font-size:13.5px}.dd-ladder small{color:var(--dim);font-size:12px;line-height:1.45;display:block;margin-top:4px}
+@media (max-width:760px){.dd-ladder{grid-template-columns:1fr 1fr}}
 .dd-btag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.18);font-style:normal;font-size:11.5px;color:#A3A5AF;white-space:nowrap}.dd-btag.ok{border-color:rgba(34,171,148,.6);color:#22AB94}.dd-btag.no{border-color:rgba(247,82,95,.55);color:#F7525F}
 </style>
 <meta property="og:site_name" content="ChartPulse">
@@ -176,7 +180,7 @@ a.dd-row:hover{background:var(--card2)}
   </div>
   <div class="dd-bar" style="margin-top:0">
     <div class="dd-tabs" id="ddStage" role="group" aria-label="Stage">
-      <button type="button" data-s="all" class="on">Everything</button><button type="button" data-s="ready">Entry ready / Get ready</button><button type="button" data-s="bounce">Bounce</button><button type="button" data-s="progress">Passed check 1 or 2</button>
+      <button type="button" data-s="all" class="on">Everything</button><button type="button" data-s="ready">Entry ready / Get ready</button><button type="button" data-s="bounce">Reversals</button><button type="button" data-s="fake">Fake-outs</button><button type="button" data-s="progress">Passed check 1 or 2</button>
     </div>
     <span class="dd-upd" id="ddUpd"></span>
   </div>
@@ -193,6 +197,8 @@ a.dd-row:hover{background:var(--card2)}
       <dt>VWAP</dt><dd>Today's average traded price. Above it buyers are ahead, below it sellers are.</dd>
       <dt>Liquidity sweep</dt><dd>Price runs just past an obvious level, triggers the stops there, then turns back.</dd>
       <dt>Change of character (CHoCH)</dt><dd>The first break of a swing against the recent move, an early sign of a turn.</dd>
+      <dt>Fake-out</dt><dd>Price pokes through the daily trend line by up to half a daily ATR and comes back. Breakout traders are trapped, which often fuels the reversal. Further than that is a breakout and is not listed.</dd>
+      <dt>Reversal ladder</dt><dd>1 at the line, 2 rejection candle, 3 5-minute change of character, 4 retest held. More ticks = a more confirmed reversal.</dd>
     </dl>
   </section>
   <p class="dd-foot">Some inputs are estimates and are marked "est." on the detail page: buying and selling pressure and one-sided candles are read from where each candle closes, because order-book data is not available here. This page is for education and demonstration. It is not financial advice.</p></main>
@@ -213,8 +219,8 @@ const Q = new URLSearchParams(location.search);
 /* ---- plain words for everything the engine reports ---------------------- */
 const STAGE = {
   "DRIVE":        { t: "Entry ready",      c: "s-drive",     next: "All three checks passed. The entry, stop and targets are in the trade plan." },
-  "BOUNCE GO":    { t: "Bounce · entry",   c: "s-bgo",       next: "" },
-  "BOUNCE READY": { t: "Bounce · get ready", c: "s-bready",   next: "" },
+  "BOUNCE GO":    { t: "Reversal · entry",   c: "s-bgo",       next: "" },
+  "BOUNCE READY": { t: "Reversal · at the line", c: "s-bready",   next: "" },
   "BOUNCE RUN":   { t: "Bounce · already moving", c: "s-bready", next: "" },
   "ARMED":        { t: "Get ready",        c: "s-armed",     next: "An entry trigger has appeared. Waiting for the last confirmations before it is a full entry." },
   "TREND OK":     { t: "Trend agrees",     c: "s-trend",     next: "Big picture and trend both agree. Waiting for an entry trigger on the 15-minute chart." },
@@ -251,6 +257,9 @@ const stepOk = (r, st) => st.keys.filter(k => r.gates && r.gates[k] && r.gates[k
 const stepSeen = (r, st) => st.keys.some(k => r.gates && r.gates[k]);
 
 const TRN = r => r.bounce && r.bounce.trends ? `<span class="dd-tr">${Object.entries(r.bounce.trends).map(([k, v]) => `<i class="${v}" title="${k} trend ${v}">${k}${v === "up" ? "▲" : "▼"}</i>`).join("")}</span>` : "";
+const LAD = ["At the line", "Rejection candle", "5m change of character", "Retest held"];
+const lad = r => { const t = (r.bounce && r.bounce.ticks) || [1, 0, 0, 0]; return `<span class="dd-lad" title="Reversal ladder: ${LAD.map((x, i) => (t[i] ? "✓ " : "· ") + x).join(" | ")}">${t.map((v, i) => `<i class="${v ? "on" : ""}">${i + 1}</i>`).join("")}</span><small style="color:var(--mute);font:11px var(--mono)">${t.filter(Boolean).length}/4 reversal</small>`; };
+const kindChip = r => r.bounce && r.bounce.kind ? `<i class="dd-kind ${r.bounce.kind === "fakeout" ? "fake" : "touch"}">${r.bounce.kind === "fakeout" ? "⚡ Fake-out" : "Line touch"}</i>` : "";
 function bounceWords(r) {
   const b = r.bounce || {}, put = b.side === "PUT", ext = put ? "today's high" : "today's low";
   const against = Object.entries(b.trends || {}).filter(([k, v]) => (v === "up") === put).map(([k]) => k);
@@ -262,7 +271,9 @@ function bounceWords(r) {
   const tr = (now ? ` Trend now: ${now}.` : "") + (against.length ? ` Still against the ${against.map(k => NM[k] || k).join(", ")} trend: a small, quick trade with one target.` : "")
     + (b.small_with === false ? " The small charts (1H / 30m) are against it too: weaker setup." : b.small_with ? " The small charts already turned with it: preferred." : "");
   if (r.status === "BOUNCE RUN") return `${z}${az} The turn came earlier today (entry was ${fmt(b.entry)}); price has already moved ${b.moved_r ?? "?"}× the risk. Late: do not chase, wait for a pullback.${tr}`;
-  return r.status === "BOUNCE GO" ? `${z}${az} A 5-minute candle broke the last swing away from ${ext}.${tr}` : `Price is at the daily trend line near ${ext}${(b.zones || []).length ? " (" + b.zones.join(" + ") + ")" : ""}.${az} Waiting for a 5-minute turn.${tr}`;
+  const fk = b.kind === "fakeout" ? ` Fake-out: ${ext} went ${b.pen}× ATR through the line and price came back${b.back ? (put ? " below" : " above") + " it" : " inside the 0.5 ATR band"}; breakout traders are trapped.` : "";
+  const st = b.stage >= 4 ? ` After the turn, price made a ${put ? "lower high" : "higher low"} at ${fmt(b.retest)} and held it: best entry.` : b.stage === 3 ? ` A 5-minute candle broke the last swing away from ${ext}.` : b.stage === 2 ? ` A rejection candle (${b.rej}) printed at the line; waiting for the 5-minute change of character.` : " Waiting for a rejection candle.";
+  return `${r.status === "BOUNCE GO" ? z : "Price is at the daily trend line near " + ext + "."}${az}${fk}${st}${tr}`;
 }
 function nextWords(r) {
   if (r.mode === "bounce") return bounceWords(r);
@@ -286,7 +297,7 @@ function listShell() {
 function paint() {
   const all = L.rows, cnt = s => all.filter(r => r.status === s).length;
   $("#ddTiles").innerHTML = [
-    ["hot", cnt("DRIVE"), "Entry ready"], ["warm", cnt("ARMED"), "Get ready"], ["hot", cnt("BOUNCE GO"), "Bounce entry"], ["", cnt("TREND OK"), "Trend agrees"],
+    ["hot", cnt("DRIVE"), "Entry ready"], ["warm", cnt("ARMED"), "Get ready"], ["hot", all.filter(r => r.mode === "bounce" && r.bounce && r.bounce.kind === "fakeout").length, "Fake-outs"], ["hot", cnt("BOUNCE GO"), "Reversal entry"], ["", cnt("TREND OK"), "Trend agrees"],
     ["", cnt("STRUCTURE OK"), "Big picture ready"], ["", all.length, "Markets scanned"]
   ].map(([c, v, k]) => `<div class="dd-tile ${c}"><div class="v">${v}</div><div class="k">${k}</div></div>`).join("");
   const through = all.filter(r => r.status !== "WATCH" && r.mode !== "bounce").length;
@@ -294,17 +305,18 @@ function paint() {
   let rows = all.filter(r => L.mkt === "all" || r.class === L.mkt);
   if (L.stage === "ready") rows = rows.filter(r => r.status === "DRIVE" || r.status === "ARMED" || r.status === "BOUNCE GO");
   if (L.stage === "bounce") rows = rows.filter(r => r.mode === "bounce");
+  if (L.stage === "fake") rows = rows.filter(r => r.mode === "bounce" && r.bounce && r.bounce.kind === "fakeout");
   if (L.stage === "progress") rows = rows.filter(r => r.status === "TREND OK" || r.status === "STRUCTURE OK" || r.status === "OFF-HOURS");
   if (L.q) rows = rows.filter(r => (r.name + " " + r.symbol + " " + (r.tv || "")).toLowerCase().includes(L.q));
-  const head = `<div class="dd-row head"><span>#</span><span>Market</span><span>Idea</span><span>Stage</span><span>Checks 1 · 2 · 3</span><span style="text-align:right">Score</span><span>What it is waiting for</span><span></span></div>`;
+  const head = `<div class="dd-row head"><span>#</span><span>Market</span><span>Idea</span><span>Stage</span><span>Reversal ladder / checks</span><span style="text-align:right">Confirm / score</span><span>What it is waiting for</span><span></span></div>`;
   $("#ddList").innerHTML = rows.length ? head + rows.slice(0, L.show).map((r, i) => `
     <a class="dd-row" href="${BASE}?s=${encodeURIComponent(r.symbol)}">
       <span class="dd-rk">${i + 1}</span>
       <span class="dd-nm"><b>${esc(r.name)}</b><small>${esc(r.tv || r.symbol)} · ${esc(r.market || "")}</small></span>
       <span class="dd-sidec"><span class="dd-side ${esc(r.side)}">${r.side === "CALL" ? "▲" : "▼"} ${esc(r.side)}</span></span>
-      <span class="dd-pillc">${pill(r)}${r.mode === "bounce" ? TRN(r) : ""}${r.mode === "bounce" && r.bounce && r.bounce.tag ? `<i class="dd-btag ${r.bounce.small_with ? "ok" : "no"}">${esc(r.bounce.tag)}</i>` : ""}${r.mode === "bounce" && r.bounce ? `<i class="dd-btag ${r.bounce.strong ? "ok" : ""}">${r.bounce.strong ? "★ Strong zone" : (r.bounce.zones || []).length ? "Zone" : "Plain reversal"}</i>` : ""}</span>
-      <span class="dd-progc">${prog(r)}</span>
-      <span class="dd-sc">${Math.round(r.score)}<small>/100</small></span>
+      <span class="dd-pillc">${pill(r)}${r.mode === "bounce" ? kindChip(r) + TRN(r) : ""}${r.mode === "bounce" && r.bounce && r.bounce.tag ? `<i class="dd-btag ${r.bounce.small_with ? "ok" : "no"}">${esc(r.bounce.tag)}</i>` : ""}${r.mode === "bounce" && r.bounce ? `<i class="dd-btag ${r.bounce.strong ? "ok" : ""}">${r.bounce.strong ? "★ Strong zone" : (r.bounce.zones || []).length ? "Zone" : "Plain reversal"}</i>` : ""}</span>
+      <span class="dd-progc">${r.mode === "bounce" ? lad(r) : prog(r)}</span>
+      <span class="dd-sc">${r.mode === "bounce" ? `${(r.bounce && r.bounce.conf || []).length}<small> conf.</small>` : `${Math.round(r.score)}<small>/100</small>`}</span>
       <span class="dd-next">${esc(nextWords(r))}</span>
       <span class="dd-go" aria-hidden="true">›</span>
     </a>`).join("") : `<p class="dd-empty">${L.stage === "all" && !L.q ? "No markets to show yet." : "Nothing matches this filter right now."}</p>`;
@@ -334,10 +346,12 @@ function detail(r) {
       ${seen ? s.keys.filter(x => r.gates[x]).map(x => gateRow(x, r.gates[x])).join("") : `<p class="dd-next">This check opens once the one before it passes.</p>`}</article>`;
   }).join("");
   const b = r.bounce;
-  const bcard = r.mode === "bounce" && b ? `<article class="dd-card dd-plan" style="border-color:#B57BFF"><h2>Bounce trade ${TRN(r)}</h2><p class="sub">${esc(bounceWords(r))}</p>
+  const bcard = r.mode === "bounce" && b ? `<article class="dd-card dd-plan" style="border-color:#B57BFF"><h2>Reversal trade ${kindChip(r)} ${TRN(r)}</h2><p class="sub">${esc(bounceWords(r))}</p>
+    <div class="dd-ladder">${LAD.map((x, i) => { const on = (b.ticks || [1, 0, 0, 0])[i]; const d = ["Price is at the daily trend line (or back inside the 0.5 ATR fake-out band).", b.rej ? "Printed: " + b.rej + "." : "A long-wick or engulfing candle at the line.", "The 5-minute chart broke its last swing away from the extreme.", b.retest != null ? `Held at ${fmt(b.retest)}.` : `After the turn, a ${b.side === "PUT" ? "lower high" : "higher low"} that holds.`][i]; return `<div class="${on ? "on" : ""}"><b>${on ? "✓" : i + 1}. ${x}</b><small>${esc(d)}</small></div>`; }).join("")}</div>
+    ${(b.conf || []).length ? `<p class="sub" style="margin:0 0 10px">Confirmations: ${(b.conf || []).map(c => `<i class="dd-btag ok">${esc(c)}</i>`).join("")}</p>` : `<p class="sub" style="margin:0 0 10px">No extra confirmation yet (key zone, RSI divergence, small trend, volume).</p>`}
     ${b.entry != null ? `<table>
-      <tr><td>Entry<small>5-minute change of character${r.status === "BOUNCE RUN" ? " · already passed, do not chase" : ""}</small></td><td>${fmt(b.entry)}</td></tr>
-      <tr><td>Stop-loss<small>just beyond ${b.side === "PUT" ? "today's high" : "today's low"} (${fmt(b.extreme)})</small></td><td style="color:var(--dn)">${fmt(b.sl)}</td></tr>
+      <tr><td>Entry<small>5-minute change of character${b.retest != null ? ` · or on the retest near ${fmt(b.retest)}` : ""}</small></td><td>${fmt(b.entry)}</td></tr>
+      <tr><td>Stop-loss<small>just beyond ${b.kind === "fakeout" ? "the fake-out extreme" : (b.side === "PUT" ? "today's high" : "today's low")} (${fmt(b.extreme)})</small></td><td style="color:var(--dn)">${fmt(b.sl)}</td></tr>
       ${b.t1 != null ? `<tr><td>Target (only one)<small>${esc(b.t1why)} · reward ${esc(b.rr)}× the risk</small></td><td style="color:var(--up)">${fmt(b.t1)}</td></tr>` : ""}
     </table>` : `<p class="dd-next" style="margin:0">Entry, stop and target appear when a 5-minute candle turns at ${b.side === "PUT" ? "today's high" : "today's low"} (${fmt(b.extreme)}).</p>`}</article>` : "";
   const plan = k ? `<article class="dd-card dd-plan"><h2>Trade plan</h2><p class="sub">Worked out from the 15-minute chart. Position size is capped so one loss costs at most ${esc(k.max_loss)}% of the account.</p>
@@ -354,12 +368,12 @@ function detail(r) {
     <div><div class="dd-eyebrow">${esc(r.market || "")} · ${esc(r.tv || r.symbol)}</div>
       <h1>${esc(r.name)}</h1>
       <div class="dd-chips"><span class="dd-side ${esc(r.side)}">${r.side === "CALL" ? "▲" : "▼"} ${esc(SIDE[r.side] || r.side)}</span>${pill(r)}<span class="num" style="color:var(--dim)">Price ${fmt(r.price)}</span></div></div>
-    <div class="dd-score"><div class="v">${Math.round(r.score)}<span style="font-size:16px;color:var(--mute)">/100</span></div><div class="k">checklist score</div></div>
+    ${r.mode === "bounce" && b ? `<div class="dd-score"><div class="v">${(b.ticks || [1]).filter(Boolean).length}<span style="font-size:16px;color:var(--mute)">/4</span></div><div class="k">reversal ladder · ${(b.conf || []).length} confirmations</div></div>` : `<div class="dd-score"><div class="v">${Math.round(r.score)}<span style="font-size:16px;color:var(--mute)">/100</span></div><div class="k">checklist score</div></div>`}
   </div>
   <p class="dd-now"><b>Right now:</b> ${esc(nextWords(r))}</p>
   ${bcard}
-  <div class="dd-cols">${cards}</div>
-  ${plan}
+  ${r.mode === "bounce" ? "" : `<div class="dd-cols">${cards}</div>
+  ${plan}`}
   <div class="dd-links"><a class="pri" href="/desk/?s=${encodeURIComponent(r.symbol)}">Run AI Scan on ${esc(r.name)}</a><a href="/tier2.html?s=${encodeURIComponent(r.symbol)}&bias=${esc(r.side)}">Open in Tier 2</a><a href="${BASE}">Back to the list</a></div>
   <div id="ddTl"></div>
   <p class="dd-foot">Market mood: ${esc(r.regime ? r.regime.trend : "–")}, volatility ${esc(r.regime ? r.regime.vol : "–")}. Items marked "est." are estimates, not exchange data. The score is a checklist total, not a probability. Education and demonstration only, not financial advice.</p>`;
