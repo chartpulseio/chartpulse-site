@@ -136,7 +136,7 @@ pre{margin:0;padding:14px;border-radius:12px;background:#0B0C0F;border:1px solid
 
   <h2>How it works</h2>
   <div class="how">
-    <div class="card"><span>STEP 1</span><b>You write, in plain words</b><p>When to buy, when to sell, and your stop-loss. English works best; simple Hinglish is fine too.</p></div>
+    <div class="card"><span>STEP 1</span><b>You write, in plain words</b><p>When to buy, when to sell, and your stop-loss. Any language works: English, Hindi, Hinglish or your own.</p></div>
     <div class="card"><span>STEP 2</span><b>It shows what it understood</b><p>Your words become exact rules, listed back to you, so you can check them before trusting any number.</p></div>
     <div class="card"><span>STEP 3</span><b>It tests on real history</b><p>Every trade is simulated with costs, and compared with simply buying and holding.</p></div>
   </div>
@@ -205,7 +205,7 @@ pre{margin:0;padding:14px;border-radius:12px;background:#0B0C0F;border:1px solid
   function tile(v, k, c) { return '<div class="tile"><div class="v ' + (c || "") + '">' + v + '</div><div class="k">' + k + "</div></div>"; }
   function render(j) {
     var u = j.understood, r = j.result, m = r.metrics || {}, cap = +$("#cap").value || 10000;
-    $("#uRules").innerHTML = "<h3>Your rules</h3>" + u.lines.map(function (L) { return '<b class="l">' + esc(L.label) + " " + (L.rules.length > 1 ? "all of these are true" : "") + "</b><ul>" + L.rules.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>"; }).join("")
+    $("#uRules").innerHTML = (u.plain ? "<h3>How I read it</h3><p style='margin:0 0 12px'>" + esc(u.plain) + "</p>" : "") + "<h3>Your rules</h3>" + u.lines.map(function (L) { return '<b class="l">' + esc(L.label) + " " + (L.rules.length > 1 ? "all of these are true" : "") + "</b><ul>" + L.rules.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>"; }).join("")
       + (u.risk.length ? '<b class="l">Risk rules</b><ul>' + u.risk.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul>" : '<b class="l">Risk rules</b><ul><li>None given</li></ul>');
     $("#uSet").innerHTML = "<h3>Tested on</h3><ul><li>" + esc(u.name) + " (" + esc(u.symbol) + ")</li><li>" + esc(TF[u.timeframe] || u.timeframe) + " candles</li><li>" + esc(u.from) + " to " + esc(u.to) + "</li><li>" + n2(r.bars, 0) + " candles tested</li></ul><h3>Costs</h3><p class='hint' style='margin:0'>" + esc(u.costs) + "</p><p class='hint' style='margin:10px 0 0'>Read by: " + ({ groq: "AI (Groq)", gemini: "AI (Gemini)", ai: "AI language model" }[j.engine] || "built-in phrase reader") + "</p>";
     $("#uWarn").innerHTML = (j.warnings || []).map(function (w) { return '<div class="warn">' + esc(w) + "</div>"; }).join("");
@@ -240,7 +240,7 @@ pre{margin:0;padding:14px;border-radius:12px;background:#0B0C0F;border:1px solid
     fetch("/ai_backtest.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: txt, symbol: $("#sym").value, timeframe: $("#tf").value, years: $("#yrs").value, capital: +$("#cap").value || 10000 }) })
       .then(function (r) { return r.json().catch(function () { return { error: "The backtest could not be read. Please try again." }; }); })
       .then(function (j) {
-        if (j.error) { er.innerHTML = esc(j.error) + (j.missed && j.missed.length ? "<br><span style='opacity:.8'>Not understood: " + esc(j.missed.join(" · ")) + "</span>" : ""); er.hidden = false; $("#st").textContent = ""; return; }
+        if (j.error) { er.innerHTML = (j.plain ? "<b>How I read it:</b> " + esc(j.plain) + "<br><br>" : "") + esc(j.error) + (j.missed && j.missed.length ? "<br><span style='opacity:.8'>Not understood: " + esc(j.missed.join(" · ")) + "</span>" : ""); er.hidden = false; $("#st").textContent = ""; return; }
         $("#st").textContent = "Done in " + n2((Date.now() - t0) / 1000, 1) + " s."; render(j);
       })
       .catch(function () { er.textContent = "Could not reach the backtester. Check your connection and try again."; er.hidden = false; $("#st").textContent = ""; })

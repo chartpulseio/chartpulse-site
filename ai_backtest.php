@@ -275,7 +275,9 @@ function aib_read_json($txt) {
     if (!is_array($o) || !isset($o['strategy']['rules'])) return null;
     return ['strategy' => $o['strategy'], 'missed' => array_slice(array_values(array_filter(array_map('strval', (array)($o['missed'] ?? [])))), 0, 6),
             'symbol' => is_string($o['symbol'] ?? null) ? strtoupper($o['symbol']) : null, 'timeframe' => is_string($o['timeframe'] ?? null) ? strtolower($o['timeframe']) : null,
-            'years' => is_numeric($o['years'] ?? null) ? (float)$o['years'] : null];
+            'years' => is_numeric($o['years'] ?? null) ? (float)$o['years'] : null,
+            'plain' => mb_substr(trim((string)($o['plain'] ?? '')), 0, 600), 'question' => mb_substr(trim((string)($o['question'] ?? '')), 0, 400),
+            'assumptions' => array_slice(array_values(array_filter(array_map(fn($x) => mb_substr(trim((string)$x), 0, 220), (array)($o['assumptions'] ?? [])))), 0, 6)];
 }
 function aib_post($url, $body, $hdr, $timeout = 14) {
     $ch = curl_init($url);
@@ -293,20 +295,27 @@ function aib_post($url, $body, $hdr, $timeout = 14) {
 function aib_parse_ai($text) {
     $groq = aib_key('groq'); $gem = aib_key('gemini');
     if ($groq === '' && $gem === '') return [null, null];
-    $cf = bt_dir('ai') . '/p_' . md5($text) . '.json';
+    $cf = bt_dir('ai') . '/p2_' . md5($text) . '.json';
     if (is_file($cf) && time() - filemtime($cf) < 30 * 86400) { $j = json_decode((string)@file_get_contents($cf), true); if (is_array($j) && isset($j['p'])) return [$j['p'], $j['by']]; }
     $capf = bt_dir('ai') . '/cap_' . gmdate('Ymd') . '.txt'; $n = (int)@file_get_contents($capf);
     if ($n >= 1500) return [null, null]; @file_put_contents($capf, (string)($n + 1), LOCK_EX);
     $codes = implode(', ', array_keys(aib_symbols()['codes']));
-    $sys = "You convert a trader's plain-language strategy into JSON for a backtesting engine. Output ONLY one JSON object, no prose.\n"
-      . "Shape: {\"symbol\": code or null, \"timeframe\": one of 5m 15m 30m 1h 4h 1d 1w or null, \"years\": number or null, \"strategy\": {\"rules\": {\"entry_long\": [rule], \"exit_long\": [rule], \"entry_short\": [rule], \"exit_short\": [rule]}, \"risk\": {optional keys}}, \"missed\": [short strings for parts you could not express]}\n"
+    $sys = "You are the strategy reader of a backtesting engine. A trader describes a strategy in ANY language (English, Hindi, Hinglish, Urdu, Spanish, Arabic, anything), often in short trader slang with typos. First understand what they mean like an experienced trader would, then express it as engine rules. Output ONLY one JSON object.\n"
+      . "Shape: {\"plain\": the strategy restated as clear simple English steps, \"assumptions\": [short English notes for every gap you filled with a sensible default], \"question\": empty string, or ONE short clarifying question written in the user's own language if something important is truly impossible to guess, \"symbol\": code or null, \"timeframe\": one of 5m 15m 30m 1h 4h 1d 1w or null, \"years\": number or null, \"strategy\": {\"rules\": {\"entry_long\": [rule], \"exit_long\": [rule], \"entry_short\": [rule], \"exit_short\": [rule]}, \"risk\": {optional keys}}, \"missed\": [short English strings for parts the engine cannot express]}\n"
       . "rule = {\"left\": operand, \"op\": one of > < >= <= crosses_above crosses_below, \"right\": operand}. All rules in one list must be true together (AND). Max 10 per list.\n"
-      . "operand = {\"value\": number} OR {\"ind\": name, \"period\": int, optional \"period2\", \"period3\", \"mult\", \"src\", \"tf\"}.\n"
+      . "operand = {\"value\": number} OR {\"ind\": name, \"period\": int, optional \"period2\", \"period3\", \"mult\", \"src\", \"tf\", \"back\", \"offset\"}.\n"
       . "ind names: open high low close volume hl2 hlc3 ohlc4 (no period); sma ema wma rsi atr atr_pct stdev bb_upper bb_lower bb_mid bb_width highest lowest macd macd_signal macd_hist adx plus_di minus_di supertrend supertrend_dir stoch_k stoch_d vwap roc (period required).\n"
-      . "Defaults: rsi 14; macd period 12 period2 26 period3 9; bollinger period 20 mult 2; supertrend period 10 mult 3; stoch period 14 period2 1 period3 3; adx 14; vwap 20. supertrend_dir is 1 (up) or -1 (down): bullish = supertrend_dir > 0; turns bullish = supertrend_dir crosses_above 0. highest/lowest = highest high / lowest low of the previous n bars (breakout: close > highest n). src may be volume (e.g. average volume = sma period 20 src volume). tf (higher timeframe) is one of 5min 15min 30min 1h 4h 1D 1W and only when the user asks for it.\n"
-      . "risk keys (all optional, numbers): stop_loss_pct, take_profit_pct, stop_loss_atr, take_profit_atr, trail_pct, trail_atr, max_bars, atr_period. Percent values are plain numbers (2 = 2%). A reward:risk of 1:2 with a 2% stop means take_profit_pct 4.\n"
-      . "Only add short rules if the user asks to short or to trade both sides. 'sell' after a buy rule means exit_long. Never invent conditions the user did not state. If the text has no usable entry rule, return entry lists empty.\n"
-      . "symbol must be one of: $codes (or null if the user named none). The user may write in English, Hindi or Hinglish.";
+      . "tf = value from the PREVIOUS CLOSED candle of a higher timeframe (one of 5min 15min 30min 1h 4h 1D 1W). back = that many bars ago on the chart timeframe (do not combine back with tf). offset = multiplier, e.g. 0.998 means 0.2% below.\n"
+      . "Trader vocabulary: PDH / previous day high / kal ka high = {ind:high, tf:1D}; PDL = {ind:low, tf:1D}; PDC = {ind:close, tf:1D}; previous week high/low = tf 1W. Day high so far is NOT available; use PDH when they say day high on a level. "
+      . "MTF / multi-timeframe bearish = price below EMA 50 on two higher timeframes than the chart, e.g. for a 15m or 30m chart: close < {ema 50 tf 1h} AND close < {ema 50 tf 4h} (mention this in assumptions); bullish is the mirror. Trend up/down alone = close vs EMA 200. "
+      . "put / PE / sell / short / bechna = entry_short; call / CE / buy / long / lena / khareedna = entry_long. Options can only be tested as the underlying going down (put) or up (call); say so in assumptions. "
+      . "Rejection / sell at a strong zone or level L (like PDH): high >= L*0.999 (offset 0.999) AND close < L. Bounce / buy at support L: low <= L*1.001 AND close > L. Breakout above L: close crosses_above L. "
+      . "If no exit is given, add a sensible one and state it in assumptions: for level trades stop_loss_atr 1.5 and take_profit_atr 3; otherwise stop_loss_pct 2 and take_profit_pct 4.\n"
+      . "Defaults: rsi 14; macd 12/26/9; bollinger 20, mult 2; supertrend 10, mult 3 (supertrend_dir 1 up, -1 down); stoch 14/1/3; adx 14; vwap 20. highest/lowest = previous n bars. src may be volume.\n"
+      . "risk keys (numbers): stop_loss_pct, take_profit_pct, stop_loss_atr, take_profit_atr, trail_pct, trail_atr, max_bars, atr_period. 2 means 2%. Reward:risk 1:2 with a 2% stop = take_profit_pct 4.\n"
+      . "Only add the side(s) the user asked for. Prefer a reasonable interpretation with assumptions over returning nothing; leave entry lists empty only if there is truly no trading idea, and then ask the question.\n"
+      . "Example: 'when mtf bear - then day high se put leni hai .. when there is any strong zone like pdh' -> plain 'Trade short (put) when the higher timeframes are bearish and price rejects the previous day high.' strategy entry_short: [close < ema50 tf 1h, close < ema50 tf 4h, high >= high tf 1D offset 0.999, close < high tf 1D], risk stop_loss_atr 1.5 take_profit_atr 3.\n"
+      . "symbol must be one of: $codes (or null if the user named none).";
     $user = mb_substr($text, 0, 1500);
     $got = null; $by = null;
     if ($groq !== '') foreach (['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'] as $model) {
@@ -337,12 +346,21 @@ function aib_say_operand($o) {
           'macd' => 'MACD line', 'macd_signal' => 'MACD signal line', 'macd_hist' => 'MACD histogram', 'adx' => "ADX $p", 'plus_di' => "+DI $p", 'minus_di' => "-DI $p",
           'supertrend' => 'Supertrend line', 'supertrend_dir' => 'Supertrend direction', 'stoch_k' => "Stochastic %K ($p)", 'stoch_d' => "Stochastic %D ($p)", 'vwap' => "VWAP ($p bars)", 'roc' => "Rate of change $p"][$i] ?? $i;
     if (($o['src'] ?? '') === 'volume' && in_array($i, ['sma', 'ema', 'wma'], true)) $n = "Average volume ($p bars)";
-    if (!empty($o['tf'])) $n .= ' on the ' . $o['tf'] . ' chart';
+    $tfn = ['1D' => 'day', '1W' => 'week', '4h' => '4-hour candle', '1h' => '1-hour candle'];
+    if (!empty($o['tf']) && in_array($i, ['high', 'low', 'close', 'open'], true) && isset($tfn[$o['tf']])) $n = "the previous {$tfn[$o['tf']]}'s " . strtolower($i === 'close' ? 'close' : $n);
+    elseif (!empty($o['tf'])) $n .= ' on the ' . $o['tf'] . ' chart';
+    if (!empty($o['back'])) $n .= ' ' . (int)$o['back'] . ' bar' . ($o['back'] > 1 ? 's' : '') . ' ago';
+    if (isset($o['offset']) && (float)$o['offset'] != 1.0) { $d = round(((float)$o['offset'] - 1) * 100, 2); $n = ($d > 0 ? "$d% above " : abs($d) . "% below ") . $n; }
     return $n;
 }
 function aib_say_rule($r) {
     if (($r['left']['ind'] ?? '') === 'supertrend_dir' && isset($r['right']['value']) && (float)$r['right']['value'] == 0.0) {
         return ['crosses_above' => 'Supertrend turns bullish', 'crosses_below' => 'Supertrend turns bearish', '>' => 'Supertrend is bullish', '>=' => 'Supertrend is bullish', '<' => 'Supertrend is bearish', '<=' => 'Supertrend is bearish'][$r['op']];
+    }
+    $of = isset($r['right']['offset']) ? (float)$r['right']['offset'] : 1.0;
+    if ($of != 1.0 && in_array($r['op'], ['>=', '<='], true) && in_array($r['left']['ind'] ?? '', ['high', 'low'], true)) {
+        $base = $r['right']; unset($base['offset']); $pc = round(abs($of - 1) * 100, 2);
+        return 'Price ' . ($r['left']['ind'] === 'high' ? 'reaches up to' : 'dips down to') . ' ' . aib_say_operand($base) . " (within $pc%)";
     }
     $op = ['>' => 'is above', '<' => 'is below', '>=' => 'is at or above', '<=' => 'is at or below', 'crosses_above' => 'crosses above', 'crosses_below' => 'crosses below'][$r['op']];
     return aib_say_operand($r['left']) . ' ' . $op . ' ' . aib_say_operand($r['right']);
@@ -416,7 +434,9 @@ try {
         $P = aib_parse_local($text);
         try { $strategy = bt_validate_strategy($P['strategy']); }
         catch (BtError $e) {
-            aib_fail('I could not find a clear entry rule in that. Say when to buy in simple words, for example: "Buy when the 20 EMA crosses above the 50 EMA" or "Buy when RSI is below 30".',
+            if ($ai && ($ai['question'] || $ai['plain'])) aib_fail($ai['question'] !== '' ? $ai['question'] : 'I understood the idea but could not turn it into testable rules yet. Add one detail, for example the indicator or level for entry and where to exit.',
+                422, ['missed' => $ai['missed'], 'plain' => $ai['plain'], 'engine' => $aiBy]);
+            aib_fail('I could not find a clear entry rule in that. Say when to buy or sell in simple words, in any language. Example: "Buy when the 20 EMA crosses above the 50 EMA" or "Sell short when price rejects the previous day high".',
                 422, ['missed' => $P['missed'], 'engine' => 'rules']);
         }
     }
@@ -444,9 +464,10 @@ try {
     $warn = [];
     if ($symGuess) $warn[] = 'You did not name a market, so this ran on SPY (S&P 500 ETF). Pick a market above to change it.';
     if (!$strategy['rules']['exit_long'] && $strategy['rules']['entry_long'] && !$strategy['risk']) $warn[] = 'You gave no exit and no stop-loss, so a trade only closes at the end of the data. Add "sell when ..." or a stop-loss.';
+    foreach ((array)($P['assumptions'] ?? []) as $a) $warn[] = 'Assumed: ' . $a;
     if ($P['missed']) $warn[] = 'Some parts could not be turned into a rule and were left out: "' . implode('", "', $P['missed']) . '".';
     aib_out(['ok' => true, 'engine' => $engine,
-        'understood' => ['symbol' => $sym, 'name' => $S['codes'][$sym] ?? $sym, 'timeframe' => $tf, 'from' => $res['from'] ?? $req['start'], 'to' => $res['to'] ?? $req['end'],
+        'understood' => ['plain' => (string)($P['plain'] ?? ''), 'symbol' => $sym, 'name' => $S['codes'][$sym] ?? $sym, 'timeframe' => $tf, 'from' => $res['from'] ?? $req['start'], 'to' => $res['to'] ?? $req['end'],
                          'lines' => $lines, 'risk' => aib_say_risk($strategy['risk']), 'costs' => 'Costs included: 0.1% commission and 0.05% slippage per side. Full capital on each trade.'],
         'missed' => $P['missed'], 'warnings' => $warn, 'strategy' => $strategy, 'request' => ['symbol' => $sym, 'timeframe' => $tf, 'start' => $req['start'], 'end' => $req['end']],
         'verdict' => aib_verdict($res['metrics'] ?? [], $n), 'result' => $res, 'took_ms' => (int)round((microtime(true) - $t0) * 1000)]);
