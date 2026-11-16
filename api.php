@@ -29,7 +29,7 @@ $TFS = ['10M', '1H', '4H', '1D', '1W'];
 
 // Rate limits per visitor per minute (owner, 29 Sep 2026). Pages poll every 3-20 s, so normal use stays far below these.
 $r = is_string($r) ? substr(preg_replace('/[^a-z0-9]/', '', strtolower($r)), 0, 16) : 'scan';
-$RL = ['scan' => 120, 'symbol' => 60, 'bias' => 40, 't2' => 60, 't2price' => 90, 'trades' => 40, 'news' => 30, 'refresh' => 6, 'export' => 6, 'plans' => 30, 'access' => 60, 'health' => 20, 'desk' => 30, 'deskai' => 3, 'desklive' => 12, 'mlfeed' => 20, 'mlpush' => 20, 'nc' => 120, 'ncpush' => 40, 'nckey' => 6, 'ensfeed' => 40, 'enspush' => 40, 'liqpush' => 30];
+$RL = ['scan' => 120, 'symbol' => 60, 'bias' => 40, 't2' => 60, 't2price' => 90, 'trades' => 40, 'news' => 30, 'refresh' => 6, 'export' => 6, 'plans' => 30, 'access' => 60, 'health' => 20, 'desk' => 30, 'deskai' => 3, 'desklive' => 12, 'mlfeed' => 20, 'mlpush' => 20, 'nc' => 120, 'ncpush' => 40, 'nckey' => 6, 'ensfeed' => 40, 'enspush' => 40, 'liqpush' => 30, 'liqbn' => 6];
 if (!t_rl('api', 300) || !t_rl('r:' . $r, $RL[$r] ?? 30)) {
     http_response_code(429); header('Retry-After: 30'); t_json(['error' => 'Too many requests. Please wait a few seconds and try again.']); exit;
 }
@@ -108,6 +108,11 @@ if ($r === 'scan') {
     $in = json_decode((string)file_get_contents('php://input', false, null, 0, 512), true); $h = strtolower((string)($in['hash'] ?? ''));
     if (!preg_match('/^[0-9a-f]{64}$/', $h)) { http_response_code(400); t_json(['error' => 'bad hash']); exit; }
     $nm = ($in['name'] ?? 'nc') === 'liq' ? 'liq' : 'nc'; @file_put_contents(ml_dir() . "/$nm.keyhash", $h, LOCK_EX); t_json(['ok' => true, 'name' => $nm]);
+} elseif ($r === 'liqbn') {   // Binance liquidation relay for the VPS collector (Binance refuses the VPS region)
+    require_once __DIR__ . '/torus_ml.php'; require_once __DIR__ . '/liq_bn.php';
+    $kh = trim((string)@file_get_contents(ml_dir() . '/liq.keyhash')); $k = (string)($_SERVER['HTTP_X_NC_KEY'] ?? '');
+    if (!(strlen($kh) === 64 && strlen($k) >= 32 && hash_equals($kh, hash('sha256', $k)))) { http_response_code(403); t_json(['error' => 'forbidden']); exit; }
+    @set_time_limit(70); ignore_user_abort(true); t_json(lbn_listen(max(5, min(50, (int)($_GET['s'] ?? 50)))));
 } elseif ($r === 'liqpush') {   // Order flow phase 2 (owner, 15 Nov 2026): all-exchange liquidations from the Big VPS collector, every 15 s
     require_once __DIR__ . '/torus_ml.php'; require_once __DIR__ . '/of_engine.php';
     $kh = trim((string)@file_get_contents(ml_dir() . '/liq.keyhash')); $k = (string)($_SERVER['HTTP_X_NC_KEY'] ?? '');
