@@ -37,6 +37,12 @@ if ((!in_array($r, ['liqpush', 'liqbn', 'ncpush', 'enspush', 'fchpush'], true) &
 if ($r === 'scan') {
     t_scan_step();
     $now = t_now(); $scan = t_scan_load(); $rows = t_view_rows($scan, $now);
+    // owner, 16 Nov 2026: trend line at the day extreme + near-200-EMA label for shortlisted rows (labels only)
+    try {
+        require_once __DIR__ . '/t1x_engine.php'; $X = t1x_get($scan);
+        foreach ($rows as &$rw) { $x = $X[$rw['symbol']] ?? null; if ($x) { $rw['tlx'] = $x['tl']; $rw['e2x'] = $x['e2']; } }
+        unset($rw);
+    } catch (Throwable $e) { t_err_log('t1x', $e->getMessage()); }
     t_json(['meta' => t_meta($scan, $rows, $now), 'rows' => $rows, 'brief' => t_market_brief($rows), 'recent' => t_siglog_view($now)]);
 } elseif ($r === 'symbol') {
     $sym = (string)($_GET['sym'] ?? '');
