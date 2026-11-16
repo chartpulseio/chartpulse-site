@@ -292,10 +292,10 @@ function aib_post($url, $body, $hdr, $timeout = 14) {
     return $j;
 }
 /** Readers in order: Groq (most free answers), then Gemini (backup). Returns [parse, reader name] or [null, null]. */
-function aib_parse_ai($text) {
+function aib_parse_ai($text, $ctx = '') {
     $groq = aib_key('groq'); $gem = aib_key('gemini');
     if ($groq === '' && $gem === '') return [null, null];
-    $cf = bt_dir('ai') . '/p2_' . md5($text) . '.json';
+    $cf = bt_dir('ai') . '/p2_' . md5($text . '|' . $ctx) . '.json';
     if (is_file($cf) && time() - filemtime($cf) < 30 * 86400) { $j = json_decode((string)@file_get_contents($cf), true); if (is_array($j) && isset($j['p'])) return [$j['p'], $j['by']]; }
     $capf = bt_dir('ai') . '/cap_' . gmdate('Ymd') . '.txt'; $n = (int)@file_get_contents($capf);
     if ($n >= 1500) return [null, null]; @file_put_contents($capf, (string)($n + 1), LOCK_EX);
@@ -316,7 +316,7 @@ function aib_parse_ai($text) {
       . "Only add the side(s) the user asked for. Prefer a reasonable interpretation with assumptions over returning nothing; leave entry lists empty only if there is truly no trading idea, and then ask the question.\n"
       . "Example: 'when mtf bear - then day high se put leni hai .. when there is any strong zone like pdh' -> plain 'Trade short (put) when the higher timeframes are bearish and price rejects the previous day high.' strategy entry_short: [close < ema50 tf 1h, close < ema50 tf 4h, high >= high tf 1D offset 0.999, close < high tf 1D], risk stop_loss_atr 1.5 take_profit_atr 3.\n"
       . "symbol must be one of: $codes (or null if the user named none).";
-    $user = mb_substr($text, 0, 1500);
+    $user = mb_substr($text, 0, 1500) . ($ctx !== '' ? "\n\n(Form settings: $ctx)" : '');
     $got = null; $by = null;
     if ($groq !== '') foreach (['openai/gpt-oss-120b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-20b'] as $model) {
         $j = aib_post('https://api.groq.com/openai/v1/chat/completions', json_encode(['model' => $model, 'temperature' => 0, 'max_tokens' => 2048,
@@ -421,7 +421,9 @@ try {
     @set_time_limit(45); @ini_set('memory_limit', '256M'); $t0 = microtime(true);
 
     $engine = 'rules'; $P = null; $strategy = null;
-    [$ai, $aiBy] = aib_parse_ai($text);
+    $ftf = strtolower(trim((string)($q['timeframe'] ?? ''))); $fsy = strtoupper(trim((string)($q['symbol'] ?? '')));
+    $ctx = trim(($ftf !== '' && $ftf !== 'auto' ? "chart timeframe $ftf" : '') . ($fsy !== '' && $fsy !== 'AUTO' ? ", market $fsy" : ''), ', ');
+    [$ai, $aiBy] = aib_parse_ai($text, $ctx);
     if ($ai) {
         try { $strategy = bt_validate_strategy(aib_clean($ai['strategy'])); $P = $ai; $engine = $aiBy; }
         catch (Throwable $e) {
