@@ -263,7 +263,7 @@ define('BT_INDS', [
     'bb_upper', 'bb_lower', 'bb_mid', 'bb_width',
     'highest', 'lowest', 'macd', 'macd_signal', 'macd_hist',
     'adx', 'plus_di', 'minus_di', 'supertrend', 'supertrend_dir',
-    'stoch_k', 'stoch_d', 'vwap', 'roc',
+    'stoch_k', 'stoch_d', 'vwap', 'roc', 'ai_votes', 'ai_move',
 ]);
 define('BT_NEEDS_PERIOD', [
     'sma', 'ema', 'wma', 'rsi', 'atr', 'atr_pct', 'stdev', 'bb_upper', 'bb_lower', 'bb_mid',
@@ -297,6 +297,7 @@ function bt_compute($d, $spec)
         case 'wma':   return bt_wma(bt_col($d, bt_src_name($ind, $spec)), $n);
         case 'rsi':   return bt_rsi(bt_col($d, bt_src_name($ind, $spec)), $n);
         case 'stdev': return bt_stdev(bt_col($d, bt_src_name($ind, $spec)), $n);
+        case 'ai_votes': case 'ai_move': require_once __DIR__ . '/torus_fch.php'; return fch_series($d, $ind);
         case 'roc':   return bt_roc(bt_col($d, bt_src_name($ind, $spec)), $n);
         case 'atr':   return bt_atr($d, $n);
         case 'atr_pct': {

@@ -247,7 +247,7 @@ function aib_clean($st) {
         $o['ind'] = strtolower((string)$o['ind']);
         $al = ['price' => 'close', 'supertrend_direction' => 'supertrend_dir', 'bollinger_upper' => 'bb_upper', 'bollinger_lower' => 'bb_lower', 'stochastic' => 'stoch_k', 'macd_line' => 'macd'];
         if (isset($al[$o['ind']])) $o['ind'] = $al[$o['ind']];
-        if (in_array($o['ind'], ['open', 'high', 'low', 'close', 'volume', 'hl2', 'hlc3', 'ohlc4'], true)) { unset($o['period'], $o['period2'], $o['period3'], $o['mult'], $o['src']); }
+        if (in_array($o['ind'], ['open', 'high', 'low', 'close', 'volume', 'hl2', 'hlc3', 'ohlc4', 'ai_votes', 'ai_move'], true)) { if (strpos($o['ind'], 'ai_') === 0) unset($o['tf']); unset($o['period'], $o['period2'], $o['period3'], $o['mult'], $o['src']); }
         elseif (empty($o['period']) && isset($def[$o['ind']])) $o['period'] = $def[$o['ind']];
         foreach (['period', 'period2', 'period3', 'mult', 'src', 'tf', 'back', 'offset'] as $k) if (array_key_exists($k, $o) && ($o[$k] === null || $o[$k] === '')) unset($o[$k]);
         if (isset($o['src']) && $o['src'] === 'close') unset($o['src']);
@@ -322,6 +322,7 @@ function aib_parse_ai($text, $ctx = '') {
       . "put / PE / sell / short / bechna = entry_short; call / CE / buy / long / lena / khareedna = entry_long. Options can only be tested as the underlying going down (put) or up (call); say so in assumptions. "
       . "Rejection / sell at a strong zone or level L (like PDH): high >= L*0.997 (offset 0.997, a zone not an exact line) AND close < L. Bounce / buy at support L: low <= L*1.003 AND close > L. Breakout above L: close crosses_above L. "
       . "If no exit is given, add a sensible one and state it in assumptions: for level trades stop_loss_atr 1.5 and take_profit_atr 3; otherwise stop_loss_pct 2 and take_profit_pct 4.\n"
+      . "AI forecast indicators (no period, no tf): ai_votes = how many of the 4 forecast models (Chronos-2, TimesFM 2.5, Moirai 2.0, Kronos) predict the next candle UP minus how many predict DOWN, from -4 to 4; ai_move = their average expected next-candle move in %. Use them when the user mentions AI, the models, forecast, prediction, TimesFM, Chronos, Moirai or Kronos: all models bullish = ai_votes >= 3, AI says up = ai_votes > 0, AI expects a move above 0.2% = ai_move > 0.2 (mirror for down). Only these markets and timeframes have forecast history: Nifty 50 (^NSEI), Bank Nifty (^NSEBANK), Bitcoin (BTC-USD), Gold (GC=F), EUR/USD (EURUSD=X) on 1h and 1d charts; if the user wants AI rules elsewhere, ask (blocking) which of those to use.\n"
       . "Defaults: rsi 14; macd 12/26/9; bollinger 20, mult 2; supertrend 10, mult 3 (supertrend_dir 1 up, -1 down); stoch 14/1/3; adx 14; vwap 20. highest/lowest = previous n bars. src may be volume.\n"
       . "risk keys (numbers): stop_loss_pct, take_profit_pct, stop_loss_atr, take_profit_atr, trail_pct, trail_atr, max_bars, atr_period. 2 means 2%. Reward:risk 1:2 with a 2% stop = take_profit_pct 4.\n"
       . "Only add the side(s) the user asked for. Prefer a reasonable interpretation with assumptions over returning nothing; leave entry lists empty only if there is truly no trading idea, and then ask the question.\n"
@@ -360,7 +361,7 @@ function aib_say_operand($o) {
           'bb_upper' => "Upper Bollinger band ($p)", 'bb_lower' => "Lower Bollinger band ($p)", 'bb_mid' => "Middle Bollinger band ($p)", 'bb_width' => "Bollinger width ($p)",
           'highest' => "the highest high of the last $p bars", 'lowest' => "the lowest low of the last $p bars",
           'macd' => 'MACD line', 'macd_signal' => 'MACD signal line', 'macd_hist' => 'MACD histogram', 'adx' => "ADX $p", 'plus_di' => "+DI $p", 'minus_di' => "-DI $p",
-          'supertrend' => 'Supertrend line', 'supertrend_dir' => 'Supertrend direction', 'stoch_k' => "Stochastic %K ($p)", 'stoch_d' => "Stochastic %D ($p)", 'vwap' => "VWAP ($p bars)", 'roc' => "Rate of change $p"][$i] ?? $i;
+          'supertrend' => 'Supertrend line', 'supertrend_dir' => 'Supertrend direction', 'stoch_k' => "Stochastic %K ($p)", 'stoch_d' => "Stochastic %D ($p)", 'vwap' => "VWAP ($p bars)", 'roc' => "Rate of change $p", 'ai_votes' => 'AI forecast votes (Chronos-2, TimesFM, Moirai, Kronos: up minus down)', 'ai_move' => 'AI expected next-candle move %'][$i] ?? $i;
     if (($o['src'] ?? '') === 'volume' && in_array($i, ['sma', 'ema', 'wma'], true)) $n = "Average volume ($p bars)";
     $tfn = ['1D' => 'day', '1W' => 'week', '4h' => '4-hour candle', '1h' => '1-hour candle'];
     if (!empty($o['tf']) && in_array($i, ['high', 'low', 'close', 'open'], true) && isset($tfn[$o['tf']])) $n = "the previous {$tfn[$o['tf']]}'s " . strtolower($i === 'close' ? 'close' : $n);

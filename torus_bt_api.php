@@ -494,6 +494,7 @@ function bt_handle_backtest($q)
     $strategy = bt_validate_strategy($q['strategy'] ?? []);
     bt_check_tfs($strategy, $st['timeframe']);
     [$d, $from, $provider] = bt_load($st);
+    $d['sym'] = $st['symbol']; $d['tf'] = $st['timeframe'];
 
     [$curve, $trades] = bt_run($d, $strategy, $st['capital'], $st['commission'],
                                $st['slippage'], $st['size'], max($from, 1));
@@ -526,6 +527,7 @@ function bt_handle_backtest($q)
         'monte_carlo' => count($trades) >= 10 ? bt_monte_carlo($trades, $st['capital']) : null,
         'robustness' => count($trades) >= 10 ? bt_robustness($trades, $st['capital']) : null,
         'notes' => bt_notes($m, $trades, $strategy),
+        'ai_check' => (function () use ($d, $trades) { try { require_once __DIR__ . '/torus_fch.php'; return fch_check($d, $trades); } catch (Throwable $e) { return null; } })(),
     ];
 }
 

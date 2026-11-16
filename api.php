@@ -29,8 +29,8 @@ $TFS = ['10M', '1H', '4H', '1D', '1W'];
 
 // Rate limits per visitor per minute (owner, 29 Sep 2026). Pages poll every 3-20 s, so normal use stays far below these.
 $r = is_string($r) ? substr(preg_replace('/[^a-z0-9]/', '', strtolower($r)), 0, 16) : 'scan';
-$RL = ['scan' => 120, 'symbol' => 60, 'bias' => 40, 't2' => 60, 't2price' => 90, 'trades' => 40, 'news' => 30, 'refresh' => 6, 'export' => 6, 'plans' => 30, 'access' => 60, 'health' => 20, 'desk' => 30, 'deskai' => 3, 'desklive' => 12, 'mlfeed' => 20, 'mlpush' => 20, 'nc' => 120, 'ncpush' => 40, 'nckey' => 6, 'ensfeed' => 40, 'enspush' => 40, 'liqpush' => 40, 'liqbn' => 8];
-if ((!in_array($r, ['liqpush', 'liqbn', 'ncpush', 'enspush'], true) && !t_rl('api', 300)) || !t_rl('r:' . $r, $RL[$r] ?? 30)) {
+$RL = ['scan' => 120, 'symbol' => 60, 'bias' => 40, 't2' => 60, 't2price' => 90, 'trades' => 40, 'news' => 30, 'refresh' => 6, 'export' => 6, 'plans' => 30, 'access' => 60, 'health' => 20, 'desk' => 30, 'deskai' => 3, 'desklive' => 12, 'mlfeed' => 20, 'mlpush' => 20, 'nc' => 120, 'ncpush' => 40, 'nckey' => 6, 'ensfeed' => 40, 'enspush' => 40, 'liqpush' => 40, 'liqbn' => 8, 'fchpush' => 60];
+if ((!in_array($r, ['liqpush', 'liqbn', 'ncpush', 'enspush', 'fchpush'], true) && !t_rl('api', 300)) || !t_rl('r:' . $r, $RL[$r] ?? 30)) {
     http_response_code(429); header('Retry-After: 30'); t_json(['error' => 'Too many requests. Please wait a few seconds and try again.']); exit;
 }
 
@@ -108,6 +108,11 @@ if ($r === 'scan') {
     $in = json_decode((string)file_get_contents('php://input', false, null, 0, 512), true); $h = strtolower((string)($in['hash'] ?? ''));
     if (!preg_match('/^[0-9a-f]{64}$/', $h)) { http_response_code(400); t_json(['error' => 'bad hash']); exit; }
     $nm = ($in['name'] ?? 'nc') === 'liq' ? 'liq' : 'nc'; @file_put_contents(ml_dir() . "/$nm.keyhash", $h, LOCK_EX); t_json(['ok' => true, 'name' => $nm]);
+} elseif ($r === 'fchpush') {   // forecast history for AI Backtesting, from the chartpulse-ml GitHub job (OIDC)
+    require_once __DIR__ . '/torus_fch.php';
+    if (!ml_push_auth() || ($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') { http_response_code(403); t_json(['error' => 'forbidden']); exit; }
+    $in = json_decode((string)file_get_contents('php://input', false, null, 0, 12 * 1024 * 1024), true);
+    $o = fch_store(is_array($in) ? $in : []); if (isset($o['error'])) http_response_code(400); t_json($o);
 } elseif ($r === 'liqbn') {   // Binance liquidation relay for the VPS collector (Binance refuses the VPS region)
     require_once __DIR__ . '/torus_ml.php'; require_once __DIR__ . '/liq_bn.php';
     $kh = trim((string)@file_get_contents(ml_dir() . '/liq.keyhash')); $k = (string)($_SERVER['HTTP_X_NC_KEY'] ?? '');
