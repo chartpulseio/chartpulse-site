@@ -264,6 +264,14 @@ function aib_clean($st) {
         }
         $st['rules'][$k] = $out;
     }
+    // zone touch + close back through the same level: keep both sides on the same level (models sometimes mix high/close)
+    foreach (['entry_long', 'entry_short', 'exit_long', 'exit_short'] as $k) {
+        $L = &$st['rules'][$k]; $lvl = null;
+        foreach ($L as $r) if (in_array($r['left']['ind'] ?? '', ['high', 'low'], true) && isset($r['right']['tf'], $r['right']['offset'])) $lvl = $r['right'];
+        if ($lvl) foreach ($L as &$r) if (($r['left']['ind'] ?? '') === 'close' && isset($r['right']['tf']) && $r['right']['tf'] === $lvl['tf'] && !isset($r['right']['offset'])
+            && in_array($r['right']['ind'] ?? '', ['high', 'low', 'close', 'open'], true)) { $r['right']['ind'] = $lvl['ind']; }
+        unset($r, $L);
+    }
     if (isset($st['risk']) && is_array($st['risk'])) foreach ($st['risk'] as $k => $v) if ($v === null || $v === '' || $v === 0 || $v === false) unset($st['risk'][$k]);
     return $st;
 }
@@ -301,7 +309,7 @@ function aib_parse_ai($text, $ctx = '') {
     if ($n >= 1500) return [null, null]; @file_put_contents($capf, (string)($n + 1), LOCK_EX);
     $codes = implode(', ', array_keys(aib_symbols()['codes']));
     $sys = "You are the strategy reader of a backtesting engine. A trader describes a strategy in ANY language (English, Hindi, Hinglish, Urdu, Spanish, Arabic, anything), often in short trader slang with typos. First understand what they mean like an experienced trader would, then express it as engine rules. Output ONLY one JSON object.\n"
-      . "Shape: {\"plain\": the strategy restated as clear simple English steps, \"assumptions\": [short English notes for every gap you filled with a sensible default], \"question\": empty string, or ONE short clarifying question written in the user's own language if something important is truly impossible to guess, \"symbol\": code or null, \"timeframe\": one of 5m 15m 30m 1h 4h 1d 1w or null, \"years\": number or null, \"strategy\": {\"rules\": {\"entry_long\": [rule], \"exit_long\": [rule], \"entry_short\": [rule], \"exit_short\": [rule]}, \"risk\": {optional keys}}, \"missed\": [short English strings for parts the engine cannot express]}\n"
+      . "Shape: {\"plain\": the strategy restated as clear simple English steps, \"assumptions\": [short English notes for every gap you filled with a sensible default], \"question\": empty string, or ONE short clarifying question written in the SAME language and script the user wrote in (Hinglish stays Hinglish, Hindi stays Devanagari) if something important is truly impossible to guess, \"symbol\": code or null, \"timeframe\": one of 5m 15m 30m 1h 4h 1d 1w or null, \"years\": number or null, \"strategy\": {\"rules\": {\"entry_long\": [rule], \"exit_long\": [rule], \"entry_short\": [rule], \"exit_short\": [rule]}, \"risk\": {optional keys}}, \"missed\": [short English strings for parts the engine cannot express]}\n"
       . "rule = {\"left\": operand, \"op\": one of > < >= <= crosses_above crosses_below, \"right\": operand}. All rules in one list must be true together (AND). Max 10 per list.\n"
       . "operand = {\"value\": number} OR {\"ind\": name, \"period\": int, optional \"period2\", \"period3\", \"mult\", \"src\", \"tf\", \"back\", \"offset\"}.\n"
       . "ind names: open high low close volume hl2 hlc3 ohlc4 (no period); sma ema wma rsi atr atr_pct stdev bb_upper bb_lower bb_mid bb_width highest lowest macd macd_signal macd_hist adx plus_di minus_di supertrend supertrend_dir stoch_k stoch_d vwap roc (period required).\n"
