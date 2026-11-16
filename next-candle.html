@@ -159,10 +159,6 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
   </div>
   <p class="gf-upd" id="ncUpd">Reading the models…</p>
   <div class="gf-list" id="ncList"><p class="gf-empty">Reading the models…</p></div>
-  <section style="margin-top:30px"><h2 style="margin:0 0 6px;font-size:20px">Real results</h2><p style="margin:0 0 10px;color:var(--dim);font-size:14px">Counted live on this page, one row per kind of guess. "Not enough yet" means fewer than 20 graded guesses.</p>
-    <div style="border:1px solid var(--line);border-radius:14px;background:var(--card);overflow-x:auto"><table class="st-tbl"><thead><tr><th>What</th><th>Right</th><th>Wrong</th><th>Hit rate</th></tr></thead><tbody id="ncStats"></tbody></table></div>
-    <h3 style="margin:18px 0 6px;font-size:16px">Last graded calls</h3>
-    <div style="border:1px solid var(--line);border-radius:14px;background:var(--card);overflow-x:auto"><table class="st-tbl"><thead><tr><th>Candle closed</th><th>Market</th><th>Guess</th><th>Before</th><th>Close</th><th>Result</th></tr></thead><tbody id="ncRecent"></tbody></table></div></section>
   <section class="gf-learn"><h2>How to read this</h2>
     <dl><dt>What is a call?</dt><dd>All four models expect the next 5-minute close to be on the same side of the last close, on a forex pair.</dd><dt>What is "Strong"?</dt><dd>The models also expect a bigger move than usual (top fifth of recent calls).</dd></dl>
     <dl><dt>What is the next-hour range?</dt><dd>The price band where the models expect the price to be one hour from now, about 8 times out of 10. It says how far price may travel, not which way.</dd><dt>Why forex only?</dt><dd>That is the only market where the rule held up in both halves of our test. Crypto and gold are shown for interest, without calls.</dd></dl>
@@ -199,10 +195,6 @@ function render(){ if (!D) return; const R = D.rows || [], st = D.stats || {}, r
   const rows = R.filter(r => (F.show === "all" || r.sig) && (F.side === "all" || String(r.side) === F.side)).sort((a,b) => b.sig - a.sig || b.strong - a.strong || b.agree - a.agree);
   const fxClosed = !R.some(r => r.mkt === "forex");
   $("#ncList").innerHTML = rows.map(card).join("") || `<p class="gf-empty">${D.age > 1200 ? "The models are restarting. Calls come back in a few minutes." : fxClosed ? "Forex is closed right now (weekend), so there is no call. Tap <b>All markets</b> to watch the models on crypto and gold." : "No call right now: the models do not all agree on any forex pair. Tap <b>All markets</b> to see every vote."}</p>`;
-  const row = (n, t) => `<tr><td>${n}</td><td class="up">${t ? t.w : 0}</td><td class="dn">${t ? t.l : 0}</td><td><b>${rate(t)}</b></td></tr>`;
-  $("#ncStats").innerHTML = row("Calls · forex, all models agree · 7 days", ru.d7) + row("All agree on crypto / gold (no call) · 7 days", (st.agree||{}).d7) + row("Models split, majority side · 7 days", (st.split||{}).d7)
-    + Object.entries(st.models || {}).map(([m,t]) => row(esc(MN[m]||m) + " alone, every guess", t)).join("") + row("Close 1 hour later inside the next-hour range · 7 days (target about 80%)", (st.range||{}).d7);
-  $("#ncRecent").innerHTML = (D.recent || []).map(e => `<tr><td>${new Date(e.t*1000).toLocaleString([], {day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})}</td><td>${esc((D.names||{})[e.s] || e.s.replace(/^([A-Z]{3})([A-Z]{3})=X$/, "$1/$2"))}</td><td class="${e.side>0?"up":"dn"}">${e.side>0?"UP":"DOWN"}</td><td>${fmt(e.last, e.last >= 20 ? 3 : 5)}</td><td>${fmt(e.close, e.last >= 20 ? 3 : 5)}</td><td class="${e.res==="win"?"up":e.res==="loss"?"dn":""}"><b>${e.res==="win"?"right":e.res==="loss"?"wrong":"flat"}</b></td></tr>`).join("") || `<tr><td colspan="6" style="color:var(--mute)">No call has been graded yet.</td></tr>`;
   if (D.bt && D.bt.forex_all_agree) $("#ncBt").textContent = `In our walk-forward test (${D.bt.run}), all models agreeing on forex was right ${D.bt.forex_all_agree[0]}% and ${D.bt.forex_all_agree[1]}% of the time in the two halves; one model alone ${D.bt.single_model[0]}-${D.bt.single_model[1]}%.`;
 }
 function bind(id, key){ $$(`#${id} button`).forEach(b => b.onclick = () => { F[key] = b.dataset.v; $$(`#${id} button`).forEach(x => x.classList.toggle("on", x === b)); render(); }); }
