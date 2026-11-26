@@ -262,7 +262,7 @@ function overlay(){if(view!=='chart'||!CS||!D||R)return;
  g.fillStyle=C.mu;g.font='10px IBM Plex Mono';g.fillText(srcv==='vol'?'GEX (volume)':'GEX profile',6,12);g.fillStyle='rgba(245,230,66,.9)';g.fillText('— cumulative',6,24)}
 function chartView(){$('#cc').style.display='block';$('#cS').style.display='none';main.geo=null;if(!window.LightweightCharts){$('#err').style.display='flex';$('#err').textContent='Chart library did not load. Use the strikes view.';return}
  ensureChart();loadCandles();setLines();overlay();if(!ovT)ovT=setInterval(()=>{if(view==='chart'&&!R)overlay()},400)}
-function main(){if(view==='chart'&&!R)return chartView();$('#cc').style.display='none';$('#cS').style.display='block';if(view==='heat'&&!R)return heat();const d=D;const [x,w,h]=cv('cS');
+function main(){const cvw=view==='chart'&&!R;$('#mt').style.display=cvw?'none':'';$('#pm').style.display=cvw?'':'none';if(cvw)return chartView();$('#cc').style.display='none';$('#cS').style.display='block';if(view==='heat'&&!R)return heat();const d=D;const [x,w,h]=cv('cS');
  let bars,spot,flip;
  if(R){bars=R.k.map(q=>({k:q[0],v:q[1]}));spot=R.s;flip=R.f}else{bars=d.strikes.map(s=>({k:s.k,v:srcv==='vol'?(s.vg||0):s.gex,s}));spot=d.spot;flip=d.zero_gamma}
  if(!bars.length)return;
