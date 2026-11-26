@@ -165,7 +165,7 @@ function gex_compute(array $ch, string $mode = 'all'): array {
     if ($mode === '0dte' && $exps) $rows = array_values(array_filter($rows, fn($r) => $r[2] === $exps[0]));
     if ($mode === 'week' && $exps) { $lim = date('Y-m-d', strtotime($exps[0]) + 6 * 86400); $rows = array_values(array_filter($rows, fn($r) => $r[2] <= $lim)); }
     $Tmap = []; foreach ($exps as $e) $Tmap[$e] = gex_T($e, $ch['tz'], $ch['close']);
-    $st = []; $tot = ['gex' => 0.0, 'vanna' => 0.0, 'charm' => 0.0, 'coi' => 0.0, 'poi' => 0.0, 'cvol' => 0.0, 'pvol' => 0.0];
+    $hm = []; $st = []; $tot = ['gex' => 0.0, 'vanna' => 0.0, 'charm' => 0.0, 'coi' => 0.0, 'poi' => 0.0, 'cvol' => 0.0, 'pvol' => 0.0];
     foreach ($rows as $r) {
         [$K, $t, $e, $oi, $iv] = $r; if ($oi <= 0) continue;
         $gk = gex_greeks($S, $K, $Tmap[$e], $iv);
@@ -176,11 +176,13 @@ function gex_compute(array $ch, string $mode = 'all'): array {
         $chm = $sg * $gk['ch'] * $oi * $mult * $S;                 // delta-$ drift per day
         $dlt = ($t === 'c' ? $gk['dc'] : $gk['dc'] - 1) * $oi * $mult * $S;   // customer delta-$ held at this strike
         $k = (string)$K;
-        $st[$k] = $st[$k] ?? ['k' => $K, 'gex' => 0.0, 'cg' => 0.0, 'pg' => 0.0, 'coi' => 0.0, 'poi' => 0.0, 'cvol' => 0.0, 'pvol' => 0.0, 'vanna' => 0.0, 'charm' => 0.0, 'doi' => 0.0, 'cd' => 0.0, 'pd' => 0.0, 'cva' => 0.0, 'pva' => 0.0, 'cch' => 0.0, 'pch' => 0.0];
+        $st[$k] = $st[$k] ?? ['k' => $K, 'gex' => 0.0, 'cg' => 0.0, 'pg' => 0.0, 'coi' => 0.0, 'poi' => 0.0, 'cvol' => 0.0, 'pvol' => 0.0, 'vanna' => 0.0, 'charm' => 0.0, 'doi' => 0.0, 'cd' => 0.0, 'pd' => 0.0, 'cva' => 0.0, 'pva' => 0.0, 'cch' => 0.0, 'pch' => 0.0, 'vg' => 0.0];
         $st[$k]['gex'] += $gex; $st[$k][$t . 'g'] += $gex; $st[$k][$t . 'oi'] += $oi; $st[$k][$t . 'vol'] += $r[6];
         $st[$k]['vanna'] += $van; $st[$k]['charm'] += $chm;
         $st[$k][$t . 'd'] += $dlt; $st[$k][$t . 'va'] += $van; $st[$k][$t . 'ch'] += $chm;
         if (isset($r[8])) $st[$k]['doi'] += $sg * ($oi - $r[8]);
+        $st[$k]['vg'] += $sg * $gam * $r[6] * $mult * $S * $S * 0.01;   // today's volume instead of OI = intraday flow
+        if ($K >= $S * 0.9 && $K <= $S * 1.1) $hm[$e][$k] = ($hm[$e][$k] ?? 0) + $gex;
         $tot['gex'] += $gex; $tot['vanna'] += $van; $tot['charm'] += $chm; $tot[$t . 'oi'] += $oi; $tot[$t . 'vol'] += $r[6];
     }
     ksort($st, SORT_NUMERIC); $st = array_values($st);
@@ -207,6 +209,31 @@ function gex_compute(array $ch, string $mode = 'all'): array {
         $c = $p = 0; foreach ($nr as $r) if ($r[0] == $atm) { if ($r[1] === 'c') $c = $r[7]; else $p = $r[7]; }
         if ($c > 0 && $p > 0) $em = ($c + $p) * 0.85;
     }
+    // ---- premium levels ----
+    $above = array_values(array_filter($st, fn($x) => $x['k'] >= $S && $x['cg'] > 0)); usort($above, fn($a, $b) => $b['cg'] <=> $a['cg']);
+    $below = array_values(array_filter($st, fn($x) => $x['k'] <= $S && $x['pg'] < 0)); usort($below, fn($a, $b) => $a['pg'] <=> $b['pg']);
+    $absg = null; foreach ($st as $x) if (!$absg || ($x['cg'] - $x['pg']) > ($absg['cg'] - $absg['pg'])) $absg = $x;
+    $z = ['c' => [], 'p' => []];
+    if ($near) foreach ($ch['rows'] as $r) if ($r[2] === $near && $r[3] > 0) {
+        $g0 = gex_greeks($S, $r[0], $Tmap[$near], $r[4])['g'] * $r[3] * $mult * $S * $S * 0.01;
+        $z[$r[1]][(string)$r[0]] = ($z[$r[1]][(string)$r[0]] ?? 0) + $g0;
+    }
+    $pick = function (array $m, bool $up) use ($S) { $b = null; $bv = 0; foreach ($m as $k => $v) if (($up ? $k >= $S : $k <= $S) && $v > $bv) { $bv = $v; $b = (float)$k; } return $b; };
+    // weekly expected move: ATM straddle of the expiry closest to 7 days out
+    $emw = null; $wk = null; $best = INF;
+    foreach ($exps as $e) { $d = abs(strtotime($e) - (time() + 7 * 86400)); if ($d < $best) { $best = $d; $wk = $e; } }
+    if ($wk) { $wr = array_values(array_filter($ch['rows'], fn($r) => $r[2] === $wk)); $ks = array_unique(array_column($wr, 0)); $atm = null; foreach ($ks as $k) if ($atm === null || abs($k - $S) < abs($atm - $S)) $atm = $k;
+        $c = $p = 0; foreach ($wr as $r) if ($r[0] == $atm) { if ($r[1] === 'c') $c = $r[7]; else $p = $r[7]; } if ($c > 0 && $p > 0) $emw = ($c + $p) * 0.85; }
+    $lv = [
+        'cw' => array_map(fn($x) => $x['k'], array_slice($above, 0, 3)),
+        'pw' => array_map(fn($x) => $x['k'], array_slice($below, 0, 3)),
+        'abs' => $absg['k'] ?? null,
+        'cw0' => $pick($z['c'], true), 'pw0' => $pick($z['p'], false),
+        'em_day' => $em ? [round($S - $em, 2), round($S + $em, 2)] : null,
+        'em_week' => $emw ? [round($S - $emw, 2), round($S + $emw, 2)] : null, 'week_exp' => $wk,
+        'flip' => $flip ? round($flip, 2) : null, 'max_pain' => $mp,
+    ];
+    $hmx = []; foreach (array_slice(array_keys($hm), 0, 8) as $e) { $hmx[$e] = array_map(fn($v) => round($v), $hm[$e]); }
     $regime = $tot['gex'] >= 0 ? 'positive' : 'negative';
     if ($flip !== null) $regime = $S >= $flip ? 'positive' : 'negative';
     $round = fn($v) => round($v, 2);
@@ -219,7 +246,7 @@ function gex_compute(array $ch, string $mode = 'all'): array {
         'pcr_vol' => $tot['cvol'] > 0 ? round($tot['pvol'] / $tot['cvol'], 2) : null,
         'regime' => $regime, 'hedge_per_1pct' => round(-$tot['gex']),  // + = dealers buy on a 1% rally
         'strikes' => array_map(fn($x) => array_map(fn($v) => is_float($v) ? round($v, 2) : $v, $x), array_values(array_filter($st, fn($x) => $x['k'] >= $S * 0.9 && $x['k'] <= $S * 1.1))),
-        'profile' => $prof,
+        'profile' => $prof, 'levels' => $lv, 'heatmap' => $hmx,
     ];
 }
 

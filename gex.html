@@ -54,7 +54,7 @@ html,body{background:var(--bg)!important}
 /* main chart */
 .mainp{display:flex;flex-direction:column}
 .mh{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid var(--ln);font:11px 'IBM Plex Mono';color:var(--mu)}
-.mh .lg{display:flex;gap:12px}.mh .lg i{display:inline-block;width:10px;height:4px;margin-right:4px;vertical-align:middle;border-radius:2px}
+.mh .vt{cursor:pointer;font-weight:500;color:var(--mu)}.mh .vt.on{color:var(--cy)}.mh .lg{display:flex;gap:12px}.mh .lg i{display:inline-block;width:10px;height:4px;margin-right:4px;vertical-align:middle;border-radius:2px}
 .cw{flex:1;position:relative;min-height:0}
 .cw canvas{position:absolute;inset:0;width:100%;height:100%}
 .tip{position:absolute;pointer-events:none;background:rgba(10,10,10,.94);border:1px solid #333;border-radius:3px;padding:6px 8px;font:11px 'IBM Plex Mono';color:var(--tx);display:none;z-index:3;white-space:nowrap}
@@ -88,6 +88,8 @@ html,body{background:var(--bg)!important}
       <button class="btn on" data-m="all">45d (agg)</button>
       <button class="btn" data-m="week">this week</button>
       <button class="btn" data-m="0dte" id="m0">latest</button>
+      <h4 class="g">gex source</h4>
+      <div class="rad"><label><input type="radio" name="src" value="oi" checked>open interest</label><label><input type="radio" name="src" value="vol">today's volume</label></div>
       <h4 class="o">options profile</h4>
       <div class="rad">
         <label><input type="radio" name="op" value="delta">delta</label>
@@ -99,8 +101,10 @@ html,body{background:var(--bg)!important}
       </div>
       <h4>update</h4>
       <div class="kv" id="upd"></div>
-      <h4>levels</h4>
+      <h4>key levels</h4>
       <div class="kv" id="lvl"></div>
+      <div class="kv" id="plv" style="margin-top:6px"></div>
+      <button class="btn" id="tvx" style="margin-top:8px">⧉ copy levels for TradingView</button>
       <h4>max change gex</h4>
       <table class="mc" id="mc"></table>
       <h4>replay</h4>
@@ -109,7 +113,7 @@ html,body{background:var(--bg)!important}
     </aside>
 
     <section class="pn mainp">
-      <div class="mh"><span id="mt">net gex by strike</span><span class="lg"><span><i style="background:var(--cy)"></i>+ gex</span><span><i style="background:var(--pu)"></i>− gex</span><span id="lgd"><i style="background:var(--gn)"></i>call <i style="background:var(--rd);margin-left:6px"></i>put</span></span></div>
+      <div class="mh"><span><span id="vt" style="margin-right:10px"><b data-v="bars" class="vt on">strikes</b> · <b data-v="heat" class="vt">heatmap</b></span><span id="mt">net gex by strike</span></span><span class="lg"><span><i style="background:var(--cy)"></i>+ gex</span><span><i style="background:var(--pu)"></i>− gex</span><span id="lgd"><i style="background:var(--gn)"></i>call <i style="background:var(--rd);margin-left:6px"></i>put</span></span></div>
       <div class="cw" id="cw"><canvas id="cS"></canvas><div class="tip" id="tip"></div><div class="err" id="err">Loading…</div></div>
     </section>
 
@@ -129,7 +133,7 @@ html,body{background:var(--bg)!important}
 const UE=['SPY','QQQ','IWM','DIA','GLD','SLV','TLT','SMH','XLE','USO'],US=['AAPL','NVDA','TSLA','MSFT','AMZN','META','GOOGL','AMD','MSTR','COIN','PLTR','AVGO','NFLX','SMCI','MU','HOOD'],IN=['NIFTY','BANKNIFTY','FINNIFTY'],CR=['BTC','ETH'],BOARD=['SPY','QQQ','IWM','NIFTY','BANKNIFTY','FINNIFTY','BTC','ETH'];
 const C={cy:'#4fe3f0',pu:'#a35cf0',gn:'#8ee04a',rd:'#f0473c',ye:'#f5e642',or:'#f59e2c',bl:'#5aa9ff',tx:'#e8e8e8',mu:'#8b8b8b',gr:'#1e1e1e',ax:'#2a2a2a'};
 const ALIAS={GOLD:'GLD',XAUUSD:'GLD',XAU:'GLD',SILVER:'SLV',XAGUSD:'SLV',XAG:'SLV'},MNAME={GLD:'GOLD',SLV:'SILVER'};
-let sym=(location.hash.slice(1)||'SPY').toUpperCase();sym=ALIAS[sym]||sym;let mode='all',op='gamma',D=null,R=null,timer=null,hover=null;
+let sym=(location.hash.slice(1)||'SPY').toUpperCase();sym=ALIAS[sym]||sym;let mode='all',op='gamma',srcv='oi',view='bars',D=null,R=null,timer=null,hover=null;
 const $=s=>document.querySelector(s);
 const nf=(v,d=2)=>v==null||isNaN(v)?'—':(+v).toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:0});
 const big=v=>{if(v==null||isNaN(v))return'—';const a=Math.abs(v),s=v<0?'-':'';return s+(a>=1e12?(a/1e12).toFixed(2)+'T':a>=1e9?(a/1e9).toFixed(2)+'B':a>=1e6?(a/1e6).toFixed(1)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':a.toFixed(0))};
@@ -140,6 +144,8 @@ $('#tk').innerHTML='<optgroup label="Metals"><option value="GLD">Gold · XAUUSD 
 $('#tk').value=sym;
 $('#tk').onchange=e=>{sym=e.target.value;location.hash=sym;stopReplay();load();strip()};
 document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b));stopReplay();load()});
+document.querySelectorAll('[name=src]').forEach(r=>r.onchange=()=>{srcv=r.value;draw(true)});
+document.querySelectorAll('#vt .vt').forEach(b=>b.onclick=()=>{view=b.dataset.v;document.querySelectorAll('#vt .vt').forEach(x=>x.classList.toggle('on',x===b));$('#tip').style.display='none';draw(true)});
 document.querySelectorAll('[name=op]').forEach(r=>r.onchange=()=>{op=r.value;$('#lgd').style.display=op==='none'?'none':'';draw(true)});
 $('#strip').addEventListener('click',e=>{const c=e.target.closest('[data-s]');if(c){sym=c.dataset.s;$('#tk').value=sym;location.hash=sym;stopReplay();load();strip()}});
 
@@ -157,6 +163,7 @@ function side(){const d=D,c=cur();
  const t=new Date(d.ts*1000);
  $('#upd').innerHTML=`<span>date</span><span>${t.toLocaleDateString()}</span><span>time</span><span>${t.toLocaleTimeString()}</span><span>spot</span><span>${nf(d.spot)}</span><span>source</span><span>${d.src}${d.stale?' (cached)':''}</span>`;
  $('#lvl').innerHTML=`<span class="pos">major call gamma</span><span class="cy">${nf(d.call_wall)}</span><span class="neg">major put gamma</span><span class="pu">${nf(d.put_wall)}</span><span style="color:var(--ye)">zero gamma</span><span>${nf(d.zero_gamma)}</span><span>net gex</span><span class="${d.net_gex>=0?'pos':'neg'}">${c}${big(d.net_gex)}</span><span>max pain</span><span>${nf(d.max_pain)}</span>`;
+ {const L=d.levels||{},f=a=>a&&a.length?a.map(v=>nf(v)).join(' / '):'—';$('#plv').innerHTML=`<span class="pos">call walls</span><span class="cy">${f(L.cw)}</span><span class="neg">put walls</span><span class="pu">${f(L.pw)}</span><span>abs gamma</span><span>${nf(L.abs)}</span><span>0DTE call wall</span><span class="cy">${nf(L.cw0)}</span><span>0DTE put wall</span><span class="pu">${nf(L.pw0)}</span><span>day range</span><span>${L.em_day?nf(L.em_day[0])+' – '+nf(L.em_day[1]):'—'}</span><span>week range</span><span>${L.em_week?nf(L.em_week[0])+' – '+nf(L.em_week[1]):'—'}</span>`}
  if(d.proxy){const q=d.proxy,cv=v=>v==null?'—':nf(v*q.ratio,q.name==='XAUUSD'?0:2);$('#lvl').innerHTML+=`<span style="grid-column:1/-1;color:#e9c46a;margin-top:6px">in ${q.name} terms (via ${d.symbol} options)</span><span>${q.name} now</span><span>${nf(q.px)}</span><span class="pos">call wall</span><span class="cy">${cv(d.call_wall)}</span><span class="neg">put wall</span><span class="pu">${cv(d.put_wall)}</span><span style="color:var(--ye)">zero gamma</span><span>${cv(d.zero_gamma)}</span>${d.expected_move?`<span>expected move</span><span>±${cv(d.expected_move)}</span>`:''}`}
  const cur0=new Map(d.strikes.map(s=>[s.k,s.gex]));
  const rows=[[1,'1 min'],[5,'5 min'],[10,'10 min'],[15,'15 min'],[30,'30 min']].map(([m,l])=>{const h=snapAt(m*60);if(!h||!h.k)return`<tr><td>${l}</td><td>—</td><td class="mu">building</td></tr>`;
@@ -185,9 +192,18 @@ function nice(m){const p=Math.pow(10,Math.floor(Math.log10(m||1))),f=m/p;return(
 
 /* ---------- main strike chart ---------- */
 function opVals(s){switch(op){case'delta':return[s.cd,s.pd];case'gamma':return[s.cg,s.pg];case'vanna':return[s.cva,s.pva];case'charm':return[s.cch,s.pch];case'oi':return[s.coi,-s.poi];default:return null}}
-function main(){const d=D;const [x,w,h]=cv('cS');
+function heat(){const d=D,H=d.heatmap||{},ex=Object.keys(H);const [x,w,h]=cv('cS');main.geo=null;
+ if(!ex.length){x.fillStyle=C.mu;x.fillText('no expiry data',12,20);return}
+ const ks=[...new Set(ex.flatMap(e=>Object.keys(H[e]).map(Number)))].sort((a,b)=>b-a);let mx=1;ex.forEach(e=>Object.values(H[e]).forEach(v=>mx=Math.max(mx,Math.abs(v))));
+ const L=58,T=34,Rm=10,B=8,cw=(w-L-Rm)/ex.length,ch=(h-T-B)/ks.length;x.textAlign='center';
+ ex.forEach((e,i)=>{x.fillStyle=C.mu;x.fillText(e.slice(5),L+cw*(i+.5),T-14)});x.fillText('expiry →',L+cw*ex.length/2,T-26);
+ ks.forEach((k,j)=>{const y=T+ch*j;if(ch>=9||j%Math.ceil(9/ch)===0){x.fillStyle=Math.abs(k-d.spot)<(ks[0]-ks[ks.length-1])/ks.length?'#fff':C.mu;x.textAlign='right';x.fillText(nf(k),L-6,y+ch/2)}
+  ex.forEach((e,i)=>{const v=H[e][String(k)]||0;if(!v)return;const a=Math.min(1,Math.pow(Math.abs(v)/mx,.5));x.fillStyle=v>=0?`rgba(79,227,240,${a})`:`rgba(163,92,240,${a})`;x.fillRect(L+cw*i+1,y+.5,cw-2,Math.max(1,ch-1));
+   if(ch>=13&&cw>=46&&Math.abs(v)/mx>.15){x.fillStyle='#0b0b0b';x.textAlign='center';x.fillText(big(v),L+cw*(i+.5),y+ch/2)}})});
+ const ys=T+ch*(ks.findIndex(k=>k<=d.spot));x.strokeStyle='#fff';x.beginPath();x.moveTo(L,ys);x.lineTo(w-Rm,ys);x.stroke();x.textAlign='left';tag(x,L+4,ys,'spot '+nf(d.spot),'#f2f2f2','#0b0b0b')}
+function main(){if(view==='heat'&&!R)return heat();const d=D;const [x,w,h]=cv('cS');
  let bars,spot,flip;
- if(R){bars=R.k.map(q=>({k:q[0],v:q[1]}));spot=R.s;flip=R.f}else{bars=d.strikes.map(s=>({k:s.k,v:s.gex,s}));spot=d.spot;flip=d.zero_gamma}
+ if(R){bars=R.k.map(q=>({k:q[0],v:q[1]}));spot=R.s;flip=R.f}else{bars=d.strikes.map(s=>({k:s.k,v:srcv==='vol'?(s.vg||0):s.gex,s}));spot=d.spot;flip=d.zero_gamma}
  if(!bars.length)return;
  const L=58,Rm=72,T=28,B=26,cx0=L,cx1=w-Rm,mid=(cx0+cx1)/2,ks=bars.map(b=>b.k),kmin=Math.min(...ks),kmax=Math.max(...ks);
  const Y=k=>T+(kmax-k)/((kmax-kmin)||1)*(h-T-B);
@@ -214,15 +230,20 @@ function main(){const d=D;const [x,w,h]=cv('cS');
  // level lines
  const hl=(k,col,lab,dash,bg,fg)=>{if(k==null||k<kmin-1e-9||k>kmax+1e-9)return;const y=Y(k);x.strokeStyle=col;x.setLineDash(dash||[]);x.beginPath();x.moveTo(cx0,y);x.lineTo(cx1,y);x.stroke();x.setLineDash([]);tag(x,cx1+4,y,lab,bg||col,fg||'#0b0b0b')};
  if(!R){hl(d.call_wall,'rgba(79,227,240,.45)','CW '+nf(d.call_wall),[2,4],'#103236',C.cy);hl(d.put_wall,'rgba(163,92,240,.45)','PW '+nf(d.put_wall),[2,4],'#26173a','#c9a2ff')}
+ if(!R&&d.levels){const L=d.levels;
+  if(L.em_day){const y1=Y(Math.min(kmax,L.em_day[1])),y2=Y(Math.max(kmin,L.em_day[0]));x.fillStyle='rgba(245,158,44,.06)';x.fillRect(cx0,y1,cx1-cx0,y2-y1);x.fillStyle=C.or;x.font='10px IBM Plex Mono';x.fillText('expected move (day)',cx0+6,y1+10)}
+  (L.cw||[]).slice(1).forEach((k,i)=>hl(k,'rgba(79,227,240,.22)','CW'+(i+2)+' '+nf(k),[1,5],'#0d2224','#8fd8df'));
+  (L.pw||[]).slice(1).forEach((k,i)=>hl(k,'rgba(163,92,240,.22)','PW'+(i+2)+' '+nf(k),[1,5],'#1c1229','#b48ee8'));
+  if(L.abs!=null&&L.abs!==d.call_wall&&L.abs!==d.put_wall)hl(L.abs,'rgba(255,255,255,.25)','ABS γ '+nf(L.abs),[1,3],'#262626','#ddd')}
  hl(flip,'rgba(245,230,66,.7)','0γ '+nf(flip,1),[5,4],'#33300c',C.ye);
  hl(spot,'#f2f2f2',nf(spot),[],'#f2f2f2','#0b0b0b');
  if(R){x.fillStyle=C.or;x.font='600 11px IBM Plex Mono';x.fillText('REPLAY '+tm(R.t),cx1-110,T-12)}
  // hover
  main.geo={Y,kmin,kmax,bars};
  if(hover){const y=Y(hover.k);x.strokeStyle='rgba(255,255,255,.18)';x.beginPath();x.moveTo(cx0,y);x.lineTo(cx1,y);x.stroke()}}
-$('#cw').addEventListener('mousemove',e=>{const g=main.geo;if(!g||!D)return;const r=e.currentTarget.getBoundingClientRect(),y=e.clientY-r.top;let best=null,bd=1e9;g.bars.forEach(b=>{const dd=Math.abs(g.Y(b.k)-y);if(dd<bd){bd=dd;best=b}});
+$('#cw').addEventListener('mousemove',e=>{const g=main.geo;if(!g||!D||(view==='heat'&&!R))return;const r=e.currentTarget.getBoundingClientRect(),y=e.clientY-r.top;let best=null,bd=1e9;g.bars.forEach(b=>{const dd=Math.abs(g.Y(b.k)-y);if(dd<bd){bd=dd;best=b}});
  if(!best||bd>14){hover=null;$('#tip').style.display='none';draw(true);return}hover=best;const c=cur(),s=best.s;
- $('#tip').innerHTML=`<b>${nf(best.k)}</b><br>net gex <span class="${best.v>=0?'cy':'pu'}">${c}${big(best.v)}</span>`+(s?`<br>call γ <span class="pos">${c}${big(s.cg)}</span> · put γ <span class="neg">${c}${big(s.pg)}</span><br>call δ ${c}${big(s.cd)} · put δ ${c}${big(s.pd)}<br>vanna ${c}${big(s.vanna)} · charm ${c}${big(s.charm)}<br>oi c ${nf(s.coi,0)} · p ${nf(s.poi,0)}`+(D.market==='IN'?`<br>oi chg ${nf(s.doi,0)}`:''):'');
+ $('#tip').innerHTML=`<b>${nf(best.k)}</b><br>${srcv==='vol'?'volume gex':'net gex'} <span class="${best.v>=0?'cy':'pu'}">${c}${big(best.v)}</span>`+(s?`<br>call γ <span class="pos">${c}${big(s.cg)}</span> · put γ <span class="neg">${c}${big(s.pg)}</span><br>call δ ${c}${big(s.cd)} · put δ ${c}${big(s.pd)}<br>vanna ${c}${big(s.vanna)} · charm ${c}${big(s.charm)}<br>oi c ${nf(s.coi,0)} · p ${nf(s.poi,0)}`+(D.market==='IN'?`<br>oi chg ${nf(s.doi,0)}`:''):'');
  const t=$('#tip');t.style.display='block';t.style.left=Math.min(e.clientX-r.left+14,r.width-t.offsetWidth-6)+'px';t.style.top=Math.max(4,y-t.offsetHeight/2)+'px';draw(true)});
 $('#cw').addEventListener('mouseleave',()=>{hover=null;$('#tip').style.display='none';draw(true)});
 
@@ -251,6 +272,14 @@ function charts(){const c=cur();
  vl(D.spot,'#f2f2f2',nf(D.spot));if(D.zero_gamma)vl(D.zero_gamma,C.ye,'0γ');
  x.fillStyle=C.mu;x.fillText(nf(x0,0),6,h-7);x.textAlign='right';x.fillText(nf(x1,0),w-6,h-7);x.textAlign='left';
  $('#h3v').textContent=D.regime==='positive'?'long gamma':'short gamma'}
+$('#tvx').onclick=()=>{if(!D)return;const d=D,L=d.levels||{},q=d.proxy,cv=v=>q?+(v*q.ratio).toFixed(2):v,nm=q?q.name:d.symbol,ln=[];
+ const add=(v,t,c,st)=>{if(v!=null)ln.push(`hline(${cv(v)}, "${t}", color=${c}, linestyle=hline.style_${st||'dashed'}, linewidth=2)`)};
+ (L.cw||[]).forEach((v,i)=>add(v,'Call Wall '+(i+1),'color.aqua',i?'dotted':'solid'));(L.pw||[]).forEach((v,i)=>add(v,'Put Wall '+(i+1),'color.purple',i?'dotted':'solid'));
+ add(d.zero_gamma,'Zero Gamma','color.yellow');add(L.abs,'Abs Gamma','color.white','dotted');add(L.cw0,'0DTE Call Wall','color.teal');add(L.pw0,'0DTE Put Wall','color.fuchsia');add(L.max_pain,'Max Pain','color.gray','dotted');
+ if(L.em_day){add(L.em_day[0],'Day EM low','color.orange','dotted');add(L.em_day[1],'Day EM high','color.orange','dotted')}
+ const pine=`//@version=5\n// ChartPulse GEX levels for ${nm}${q?' (from '+d.symbol+' options)':''}, ${new Date(d.ts*1000).toISOString().slice(0,16)}Z\n// chartpulse.io/scanners/gex/\nindicator("ChartPulse GEX ${nm}", overlay=true)\n`+ln.join('\n');
+ const done=()=>{$('#tvx').textContent='✓ copied: TradingView → Pine Editor → paste → Add to chart';setTimeout(()=>$('#tvx').textContent='⧉ copy levels for TradingView',4000)};
+ try{navigator.clipboard.writeText(pine).then(done,()=>{prompt('Copy:',pine)})}catch(e){prompt('Copy:',pine)}};
 function draw(onlyMain){if(!D)return;main();if(!onlyMain)charts()}
 strip();load();setInterval(()=>{if(!R)load()},60000);setInterval(strip,120000);addEventListener('resize',()=>draw());
 })();
