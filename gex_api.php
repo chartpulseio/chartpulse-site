@@ -19,9 +19,11 @@ try {
         echo json_encode(['ok' => true, 'rows' => $out]); exit;
     }
     $s = preg_replace('/[^A-Z]/', '', strtoupper((string)($_GET['s'] ?? 'SPY')));
+    $s = ['GOLD' => 'GLD', 'XAUUSD' => 'GLD', 'XAU' => 'GLD', 'SILVER' => 'SLV', 'XAGUSD' => 'SLV', 'XAG' => 'SLV'][$s] ?? $s;
     $m = in_array($_GET['m'] ?? 'all', ['all', 'week', '0dte'], true) ? $_GET['m'] ?? 'all' : 'all';
     $g = gex_get_symbol($s, $m);
     if (empty($g['ok'])) { http_response_code(503); echo json_encode(['ok' => false, 'msg' => 'Data is temporarily unavailable. Sorry for the inconvenience.']); exit; }
+    try { $mp = gex_metal_proxy($s, (float)$g['spot']); if ($mp) $g['proxy'] = $mp; } catch (Throwable $e) {}
     echo json_encode($g);
 } catch (Throwable $e) {
     http_response_code(503);

@@ -278,7 +278,7 @@ function gex_history(string $sym, array $g, bool $write): array {
 }
 
 // ---------- Labels for other scanners (Day Drive, God-father): label only, never a filter ----------
-const GEX_YAHOO = ['BTC-USD' => 'BTC', 'ETH-USD' => 'ETH', '^NSEI' => 'NIFTY', '^NSEBANK' => 'BANKNIFTY', 'NIFTY_FIN_SERVICE.NS' => 'FINNIFTY'];
+const GEX_YAHOO = ['PAXG-USD' => 'GLD', 'GC=F' => 'GLD', 'SI=F' => 'SLV', 'BTC-USD' => 'BTC', 'ETH-USD' => 'ETH', '^NSEI' => 'NIFTY', '^NSEBANK' => 'BANKNIFTY', 'NIFTY_FIN_SERVICE.NS' => 'FINNIFTY'];
 function gex_label_save(string $sym, array $g): void {
     $f = GEX_DIR . '/labels.json';
     $m = is_file($f) ? (json_decode((string)file_get_contents($f), true) ?: []) : [];
@@ -301,4 +301,15 @@ function gex_attach(array $out): array {
     try { if (!empty($out['rows']) && is_array($out['rows'])) foreach ($out['rows'] as $i => $r) { $l = gex_label_for((string)($r['symbol'] ?? '')); if ($l) $out['rows'][$i]['gex'] = $l; }
           if (!empty($out['row']['symbol'])) { $l = gex_label_for((string)$out['row']['symbol']); if ($l) $out['row']['gex'] = $l; } } catch (Throwable $e) {}
     return $out;
+}
+
+// Gold / silver: GLD / SLV options are the public proxy for XAUUSD / XAGUSD. Give the page the metal's own price so
+// every level can also be shown in XAUUSD / XAGUSD terms (ratio = metal price / ETF price, from the site's own scan).
+const GEX_METAL = ['GLD' => ['name' => 'XAUUSD', 'label' => 'Gold', 'src' => ['PAXG-USD', 'GC=F']], 'SLV' => ['name' => 'XAGUSD', 'label' => 'Silver', 'src' => ['SI=F']]];
+function gex_metal_proxy(string $sym, float $etf): ?array {
+    if (!isset(GEX_METAL[$sym]) || $etf <= 0) return null;
+    $f = cp_data_dir() . '/scan.json'; if (!is_file($f)) return null;
+    $rows = (json_decode((string)file_get_contents($f), true)['rows'] ?? []);
+    foreach (GEX_METAL[$sym]['src'] as $y) { $px = (float)($rows[$y]['price'] ?? 0); if ($px > 0) return ['name' => GEX_METAL[$sym]['name'], 'label' => GEX_METAL[$sym]['label'], 'via' => $y, 'px' => $px, 'ratio' => round($px / $etf, 5)]; }
+    return null;
 }

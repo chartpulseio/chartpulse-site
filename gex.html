@@ -128,14 +128,16 @@ html,body{background:var(--bg)!important}
 (()=>{
 const UE=['SPY','QQQ','IWM','DIA','GLD','SLV','TLT','SMH','XLE','USO'],US=['AAPL','NVDA','TSLA','MSFT','AMZN','META','GOOGL','AMD','MSTR','COIN','PLTR','AVGO','NFLX','SMCI','MU','HOOD'],IN=['NIFTY','BANKNIFTY','FINNIFTY'],CR=['BTC','ETH'],BOARD=['SPY','QQQ','IWM','NIFTY','BANKNIFTY','FINNIFTY','BTC','ETH'];
 const C={cy:'#4fe3f0',pu:'#a35cf0',gn:'#8ee04a',rd:'#f0473c',ye:'#f5e642',or:'#f59e2c',bl:'#5aa9ff',tx:'#e8e8e8',mu:'#8b8b8b',gr:'#1e1e1e',ax:'#2a2a2a'};
-let sym=(location.hash.slice(1)||'SPY').toUpperCase(),mode='all',op='gamma',D=null,R=null,timer=null,hover=null;
+const ALIAS={GOLD:'GLD',XAUUSD:'GLD',XAU:'GLD',SILVER:'SLV',XAGUSD:'SLV',XAG:'SLV'},MNAME={GLD:'GOLD',SLV:'SILVER'};
+const pm=(location.pathname.match(/\/gex\/(gold|silver|xauusd|xagusd)\/?$/i)||[])[1];
+let sym=(location.hash.slice(1)||pm||'SPY').toUpperCase();sym=ALIAS[sym]||sym;let mode='all',op='gamma',D=null,R=null,timer=null,hover=null;
 const $=s=>document.querySelector(s);
 const nf=(v,d=2)=>v==null||isNaN(v)?'—':(+v).toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:0});
 const big=v=>{if(v==null||isNaN(v))return'—';const a=Math.abs(v),s=v<0?'-':'';return s+(a>=1e12?(a/1e12).toFixed(2)+'T':a>=1e9?(a/1e9).toFixed(2)+'B':a>=1e6?(a/1e6).toFixed(1)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':a.toFixed(0))};
 const cur=()=>D&&D.market==='IN'?'₹':'$';
 const tm=t=>new Date(t*1000).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 
-$('#tk').innerHTML='<optgroup label="US ETFs">'+UE.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="US stocks">'+US.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="India">'+IN.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="Crypto (Deribit)">'+CR.map(s=>`<option>${s}</option>`).join('')+'</optgroup>';
+$('#tk').innerHTML='<optgroup label="Metals"><option value="GLD">Gold · XAUUSD (GLD)</option><option value="SLV">Silver · XAGUSD (SLV)</option></optgroup><optgroup label="US ETFs">'+UE.filter(s=>!MNAME[s]).map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="US stocks">'+US.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="India">'+IN.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="Crypto (Deribit)">'+CR.map(s=>`<option>${s}</option>`).join('')+'</optgroup>';
 $('#tk').value=sym;
 $('#tk').onchange=e=>{sym=e.target.value;location.hash=sym;stopReplay();load();strip()};
 document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b));stopReplay();load()});
@@ -156,6 +158,7 @@ function side(){const d=D,c=cur();
  const t=new Date(d.ts*1000);
  $('#upd').innerHTML=`<span>date</span><span>${t.toLocaleDateString()}</span><span>time</span><span>${t.toLocaleTimeString()}</span><span>spot</span><span>${nf(d.spot)}</span><span>source</span><span>${d.src}${d.stale?' (cached)':''}</span>`;
  $('#lvl').innerHTML=`<span class="pos">major call gamma</span><span class="cy">${nf(d.call_wall)}</span><span class="neg">major put gamma</span><span class="pu">${nf(d.put_wall)}</span><span style="color:var(--ye)">zero gamma</span><span>${nf(d.zero_gamma)}</span><span>net gex</span><span class="${d.net_gex>=0?'pos':'neg'}">${c}${big(d.net_gex)}</span><span>max pain</span><span>${nf(d.max_pain)}</span>`;
+ if(d.proxy){const q=d.proxy,cv=v=>v==null?'—':nf(v*q.ratio,q.name==='XAUUSD'?0:2);$('#lvl').innerHTML+=`<span style="grid-column:1/-1;color:#e9c46a;margin-top:6px">in ${q.name} terms (via ${d.symbol} options)</span><span>${q.name} now</span><span>${nf(q.px)}</span><span class="pos">call wall</span><span class="cy">${cv(d.call_wall)}</span><span class="neg">put wall</span><span class="pu">${cv(d.put_wall)}</span><span style="color:var(--ye)">zero gamma</span><span>${cv(d.zero_gamma)}</span>${d.expected_move?`<span>expected move</span><span>±${cv(d.expected_move)}</span>`:''}`;document.title=`${q.label} (${q.name}) Gamma Exposure · GEX levels · ChartPulse`}
  const cur0=new Map(d.strikes.map(s=>[s.k,s.gex]));
  const rows=[[1,'1 min'],[5,'5 min'],[10,'10 min'],[15,'15 min'],[30,'30 min']].map(([m,l])=>{const h=snapAt(m*60);if(!h||!h.k)return`<tr><td>${l}</td><td>—</td><td class="mu">building</td></tr>`;
   const old=new Map(h.k.map(x=>[x[0],x[1]]));let bk=null,bv=0;cur0.forEach((v,k)=>{const dv=v-(old.get(k)||0);if(Math.abs(dv)>Math.abs(bv)){bv=dv;bk=k}});
@@ -191,7 +194,7 @@ function main(){const d=D;const [x,w,h]=cv('cS');
  const Y=k=>T+(kmax-k)/((kmax-kmin)||1)*(h-T-B);
  const step=bars.length>1?Math.abs(Y(bars[1].k)-Y(bars[0].k)):6,bh=Math.max(1.5,Math.min(9,step*.62));
  // watermark
- x.save();x.font='600 '+Math.min(64,w/9)+'px Inter';x.fillStyle='rgba(255,255,255,.05)';x.textBaseline='top';x.fillText(sym,L+12,T+8);x.restore();
+ x.save();x.font='600 '+Math.min(64,w/9)+'px Inter';x.fillStyle='rgba(255,255,255,.05)';x.textBaseline='top';x.fillText(MNAME[sym]?MNAME[sym]+' ('+sym+')':sym,L+12,T+8);x.restore();
  // grid
  let mx=Math.max(1,...bars.map(b=>Math.abs(b.v)));const nm=nice(mx);mx=nm;
  x.strokeStyle=C.gr;x.lineWidth=1;x.fillStyle=C.mu;x.textAlign='center';
