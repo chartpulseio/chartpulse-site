@@ -168,7 +168,7 @@ function side(){const d=D,c=cur();
  const cur0=new Map(d.strikes.map(s=>[s.k,s.gex]));
  const rows=[[1,'1 min'],[5,'5 min'],[10,'10 min'],[15,'15 min'],[30,'30 min']].map(([m,l])=>{const h=snapAt(m*60);if(!h||!h.k)return`<tr><td>${l}</td><td>—</td><td class="mu">building</td></tr>`;
   const old=new Map(h.k.map(x=>[x[0],x[1]]));let bk=null,bv=0;cur0.forEach((v,k)=>{const dv=v-(old.get(k)||0);if(Math.abs(dv)>Math.abs(bv)){bv=dv;bk=k}});
-  return`<tr><td>${l}</td><td>${bk==null?'—':nf(bk)}</td><td class="${bv>=0?'pos':'neg'}">${big(bv)}</td></tr>`});
+  const tiny=Math.abs(bv)<Math.max(1,...d.strikes.map(s=>Math.abs(s.gex)))*0.002;return tiny?`<tr><td>${l}</td><td>—</td><td class="mu">no change</td></tr>`:`<tr><td>${l}</td><td>${bk==null?'—':nf(bk)}</td><td class="${bv>=0?'pos':'neg'}">${big(bv)}</td></tr>`});
  $('#mc').innerHTML=rows.join('');
  const H=d.history||[];$('#rs').max=Math.max(0,H.length-1);if(!R)$('#rs').value=$('#rs').max;
  const rg=d.regime==='positive';
