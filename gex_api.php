@@ -10,6 +10,10 @@ try {
     if ($r === 'list') {
         echo json_encode(['ok' => true, 'US' => GEX_US, 'IN' => array_keys(GEX_IN), 'CR' => GEX_CR]); exit;
     }
+    if ($r === 'flows') {
+        $f = gex_flows((string)($_GET['s'] ?? 'BTC'));
+        echo json_encode($f); exit;
+    }
     if ($r === 'candles') {
         $s = preg_replace('/[^A-Z]/', '', strtoupper((string)($_GET['s'] ?? 'SPY')));
         $s = ['GOLD' => 'GLD', 'XAUUSD' => 'GLD', 'SILVER' => 'SLV', 'XAGUSD' => 'SLV'][$s] ?? $s;

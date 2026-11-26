@@ -114,8 +114,8 @@ html,body{background:var(--bg)!important}
     </aside>
 
     <section class="pn mainp">
-      <div class="mh"><span><span id="vt" style="margin-right:10px"><b data-v="chart" class="vt on">chart</b> · <b data-v="bars" class="vt">strikes</b> · <b data-v="heat" class="vt">heatmap</b></span><span id="pm" style="margin-right:10px">profile: <b data-p="gex" class="vt on">gex</b> · <b data-p="hedge" class="vt">hedging</b></span><span id="mt">net gex by strike</span></span><span class="lg"><span><i style="background:var(--cy)"></i>+ gex</span><span><i style="background:var(--pu)"></i>− gex</span><span id="lgd"><i style="background:var(--gn)"></i>call <i style="background:var(--rd);margin-left:6px"></i>put</span></span></div>
-      <div class="cw" id="cw"><div id="cc" style="position:absolute;inset:0;display:none"><canvas id="hmC" style="position:absolute;inset:0;width:100%;height:100%"></canvas><div id="lc" style="position:absolute;left:0;top:0;bottom:0;right:var(--gpw)"></div><canvas id="gpC" style="position:absolute;top:0;bottom:0;right:0;left:auto;width:var(--gpw);height:100%"></canvas></div><canvas id="cS"></canvas><div class="tip" id="tip"></div><div class="err" id="err">Loading…</div></div>
+      <div class="mh"><span><span id="vt" style="margin-right:10px"><b data-v="chart" class="vt on">chart</b> · <b data-v="bars" class="vt">strikes</b> · <b data-v="heat" class="vt">heatmap</b> · <b data-v="flows" class="vt">big flows</b></span><span id="pm" style="margin-right:10px">profile: <b data-p="gex" class="vt on">gex</b> · <b data-p="hedge" class="vt">hedging</b></span><span id="mt">net gex by strike</span></span><span class="lg"><span><i style="background:var(--cy)"></i>+ gex</span><span><i style="background:var(--pu)"></i>− gex</span><span id="lgd"><i style="background:var(--gn)"></i>call <i style="background:var(--rd);margin-left:6px"></i>put</span></span></div>
+      <div class="cw" id="cw"><div id="fl" style="position:absolute;inset:0;overflow:auto;display:none;padding:10px 12px;font:12px IBM Plex Mono"></div><div id="cc" style="position:absolute;inset:0;display:none"><canvas id="hmC" style="position:absolute;inset:0;width:100%;height:100%"></canvas><div id="lc" style="position:absolute;left:0;top:0;bottom:0;right:var(--gpw)"></div><canvas id="gpC" style="position:absolute;top:0;bottom:0;right:0;left:auto;width:var(--gpw);height:100%"></canvas></div><canvas id="cS"></canvas><div class="tip" id="tip"></div><div class="err" id="err">Loading…</div></div>
     </section>
 
     <div class="rc">
@@ -207,7 +207,7 @@ function heat(){const d=D,H=d.heatmap||{},ex=Object.keys(H);const [x,w,h]=cv('cS
 let LC=null,CS=null,CAND=[],candSym=null,PL=[],ovT=null;const TZO=-new Date().getTimezoneOffset()*60;
 async function loadCandles(force){if(!window.LightweightCharts)return;if(candSym===sym&&!force)return;candSym=sym;
  try{const j=await(await fetch('/gex_api.php?r=candles&s='+sym)).json();if(!j.ok)throw 0;if(j.symbol!==sym)return;CAND=j.c;
-  ensureChart();CS.setData(CAND.map(c=>({time:c[0]+TZO,open:c[1],high:c[2],low:c[3],close:c[4]})));if(force!=='keep')LC.timeScale().fitContent();setLines()}catch(e){CAND=[];if(CS)CS.setData([])}}
+  ensureChart();CS.setData(CAND.map(c=>({time:c[0]+TZO,open:c[1],high:c[2],low:c[3],close:c[4]})));if(force!=='keep')LC.timeScale().fitContent();setLines();flowMarkers()}catch(e){CAND=[];if(CS)CS.setData([])}}
 function ensureChart(){if(LC)return;const el=$('#lc');
  LC=LightweightCharts.createChart(el,{autoSize:true,layout:{background:{type:'solid',color:'transparent'},textColor:'#8b8b8b',fontFamily:'IBM Plex Mono',fontSize:11},
   grid:{vertLines:{color:'rgba(255,255,255,.035)'},horzLines:{color:'rgba(255,255,255,.035)'}},rightPriceScale:{borderColor:'#232323',scaleMargins:{top:.06,bottom:.06}},
@@ -261,8 +261,22 @@ function overlay(){if(view!=='chart'||!CS||!D||R)return;
  const sy=Y(D.spot);if(sy!=null){g.strokeStyle='#f2f2f2';g.beginPath();g.moveTo(0,sy);g.lineTo(w2,sy);g.stroke()}
  g.fillStyle=C.mu;g.font='10px IBM Plex Mono';g.fillText(srcv==='vol'?'GEX (volume)':'GEX profile',6,12);g.fillStyle='rgba(245,230,66,.9)';g.fillText('— cumulative',6,24)}
 function chartView(){$('#cc').style.display='block';$('#cS').style.display='none';main.geo=null;if(!window.LightweightCharts){$('#err').style.display='flex';$('#err').textContent='Chart library did not load. Use the strikes view.';return}
- ensureChart();loadCandles();setLines();overlay();if(!ovT)ovT=setInterval(()=>{if(view==='chart'&&!R)overlay()},400)}
-function main(){const cvw=view==='chart'&&!R;$('#mt').style.display=cvw?'none':'';$('#pm').style.display=cvw?'':'none';if(cvw)return chartView();$('#cc').style.display='none';$('#cS').style.display='block';if(view==='heat'&&!R)return heat();const d=D;const [x,w,h]=cv('cS');
+ ensureChart();loadCandles();setLines();overlay();loadFlows().then(flowMarkers);if(!ovT)ovT=setInterval(()=>{if(view==='chart'&&!R)overlay()},400)}
+let FL=null,flSym=null;
+async function loadFlows(){if(!['BTC','ETH'].includes(sym)){FL=null;return}if(flSym===sym&&FL&&Date.now()-FL._at<60000)return;flSym=sym;
+ try{const j=await(await fetch('/gex_api.php?r=flows&s='+sym)).json();if(j.ok){j._at=Date.now();FL=j}else FL=null}catch(e){FL=null}}
+function flowsView(){const el=$('#fl');el.style.display='block';$('#cc').style.display='none';$('#cS').style.display='none';main.geo=null;
+ if(!['BTC','ETH'].includes(sym)){el.innerHTML='<p class="mu" style="margin:30px auto;max-width:520px;text-align:center;line-height:1.7">Big flows (the largest single option trades as they print) are live for <b>BTC</b> and <b>ETH</b>, from Deribit\'s public trade tape.<br>US and Indian feeds on our plan do not publish the trade-by-trade tape, so they are not shown here.</p>';return}
+ if(!FL){el.innerHTML='<p class="mu">Loading…</p>';loadFlows().then(()=>{if(view==='flows')flowsView()});return}
+ const tm2=t=>new Date(t*1000).toLocaleString([], {month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});const hrs=((FL.to-FL.from)/3600).toFixed(1);
+ el.innerHTML=`<div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px;color:#bbb">${FL.n} trades in the last ${hrs} h · taker-bought premium <span class="pos">$${big(FL.buy_prem)}</span> · taker-sold <span class="neg">$${big(FL.sell_prem)}</span></div>
+ <table style="width:100%;border-collapse:collapse"><thead><tr style="color:#8b8b8b;text-align:left">${['time','option','side','size','premium','IV',''].map(h=>`<th style="padding:5px 6px;border-bottom:1px solid #232323;font-weight:500">${h}</th>`).join('')}</tr></thead><tbody>
+ ${FL.top.map(f=>`<tr><td style="padding:4px 6px;color:#8b8b8b">${tm2(f.t)}</td><td style="padding:4px 6px"><b class="${f.cp==='C'?'cy':'pu'}">${nf(f.k,0)} ${f.cp==='C'?'CALL':'PUT'}</b> <span class="mu">${f.exp.slice(5)}</span></td><td style="padding:4px 6px" class="${f.side==='buy'?'pos':'neg'}">${f.side==='buy'?'bought':'sold'}</td><td style="padding:4px 6px">${nf(f.size,1)}</td><td style="padding:4px 6px"><b>$${big(f.prem)}</b></td><td style="padding:4px 6px">${nf(f.iv,1)}%</td><td style="padding:4px 6px">${f.block?'<span style="color:#f59e2c">BLOCK</span>':''}</td></tr>`).join('')}</tbody></table>
+ <p class="mu" style="margin-top:10px;font-size:11px">Side = the aggressor (taker). Bought calls / sold puts lean bullish; bought puts / sold calls lean bearish. Biggest premium first. Source: Deribit.</p>`}
+function flowMarkers(){if(!CS)return;if(!FL||!['BTC','ETH'].includes(sym)||!CAND.length){CS.setMarkers([]);return}const t0=CAND[0][0],t1=CAND[CAND.length-1][0]+300;
+ const mk=FL.top.slice(0,15).filter(f=>f.t>=t0&&f.t<=t1).map(f=>{const bull=(f.cp==='C')===(f.side==='buy');return{time:Math.floor(f.t/300)*300+TZO,position:bull?'belowBar':'aboveBar',color:bull?'#8ee04a':'#f0473c',shape:bull?'arrowUp':'arrowDown',text:`${f.cp}${nf(f.k,0)} $${big(f.prem)}`}}).sort((a,b)=>a.time-b.time);
+ CS.setMarkers(mk)}
+function main(){$('#fl').style.display=view==='flows'&&!R?'block':'none';if(view==='flows'&&!R){$('#mt').style.display='none';$('#pm').style.display='none';return flowsView()}const cvw=view==='chart'&&!R;$('#mt').style.display=cvw?'none':'';$('#pm').style.display=cvw?'':'none';if(cvw)return chartView();$('#cc').style.display='none';$('#cS').style.display='block';if(view==='heat'&&!R)return heat();const d=D;const [x,w,h]=cv('cS');
  let bars,spot,flip;
  if(R){bars=R.k.map(q=>({k:q[0],v:q[1]}));spot=R.s;flip=R.f}else{bars=d.strikes.map(s=>({k:s.k,v:srcv==='vol'?(s.vg||0):s.gex,s}));spot=d.spot;flip=d.zero_gamma}
  if(!bars.length)return;

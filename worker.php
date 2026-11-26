@@ -35,6 +35,7 @@ try {
         gex_get_symbol($s, 'all'); $gx++;
     }
     @file_put_contents($gf, (string)($gi % 1000));
+    try { gex_alerts_step(); } catch (Throwable $e) {}   // Telegram: gamma flip lost/regained, price at call/put wall
 } catch (Throwable $e) {}
 $scan = t_scan_load(); $due = count(t_due($scan, t_now()));
 @file_put_contents(T_DATA . '/worker_last.txt', date('c') . " steps $n due $due\n");

@@ -310,7 +310,7 @@ function gex_label_save(string $sym, array $g): void {
     $f = GEX_DIR . '/labels.json';
     $m = is_file($f) ? (json_decode((string)file_get_contents($f), true) ?: []) : [];
     $S = $g['spot']; $near = fn($k) => $k && abs($k / $S - 1) <= 0.003;
-    $m[$sym] = ['t' => time(), 'rg' => ($g['regime'] === 'positive' ? 1 : -1), 'f' => $g['zero_gamma'], 'cw' => $g['call_wall'], 'pw' => $g['put_wall'],
+    $m[$sym] = ['t' => time(), 's' => $S, 'rg' => ($g['regime'] === 'positive' ? 1 : -1), 'f' => $g['zero_gamma'], 'cw' => $g['call_wall'], 'pw' => $g['put_wall'],
                 'at' => $near($g['call_wall']) ? 'cw' : ($near($g['put_wall']) ? 'pw' : ($near($g['zero_gamma']) ? 'flip' : ''))];
     @file_put_contents($f, json_encode($m), LOCK_EX);
 }
@@ -376,4 +376,64 @@ function gex_candles(string $sym): array {
     if ($out) @file_put_contents($cf, json_encode($out), LOCK_EX);
     elseif (is_file($cf)) $out = json_decode((string)file_get_contents($cf), true) ?: [];
     return $out;
+}
+
+// ---------- Telegram alerts (Phase C, 26 Nov 2026): gamma flip lost / regained, price at the call or put wall ----------
+// Called from worker.php after the GEX refresh. Only the priority symbols; only while their market is moving
+// (fresh chain and spot changed); the first run only records state. Format = owner's: scanner, setup, plain why.
+function gex_alerts_step(): string {
+    if (!function_exists('tg_deliver')) return '';
+    $f = GEX_DIR . '/alerts.json'; $S = is_file($f) ? (json_decode((string)file_get_contents($f), true) ?: []) : []; $first = !$S;
+    $now = time(); $ev = [];
+    foreach (GEX_PRIORITY as $sym) {
+        static $LB = null; if ($LB === null) $LB = is_file(GEX_DIR . '/labels.json') ? (json_decode((string)file_get_contents(GEX_DIR . '/labels.json'), true) ?: []) : [];
+        $x = $LB[$sym] ?? null; if (!$x || !isset($x['s']) || $now - (int)$x['t'] > 300) continue;
+        $g = ['spot' => $x['s'], 'zero_gamma' => $x['f'], 'call_wall' => $x['cw'], 'put_wall' => $x['pw']]; $S0 = $S[$sym] ?? []; $px = (float)$g['spot'];
+        $moving = isset($S0['px']) && abs($px - (float)$S0['px']) > 0;
+        $u = fn($v) => rtrim(rtrim(number_format((float)$v, 2, '.', ''), '0'), '.');
+        $rg = $g['zero_gamma'] ? ($px >= $g['zero_gamma'] ? 1 : -1) : 0;
+        if ($moving && $rg && isset($S0['rg']) && $S0['rg'] && $rg !== $S0['rg'] && $now - (int)($S0['t_flip'] ?? 0) > 7200) {
+            $ev[] = [$rg > 0 ? "\u{1F7E2}" : "\u{1F534}", "$sym · " . $u($px), $rg > 0 ? 'Gamma flip regained' : 'Gamma flip lost',
+                $rg > 0 ? 'Price moved back above the zero-gamma level ' . $u($g['zero_gamma']) . '. Dealers now lean against moves, so the tape usually calms down.'
+                        : 'Price fell below the zero-gamma level ' . $u($g['zero_gamma']) . '. Dealers now chase moves, so volatility tends to expand.'];
+            $S0['t_flip'] = $now;
+        }
+        foreach (['cw' => $g['call_wall'], 'pw' => $g['put_wall']] as $w => $lvl) {
+            if (!$moving || !$lvl || abs($px / $lvl - 1) > 0.0015 || $now - (int)($S0['t_' . $w . $lvl] ?? 0) < 14400) continue;
+            $ev[] = [$w === 'pw' ? "\u{1F7E2}" : "\u{1F534}", "$sym · " . $u($px), ($w === 'cw' ? 'At the call wall ' : 'At the put wall ') . $u($lvl),
+                $w === 'cw' ? 'This strike holds the most call gamma; dealers sell into rallies here, so it often acts as resistance.'
+                            : 'This strike holds the most put gamma; dealers buy dips here while gamma is positive, so it often acts as support (it can give way in negative gamma).'];
+            $S0['t_' . $w . $lvl] = $now;
+        }
+        $S0['px'] = $px; $S0['rg'] = $rg ?: ($S0['rg'] ?? 0); $S[$sym] = $S0;
+    }
+    @file_put_contents($f, json_encode($S), LOCK_EX);
+    if ($first || !$ev) return '';
+    $L = ["\u{1F4E1} <b>GEX Terminal</b>"];
+    foreach (array_slice($ev, 0, 10) as $e) { $L[] = ''; $L[] = $e[0] . ' <b>' . htmlspecialchars($e[1]) . '</b>'; $L[] = 'Setup: ' . htmlspecialchars($e[2]); $L[] = 'Why: ' . htmlspecialchars($e[3]); }
+    $n = tg_deliver(implode("\n", $L));
+    return 'gex alerts ' . count($ev) . ' -> ' . $n;
+}
+
+// ---------- Big flows (Phase C): the largest recent option trades, BTC / ETH from Deribit's public trade tape ----------
+function gex_flows(string $sym): array {
+    $sym = strtoupper($sym); if (!in_array($sym, GEX_CR, true)) return ['ok' => false, 'why' => 'crypto_only'];
+    $cf = GEX_DIR . "/flows_$sym.json";
+    if (is_file($cf) && time() - filemtime($cf) < 60) { $c = json_decode((string)file_get_contents($cf), true); if ($c) return $c; }
+    $j = gex_get("https://www.deribit.com/api/v2/public/get_last_trades_by_currency?currency=$sym&kind=option&count=1000&sorting=desc", ['Accept: application/json']);
+    $mon = ['JAN' => 1, 'FEB' => 2, 'MAR' => 3, 'APR' => 4, 'MAY' => 5, 'JUN' => 6, 'JUL' => 7, 'AUG' => 8, 'SEP' => 9, 'OCT' => 10, 'NOV' => 11, 'DEC' => 12];
+    $out = [];
+    foreach ($j['result']['trades'] ?? [] as $t) {
+        if (!preg_match('/^[A-Z]+-(\d{1,2})([A-Z]{3})(\d{2})-(\d+(?:d\d+)?)-([CP])$/', (string)$t['instrument_name'], $m)) continue;
+        $ix = (float)($t['index_price'] ?? 0); $prem = (float)$t['price'] * $ix * (float)$t['amount'];
+        $out[] = ['t' => intdiv((int)$t['timestamp'], 1000), 'k' => (float)str_replace('d', '.', $m[4]), 'cp' => $m[5], 'exp' => sprintf('20%02d-%02d-%02d', $m[3], $mon[$m[2]] ?? 0, $m[1]),
+                  'side' => $t['direction'] ?? '', 'size' => (float)$t['amount'], 'prem' => round($prem), 'iv' => (float)($t['iv'] ?? 0), 'ix' => $ix, 'block' => !empty($t['block_trade_id'])];
+    }
+    if (!$out) return ['ok' => false, 'why' => 'unavailable'];
+    $from = min(array_column($out, 't'));
+    usort($out, fn($a, $b) => $b['prem'] <=> $a['prem']);
+    $res = ['ok' => true, 'symbol' => $sym, 'from' => $from, 'to' => time(), 'n' => count($out), 'top' => array_slice($out, 0, 40),
+            'buy_prem' => round(array_sum(array_map(fn($x) => $x['side'] === 'buy' ? $x['prem'] : 0, $out))), 'sell_prem' => round(array_sum(array_map(fn($x) => $x['side'] === 'sell' ? $x['prem'] : 0, $out)))];
+    @file_put_contents($cf, json_encode($res), LOCK_EX);
+    return $res;
 }
