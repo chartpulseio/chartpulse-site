@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gamma Exposure (GEX) Scanner: SPY, QQQ, NIFTY, BANKNIFTY · ChartPulse</title>
+<meta name="description" content="Free live gamma exposure (GEX) dashboard: zero gamma flip, call wall, put wall, vanna, charm, max pain and expected move for SPY, QQQ, IWM, NIFTY and BANKNIFTY from real option chains.">
+<link rel="canonical" href="https://chartpulse.io/scanners/gex/">
+<meta property="og:title" content="Gamma Exposure (GEX) Scanner · ChartPulse">
+<meta property="og:description" content="Zero gamma, call/put walls, vanna, charm and dealer hedging for US and Indian index options. Free.">
+<meta property="og:url" content="https://chartpulse.io/scanners/gex/"><meta property="og:image" content="https://chartpulse.io/static/og.jpg">
+<meta name="theme-color" content="#050506">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="/static/v2/sitehead.css?v=8">
+<script defer src="/static/v2/sitehead.js?v=24"></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"ChartPulse GEX Scanner","url":"https://chartpulse.io/scanners/gex/","applicationCategory":"FinanceApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@type":"Organization","name":"ChartPulse"}}</script>
+<style>
+:root{--bg:#050506;--pn:#0d0e11;--ln:#1d2027;--tx:#ededef;--mu:#8a8f9c;--up:#22ab94;--dn:#f7525f;--au:#f4b740;--bl:#5b8cff}
+.gx{max-width:1320px;margin:0 auto;padding:18px 16px 60px;color:var(--tx);font-family:'IBM Plex Sans',system-ui,sans-serif}
+.gx h1{font-size:26px;margin:4px 0 2px;font-weight:700}.gx h1 b{color:var(--au)}
+.gx .sub{color:var(--mu);font-size:14px;margin:0 0 14px}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.chip{background:var(--pn);border:1px solid var(--ln);color:var(--tx);padding:7px 12px;border-radius:8px;cursor:pointer;font:500 13px 'IBM Plex Mono',monospace}
+.chip.on{border-color:var(--au);color:var(--au);box-shadow:0 0 0 1px var(--au) inset}
+.chip small{color:var(--mu);margin-left:4px}.sep{width:1px;height:24px;background:var(--ln);margin:0 4px}
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:14px}
+.bcard{background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:10px 12px;cursor:pointer}
+.bcard:hover{border-color:#333}.bcard .s{font:600 14px 'IBM Plex Mono'}.bcard .r{font-size:12px;margin-top:4px}
+.pos{color:var(--up)}.neg{color:var(--dn)}.mu{color:var(--mu)}
+.kp{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:10px 0}
+.k{background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:10px 12px}
+.k .l{color:var(--mu);font-size:11px;text-transform:uppercase;letter-spacing:.06em}.k .v{font:600 18px 'IBM Plex Mono';margin-top:3px}
+.k .h{color:var(--mu);font-size:11px;margin-top:2px}
+.sum{background:linear-gradient(90deg,rgba(244,183,64,.08),transparent);border:1px solid var(--ln);border-left:3px solid var(--au);border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.55}
+.grid{display:grid;grid-template-columns:1.25fr 1fr;gap:12px;margin-top:12px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.pn{background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:12px}
+.pn h3{margin:0 0 8px;font-size:14px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.pn h3 span{color:var(--mu);font-weight:400;font-size:12px}
+canvas{width:100%;display:block}
+.tabs{display:flex;gap:6px}.tabs .chip{padding:4px 9px;font-size:11px}
+.note{color:var(--mu);font-size:12px;line-height:1.6;margin-top:18px}
+.err{padding:30px;text-align:center;color:var(--mu)}
+.live{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--up);margin-right:6px;animation:p 1.6s infinite}
+@keyframes p{50%{opacity:.25}}
+table.lv{width:100%;border-collapse:collapse;font:12px 'IBM Plex Mono'}table.lv td{padding:5px 6px;border-bottom:1px solid var(--ln)}table.lv td:last-child{text-align:right}
+</style>
+</head>
+<body data-page="gex">
+<header class="site-head"></header>
+<main class="gx">
+  <h1>Gamma Exposure <b>(GEX)</b> Scanner</h1>
+  <p class="sub"><span class="live"></span>Dealer positioning from real option chains: US (SPY, QQQ, IWM, mega-caps) and India (NIFTY, BANKNIFTY, FINNIFTY). Refreshes every 60 s.</p>
+
+  <div class="board" id="board"></div>
+
+  <div class="bar" id="syms"></div>
+  <div class="bar">
+    <span class="mu" style="font-size:12px">Expiries:</span>
+    <button class="chip on" data-m="all">All (45d)</button><button class="chip" data-m="week">This week</button><button class="chip" data-m="0dte">Nearest / 0DTE</button>
+    <span class="sep"></span><span class="mu" id="stamp" style="font-size:12px"></span>
+  </div>
+
+  <div id="out"><div class="err">Loading…</div></div>
+
+  <p class="note"><b>How to read it.</b> Positive gamma (price above the flip): dealers hedge against the move, so ranges hold and dips get bought. Negative gamma (below the flip): dealers hedge with the move, so breaks extend and volatility expands. The call wall is the strike with the most positive call gamma (often resistance); the put wall is the most negative put gamma (often support). Vanna shows how dealer deltas shift if implied volatility moves; charm shows the delta drift as time passes, strongest into expiry.<br>
+  <b>Method.</b> Exposure = gamma × open interest × contract size × spot² × 1%, calls positive and puts negative (the standard assumption that customers buy calls and puts and dealers take the other side). It is a model of positioning, not a certainty. Open interest updates once a day; US option quotes use Alpaca's indicative feed. Information only, not investment advice.</p>
+</main>
+<script>
+(()=>{
+const US=['SPY','QQQ','IWM','AAPL','NVDA','TSLA','MSFT','AMZN','META','GOOGL','AMD'],IN=['NIFTY','BANKNIFTY','FINNIFTY'];
+let sym=(location.hash.slice(1)||'SPY').toUpperCase(),mode='all',view='gex',D=null;
+const $=s=>document.querySelector(s),fmt=(v,d=2)=>v==null?'—':(+v).toLocaleString('en-US',{maximumFractionDigits:d});
+const big=v=>{if(v==null)return'—';const a=Math.abs(v),s=v<0?'-':'';return s+(a>=1e9?(a/1e9).toFixed(2)+'B':a>=1e6?(a/1e6).toFixed(1)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':a.toFixed(0))};
+const cur=()=>D&&D.market==='IN'?'₹':'$';
+function chips(){$('#syms').innerHTML=US.map(s=>`<button class="chip${s===sym?' on':''}" data-s="${s}">${s}<small>US</small></button>`).join('')+'<span class="sep"></span>'+IN.map(s=>`<button class="chip${s===sym?' on':''}" data-s="${s}">${s}<small>IN</small></button>`).join('')}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-s],[data-m],[data-v]');if(!b)return;
+ if(b.dataset.s){sym=b.dataset.s;location.hash=sym;chips();load()}
+ if(b.dataset.m){mode=b.dataset.m;document.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b));load()}
+ if(b.dataset.v){view=b.dataset.v;render()}});
+async function board(){try{const j=await(await fetch('/gex_api.php?r=board')).json();if(!j.ok)return;
+ $('#board').innerHTML=j.rows.map(r=>`<div class="bcard" data-s="${r.symbol}"><div class="s">${r.symbol} <span class="${r.regime==='positive'?'pos':'neg'}" style="float:right;font-size:11px">${r.regime==='positive'?'+γ RANGE':'−γ VOLATILE'}</span></div>
+ <div class="r mu">Spot <b style="color:var(--tx)">${fmt(r.spot)}</b> · Flip ${fmt(r.zero_gamma)}</div><div class="r mu">CW <span class="pos">${fmt(r.call_wall)}</span> · PW <span class="neg">${fmt(r.put_wall)}</span></div></div>`).join('')}catch(e){}}
+async function load(){try{const r=await fetch(`/gex_api.php?s=${sym}&m=${mode}`);D=await r.json();if(!D.ok)throw 0;render()}catch(e){$('#out').innerHTML='<div class="err">Data for this symbol is temporarily unavailable. Sorry for the inconvenience.</div>'}}
+function render(){const d=D,c=cur(),S=d.spot;
+ $('#stamp').textContent=`${d.symbol} · ${new Date(d.ts*1000).toLocaleTimeString()}${d.stale?' · cached':''}`;
+ const dist=v=>v==null?'':`${((v/S-1)*100).toFixed(2)}% from spot`;
+ const K=[['Spot',fmt(S),d.market==='IN'?'NSE index':'Last trade'],['Regime',d.regime==='positive'?'<span class=pos>Positive γ</span>':'<span class=neg>Negative γ</span>',d.regime==='positive'?'Mean-reverting':'Trend / vol expansion'],
+ ['Zero gamma flip',fmt(d.zero_gamma),dist(d.zero_gamma)],['Call wall','<span class=pos>'+fmt(d.call_wall)+'</span>',dist(d.call_wall)],['Put wall','<span class=neg>'+fmt(d.put_wall)+'</span>',dist(d.put_wall)],
+ ['Net GEX / 1%',`<span class="${d.net_gex>=0?'pos':'neg'}">${c}${big(d.net_gex)}</span>`,'Dealer hedge value'],['Dealer flow on +1%',`<span class="${d.hedge_per_1pct>=0?'pos':'neg'}">${d.hedge_per_1pct>=0?'Buy ':'Sell '}${c}${big(Math.abs(d.hedge_per_1pct))}</span>`,'Estimated hedge'],
+ ['Net vanna',`${c}${big(d.net_vanna)}`,'Δ$ per +1 IV pt'],['Net charm',`${c}${big(d.net_charm)}`,'Δ$ drift per day'],['Max pain',fmt(d.max_pain),d.near_expiry||''],['Expected move',d.expected_move?'±'+fmt(d.expected_move):'—',d.expected_move?`${fmt(S-d.expected_move)} – ${fmt(S+d.expected_move)}`:''],['Put/Call OI',fmt(d.pcr_oi),'Vol P/C '+fmt(d.pcr_vol)]];
+ $('#out').innerHTML=`<div class="sum">${d.summary}</div><div class="kp">${K.map(k=>`<div class="k"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="h">${k[2]}</div></div>`).join('')}</div>
+ <div class="grid"><div class="pn"><h3>Exposure by strike <div class="tabs">${['gex','split','vanna','charm','oi'].concat(d.market==='IN'?['doi']:[]).map(v=>`<button class="chip${v===view?' on':''}" data-v="${v}">${{gex:'Net GEX',split:'Call/Put',vanna:'Vanna',charm:'Charm',oi:'OI',doi:'OI change'}[v]}</button>`).join('')}</div></h3><canvas id="cS"></canvas></div>
+ <div><div class="pn"><h3>Gamma profile <span>total GEX if spot moves</span></h3><canvas id="cP" height="230"></canvas></div>
+ <div class="pn" style="margin-top:12px"><h3>Intraday <span>spot vs flip & walls (today)</span></h3><canvas id="cH" height="200"></canvas></div>
+ <div class="pn" style="margin-top:12px"><h3>Key levels</h3><table class="lv">${levels(d)}</table></div></div></div>`;
+ strikes();profile();hist()}
+function levels(d){const L=[['Call wall',d.call_wall,'pos'],['Major γ strike',d.major_level,''],['Zero gamma',d.zero_gamma,''],['Spot',d.spot,''],['Max pain',d.max_pain,''],['Put wall',d.put_wall,'neg']].filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]);
+ return L.map(x=>`<tr><td class="${x[2]}">${x[0]}</td><td>${fmt(x[1])}</td></tr>`).join('')}
+function cv(id,h){const c=document.getElementById(id),r=devicePixelRatio||1,w=c.clientWidth;h=h||+c.getAttribute('height');c.width=w*r;c.height=h*r;c.style.height=h+'px';const x=c.getContext('2d');x.scale(r,r);x.font='11px IBM Plex Mono';return[x,w,h]}
+function strikes(){const d=D,st=d.strikes,f={gex:x=>[x.gex],split:x=>[x.cg,x.pg],vanna:x=>[x.vanna],charm:x=>[x.charm],oi:x=>[x.coi,-x.poi],doi:x=>[x.doi]}[view];
+ const h=Math.max(320,st.length*13+30),[x,w]=cv('cS',h),L=64,R=w-10,mid=(L+R)/2;let mx=1;st.forEach(s=>f(s).forEach(v=>mx=Math.max(mx,Math.abs(v))));
+ const bh=(h-24)/st.length,yOf=k=>{let i=st.findIndex(s=>s.k>=k);if(i<0)i=st.length;return h-12-(i+.5)*bh};
+ x.strokeStyle='#2a2d35';x.beginPath();x.moveTo(mid,6);x.lineTo(mid,h-6);x.stroke();
+ st.forEach((s,i)=>{const y=h-12-(i+1)*bh;f(s).forEach(v=>{x.fillStyle=v>=0?'#22ab94':'#f7525f';const ww=v/mx*(R-mid);x.fillRect(v>=0?mid:mid+ww,y+1,Math.abs(ww),Math.max(1,bh-2))});
+  if(st.length<40||i%2===0){x.fillStyle='#8a8f9c';x.fillText(fmt(s.k),4,y+bh/2+4)}});
+ const line=(k,col,t)=>{if(k==null)return;const y=yOf(k);x.strokeStyle=col;x.setLineDash([4,3]);x.beginPath();x.moveTo(L,y);x.lineTo(R,y);x.stroke();x.setLineDash([]);x.fillStyle=col;x.fillText(t+' '+fmt(k),R-110,y-3)};
+ line(d.spot,'#ededef','SPOT');line(d.zero_gamma,'#f4b740','FLIP');line(d.call_wall,'#22ab94','CW');line(d.put_wall,'#f7525f','PW')}
+function profile(){const p=D.profile,[x,w,h]=cv('cP'),xs=p.map(q=>q[0]),ys=p.map(q=>q[1]),x0=Math.min(...xs),x1=Math.max(...xs),m=Math.max(1,...ys.map(Math.abs));
+ const X=v=>8+(v-x0)/(x1-x0)*(w-16),Y=v=>h/2-v/m*(h/2-14);x.strokeStyle='#2a2d35';x.beginPath();x.moveTo(0,h/2);x.lineTo(w,h/2);x.stroke();
+ for(let i=1;i<p.length;i++){x.strokeStyle=p[i][1]>=0?'#22ab94':'#f7525f';x.lineWidth=2;x.beginPath();x.moveTo(X(p[i-1][0]),Y(p[i-1][1]));x.lineTo(X(p[i][0]),Y(p[i][1]));x.stroke()}x.lineWidth=1;
+ const v=(k,c,t)=>{if(k==null||k<x0||k>x1)return;x.strokeStyle=c;x.setLineDash([3,3]);x.beginPath();x.moveTo(X(k),4);x.lineTo(X(k),h-4);x.stroke();x.setLineDash([]);x.fillStyle=c;x.fillText(t,X(k)+3,14)};
+ v(D.spot,'#ededef','SPOT');v(D.zero_gamma,'#f4b740','FLIP');x.fillStyle='#8a8f9c';x.fillText(fmt(x0,0),4,h-4);x.fillText(fmt(x1,0),w-50,h-4)}
+function hist(){const H=D.history||[],[x,w,h]=cv('cH');if(H.length<2){x.fillStyle='#8a8f9c';x.fillText('Builds up through the session (snapshot every 2 min).',10,h/2);return}
+ const vals=H.flatMap(q=>[q.s,q.f,q.cw,q.pw]).filter(v=>v!=null),lo=Math.min(...vals),hi=Math.max(...vals),t0=H[0].t,t1=H[H.length-1].t;
+ const X=t=>8+(t-t0)/Math.max(1,t1-t0)*(w-16),Y=v=>h-10-(v-lo)/Math.max(1e-9,hi-lo)*(h-20);
+ const ser=(k,c,dash)=>{x.strokeStyle=c;x.setLineDash(dash||[]);x.beginPath();let st=0;H.forEach(q=>{if(q[k]==null)return;st?x.lineTo(X(q.t),Y(q[k])):x.moveTo(X(q.t),Y(q[k]));st=1});x.stroke();x.setLineDash([])};
+ ser('cw','#22ab94',[4,3]);ser('pw','#f7525f',[4,3]);ser('f','#f4b740',[2,2]);x.lineWidth=2;ser('s','#ededef');x.lineWidth=1}
+chips();board();load();setInterval(load,60000);setInterval(board,120000);addEventListener('resize',()=>D&&render());
+})();
+</script>
+</body>
+</html>

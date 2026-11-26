@@ -32,6 +32,7 @@
       { t: "Liquidation Squeeze Scanner", d: "Crowded longs or shorts at a key zone, and squeezes starting", href: "/scanners/squeeze/" }
     ] }] },
     { t: "Binary Scanner", href: "/scanners/binary/" },
+    { t: "GEX", href: "/scanners/gex/" },
     { t: "AI Forecast", cols: [{ items: [
       { t: "Next Candle AI", d: "Four AI forecast models guess the next 5-minute candle. For fun, every guess graded", href: "/scanners/next-candle/" },
       { t: "24-Hour AI Forecast", d: "Likely price path and range for the next 24 hours, refreshed every hour", href: "/scanners/forecast-24h/" },

@@ -74,6 +74,7 @@ RewriteRule ^reversal\.html$                             /movers/               
 RewriteRule ^scanners/godfather/?$                       /godfather.html              [L]
 RewriteRule ^scanners/squeeze/?$                         /squeeze.html                [L]
 RewriteRule ^scanners/crypto-arbitrage/?$                /crypto-arbitrage.html       [L]
+RewriteRule ^scanners/gex/?$                             /gex.html                    [L]
 RewriteRule ^scanners/order-flow/?$                      /order-flow.html             [L]
 RewriteRule ^scanners/order-flow/([A-Za-z0-9]{1,15})/?$     /order-flow-coin.php?c=$1    [L,QSA]
 RewriteRule ^scanners/binary/?$                          /binary.html                 [L]
