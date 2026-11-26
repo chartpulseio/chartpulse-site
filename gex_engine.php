@@ -358,7 +358,7 @@ function gex_candles(string $sym): array {
     try {
         if (isset(GEX_METAL[$sym]) && is_file(__DIR__ . '/torus_engine.php')) {
             require_once __DIR__ . '/torus_engine.php';
-            foreach (GEX_METAL[$sym]['src'] as $y) { $f = t_m5($y); if ($f && !empty($f['t'])) { foreach ($f['t'] as $i => $tt) if ($f['c'][$i] !== null) $out[] = [(int)$tt, (float)$f['o'][$i], (float)$f['h'][$i], (float)$f['l'][$i], (float)$f['c'][$i], (float)($f['v'][$i] ?? 0)]; break; } }
+            foreach (GEX_METAL[$sym]['src'] as $y) { $f = t_m5($y); if ($f && !empty($f['t'])) { foreach ($f['t'] as $i => $tt) if ($f['c'][$i] !== null) $out[] = [intdiv((int)$tt, 300) * 300, (float)$f['o'][$i], (float)$f['h'][$i], (float)$f['l'][$i], (float)$f['c'][$i], (float)($f['v'][$i] ?? 0)]; break; } }
         }
         if ($out) {}
         elseif ($mk === 'US') {
@@ -460,7 +460,10 @@ function gex_last(string $sym): ?array {
     elseif ($mk === 'US') { $h = gex_alpaca_hdr(); $j = $h ? gex_get("https://data.alpaca.markets/v2/stocks/$sym/trades/latest?feed=iex", $h) : null; $p = (float)($j['trade']['p'] ?? 0); if (!empty($j['trade']['t'])) $t = strtotime($j['trade']['t']); }
     elseif ($mk === 'CR') { $j = gex_get("https://www.deribit.com/api/v2/public/ticker?instrument_name=$sym-PERPETUAL", ['Accept: application/json']); $p = (float)($j['result']['last_price'] ?? 0); $t = intdiv((int)($j['result']['timestamp'] ?? time() * 1000), 1000); }
     else { $h = gex_upstox_hdr(); $k = GEX_IN[$sym]['key']; $j = $h ? gex_get('https://api.upstox.com/v2/market-quote/ltp?instrument_key=' . rawurlencode($k), $h) : null;
-           foreach ($j['data'] ?? [] as $v) { $p = (float)($v['last_price'] ?? 0); break; } }
+           foreach ($j['data'] ?? [] as $v) { $p = (float)($v['last_price'] ?? 0); break; }
+           // Upstox LTP carries no time: outside NSE hours (Mon-Fri 09:15-15:30 IST) use the last candle's time so the chart shows "closed"
+           $z = new DateTime('now', new DateTimeZone('Asia/Kolkata')); $hm = (int)$z->format('Hi'); $wd = (int)$z->format('N');
+           if ($wd > 5 || $hm < 915 || $hm > 1530) { $c = gex_candles($sym); if ($c) $t = (int)end($c)[0]; } }
     if ($p <= 0) return null;
     $r = ['p' => $p, 't' => $t, 'now' => time()];
     @file_put_contents($cf, json_encode($r), LOCK_EX);
