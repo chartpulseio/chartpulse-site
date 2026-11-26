@@ -18,6 +18,8 @@ Owner-approved update 26 Nov 2026 (unlocked for it, then re-locked): GEX label o
 
 Owner-approved update 26 Nov 2026, 22:56 IST (owner asked for it): the Day Drive symbol detail page embeds the GEX chart (iframe /scanners/gex/?embed=1#SYM) with the regime chip, call/put wall and zero gamma, for symbols that have a GEX label. Display only; no signal, filter or ranking change.
 
+Owner decision 26 Nov 2026, 23:50 IST (option A): trend lines v3 (tl_engine.php: multi-level zigzag, wick anchors, sweeps, body/2-close break, 20-year history via tl3_long) is the ONLY trend-line engine; v1 and v2 were removed. Day Drive reads its daily line from it through tl_row, so its bounce rows follow v3 lines. No Day Drive file changed.
+
 These files must stay byte-identical to the commit that made that change unless the owner explicitly asks for a Day Drive change:
 
     dd_engine.php    65292eb5e406...

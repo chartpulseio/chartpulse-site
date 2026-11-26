@@ -12,9 +12,9 @@
   function chart(f) {
     const b = f.bars, n = b.c.length, tot = n + EXT, cw = (W - PL - PR) / tot;
     const X = i => PL + (i + 0.5) * cw;
-    const lv = (L, i) => L.p1 + L.slope * (i - L.i1);
+    const lv = (L, i) => (L.ly != null) ? (L.log ? Math.exp(L.ly + L.ls * (i - L.i1)) : L.ly + L.ls * (i - L.i1)) : L.p1 + L.slope * (i - L.i1);
     let lo = Math.min(...b.l), hi = Math.max(...b.h);
-    [f.res, f.sup].forEach(L => { if (!L) return; [L.i1, n - 1 + EXT].forEach(i => { const v = lv(L, i); if (isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); } }); });
+    ((f.lines && f.lines.length) ? f.lines : [f.res, f.sup]).forEach(L => { if (!L) return; [Math.max(L.i1, 0), n - 1 + EXT].forEach(i => { const v = lv(L, i); if (isFinite(v)) { lo = Math.min(lo, v); hi = Math.max(hi, v); } }); });
     const span = hi - lo || 1; const bLo = Math.min(...b.l), bHi = Math.max(...b.h), bs = bHi - bLo || 1;
     lo = Math.max(lo, bLo - bs * 0.35) - span * 0.03; hi = Math.min(hi, bHi + bs * 0.35) + span * 0.03;
     const Y = v => PT + (hi - v) / (hi - lo) * (H - PT - PB);
@@ -28,25 +28,24 @@
     }
     const clip = `tlc${Math.random().toString(36).slice(2, 8)}`;
     s += `<clipPath id="${clip}"><rect x="${PL}" y="${PT}" width="${W - PL - PR}" height="${H - PT - PB}"/></clipPath><g clip-path="url(#${clip})">`;
-    [["res", f.res], ["sup", f.sup]].forEach(([k, L]) => {
+    const LW = { macro: 2.6, major: 1.7, minor: 1.1 };
+    const drawn = (f.lines && f.lines.length) ? f.lines.map(L => [L.side > 0 ? "res" : "sup", L]) : [["res", f.res], ["sup", f.sup]];
+    drawn.forEach(([k, L]) => {
+      if (!L) return;
+      const i0 = Math.max(L.i1, 0), w = LW[L.lvl] || 1.5, dash = L.lvl === "minor" ? ' stroke-dasharray="5 4"' : "";
+      s += `<line class="tlx-l ${k} ${L.state}" style="stroke-width:${w}px"${dash} x1="${X(i0).toFixed(1)}" y1="${Y(lv(L, i0)).toFixed(1)}" x2="${X(n - 1).toFixed(1)}" y2="${Y(lv(L, n - 1)).toFixed(1)}"/>`
+        + `<line class="tlx-l ${k} ext" x1="${X(n - 1).toFixed(1)}" y1="${Y(lv(L, n - 1)).toFixed(1)}" x2="${X(n - 1 + EXT).toFixed(1)}" y2="${Y(lv(L, n - 1 + EXT)).toFixed(1)}"/>`;
+      [[L.i1, L.p1], [L.i2, L.p2]].forEach(([i, p]) => { if (i >= 0) s += `<circle class="tlx-p ${k}" cx="${X(i).toFixed(1)}" cy="${Y(p).toFixed(1)}" r="3.2"/>`; });
+      if (L.lvl) s += `<text x="${(X(n - 1) - 4).toFixed(1)}" y="${(Y(lv(L, n - 1)) - 4).toFixed(1)}" text-anchor="end" style="font:9px IBM Plex Mono,monospace;fill:${k === "res" ? "#F7525F" : "#22AB94"}">${L.lvl.toUpperCase()}${L.sweeps ? " · " + L.sweeps + " sweeps" : ""}</text>`;
+    });
+    [].forEach(([k, L]) => {
       if (!L) return;
       const xa = X(L.i1), ya = Y(lv(L, L.i1)), xe = X(n - 1), ye = Y(lv(L, n - 1)), xf = X(n - 1 + EXT), yf = Y(lv(L, n - 1 + EXT));
       s += `<line class="tlx-l ${k} ${L.state}" x1="${xa.toFixed(1)}" y1="${ya.toFixed(1)}" x2="${xe.toFixed(1)}" y2="${ye.toFixed(1)}"/>`
         + `<line class="tlx-l ${k} ext" x1="${xe.toFixed(1)}" y1="${ye.toFixed(1)}" x2="${xf.toFixed(1)}" y2="${yf.toFixed(1)}"/>`
         + `<circle class="tlx-p ${k}" cx="${xa.toFixed(1)}" cy="${ya.toFixed(1)}" r="3.2"/><circle class="tlx-p ${k}" cx="${X(L.i2).toFixed(1)}" cy="${Y(L.p2).toFixed(1)}" r="3.2"/>`;
     });
-    // v2 trap-aware lines (body-based, wicks = sweeps): dashed orange, best line bold, alternatives faint
-    if (f.v2) {
-      const lv2 = (L, i) => L.log ? Math.exp(L.ly + L.ls * (i - L.i1)) : L.ly + L.ls * (i - L.i1);
-      ["res", "sup"].forEach(k => (f.v2[k] || []).forEach((L, j) => {
-        const i0 = Math.max(L.i1, -EXT * 4), xa = X(i0), ya = Y(lv2(L, i0)), xf = X(n - 1 + EXT), yf = Y(lv2(L, n - 1 + EXT));
-        s += `<line x1="${xa.toFixed(1)}" y1="${ya.toFixed(1)}" x2="${xf.toFixed(1)}" y2="${yf.toFixed(1)}" stroke="#f59e2c" stroke-width="${j ? 1 : 2}" stroke-dasharray="${j ? "2 4" : "7 4"}" opacity="${j ? 0.45 : 0.95}"/>`;
-        if (!j) [[L.i1, L.p1], [L.i2, L.p2]].forEach(([i, p]) => { if (i >= 0) s += `<circle cx="${X(i).toFixed(1)}" cy="${Y(p).toFixed(1)}" r="3.4" fill="none" stroke="#f59e2c" stroke-width="1.6"/>`; });
-      }));
-    }
     s += `</g>`;
-    if (f.v2) { const r = (f.v2.res || [])[0], u = (f.v2.sup || [])[0], t = (L, nm) => L ? `${nm} ${L.touches}t+${L.sweeps}sw ${L.state}` : "";
-      s += `<text x="${PL + 4}" y="${PT + 11}" fill="#f59e2c" style="font:10px IBM Plex Mono,monospace">- - v2 body/trap-aware ${esc([t(r, "R"), t(u, "S")].filter(Boolean).join(" · "))}</text>`; }
     [["res", f.res], ["sup", f.sup]].forEach(([k, L]) => {
       if (!L) return; const y = Math.min(H - PB - 2, Math.max(PT + 8, Y(L.now)));
       s += `<rect class="tlx-tag ${k}" x="${W - PR + 2}" y="${(y - 8).toFixed(1)}" width="${PR - 4}" height="16" rx="3"/><text class="tlx-tagt" x="${W - PR + 6}" y="${(y + 3.5).toFixed(1)}">${fmt(L.now, f.dec)}</text>`;

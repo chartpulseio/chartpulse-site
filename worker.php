@@ -37,6 +37,8 @@ try {
     @file_put_contents($gf, (string)($gi % 1000));
     try { gex_alerts_step(); } catch (Throwable $e) {}   // Telegram: gamma flip lost/regained, price at call/put wall
 } catch (Throwable $e) {}
+// Trend lines v3 (26 Nov 2026): 20-year daily history for the whole universe, a few symbols per call, refreshed every 3 days
+try { require_once __DIR__ . '/tl_engine.php'; tl3_fill(4, 5.0); } catch (Throwable $e) {}
 $scan = t_scan_load(); $due = count(t_due($scan, t_now()));
 @file_put_contents(T_DATA . '/worker_last.txt', date('c') . " steps $n due $due\n");
 echo json_encode(['ok' => 1, 'steps' => $n, 'due' => $due, 'gex' => $gx, 'ms' => (int)round((microtime(true) - $t0) * 1000)]);

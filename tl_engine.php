@@ -23,88 +23,116 @@ require_once __DIR__ . '/torus_engine.php';
 
 const TL_BARS = 140;     // bars read and drawn per timeframe
 const TL_TAIL = 3;       // the last bars are allowed to be beyond the line (that is the "broken" reading)
-const TL_TOL = 0.22;     // x ATR: a close this far through the line breaks it
-const TL_TOUCH = 0.35;   // x ATR: a swing point this close to the line is a touch
-const TL_FAR = 6.0;      // x ATR: a line further than this from price is not shown
 const TL_TFS = ['5m' => 300, '10m' => 600, '15m' => 900, '30m' => 1800, '1H' => 3600, '4H' => 14400, '1D' => 86400, '1W' => 604800];   // the symbol panel
 // The Trend Line Scanner page (owner, 11 Nov 2026): two views. 5m is drawn on the symbol page only -- its lines
 // break every few minutes and would flood the ranking.
 const TL_VIEWS = ['swing' => ['1W', '1D', '4H', '1H'], 'intra' => ['30m', '15m', '10m']];
 const TL_MTF = ['30m', '1H', '4H', '1D', '1W'];   // MTF trend strip; the bias needs 75%+ of the available ones (4/5, or 3/4 without 30m)
 const TL_TF_PTS = ['1W' => 10, '1D' => 9, '4H' => 8, '1H' => 6, '30m' => 6, '15m' => 5, '10m' => 4, '5m' => 2];
-const TL_PIV_MAX = 22;      // newest swing points tried per side (keeps the whole-universe scan fast)
 const TL_ROW_TTL = 180;     // a scanned symbol stays fresh this long (short: the list says what is touching NOW)
 const TL_BUDGET = 18;       // wall clock for one scan step
 
 function tl_dec(float $px): int { $a = abs($px); return $a >= 1000 ? 2 : ($a >= 100 ? 2 : ($a >= 1 ? 4 : ($a >= 0.01 ? 5 : 8))); }
 function tl_px(float $v, int $d): string { return number_format($v, $d, '.', ','); }
 
-/** Swing highs / lows: higher (lower) than $k bars on the left, not lower (higher) than $k bars on the right. */
-function tl_pivots(array $F, int $n, int $k): array {
-    $H = []; $L = [];
-    for ($i = $k; $i < $n - $k; $i++) {
-        $h = $F['h'][$i]; $l = $F['l'][$i]; $ph = true; $pl = true;
-        for ($j = 1; $j <= $k; $j++) {
-            if ($F['h'][$i - $j] >= $h || $F['h'][$i + $j] > $h) $ph = false;
-            if ($F['l'][$i - $j] <= $l || $F['l'][$i + $j] < $l) $pl = false;
-            if (!$ph && !$pl) break;
-        }
-        if ($ph) $H[] = $i;
-        if ($pl) $L[] = $i;
+
+// ===========================================================================
+// Trend lines v3 (owner, 26 Nov 2026): the ONLY engine. Replaces v1 (fractal pairs) and v2 (body lines).
+// Research basis: claude.ai Project "HOST" -> reports "Auto trend line algorithm" (open-source + trader practice + academic).
+//  1. Swings on three levels with a zigzag: minor / major / macro. 1W: 8% / 15% / 30% on log price; other timeframes
+//     1.5 / 3 / 6 x ATR. Only confirmed swings (no repaint).
+//  2. A line joins two swings of the same level (wick extremes) -- the way a trader anchors at the major high / low.
+//     Log scale on 1W and 1D, linear below.
+//  3. Trap-aware: a wick through the line that closes back inside is a liquidity SWEEP, not a break. Between the anchors
+//     no candle BODY may cross the line. After the second anchor the line breaks on a close > 0.5 ATR beyond it or on two
+//     closes in a row beyond it; a line broken more than 30 bars ago is dropped (retest window).
+//  4. Touches = wick extremes within max(0.25 ATR, 0.3%) of the line, 3 bars apart; 3 needed (a weekly macro line spanning
+//     3+ years may stand on 2, marked unconfirmed). Too steep (> 0.9 ATR per bar) is dropped.
+//  5. Score: touches, swing level, span, recency, distance to price. Clean chart: one support + one resistance per level,
+//     near-duplicates across levels merged; the scanners read the single best line per side.
+// ===========================================================================
+const TL3_HIST = ['1W' => 1040, '1D' => 1250, '4H' => 600, '1H' => 500];   // bars read (20y weekly, 5y daily)
+const TL3_SHOW = ['1W' => 420, '1D' => 260];                                 // bars drawn on the panel (others: TL_BARS)
+const TL3_LVL = ['minor', 'major', 'macro'];
+
+/** Zigzag swing points. $thr(i) = reversal size needed from the extreme at bar i (in $Y units). Returns [[i, +1|-1], ...]. */
+function tl3_zigzag(array $YH, array $YL, int $n, callable $thr): array {
+    $P = []; $dir = 0; $hi = 0; $lo = 0;
+    for ($i = 1; $i < $n; $i++) {
+        if ($YH[$i] > $YH[$hi]) $hi = $i;
+        if ($YL[$i] < $YL[$lo]) $lo = $i;
+        if ($dir >= 0 && $hi < $i && $YH[$hi] - $YL[$i] >= $thr($hi)) { if ($dir === 0 || !$P || end($P)[0] !== $hi) $P[] = [$hi, 1]; $dir = -1; $lo = $i; continue; }
+        if ($dir <= 0 && $lo < $i && $YH[$i] - $YL[$lo] >= $thr($lo)) { if ($dir === 0 || !$P || end($P)[0] !== $lo) $P[] = [$lo, -1]; $dir = 1; $hi = $i; }
     }
-    return [$H, $L];
+    return $P;
 }
 
-/** Best line on one side. $side = +1 resistance (swing highs), -1 support (swing lows). */
-function tl_best(array $F, int $n, array $piv, int $side, float $atr): ?array {
-    $key = $side > 0 ? 'h' : 'l'; $m = count($piv);
-    if ($m < 2 || $atr <= 0) return null;
-    $tol = TL_TOL * $atr; $touchTol = TL_TOUCH * $atr; $px = (float)$F['c'][$n - 1];
-    $best = null; $minSpan = max(6, (int)round($n * 0.07));
-    for ($x = 0; $x < $m - 1; $x++) {
-        $a = $piv[$x]; $pa = (float)$F[$key][$a];
-        for ($y = $x + 1; $y < $m; $y++) {
-            $b = $piv[$y]; if ($b - $a < $minSpan) continue;
-            $pb = (float)$F[$key][$b]; $sl = ($pb - $pa) / ($b - $a);
-            if (abs($sl) > 0.9 * $atr) continue;                      // too steep to be a trend line
-            $now = $pa + $sl * ($n - 1 - $a);
-            if (abs($now - $px) > TL_FAR * $atr) continue;            // nowhere near price any more
-            $ok = true;
-            for ($i = $a + 1; $i < $n - TL_TAIL; $i++) {              // a close through the line kills it
-                $v = $pa + $sl * ($i - $a);
-                if ($side > 0 ? $F['c'][$i] > $v + $tol : $F['c'][$i] < $v - $tol) { $ok = false; break; }
+/** v3 lines for one timeframe's bars $G (n bars). Returns ['best' => [side => line|null], 'lines' => [...]] */
+function tl3_lines(string $tf, array $G, int $n, array $ATR): array {
+    $log = in_array($tf, ['1W', '1D'], true);
+    $Y = $log ? fn($p) => log(max((float)$p, 1e-12)) : fn($p) => (float)$p;
+    $P = $log ? fn($y) => exp($y) : fn($y) => $y;
+    $YH = array_map($Y, $G['h']); $YL = array_map($Y, $G['l']);
+    $mult = [1.5, 3.0, 6.0]; $pct = [0.08, 0.15, 0.30];
+    $lvl = [];   // index => [side => level]
+    foreach ([0, 1, 2] as $L) {
+        $thr = $tf === '1W' ? fn($i) => log(1 + $pct[$L]) : ($log ? fn($i) => log(1 + $mult[$L] * $ATR[$i] / max($G['c'][$i], 1e-12)) : fn($i) => $mult[$L] * $ATR[$i]);
+        foreach (tl3_zigzag($YH, $YL, $n, $thr) as [$i, $s]) $lvl[$i][$s] = $L;
+    }
+    $px = (float)$G['c'][$n - 1]; $atr = (float)$ATR[$n - 1]; $out = []; $best = [1 => null, -1 => null];
+    foreach ([1, -1] as $side) {
+        $W = $side > 0 ? $G['h'] : $G['l']; $YW = $side > 0 ? $YH : $YL;
+        $perLevel = [];
+        foreach ([2, 1, 0] as $L) {
+            $piv = []; foreach ($lvl as $i => $s) if (($s[$side] ?? -1) >= $L && ($L > 0 || $i >= $n - 300)) $piv[] = $i;
+            sort($piv); $piv = array_slice($piv, -10); $m = count($piv);
+            $minSpan = max(6, (int)round([0.04, 0.06, 0.10][$L] * $n)); $top = null;
+            for ($x = 0; $x < $m - 1; $x++) for ($y = $x + 1; $y < $m; $y++) {
+                $a = $piv[$x]; $b = $piv[$y]; if ($b - $a < $minSpan) continue;
+                $ya = $YW[$a]; $sl = ($YW[$b] - $ya) / ($b - $a);
+                $vAt = fn($i) => $P($ya + $sl * ($i - $a));
+                $now = $vAt($n - 1);
+                if (abs($now - $vAt($n - 2)) > 0.9 * $atr) continue;                         // too steep
+                if (abs($now - $px) > ($L === 2 ? 12 : 8) * $atr) continue;                    // too far from price
+                $ok = true; $brk = null; $run = 0;
+                for ($i = $a + 1; $i < $n; $i++) {
+                    $v = $vAt($i); $at = (float)$ATR[$i];
+                    $body = $side > 0 ? max($G['o'][$i], $G['c'][$i]) - $v : $v - min($G['o'][$i], $G['c'][$i]);
+                    if ($i < $b) { if ($body > 0.1 * $at) { $ok = false; break; } continue; }     // no body through the line between the anchors
+                    $cl = ($G['c'][$i] - $v) * $side;
+                    $run = $cl > 0.1 * $at ? $run + 1 : 0;
+                    if ($cl > 0.5 * $at || $run >= 2) { $brk = $i; break; }                     // break: close > 0.5 ATR or 2 closes beyond
+                }
+                if (!$ok || ($brk !== null && $brk < $n - 30)) continue;                          // broken long ago: gone
+                $end = $brk ?? $n - 1; $touch = 0; $sweep = 0; $prev = -99; $last = $a;
+                for ($i = $a; $i <= $end; $i++) {
+                    if ($i - $prev < 3) continue;
+                    $v = $vAt($i); $tol = max(0.25 * $ATR[$i], 0.003 * $v);
+                    $d = ($W[$i] - $v) * $side;                                                    // > 0: wick beyond the line
+                    if (abs($d) <= $tol) { $touch++; $prev = $i; $last = $i; }
+                    elseif ($d > $tol && ($G['c'][$i] - $v) * $side <= 0) { $sweep++; $prev = $i; $last = $i; }
+                }
+                $span = $b - $a; $need = ($tf === '1W' && $L === 2 && $span >= 156) ? 2 : 3;
+                if ($touch + min($sweep, 1) < $need) continue;
+                $score = min($touch, 7) * 3.0 + min($sweep, 3) * 1.0 + ($span / $n) * 4.0 + $L * 2.5 + ($last / $n) * 2.0 - abs($now - $px) / max($atr, 1e-12) * 0.5;
+                if (!$top || $score > $top['score']) {
+                    $va = $vAt($a); $chord = ($now - $va) / max(1, $n - 1 - $a);
+                    $c = (float)$G['c'][$n - 1];
+                    $top = ['a' => $a, 'b' => $b, 'pa' => $va, 'pb' => $vAt($b), 'ly' => $ya, 'ls' => $sl, 'log' => $log, 'slope' => $chord, 'now' => $now,
+                            'touches' => $touch, 'sweeps' => $sweep, 'score' => $score, 'side' => $side, 'lvl' => TL3_LVL[$L], 'unconf' => $touch < 3,
+                            'state' => $brk !== null ? 'broken' : (abs($c - $now) <= 0.6 * $atr ? 'testing' : 'holding'),
+                            'dir' => (($now - $va) / $atr > 1.5) ? 'rising' : ((($now - $va) / $atr < -1.5) ? 'falling' : 'flat'),
+                            'dist_pct' => $c > 0 ? round(($now - $c) / $c * 100, 2) : 0.0, 'ag' => round(abs($c - $now) / max($atr, 1e-12), 2)];
+                }
             }
-            if (!$ok) continue;
-            $touch = 0; $last = $b; $prev = -99;
-            foreach ($piv as $c) {
-                if ($c < $a) continue;
-                if (abs((float)$F[$key][$c] - ($pa + $sl * ($c - $a))) <= $touchTol && $c - $prev >= 3) { $touch++; $last = $c; $prev = $c; }
-            }
-            // the latest bars touching the line count as one more (live) touch
-            $liveTouch = false;
-            for ($i = max($last + 3, $n - 4); $i < $n; $i++) {
-                $v = $pa + $sl * ($i - $a);
-                if ($side > 0 ? ($F['h'][$i] >= $v - $touchTol && $F['c'][$i] <= $v + $tol) : ($F['l'][$i] <= $v + $touchTol && $F['c'][$i] >= $v - $tol)) { $liveTouch = true; break; }
-            }
-            if ($liveTouch) { $touch++; $last = $n - 1; }
-            if ($touch < 2) continue;
-            $score = min($touch, 6) * 3.0 + (($n - 1 - $a) / $n) * 4.0 + ($last / $n) * 3.0 - (abs($now - $px) / $atr) * 0.6;
-            if ($best === null || $score > $best['score']) {
-                $best = ['a' => $a, 'pa' => $pa, 'b' => $b, 'pb' => $pb, 'slope' => $sl, 'now' => $now,
-                         'touches' => $touch, 'score' => $score, 'side' => $side];
+            if ($top) {   // merge near-duplicates across levels: the higher level wins
+                $dup = false; foreach ($perLevel as $q) if (abs($q['now'] - $top['now']) < 0.5 * $atr) $dup = true;
+                if (!$dup) $perLevel[] = $top;
             }
         }
+        foreach ($perLevel as $q) { $out[] = $q; if (!$best[$side] || $q['score'] > $best[$side]['score']) $best[$side] = $q; }
     }
-    if ($best === null) return null;
-    // direction over the window, in ATRs
-    $run = $best['slope'] * $n / $atr;
-    $best['dir'] = $run > 1.5 ? 'rising' : ($run < -1.5 ? 'falling' : 'flat');
-    // state from the last bars
-    $c = (float)$F['c'][$n - 1]; $d = ($c - $best['now']) * $side;   // > 0 = price is beyond the line
-    $best['state'] = $d > $tol ? 'broken' : (abs($c - $best['now']) <= 0.6 * $atr ? 'testing' : 'holding');
-    $best['dist_pct'] = $c > 0 ? round(($best['now'] - $c) / $c * 100, 2) : 0.0;
-    $best['ag'] = round(abs($c - $best['now']) / $atr, 2);   // distance from the line in ATRs
-    return $best;
+    return ['best' => $best, 'lines' => $out];
 }
 
 /** Pattern name from the two lines. */
@@ -166,39 +194,85 @@ function tl_text(string $tf, string $name, ?array $R, ?array $S, float $px, int 
 /** One timeframe. Returns null when there are not enough bars or no line holds. */
 function tl_frame(string $tf, array $F, bool $bars = true): ?array {
     $N = count($F['t'] ?? []); if ($N < 40) return null;
-    $n = min(TL_BARS, $N); $o = $N - $n; $G = [];
+    $n = min(TL3_HIST[$tf] ?? 400, $N); $o = $N - $n; $G = [];
     foreach (['t', 'o', 'h', 'l', 'c'] as $k) $G[$k] = array_map($k === 't' ? 'intval' : 'floatval', array_slice($F[$k], $o, $n));
-    $A = t_atr($F, 14); $atr = (float)$A[$N - 1]; if ($atr <= 0) return null;
-    [$PH, $PL] = tl_pivots($G, $n, 3);
-    if (count($PH) > TL_PIV_MAX) $PH = array_slice($PH, -TL_PIV_MAX);
-    if (count($PL) > TL_PIV_MAX) $PL = array_slice($PL, -TL_PIV_MAX);
-    $R = tl_best($G, $n, $PH, 1, $atr); $S = tl_best($G, $n, $PL, -1, $atr);
+    $A = t_atr($F, 14); $ATR = array_map('floatval', array_slice($A, $o, $n)); $atr = (float)end($ATR); if ($atr <= 0) return null;
+    // cache the heavy part (line search) per series; states and distances are recomputed from fresh bars
+    $ck = T_DATA . '/tl3c/' . md5($tf . '|' . $G['t'][0] . '|' . $G['o'][0] . '|' . $n . '|' . intdiv(time(), ['1W' => 21600, '1D' => 3600, '4H' => 900][$tf] ?? 300)) . '.json';
+    $V = is_file($ck) ? json_decode((string)file_get_contents($ck), true) : null;
+    if (!is_array($V)) { $V = tl3_lines($tf, $G, $n, $ATR); if (!is_dir(dirname($ck))) @mkdir(dirname($ck), 0755, true); @file_put_contents($ck, json_encode($V)); if (mt_rand(1, 300) === 1) foreach (glob(dirname($ck) . '/*.json') ?: [] as $f) if (filemtime($f) < time() - 86400) @unlink($f); }
+    $R = $V['best'][1] ?? $V['best']['1'] ?? null; $S = $V['best'][-1] ?? $V['best']['-1'] ?? null;
     // a support line above a resistance line is not a structure -- keep the stronger one
     if ($R && $S && $S['now'] >= $R['now'] && $R['state'] !== 'broken' && $S['state'] !== 'broken') { if ($R['score'] >= $S['score']) $S = null; else $R = null; }
     if (!$R && !$S) return null;
     $px = $G['c'][$n - 1]; $d = tl_dec($px);
     [$name, $lean] = tl_pattern($R, $S, $n);
-    $pub = function (?array $L) use ($d) {
+    $show = min(TL3_SHOW[$tf] ?? TL_BARS, $n); $off = $n - $show;
+    $pub = function (?array $L) use ($d, $off) {
         if (!$L) return null;
-        return ['i1' => $L['a'], 'p1' => round($L['pa'], $d + 1), 'i2' => $L['b'], 'p2' => round($L['pb'], $d + 1),
-                'slope' => $L['slope'], 'now' => round($L['now'], $d), 'touches' => $L['touches'],
+        return ['i1' => $L['a'] - $off, 'p1' => round($L['pa'], $d + 1), 'i2' => $L['b'] - $off, 'p2' => round($L['pb'], $d + 1),
+                'slope' => $L['slope'], 'log' => $L['log'], 'ly' => $L['ly'], 'ls' => $L['ls'], 'now' => round($L['now'], $d), 'touches' => $L['touches'],
+                'sweeps' => $L['sweeps'], 'lvl' => $L['lvl'], 'unconf' => $L['unconf'], 'side' => $L['side'],
                 'dir' => $L['dir'], 'state' => $L['state'], 'dist_pct' => $L['dist_pct'], 'ag' => $L['ag']];
     };
-    return ['tf' => $tf, 'pattern' => $name, 'lean' => $lean, 'dec' => $d, 'price' => round($px, $d), 'atr' => $atr,
-            'res' => $pub($R), 'sup' => $pub($S), 'text' => tl_text($tf, $name, $R, $S, $px, $d)]
-        + ($bars ? ['bars' => ['t' => $G['t'], 'o' => $G['o'], 'h' => $G['h'], 'l' => $G['l'], 'c' => $G['c']]] : []);
+    $res = ['tf' => $tf, 'pattern' => $name, 'lean' => $lean, 'dec' => $d, 'price' => round($px, $d), 'atr' => $atr,
+            'res' => $pub($R), 'sup' => $pub($S), 'text' => tl_text($tf, $name, $R, $S, $px, $d)];
+    if ($bars) {
+        $res['lines'] = array_map($pub, $V['lines'] ?? []);
+        $res['bars'] = ['t' => array_slice($G['t'], $off), 'o' => array_slice($G['o'], $off), 'h' => array_slice($G['h'], $off), 'l' => array_slice($G['l'], $off), 'c' => array_slice($G['c'], $off)];
+    }
+    return $res;
 }
 
 /** Every timeframe's bars for one symbol. 5m-based ones exist only where intraday bars are cached / fetched. */
-function tl_src(array $fr, ?array $F5): array {
+/** 20-year daily history (Yahoo), refreshed every 3 days by worker.php (tl3_fill); null when not cached yet. */
+function tl3_long(string $sym): ?array {
+    $f = T_DATA . '/tl3/' . preg_replace('/[^A-Za-z0-9._-]/', '_', $sym) . '.json';
+    if (!is_file($f)) return null; $j = json_decode((string)file_get_contents($f), true);
+    return (is_array($j) && !empty($j['t'])) ? $j : null;
+}
+/** Fetch / refresh the long daily history for a few symbols per call (oldest first). */
+function tl3_fill(int $max = 6, float $budget = 8.0): int {
+    $dir = T_DATA . '/tl3'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    $t0 = microtime(true); $done = 0; $syms = array_keys(t_symbols());
+    $pf = $dir . '/_idx.txt'; $i = (int)@file_get_contents($pf); $tries = 0;
+    while ($done < $max && $tries < count($syms) && microtime(true) - $t0 < $budget) {
+        $sym = $syms[$i % count($syms)]; $i++; $tries++;
+        $f = $dir . '/' . preg_replace('/[^A-Za-z0-9._-]/', '_', $sym) . '.json';
+        if (is_file($f) && time() - filemtime($f) < 3 * 86400) continue;
+        tl3_fetch($sym); $done++;
+    }
+    @file_put_contents($pf, (string)($i % 100000));
+    return $done;
+}
+/** One symbol's 20-year daily history into the cache (used by tl3_fill and, on demand, by the symbol page). */
+function tl3_fetch(string $sym): void {
+    $dir = T_DATA . '/tl3'; if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    $f = $dir . '/' . preg_replace('/[^A-Za-z0-9._-]/', '_', $sym) . '.json';
+    [$D] = t_parse(t_fetch(['d' => t_url($sym, '20y', '1d')])['d'] ?? null);
+    if ($D && count($D['t']) > 300) @file_put_contents($f, json_encode(['t' => $D['t'], 'o' => $D['o'], 'h' => $D['h'], 'l' => $D['l'], 'c' => $D['c'], 'v' => $D['v'] ?? []]));
+    else @touch($f);   // nothing usable: do not retry for 3 days
+}
+/** Long history under the fresh frames: older long bars + the frame's own (live) daily bars. */
+function tl3_merge(array $D, ?array $L): array {
+    if (!$L || empty($D['t'])) return $D;
+    $first = (int)$D['t'][0]; $out = ['t' => [], 'o' => [], 'h' => [], 'l' => [], 'c' => [], 'v' => []];
+    foreach ($L['t'] as $i => $t) { if ((int)$t >= $first - 43200) break; if ($L['c'][$i] === null || $L['h'][$i] === null) continue;
+        foreach (['t', 'o', 'h', 'l', 'c'] as $k) $out[$k][] = $k === 't' ? (int)$L[$k][$i] : (float)$L[$k][$i]; $out['v'][] = (float)($L['v'][$i] ?? 0); }
+    foreach ($D['t'] as $i => $t) { foreach (['t', 'o', 'h', 'l', 'c'] as $k) $out[$k][] = $D[$k][$i]; $out['v'][] = $D['v'][$i] ?? 0; }
+    return $out;
+}
+function tl_src(array $fr, ?array $F5, ?string $sym = null): array {
     $src = [];
     if (is_array($F5) && count($F5['t'] ?? []) >= 80) {
         $F5 = $F5 + ['v' => array_fill(0, count($F5['t']), 0)];
         $src['5m'] = $F5; $src['10m'] = t_resample($F5, 600); $src['15m'] = t_resample($F5, 900);
         if (count($F5['t']) >= 240) $src['30m'] = t_resample($F5, 1800);
     }
-    $src['1H'] = $fr['1H']; $src['4H'] = t_resample($fr['1H'], 14400); $src['1D'] = $fr['1D'];
-    $src['1W'] = t_weekly($fr['1D'], (string)($fr['tz'] ?? 'UTC'));
+    $src['1H'] = $fr['1H']; $src['4H'] = t_resample($fr['1H'], 14400);
+    $DD = $sym ? tl3_merge($fr['1D'], tl3_long($sym)) : $fr['1D'];   // v3: up to 20 years when the long history is cached
+    $src['1D'] = $DD;
+    $src['1W'] = t_weekly($DD, (string)($fr['tz'] ?? 'UTC'));
     return $src;
 }
 
@@ -366,15 +440,14 @@ function tl_build(string $sym): ?array {
     $c = t_read_json($p, null);
     if (is_array($c) && t_now() - (int)($c['at'] ?? 0) < 60) return $c;
     $fr = t_read_frames($sym); if (!$fr) return null;
-    $src = tl_src($fr, t_m5($sym) ?: ($fr['5m'] ?? null));
+    $lf = T_DATA . '/tl3/' . preg_replace('/[^A-Za-z0-9._-]/', '_', $sym) . '.json'; if (!is_file($lf)) tl3_fetch($sym);   // symbol page: long history now, not after the background fill
+    $src = tl_src($fr, t_m5($sym) ?: ($fr['5m'] ?? null), $sym);
     $Z = tl_zones($fr); $A = t_atr($fr['1D'], 14); $atrD = (float)end($A); $mtf = tl_mtf($src);
     $out = []; $lean = ['up' => 0, 'down' => 0, 'squeeze' => 0, 'side' => 0, 'none' => 0]; $sigs = []; $X = [];
     foreach (TL_TFS as $tf => $_) {
         if (empty($src[$tf])) continue;
         $r = tl_read($tf, $src[$tf], $Z, $atrD, $mtf, true); if (!$r) continue;
         [, $sg, $x] = $r; $X[$tf] = $x; foreach ($sg as $g) $sigs[] = $g;
-        // v2 trap-aware lines (owner, 26 Nov 2026): drawn next to v1 for comparison only; no signal uses them
-        try { require_once __DIR__ . '/tl2_engine.php'; $v2 = tl2_frame($tf, $src[$tf], count($x['bars']['t'] ?? []) ?: TL_BARS); if ($v2) $x['v2'] = $v2; } catch (Throwable $e) {}
         foreach (['res', 'sup'] as $side) if (!empty($x[$side]['zone'])) {
             $z = $x[$side]['zone'];
             $x['text'][] = ($z['t'] === 'strong' ? 'STRONG ZONE: ' : 'Major zone: ') . 'the ' . ($side === 'res' ? 'resistance' : 'support') . ' line sits on ' . implode(' + ', $z['n']) . '.';
@@ -411,7 +484,7 @@ function tl_class(string $sym): string {
 /** One symbol for the scanner list. */
 function tl_row(string $sym, array $row, int $now): ?array {
     $fr = t_read_frames($sym); if (!$fr) return null;
-    $src = tl_src($fr, $fr['5m'] ?? null);
+    $src = tl_src($fr, $fr['5m'] ?? null, $sym);
     $Z = tl_zones($fr); $A = t_atr($fr['1D'], 14); $atrD = (float)end($A); $mtf = tl_mtf($src);
     $tf = []; $sigs = [];
     foreach (TL_VIEWS as $tfs) foreach ($tfs as $k) {
@@ -515,7 +588,7 @@ function tlh_anchors(array $D, string $tz, bool $put): array {
 function tlh_row(string $sym, array $row, int $now, array $tfs = TLH_TFS, string $ePref = '15m', bool $hero = false): ?array {
     $fr = t_read_frames($sym); if (!$fr) return null;
     $D = $fr['1D'] ?? null; $nD = count($D['c'] ?? []); if ($nD < 30) return null;
-    $src = tl_src($fr, $fr['5m'] ?? null); $mtf = tl_mtf($src); $bias = tlh_bias($mtf); if (!$bias) return null;
+    $src = tl_src($fr, $fr['5m'] ?? null, $sym); $mtf = tl_mtf($src); $bias = tlh_bias($mtf); if (!$bias) return null;
     $A = t_atr($D, 14); $atrD = (float)end($A); if ($atrD <= 0) return null;
     $put = $bias === 'PUT'; $s = $put ? 1 : -1;                       // +1: the line is above (resistance), -1: below (support)
     $dayX = $put ? (float)$D['h'][$nD - 1] : (float)$D['l'][$nD - 1];
@@ -648,7 +721,7 @@ function tlh_detail(string $sym): ?array {
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 20) return $c;
     $fr = t_read_frames($sym); if (!$fr || count($fr['1D']['c'] ?? []) < 30) return null;
     $m5 = t_m5($sym) ?: ($fr['5m'] ?? null);
-    $src = tl_src($fr, $m5); $mtf = tl_mtf($src); $bias = tlh_bias($mtf);
+    $src = tl_src($fr, $m5, $sym); $mtf = tl_mtf($src); $bias = tlh_bias($mtf);
     $scan = t_scan_load(); $base = $scan['rows'][$sym] ?? [];
     $D = $fr['1D']; $nD = count($D['c']); $A = t_atr($D, 14); $atrD = (float)end($A);
     $row = null; try { $row = tlh_row($sym, $base, $now, TLHERO_TFS, '30m', true); } catch (Throwable $e) {}
