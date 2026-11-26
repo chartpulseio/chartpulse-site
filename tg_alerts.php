@@ -140,10 +140,10 @@ function tga_step(int $now): string {
         if ((float)($p['meta']['progress'] ?? 0) >= 0.9) {
             foreach ($p['rows'] as $r) foreach ($r['ev'] ?? [] as $g) {
                 if (!in_array($g['tf'], TGA_TFS, true)) continue;
-                $brk = str_starts_with($g['e'], 'break'); $res = $g['e'] === 'break_up' || $g['e'] === 'at_res';
-                $call = $g['e'] === 'break_up' || $g['e'] === 'at_sup';
+                $brk = str_starts_with($g['e'], 'break'); $res = in_array($g['e'], ['break_up', 'at_res', 'retest_up'], true);
+                $call = in_array($g['e'], ['break_up', 'at_sup', 'retest_up'], true);
                 $tf = TGA_TFN[$g['tf']]; $lv = tl_px((float)$g['lv'], (int)$r['dec']); $line = $tf . ' ' . ($res ? 'resistance' : 'support') . ' line';
-                $setup = ($brk ? 'Breakout' : 'Bounce') . ' · ' . $line;
+                $setup = (str_starts_with($g['e'], 'retest') ? 'Break & Retest' : ($brk ? 'Breakout' : 'Bounce')) . ' · ' . $line;
                 $why = $brk ? 'Price closed through the ' . $line . ' at ' . $lv . ', so the move can carry on ' . ($call ? 'up' : 'down') . '.'
                             : 'Price came to the ' . $line . ' at ' . $lv . ', a level where it turned before (' . (int)$g['n'] . ' touches).';
                 if (!empty($g['w'])) $why .= ' Bigger trend agrees.';

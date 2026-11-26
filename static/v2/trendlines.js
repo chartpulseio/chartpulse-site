@@ -36,7 +36,7 @@
       s += `<line class="tlx-l ${k} ${L.state}" style="stroke-width:${w}px"${dash} x1="${X(i0).toFixed(1)}" y1="${Y(lv(L, i0)).toFixed(1)}" x2="${X(n - 1).toFixed(1)}" y2="${Y(lv(L, n - 1)).toFixed(1)}"/>`
         + `<line class="tlx-l ${k} ext" x1="${X(n - 1).toFixed(1)}" y1="${Y(lv(L, n - 1)).toFixed(1)}" x2="${X(n - 1 + EXT).toFixed(1)}" y2="${Y(lv(L, n - 1 + EXT)).toFixed(1)}"/>`;
       [[L.i1, L.p1], [L.i2, L.p2]].forEach(([i, p]) => { if (i >= 0) s += `<circle class="tlx-p ${k}" cx="${X(i).toFixed(1)}" cy="${Y(p).toFixed(1)}" r="3.2"/>`; });
-      if (L.lvl) s += `<text x="${(X(n - 1) - 4).toFixed(1)}" y="${(Y(lv(L, n - 1)) - 4).toFixed(1)}" text-anchor="end" style="font:9px IBM Plex Mono,monospace;fill:${k === "res" ? "#F7525F" : "#22AB94"}">${L.lvl.toUpperCase()}${L.sweeps ? " · " + L.sweeps + " sweeps" : ""}</text>`;
+      if (L.lvl) s += `<text x="${(X(n - 1) - 4).toFixed(1)}" y="${(Y(lv(L, n - 1)) - 4).toFixed(1)}" text-anchor="end" style="font:9px IBM Plex Mono,monospace;fill:${k === "res" ? "#F7525F" : "#22AB94"}">${L.lvl.toUpperCase()}${L.rt === "testing" ? " · RETEST NOW" : L.rt === "held" ? " · RETEST HELD" : ""}${L.sweeps ? " · " + L.sweeps + " sweeps" : ""}</text>`;
     });
     [].forEach(([k, L]) => {
       if (!L) return;
@@ -66,7 +66,7 @@
     const tag = m.bias ? `<b class="tlx-bias ${m.bias}">${m.bias === "CALL" ? "▲" : "▼"} ${m.bias} bias · ${m.bias === "CALL" ? m.up : m.down}/${m.n}</b>` : `<b class="tlx-bias none">No clear bias · ${m.up} up, ${m.down} down</b>`;
     return `<div class="tlx-mtf"><span class="tlx-mtfl">MTF trend</span>${MTFN.map(k => { const d = m.d[k] || 0; return `<span class="tlx-mt ${d > 0 ? "u" : d < 0 ? "d" : "n"}">${k} ${d > 0 ? "▲" : d < 0 ? "▼" : "–"}</span>`; }).join("")}${tag}</div>`;
   }
-  const EVN = { break_up: "broke above resistance", break_down: "broke below support", at_sup: "at support", at_res: "at resistance" };
+  const EVN = { break_up: "broke above resistance", break_down: "broke below support", at_sup: "at support", at_res: "at resistance", retest_up: "retesting broken resistance (now support)", retest_down: "retesting broken support (now resistance)" };
   const TFL = { "1W": "weekly", "1D": "daily", "4H": "4-hour", "1H": "1-hour", "30m": "30-minute", "15m": "15-minute", "10m": "10-minute", "5m": "5-minute" };
   function checks(p, m) {
     const pt = p.parts || {}, agree = m ? (p.dir === "CALL" ? m.up : m.down) : 0, out = [];

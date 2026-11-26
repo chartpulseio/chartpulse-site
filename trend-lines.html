@@ -272,7 +272,7 @@ a.dd-row:hover{background:var(--card2)}
 <a href="/">ChartPulse home</a><a href="/scanner.html">Tier-1 Scanner</a><a href="/scanners/hybrid-trend-lines/">Hybrid Trend Line Scanner</a><a href="/scanners/day-drive/">Day Drive Scanner</a><a href="/scanners/">All free scanners</a><a href="/scanners/ema-200/">200 EMA Scanner</a><a href="/desk/">AI Scan</a><a href="/backtesting/">Backtesting</a><a href="/bias/">Market bias</a><a href="/movers/">Market movers</a><a href="/pricing.html">Pricing</a><a href="/legal/disclaimer">Risk disclaimer</a>
 </nav></footer>
 
-<script src="/static/v2/trendlines.js?v=8"></script>
+<script src="/static/v2/trendlines.js?v=9"></script>
 <script>
 (() => {
 "use strict";
@@ -283,7 +283,7 @@ const app = $("#tlApp"), Q = new URLSearchParams(location.search);
 const VIEWS = { swing: ["1W", "1D", "4H", "1H"], intra: ["30m", "15m", "10m"] };
 const MTF = ["30m", "1H", "4H", "1D", "1W"];
 const TFN = { "1W": "weekly", "1D": "daily", "4H": "4-hour", "1H": "1-hour", "30m": "30-min", "15m": "15-min", "10m": "10-min" };
-const EVT = { break_up: "Broke above {tf} resistance", break_down: "Broke below {tf} support", at_res: "At {tf} resistance", at_sup: "At {tf} support" };
+const EVT = { break_up: "Broke above {tf} resistance", break_down: "Broke below {tf} support", at_res: "At {tf} resistance", at_sup: "At {tf} support", retest_up: "Retest of broken {tf} resistance", retest_down: "Retest of broken {tf} support" };
 const fmt = (v, d) => Number(v).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 const ago = t => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); return s < 60 ? `${s}s ago` : `${Math.round(s / 60)} min ago`; };
 const L = { rows: [], meta: {}, at: 0, view: Q.get("view") === "intra" ? "intra" : "swing", dir: "best", ev: "all", zone: "all", mkt: "all", q: "", show: 60, timer: null };
@@ -309,10 +309,10 @@ function mtf(r) {
 // Which chart is touching or has broken right now, all seven charts, so page 2 is not needed (owner, 11 Nov 2026).
 const ORDER = ["1W", "1D", "4H", "1H", "30m", "15m", "10m"];
 function nowline(r) {
-  const g = { break_up: [], break_down: [], at_res: [], at_sup: [] };
+  const g = { break_up: [], break_down: [], at_res: [], at_sup: [], retest_up: [], retest_down: [] };
   (r.ev || []).forEach(e => { if (g[e.e] && !g[e.e].includes(e.tf)) g[e.e].push(e.tf); });
   const part = (k, cls, label) => g[k].length ? `<i class="${cls}">${label}: <b>${g[k].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b)).join(", ")}</b></i>` : "";
-  const h = part("break_up", "u", "▲ Broke resistance") + part("break_down", "d", "▼ Broke support") + part("at_res", "t", "Touching resistance") + part("at_sup", "t", "Touching support");
+  const h = part("retest_up", "u", "▲ Retest held (CALL)") + part("retest_down", "d", "▼ Retest held (PUT)") + part("break_up", "u", "▲ Broke resistance") + part("break_down", "d", "▼ Broke support") + part("at_res", "t", "Touching resistance") + part("at_sup", "t", "Touching support");
   return h ? `<span class="tls-now">${h}</span>` : "";
 }
 function signal(r) {

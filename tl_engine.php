@@ -104,6 +104,22 @@ function tl3_lines(string $tf, array $G, int $n, array $ATR): array {
                     if ($cl > 0.5 * $at || $run >= 2) { $brk = $i; break; }                     // break: close > 0.5 ATR or 2 closes beyond
                 }
                 if (!$ok || ($brk !== null && $brk < $n - 30)) continue;                          // broken long ago: gone
+                // Break-and-retest (owner, 27 Nov 2026; Bulkowski: most breakouts come back to the level within ~10 bars,
+                // and the move is stronger when the retest holds): after the break the line flips role. A retest = the
+                // opposite wick comes back within 0.25 ATR of the line in bars 3-15 after the break while closes stay on the
+                // new side; a close back through the line (0.1 ATR) = failed breakout, line dropped.
+                $rt = null; $rti = null;
+                if ($brk !== null) {
+                    $rt = 'waiting';
+                    for ($i = $brk + 1; $i < $n; $i++) {
+                        $v = $vAt($i); $at = (float)$ATR[$i];
+                        if (($G['c'][$i] - $v) * $side < -0.1 * $at) { $rt = 'failed'; break; }
+                        $opp = $side > 0 ? $G['l'][$i] - $v : $v - $G['h'][$i];          // how far the pullback wick stays from the line
+                        if ($i >= $brk + 3 && $i <= $brk + 15 && $opp <= 0.25 * $at) $rti = $i;
+                    }
+                    if ($rt === 'failed') continue;
+                    $rt = $rti !== null ? ($n - 1 - $rti <= 2 ? 'testing' : 'held') : ($n - 1 - $brk > 15 ? 'none' : 'waiting');
+                }
                 $end = $brk ?? $n - 1; $touch = 0; $sweep = 0; $prev = -99; $last = $a;
                 for ($i = $a; $i <= $end; $i++) {
                     if ($i - $prev < 3) continue;
@@ -118,7 +134,7 @@ function tl3_lines(string $tf, array $G, int $n, array $ATR): array {
                 if (!$top || $score > $top['score']) {
                     $va = $vAt($a); $chord = ($now - $va) / max(1, $n - 1 - $a);
                     $c = (float)$G['c'][$n - 1];
-                    $top = ['a' => $a, 'b' => $b, 'pa' => $va, 'pb' => $vAt($b), 'ly' => $ya, 'ls' => $sl, 'log' => $log, 'slope' => $chord, 'now' => $now,
+                    $top = ['rt' => $rt, 'brk_ago' => $brk !== null ? $n - 1 - $brk : null, 'a' => $a, 'b' => $b, 'pa' => $va, 'pb' => $vAt($b), 'ly' => $ya, 'ls' => $sl, 'log' => $log, 'slope' => $chord, 'now' => $now,
                             'touches' => $touch, 'sweeps' => $sweep, 'score' => $score, 'side' => $side, 'lvl' => TL3_LVL[$L], 'unconf' => $touch < 3,
                             'state' => $brk !== null ? 'broken' : (abs($c - $now) <= 0.6 * $atr ? 'testing' : 'holding'),
                             'dir' => (($now - $va) / $atr > 1.5) ? 'rising' : ((($now - $va) / $atr < -1.5) ? 'falling' : 'flat'),
@@ -167,6 +183,11 @@ function tl_text(string $tf, string $name, ?array $R, ?array $S, float $px, int 
         if ($L['state'] === 'broken') {
             $s .= $L['side'] > 0 ? ". Price has closed ABOVE it: the line is broken to the upside, and it now acts as support on a pullback."
                                  : ". Price has closed BELOW it: the line is broken to the downside, and it now acts as resistance on a bounce.";
+            $rt = $L['rt'] ?? null;
+            if ($rt === 'testing') $s .= $L['side'] > 0 ? " RETEST: price is back on the broken line right now and holding above it -- the classic break-and-retest entry (CALL)."
+                                                        : " RETEST: price is back on the broken line right now and holding below it -- the classic break-and-retest entry (PUT).";
+            elseif ($rt === 'held') $s .= " The retest has already held and price has moved away from the line.";
+            elseif ($rt === 'waiting') $s .= " Waiting for a pullback to retest the line (usually within 3-15 bars).";
         } elseif ($L['state'] === 'testing') {
             $s .= " and price is testing it right now ($gap% away). " . ($L['side'] > 0
                 ? "A $tf close above $lvl breaks it; a rejection here keeps sellers in control."
@@ -213,7 +234,7 @@ function tl_frame(string $tf, array $F, bool $bars = true): ?array {
         return ['i1' => $L['a'] - $off, 'p1' => round($L['pa'], $d + 1), 'i2' => $L['b'] - $off, 'p2' => round($L['pb'], $d + 1),
                 'slope' => $L['slope'], 'log' => $L['log'], 'ly' => $L['ly'], 'ls' => $L['ls'], 'now' => round($L['now'], $d), 'touches' => $L['touches'],
                 'sweeps' => $L['sweeps'], 'lvl' => $L['lvl'], 'unconf' => $L['unconf'], 'side' => $L['side'],
-                'dir' => $L['dir'], 'state' => $L['state'], 'dist_pct' => $L['dist_pct'], 'ag' => $L['ag']];
+                'dir' => $L['dir'], 'state' => $L['state'], 'dist_pct' => $L['dist_pct'], 'ag' => $L['ag'], 'rt' => $L['rt'] ?? null, 'brk_ago' => $L['brk_ago'] ?? null];
     };
     $res = ['tf' => $tf, 'pattern' => $name, 'lean' => $lean, 'dec' => $d, 'price' => round($px, $d), 'atr' => $atr,
             'res' => $pub($R), 'sup' => $pub($S), 'text' => tl_text($tf, $name, $R, $S, $px, $d)];
@@ -358,7 +379,7 @@ function tl_score(array $sg, array $mtf): array {
     $with = $mtf['bias'] === $dir; $against = $mtf['bias'] !== null && !$with;
     $pM = $with ? ($r >= 0.999 ? 30 : ($r >= 0.8 ? 24 : 22)) : (($mtf['bias'] === null && $r > 0.5) ? 8 : 0);
     $pZ = $sg['zone'] ? ($sg['zone']['t'] === 'strong' ? 25 : 15) : 0;
-    $pE = str_starts_with($sg['e'], 'break') ? 15 : 12;
+    $pE = str_starts_with($sg['e'], 'retest') ? 18 : (str_starts_with($sg['e'], 'break') ? 15 : 12);   // a held retest is the strongest event
     $pT = $sg['n'] >= 5 ? 10 : ($sg['n'] === 4 ? 7 : ($sg['n'] === 3 ? 4 : 1));
     $pF = TL_TF_PTS[$sg['tf']] ?? 3; $pP = tl_fit($sg['pattern'], $sg['e']);
     $tot = $pM + $pZ + $pE + $pT + $pF + $pP; if (!$with) $tot *= 0.6;
@@ -379,11 +400,12 @@ function tl_read(string $k, array $F, array $Z, float $atrD, array $mtf, bool $b
         // owner, 11 Nov 2026 23:24: no filters -- every broken or tested line is a signal, exactly as on the first
         // build. Touches, zone, MTF trend, pattern are labels on the signal; they rank it but never hide it.
         $e = null;
-        if ($L['state'] === 'broken') $e = $side === 'res' ? 'break_up' : 'break_down';
+        if ($L['state'] === 'broken' && ($L['rt'] ?? null) === 'testing') $e = $side === 'res' ? 'retest_up' : 'retest_down';
+        elseif ($L['state'] === 'broken') $e = $side === 'res' ? 'break_up' : 'break_down';
         elseif ($L['state'] === 'testing') $e = $side === 'res' ? 'at_res' : 'at_sup';
         if (!$e) continue;
-        $cell[$side]['ev'] = str_starts_with($e, 'break') ? 'break' : 'test';
-        $sg = ['tf' => $k, 'e' => $e, 'dir' => ($e === 'break_up' || $e === 'at_sup') ? 'CALL' : 'PUT', 'n' => $L['touches'], 'lv' => $L['now'],
+        $cell[$side]['ev'] = str_starts_with($e, 'retest') ? 'retest' : (str_starts_with($e, 'break') ? 'break' : 'test');
+        $sg = ['tf' => $k, 'e' => $e, 'dir' => ($e === 'break_up' || $e === 'at_sup' || $e === 'retest_up') ? 'CALL' : 'PUT', 'n' => $L['touches'], 'lv' => $L['now'],
                'zone' => $z, 'pattern' => $x['pattern']];
         $sigs[] = $sg + tl_score($sg, $mtf);
     }
