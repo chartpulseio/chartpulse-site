@@ -244,6 +244,13 @@ function gex_history(string $sym, array $g, bool $write): array {
                 'k' => array_map(fn($x) => [$x['k'], round($x['gex'])], $g['strikes'])];
         $h = array_slice($h, -800);
         file_put_contents($f, json_encode($h), LOCK_EX);
+        // Light regime log, kept permanently (one JSON line per minute): joins later with Next Candle guesses,
+        // Day Drive / God-father / Tier 1 signals by symbol + time to measure win rate per gamma regime.
+        $rg = $g['zero_gamma'] ? ($g['spot'] >= $g['zero_gamma'] ? 1 : -1) : ($g['net_gex'] >= 0 ? 1 : -1);
+        @file_put_contents(GEX_DIR . '/regime_' . date('Ym') . '.jsonl', json_encode(['t' => time(), 'sym' => $sym, 's' => $g['spot'], 'rg' => $rg,
+            'f' => $g['zero_gamma'], 'cw' => $g['call_wall'], 'pw' => $g['put_wall'], 'g' => $g['net_gex'], 'em' => $g['expected_move']]) . "\n", FILE_APPEND | LOCK_EX);
+        // Heavy per-strike history: keep 10 days only
+        if (mt_rand(1, 200) === 1) foreach (glob(GEX_DIR . '/hist_*.json') ?: [] as $old) if (filemtime($old) < time() - 10 * 86400) @unlink($old);
     }
     return $h;
 }
