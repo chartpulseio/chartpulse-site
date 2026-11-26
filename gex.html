@@ -288,8 +288,8 @@ function gridView(){const el=$('#mg');el.style.display='grid';$('#cc').style.dis
    const se=ch.addCandlestickSeries({upColor:'#2ec4b6',downColor:'#f0473c',borderUpColor:'#2ec4b6',borderDownColor:'#f0473c',wickUpColor:'#2ec4b6',wickDownColor:'#f0473c'});
    const o={box,ch,se,sym:syms[i],d:null,pl:[]};box.querySelector('select').onchange=e=>{o.sym=e.target.value;const a=MG.map(m=>m.sym);mgSave(a);mgLoad(o,true)};
    ch.timeScale().subscribeVisibleLogicalRangeChange(()=>mgProf(o));return o});
-  MG.forEach(o=>mgLoad(o,true));setInterval(()=>{if(view==='grid')MG.forEach(o=>mgLoad(o,false))},60000);setInterval(()=>{if(view==='grid')MG.forEach(mgProf)},500)}}
-async function mgLoad(o,fit){const s0=o.sym;try{const [d,c]=await Promise.all([fetch('/gex_api.php?s='+s0).then(r=>r.json()),fetch('/gex_api.php?r=candles&s='+s0).then(r=>r.json())]);if(o.sym!==s0)return;
+  (async()=>{for(const o of MG)await mgLoad(o,true)})();setInterval(async()=>{if(view==='grid')for(const o of MG)await mgLoad(o,false)},60000);setInterval(()=>{if(view==='grid')MG.forEach(mgProf)},500)}}
+async function mgLoad(o,fit){const s0=o.sym;try{const d=await fetch('/gex_api.php?s='+s0).then(r=>r.json());const c=await fetch('/gex_api.php?r=candles&s='+s0).then(r=>r.json());if(o.sym!==s0)return;
   o.d=d.ok?d:null;o.se.setData(c.ok?c.c.map(k=>({time:k[0]+TZO,open:k[1],high:k[2],low:k[3],close:k[4]})):[]);if(fit)o.ch.timeScale().fitContent();
   o.pl.forEach(l=>o.se.removePriceLine(l));o.pl=[];if(o.d){const add=(p,c,t,st)=>{if(p!=null)o.pl.push(o.se.createPriceLine({price:+p,color:c,lineWidth:st?1:2,lineStyle:st||0,axisLabelVisible:true,title:t}))};
    add(o.d.call_wall,'#4fe3f0','CW');add(o.d.put_wall,'#a35cf0','PW');add(o.d.zero_gamma,'#f5e642','0γ',2);

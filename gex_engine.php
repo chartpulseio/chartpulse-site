@@ -275,12 +275,19 @@ function gex_get_symbol(string $sym, string $mode = 'all'): array {
         elseif (is_file($cf)) { $ch = json_decode((string)file_get_contents($cf), true); $ch['stale'] = true; }
     }
     if (empty($ch['rows'])) return ['ok' => false, 'error' => 'unavailable'];
+    // computed result cache (one heavy computation per symbol/view per chain refresh, shared by all visitors)
+    $rf = GEX_DIR . "/res_{$sym}_$mode.json";
+    if (is_file($rf) && filemtime($rf) >= (int)($ch['ts'] ?? 0) && time() - filemtime($rf) < 60) {
+        $g = json_decode((string)file_get_contents($rf), true);
+        if (!empty($g['ok'])) { if ($mode === 'all') $g['history'] = gex_history($sym, $g, false); return $g; }
+    }
     $g = gex_compute($ch, $mode);
     $g['symbol'] = $sym; $g['market'] = $mk; $g['src'] = $ch['src']; $g['ts'] = $ch['ts'] ?? time(); $g['stale'] = !empty($ch['stale']);
     $g['summary'] = gex_summary($sym, $g);
     $g['history'] = gex_history($sym, $g, $mode === 'all');
     if ($mode === 'all') gex_label_save($sym, $g);
     $g['ok'] = true;
+    @file_put_contents($rf, json_encode($g), LOCK_EX);
     return $g;
 }
 
