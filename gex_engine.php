@@ -231,6 +231,7 @@ function gex_get_symbol(string $sym, string $mode = 'all'): array {
     $g['symbol'] = $sym; $g['market'] = $mk; $g['src'] = $ch['src']; $g['ts'] = $ch['ts'] ?? time(); $g['stale'] = !empty($ch['stale']);
     $g['summary'] = gex_summary($sym, $g);
     $g['history'] = gex_history($sym, $g, $mode === 'all');
+    if ($mode === 'all') gex_label_save($sym, $g);
     $g['ok'] = true;
     return $g;
 }
@@ -253,4 +254,30 @@ function gex_history(string $sym, array $g, bool $write): array {
         if (mt_rand(1, 200) === 1) foreach (glob(GEX_DIR . '/hist_*.json') ?: [] as $old) if (filemtime($old) < time() - 10 * 86400) @unlink($old);
     }
     return $h;
+}
+
+// ---------- Labels for other scanners (Day Drive, God-father): label only, never a filter ----------
+const GEX_YAHOO = ['^NSEI' => 'NIFTY', '^NSEBANK' => 'BANKNIFTY', 'NIFTY_FIN_SERVICE.NS' => 'FINNIFTY'];
+function gex_label_save(string $sym, array $g): void {
+    $f = GEX_DIR . '/labels.json';
+    $m = is_file($f) ? (json_decode((string)file_get_contents($f), true) ?: []) : [];
+    $S = $g['spot']; $near = fn($k) => $k && abs($k / $S - 1) <= 0.003;
+    $m[$sym] = ['t' => time(), 'rg' => ($g['regime'] === 'positive' ? 1 : -1), 'f' => $g['zero_gamma'], 'cw' => $g['call_wall'], 'pw' => $g['put_wall'],
+                'at' => $near($g['call_wall']) ? 'cw' : ($near($g['put_wall']) ? 'pw' : ($near($g['zero_gamma']) ? 'flip' : ''))];
+    @file_put_contents($f, json_encode($m), LOCK_EX);
+}
+function gex_label_for(string $ysym): ?array {
+    static $m = null;
+    if ($m === null) { $f = GEX_DIR . '/labels.json'; $m = is_file($f) ? (json_decode((string)file_get_contents($f), true) ?: []) : []; }
+    $g = GEX_YAHOO[$ysym] ?? (in_array($ysym, GEX_US, true) ? $ysym : null);
+    if (!$g || empty($m[$g]) || time() - $m[$g]['t'] > 1800) return null;
+    $x = $m[$g];
+    $txt = $x['rg'] > 0 ? '+γ Range' : '−γ Trend';
+    if ($x['at'] === 'cw') $txt .= ' · at call wall'; elseif ($x['at'] === 'pw') $txt .= ' · at put wall'; elseif ($x['at'] === 'flip') $txt .= ' · at gamma flip';
+    return ['rg' => $x['rg'], 'at' => $x['at'], 'txt' => $txt, 'flip' => $x['f'], 'cw' => $x['cw'], 'pw' => $x['pw'], 'url' => '/scanners/gex/#' . $g];
+}
+function gex_attach(array $out): array {
+    try { if (!empty($out['rows']) && is_array($out['rows'])) foreach ($out['rows'] as $i => $r) { $l = gex_label_for((string)($r['symbol'] ?? '')); if ($l) $out['rows'][$i]['gex'] = $l; }
+          if (!empty($out['row']['symbol'])) { $l = gex_label_for((string)$out['row']['symbol']); if ($l) $out['row']['gex'] = $l; } } catch (Throwable $e) {}
+    return $out;
 }

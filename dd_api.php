@@ -18,6 +18,8 @@ require __DIR__ . '/dd_engine.php';
 
 const DD_SORRY = 'The Day Drive Scanner is temporarily unavailable. Sorry for the inconvenience. Please check back in a little while.';
 
+// GEX label (26 Nov 2026, owner-approved): adds a 'gex' field to rows; never changes ranking or signals.
+function dd_gex(array $d): array { try { require_once __DIR__ . '/gex_engine.php'; return gex_attach($d); } catch (Throwable $e) { return $d; } }
 function dd_json($d): void {
     if (!headers_sent()) {
         header('Content-Type: application/json; charset=utf-8');
@@ -106,10 +108,10 @@ if ($r === 'symbol') {
     $row = $scan['rows'][$s] ?? [];
     $out = dd_eval($s, $row, true, dd_context(), t_now());
     if (!$out) dd_sorry('symbol', "no usable history for $s", 200);
-    dd_json(['row' => $out, 'availability' => dd_availability()]);
+    dd_json(dd_gex(['row' => $out, 'availability' => dd_availability()]));
     exit;
 }
 
 // default: scan
 $force = isset($_GET['force']) && $_GET['force'] === '1' && t_rl('dd:force', 4);
-dd_json(dd_scan($mkt, $force));
+dd_json(dd_gex(dd_scan($mkt, $force)));

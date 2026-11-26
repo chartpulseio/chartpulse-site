@@ -222,6 +222,7 @@ function card(r) {
     <div class="gc-lb">${(r.labels||[]).map(([k,t]) => `<i class="${k}">${esc(t)}</i>`).join("")}</div>
     <p class="gc-say">${esc(r.say)}</p>
     ${window.CPNC ? CPNC.chip(r.symbol) : ""}
+    ${r.gex ? `<a href="${r.gex.url}" title="Options gamma regime (label only)" style="display:inline-block;margin:4px 0;padding:2px 9px;border-radius:999px;font:500 11.5px IBM Plex Mono,monospace;text-decoration:none;border:1px solid ${r.gex.rg > 0 ? "rgba(79,227,240,.55)" : "rgba(163,92,240,.6)"};color:${r.gex.rg > 0 ? "#4fe3f0" : "#c9a2ff"}">${esc(r.gex.txt)}</a>` : ""}
     <div class="gc-chk">${r.checks.map(c => `<span class="${c.ok?"ok":"no"}" title="${esc(c.t + ": " + c.d)}">${CK[c.k]} ${c.ok?"✓":"✗"}</span>`).join("")}</div>
     ${plan}
     <div class="gc-more"><ul>${r.checks.map(c => `<li class="${c.ok?"ok":""}"><i>${c.ok?"✓":"✗"}</i><div><b>${esc(c.t)}</b><p>${esc(c.d)}</p></div></li>`).join("")}</ul>${news}</div>

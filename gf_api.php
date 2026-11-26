@@ -27,4 +27,6 @@ if (!headers_sent() && str_contains((string)($_SERVER['HTTP_ACCEPT_ENCODING'] ??
 if (!t_rl('gf', 40)) { header('Retry-After: 30'); gf_json(['error' => 'Too many requests. Please wait a few seconds.'], 429); }
 @set_time_limit(90);
 try { t_scan_step(); } catch (Throwable $e) {}   // like the Tier-1 page: every visit moves the price loop one step (hot names first)
-gf_json(gf_scan());
+// GEX label (26 Nov 2026, owner-approved): extra 'gex' field per row; never changes ranking or votes.
+$gfo = gf_scan(); try { require_once __DIR__ . '/gex_engine.php'; $gfo = gex_attach($gfo); } catch (Throwable $e) {}
+gf_json($gfo);

@@ -314,7 +314,7 @@ function paint() {
       <span class="dd-rk">${i + 1}</span>
       <span class="dd-nm"><b>${esc(r.name)}</b><small>${esc(r.tv || r.symbol)} · ${esc(r.market || "")}</small></span>
       <span class="dd-sidec"><span class="dd-side ${esc(r.side)}">${r.side === "CALL" ? "▲" : "▼"} ${esc(r.side)}</span></span>
-      <span class="dd-pillc">${pill(r)}${r.mode === "bounce" ? kindChip(r) + TRN(r) : ""}${r.mode === "bounce" && r.bounce && r.bounce.tag ? `<i class="dd-btag ${r.bounce.small_with ? "ok" : "no"}">${esc(r.bounce.tag)}</i>` : ""}${r.mode === "bounce" && r.bounce ? `<i class="dd-btag ${r.bounce.strong ? "ok" : ""}">${r.bounce.strong ? "★ Strong zone" : (r.bounce.zones || []).length ? "Zone" : "Plain reversal"}</i>` : ""}</span>
+      <span class="dd-pillc">${pill(r)}${r.mode === "bounce" ? kindChip(r) + TRN(r) : ""}${r.mode === "bounce" && r.bounce && r.bounce.tag ? `<i class="dd-btag ${r.bounce.small_with ? "ok" : "no"}">${esc(r.bounce.tag)}</i>` : ""}${r.mode === "bounce" && r.bounce ? `<i class="dd-btag ${r.bounce.strong ? "ok" : ""}">${r.bounce.strong ? "★ Strong zone" : (r.bounce.zones || []).length ? "Zone" : "Plain reversal"}</i>` : ""}${r.gex ? `<i class="dd-btag ${(r.mode === "bounce") === (r.gex.rg > 0) ? "ok" : ""}" title="Options gamma regime (label only)">${esc(r.gex.txt)}</i>` : ""}</span>
       <span class="dd-progc">${r.mode === "bounce" ? lad(r) : prog(r)}</span>
       <span class="dd-sc">${r.mode === "bounce" ? `${(r.bounce && r.bounce.conf || []).length}<small> conf.</small>` : `${Math.round(r.score)}<small>/100</small>`}</span>
       <span class="dd-next">${esc(nextWords(r))}</span>
