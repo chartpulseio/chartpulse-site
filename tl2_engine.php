@@ -42,7 +42,8 @@ function tl2_side(array $G, int $n, int $side, float $atr, bool $log, int $k): a
     // major anchors: the 4 most extreme swings in the window
     $ex = $P; usort($ex, fn($a, $b) => $side > 0 ? $body[$b] <=> $body[$a] : $body[$a] <=> $body[$b]); $ex = array_slice($ex, 0, 4);
     $px = (float)$G['c'][$n - 1]; $minSpan = max(5, (int)round($n * 0.05)); $C = [];
-    foreach ($ex as $a) foreach ($P as $b) {
+    foreach ([$ex, $P] as $pass => $anchors) { if ($pass === 1 && $C) break;   // no clean line from a major extreme: try every significant swing
+    foreach ($anchors as $a) foreach ($P as $b) {
         if ($b - $a < $minSpan) continue;
         $ya = $Y($body[$a]); $sl = ($Y($body[$b]) - $ya) / ($b - $a);
         $at = fn($i) => $log ? exp($ya + $sl * ($i - $a)) : $ya + $sl * ($i - $a);
@@ -68,8 +69,8 @@ function tl2_side(array $G, int $n, int $side, float $atr, bool $log, int $k): a
         }
         if ($touch < 2) continue;
         $score = min($touch, 6) * 3.0 + min($sweep + $traps, 4) * 1.5 + (($n - 1 - $a) / $n) * 4.0 + ($last / $n) * 3.0 - (abs($now - $px) / $atr) * 0.6 + 2.0;
-        $C[] = ['a' => $a, 'b' => $b, 'pa' => $body[$a], 'pb' => $body[$b], 'ya' => $ya, 'sl' => $sl, 'now' => $now, 'touches' => $touch, 'sweeps' => $sweep + $traps, 'score' => $score];
-    }
+        $C[] = ['a' => $a, 'b' => $b, 'pa' => $body[$a], 'pb' => $body[$b], 'ya' => $ya, 'sl' => $sl, 'now' => $now, 'touches' => $touch, 'sweeps' => $sweep + $traps, 'score' => $score + ($pass === 0 ? 0 : -2.0)];
+    } }
     usort($C, fn($x, $y) => $y['score'] <=> $x['score']);
     $out = [];
     foreach ($C as $c) {   // keep distinct lines only (not the same line through another anchor pair)
