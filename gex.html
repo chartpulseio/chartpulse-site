@@ -224,14 +224,15 @@ function setLines(){if(!CS||!D)return;PL.forEach(l=>CS.removePriceLine(l));PL=[]
  add(L.max_pain,'rgba(160,160,160,.6)','MAX PAIN',1)}
 function lgOf(t){let lo=0,hi=CAND.length-1;if(hi<0)return null;const tt=t;if(tt<CAND[0][0])return null;while(lo<hi){const m=(lo+hi+1)>>1;if(CAND[m][0]<=tt)lo=m;else hi=m-1}
  const step=lo<CAND.length-1?CAND[lo+1][0]-CAND[lo][0]:300;return lo+Math.min(1,(tt-CAND[lo][0])/Math.min(step,300))}
+function lx(ts,l){const f=Math.floor(l),a=ts.logicalToCoordinate(f);if(a==null)return null;const b=ts.logicalToCoordinate(f+1);const sp=b!=null?b-a:(ts.options().barSpacing||6);return a+(l-f)*sp}
 function overlay(){if(view!=='chart'||!CS||!D||R)return;
  // gamma heatmap + expected-move envelope behind the candles
  const c1=document.getElementById('hmC'),r=devicePixelRatio||1,W=c1.clientWidth-($('#gpC').clientWidth||0),H=c1.clientHeight;c1.width=c1.clientWidth*r;c1.height=H*r;const x=c1.getContext('2d');x.setTransform(r,0,0,r,0,0);x.clearRect(0,0,c1.clientWidth,H);
  const ts=LC.timeScale(),Y=p=>CS.priceToCoordinate(p),L=D.levels||{};
- if(L.em_day){const a=Y(L.em_day[1]),b=Y(L.em_day[0]);if(a!=null&&b!=null){const last=CAND.length?ts.logicalToCoordinate(Math.max(0,CAND.length-80)):0;x.fillStyle='rgba(245,158,44,.07)';x.fillRect(last||0,a,W-(last||0)-60,b-a);x.strokeStyle='rgba(245,158,44,.35)';x.setLineDash([4,4]);[a,b].forEach(y=>{x.beginPath();x.moveTo(last||0,y);x.lineTo(W-60,y);x.stroke()});x.setLineDash([]);x.fillStyle='#f59e2c';x.font='10px IBM Plex Mono';x.fillText('expected move',(last||0)+6,a+12)}}
+ if(L.em_day){const a=Y(L.em_day[1]),b=Y(L.em_day[0]);if(a!=null&&b!=null){const last=CAND.length?lx(ts,Math.max(0,CAND.length-80)):0;x.fillStyle='rgba(245,158,44,.07)';x.fillRect(last||0,a,W-(last||0)-60,b-a);x.strokeStyle='rgba(245,158,44,.35)';x.setLineDash([4,4]);[a,b].forEach(y=>{x.beginPath();x.moveTo(last||0,y);x.lineTo(W-60,y);x.stroke()});x.setLineDash([]);x.fillStyle='#f59e2c';x.font='10px IBM Plex Mono';x.fillText('expected move',(last||0)+6,a+12)}}
  const Hs=D.history||[];if(Hs.length&&CAND.length){let mx=1;Hs.forEach(h=>(h.k||[]).forEach(q=>mx=Math.max(mx,Math.abs(q[1]))));
   const ks=(Hs[Hs.length-1].k||[]).map(q=>q[0]).sort((a,b)=>a-b),sp=ks.length>1?Math.abs(Y(ks[0])-Y(ks[1]))||4:4;
-  const lastT=CAND[CAND.length-1][0];for(let i=0;i<Hs.length;i++){const h=Hs[i];if(h.t>lastT+600)continue;const l0=lgOf(h.t),l1=lgOf(i<Hs.length-1?Hs[i+1].t:h.t+60);if(l0==null)continue;const x0=ts.logicalToCoordinate(l0),x1=ts.logicalToCoordinate(l1);if(x0==null||x1==null||x1<0||x0>W)continue;
+  const lastT=CAND[CAND.length-1][0];for(let i=0;i<Hs.length;i++){const h=Hs[i];if(h.t>lastT+600)continue;const l0=lgOf(h.t),l1=lgOf(i<Hs.length-1?Hs[i+1].t:h.t+60);if(l0==null)continue;const x0=lx(ts,l0),x1=lx(ts,l1);if(x0==null||x1==null||x1<0||x0>W)continue;
    (h.k||[]).forEach(q=>{const y=Y(q[0]);if(y==null||y<-10||y>H+10)return;const a=Math.min(.55,Math.pow(Math.abs(q[1])/mx,.6)*.55);if(a<.03)return;x.fillStyle=q[1]>=0?`rgba(79,227,240,${a})`:`rgba(163,92,240,${a})`;x.fillRect(x0,y-sp/2,Math.max(1,x1-x0+.5),Math.max(1,sp-.5))})}}
  // GEX profile docked on the right, aligned to the price scale
  const c2=document.getElementById('gpC'),w2=c2.clientWidth,h2=c2.clientHeight;c2.width=w2*r;c2.height=h2*r;const g=c2.getContext('2d');g.setTransform(r,0,0,r,0,0);g.clearRect(0,0,w2,h2);
@@ -245,7 +246,6 @@ function overlay(){if(view!=='chart'||!CS||!D||R)return;
  st.forEach((s,i)=>{const y=Y(s.k);if(y==null)return;const xx=mid+cs[i]/mc*(mid-8);f?g.lineTo(xx,y):g.moveTo(xx,y);f=1});g.stroke();g.lineWidth=1;
  const sy=Y(D.spot);if(sy!=null){g.strokeStyle='#f2f2f2';g.beginPath();g.moveTo(0,sy);g.lineTo(w2,sy);g.stroke()}
  g.fillStyle=C.mu;g.font='10px IBM Plex Mono';g.fillText(srcv==='vol'?'GEX (volume)':'GEX profile',6,12);g.fillStyle='rgba(245,230,66,.9)';g.fillText('— cumulative',6,24)}
-window.CPGX={st:()=>({LC,CS,n:CAND.length,lg:t=>lgOf(t)})};
 function chartView(){$('#cc').style.display='block';$('#cS').style.display='none';main.geo=null;if(!window.LightweightCharts){$('#err').style.display='flex';$('#err').textContent='Chart library did not load. Use the strikes view.';return}
  ensureChart();loadCandles();setLines();overlay();if(!ovT)ovT=setInterval(()=>{if(view==='chart'&&!R)overlay()},400)}
 function main(){if(view==='chart'&&!R)return chartView();$('#cc').style.display='none';$('#cS').style.display='block';if(view==='heat'&&!R)return heat();const d=D;const [x,w,h]=cv('cS');
