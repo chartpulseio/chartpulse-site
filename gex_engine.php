@@ -46,8 +46,9 @@ function gex_get(string $url, array $hdr): ?array {
 
 // ---------- Black-Scholes (r = q = 0, adequate for short-dated exposure maps) ----------
 function gex_npdf(float $x): float { return exp(-0.5 * $x * $x) / 2.5066282746310002; }
+function gex_ncdf(float $x): float { $t = 1 / (1 + 0.2316419 * abs($x)); $d = 0.3989422804 * exp(-$x * $x / 2); $p = $d * $t * (0.3193815 + $t * (-0.3565638 + $t * (1.781478 + $t * (-1.821256 + $t * 1.330274)))); return $x >= 0 ? 1 - $p : $p; }
 function gex_greeks(float $S, float $K, float $T, float $iv): array {
-    if ($S <= 0 || $K <= 0 || $iv <= 0.001) return ['g' => 0.0, 'va' => 0.0, 'ch' => 0.0];
+    if ($S <= 0 || $K <= 0 || $iv <= 0.001) return ['g' => 0.0, 'va' => 0.0, 'ch' => 0.0, 'dc' => ($S >= $K ? 1.0 : 0.0)];
     $T = max($T, 1 / (365 * 24));                      // floor at 1 hour
     $sq = $iv * sqrt($T);
     $d1 = (log($S / $K) + 0.5 * $iv * $iv * $T) / $sq; $d2 = $d1 - $sq;
@@ -56,6 +57,7 @@ function gex_greeks(float $S, float $K, float $T, float $iv): array {
         'g'  => $n / ($S * $sq),                        // gamma
         'va' => -$n * $d2 / $iv,                        // dDelta/dVol (same for call & put)
         'ch' => $n * $d2 / (2 * $T) / 365,              // delta decay per day (call; put identical at r=q=0)
+        'dc' => gex_ncdf($d1),                          // call delta; put delta = dc - 1
     ];
 }
 
@@ -151,10 +153,12 @@ function gex_compute(array $ch, string $mode = 'all'): array {
         $gex = $sg * $gam * $oi * $mult * $S * $S * 0.01;          // value of dealer hedge per 1% move
         $van = $sg * $gk['va'] * $oi * $mult * $S * 0.01;          // delta-$ change per +1 vol pt
         $chm = $sg * $gk['ch'] * $oi * $mult * $S;                 // delta-$ drift per day
+        $dlt = ($t === 'c' ? $gk['dc'] : $gk['dc'] - 1) * $oi * $mult * $S;   // customer delta-$ held at this strike
         $k = (string)$K;
-        $st[$k] = $st[$k] ?? ['k' => $K, 'gex' => 0.0, 'cg' => 0.0, 'pg' => 0.0, 'coi' => 0.0, 'poi' => 0.0, 'cvol' => 0.0, 'pvol' => 0.0, 'vanna' => 0.0, 'charm' => 0.0, 'doi' => 0.0];
+        $st[$k] = $st[$k] ?? ['k' => $K, 'gex' => 0.0, 'cg' => 0.0, 'pg' => 0.0, 'coi' => 0.0, 'poi' => 0.0, 'cvol' => 0.0, 'pvol' => 0.0, 'vanna' => 0.0, 'charm' => 0.0, 'doi' => 0.0, 'cd' => 0.0, 'pd' => 0.0, 'cva' => 0.0, 'pva' => 0.0, 'cch' => 0.0, 'pch' => 0.0];
         $st[$k]['gex'] += $gex; $st[$k][$t . 'g'] += $gex; $st[$k][$t . 'oi'] += $oi; $st[$k][$t . 'vol'] += $r[6];
         $st[$k]['vanna'] += $van; $st[$k]['charm'] += $chm;
+        $st[$k][$t . 'd'] += $dlt; $st[$k][$t . 'va'] += $van; $st[$k][$t . 'ch'] += $chm;
         if (isset($r[8])) $st[$k]['doi'] += $sg * ($oi - $r[8]);
         $tot['gex'] += $gex; $tot['vanna'] += $van; $tot['charm'] += $chm; $tot[$t . 'oi'] += $oi; $tot[$t . 'vol'] += $r[6];
     }
@@ -231,14 +235,14 @@ function gex_get_symbol(string $sym, string $mode = 'all'): array {
     return $g;
 }
 
-// Intraday snapshots every ~2 min (all-expiry view only): spot, net GEX, flip, walls
+// Intraday snapshots every ~1 min (all-expiry view only): spot, net GEX, flip, walls
 function gex_history(string $sym, array $g, bool $write): array {
     $f = GEX_DIR . "/hist_{$sym}_" . date('Ymd') . '.json';
     $h = is_file($f) ? (json_decode((string)file_get_contents($f), true) ?: []) : [];
-    if ($write && (!$h || time() - end($h)['t'] >= 120)) {
+    if ($write && (!$h || time() - end($h)['t'] >= 55)) {
         $h[] = ['t' => time(), 's' => $g['spot'], 'g' => $g['net_gex'], 'f' => $g['zero_gamma'], 'cw' => $g['call_wall'], 'pw' => $g['put_wall'],
                 'k' => array_map(fn($x) => [$x['k'], round($x['gex'])], $g['strikes'])];
-        $h = array_slice($h, -400);
+        $h = array_slice($h, -800);
         file_put_contents($f, json_encode($h), LOCK_EX);
     }
     return $h;

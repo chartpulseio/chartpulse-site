@@ -4,122 +4,253 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Gamma Exposure (GEX) Scanner: SPY, QQQ, NIFTY, BANKNIFTY · ChartPulse</title>
-<meta name="description" content="Free live gamma exposure (GEX) dashboard: zero gamma flip, call wall, put wall, vanna, charm, max pain and expected move for SPY, QQQ, IWM, NIFTY and BANKNIFTY from real option chains.">
+<meta name="description" content="Free live gamma exposure (GEX) terminal: zero gamma flip, call wall, put wall, delta, vanna and charm profiles, max change GEX and intraday replay for SPY, QQQ, IWM, NIFTY and BANKNIFTY from real option chains.">
 <link rel="canonical" href="https://chartpulse.io/scanners/gex/">
 <meta property="og:title" content="Gamma Exposure (GEX) Scanner · ChartPulse">
-<meta property="og:description" content="Zero gamma, call/put walls, vanna, charm and dealer hedging for US and Indian index options. Free.">
+<meta property="og:description" content="Zero gamma, call/put walls, delta, vanna and charm profiles, max change GEX and replay for US and Indian index options. Free.">
 <meta property="og:url" content="https://chartpulse.io/scanners/gex/"><meta property="og:image" content="https://chartpulse.io/static/og.jpg">
-<meta name="theme-color" content="#050506">
+<meta name="theme-color" content="#0b0b0b">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap">
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=8">
 <script defer src="/static/v2/sitehead.js?v=24"></script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"ChartPulse GEX Scanner","url":"https://chartpulse.io/scanners/gex/","applicationCategory":"FinanceApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@type":"Organization","name":"ChartPulse"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"ChartPulse GEX Scanner","url":"https://chartpulse.io/scanners/gex/","applicationCategory":"FinanceApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@type":"Organization","name":"ChartPulse"}}</script>
 <style>
-:root{--bg:#050506;--pn:#0d0e11;--ln:#1d2027;--tx:#ededef;--mu:#8a8f9c;--up:#22ab94;--dn:#f7525f;--au:#f4b740;--bl:#5b8cff}
-.gx{max-width:1320px;margin:0 auto;padding:18px 16px 60px;color:var(--tx);font-family:'IBM Plex Sans',system-ui,sans-serif}
-.gx h1{color:var(--tx);font-size:26px;margin:4px 0 2px;font-weight:700}.gx h1 b{color:var(--au)}
-.gx .sub{color:#a6abb7;font-size:14px;margin:0 0 14px}
-.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
-.chip{background:var(--pn);border:1px solid var(--ln);color:var(--tx);padding:7px 12px;border-radius:8px;cursor:pointer;font:500 13px 'IBM Plex Mono',monospace}
-.chip.on{border-color:var(--au);color:var(--au);box-shadow:0 0 0 1px var(--au) inset}
-.chip small{color:var(--mu);margin-left:4px}.sep{width:1px;height:24px;background:var(--ln);margin:0 4px}
-.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:14px}
-.bcard{background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:10px 12px;cursor:pointer}
-.bcard:hover{border-color:#333}.bcard .s{font:600 14px 'IBM Plex Mono'}.bcard .r{font-size:12px;margin-top:4px}
-.pos{color:var(--up)}.neg{color:var(--dn)}.mu{color:var(--mu)}
-.kp{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:10px 0}
-.k{background:var(--pn);border:1px solid var(--ln);border-radius:10px;padding:10px 12px}
-.k .l{color:var(--mu);font-size:11px;text-transform:uppercase;letter-spacing:.06em}.k .v{font:600 18px 'IBM Plex Mono';margin-top:3px}
-.k .h{color:var(--mu);font-size:11px;margin-top:2px}
-.sum{color:var(--tx);background:linear-gradient(90deg,rgba(244,183,64,.08),transparent);border:1px solid var(--ln);border-left:3px solid var(--au);border-radius:10px;padding:12px 14px;font-size:14px;line-height:1.55}
-.grid{display:grid;grid-template-columns:1.25fr 1fr;gap:12px;margin-top:12px}
-@media(max-width:900px){.grid{grid-template-columns:1fr}}
-.pn{background:var(--pn);border:1px solid var(--ln);border-radius:12px;padding:12px}
-.pn h3{margin:0 0 8px;font-size:14px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
-.pn h3 span{color:var(--mu);font-weight:400;font-size:12px}
-canvas{width:100%;display:block}
-.tabs{display:flex;gap:6px}.tabs .chip{padding:4px 9px;font-size:11px}
-.note{color:var(--mu);font-size:12px;line-height:1.6;margin-top:18px}
-.err{padding:30px;text-align:center;color:var(--mu)}
-.live{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--up);margin-right:6px;animation:p 1.6s infinite}
-@keyframes p{50%{opacity:.25}}
-table.lv{width:100%;border-collapse:collapse;font:12px 'IBM Plex Mono'}table.lv td{padding:5px 6px;border-bottom:1px solid var(--ln)}table.lv td:last-child{text-align:right}
-.gx h1,.gx .sum,.gx .sum *{color:#ededef!important;opacity:1!important}.gx h1 b{color:#f4b740!important}.gx .sub{color:#a6abb7!important;opacity:1!important}
+:root{--bg:#0b0b0b;--pn:#121212;--pn2:#171717;--ln:#232323;--gr:#1c1c1c;--tx:#e8e8e8;--mu:#8b8b8b;--cy:#4fe3f0;--pu:#a35cf0;--gn:#8ee04a;--rd:#f0473c;--ye:#f5e642;--or:#f59e2c;--bl:#5aa9ff}
+html,body{background:var(--bg)!important}
+.gt,.gt *{box-sizing:border-box}
+.gt{color:var(--tx);font:13px/1.4 Inter,system-ui,sans-serif;padding:10px;max-width:1800px;margin:0 auto}
+.gt .mono{font-family:'IBM Plex Mono',monospace}
+.ttl{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:4px 2px 10px}
+.ttl h1{font:600 18px Inter,sans-serif;margin:0;color:var(--tx)!important;letter-spacing:-.01em}
+.ttl h1 b{color:var(--cy)}.ttl p{margin:0;color:var(--mu)!important;font-size:12px}
+.strip{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:8px}
+.sc{background:var(--pn);border:1px solid var(--ln);border-radius:4px;padding:7px 9px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px}
+.sc:hover,.sc.on{border-color:#3a3a3a;background:var(--pn2)}.sc.on{box-shadow:inset 2px 0 0 var(--cy)}
+.sc .a{display:flex;justify-content:space-between;font-size:12px;color:var(--tx)}.sc .b{color:var(--mu);margin-top:3px}
+.lay{display:grid;grid-template-columns:232px minmax(0,1fr) 380px;gap:8px;height:calc(100vh - 150px);min-height:640px}
+.pn{background:var(--pn);border:1px solid var(--ln);border-radius:4px;position:relative;overflow:hidden}
+/* state sidebar */
+.st{padding:10px;overflow:auto;font-size:12px}
+.st h4{margin:12px 0 6px;font:600 12px Inter;color:var(--tx);display:flex;justify-content:space-between}
+.st h4.g{color:var(--gn)}.st h4.o{color:var(--or)}
+.st h4:first-child{margin-top:0}
+.st select{width:100%;background:#0d0d0d;color:var(--tx);border:1px solid #333;border-radius:3px;padding:6px;font:12px 'IBM Plex Mono'}
+.btn{display:block;width:100%;background:#1e1e1e;border:1px solid #2a2a2a;color:var(--tx);border-radius:3px;padding:6px;margin:3px 0;font:500 11px 'IBM Plex Mono';cursor:pointer;text-align:center}
+.btn.on{background:#2c3236;border-color:#4a5459;color:#fff}
+.btn.blue{background:#8fd0f5;color:#0b1a22;border-color:#8fd0f5;font-weight:600}
+.rad{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.rad label{display:flex;align-items:center;gap:6px;padding:4px 2px;cursor:pointer;color:var(--tx)}
+.rad input{accent-color:var(--cy)}
+.kv{display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-family:'IBM Plex Mono';font-size:11.5px;border-top:1px solid var(--ln);padding-top:6px}
+.kv span:nth-child(odd){color:var(--mu)}
+.mc{width:100%;border-collapse:collapse;font:11.5px 'IBM Plex Mono'}
+.mc td{padding:3px 2px;border-top:1px solid var(--ln)}.mc td:nth-child(2){text-align:center;color:var(--tx)}.mc td:last-child{text-align:right}
+.mc tr td:first-child{color:var(--bl)}
+.rp{display:flex;align-items:center;gap:6px;margin-top:8px;font:11px 'IBM Plex Mono';color:var(--mu)}
+.rp input{flex:1;accent-color:var(--bl)}
+.rp button{background:none;border:1px solid #333;color:var(--tx);border-radius:3px;width:26px;height:22px;cursor:pointer}
+/* main chart */
+.mainp{display:flex;flex-direction:column}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid var(--ln);font:11px 'IBM Plex Mono';color:var(--mu)}
+.mh .lg{display:flex;gap:12px}.mh .lg i{display:inline-block;width:10px;height:4px;margin-right:4px;vertical-align:middle;border-radius:2px}
+.cw{flex:1;position:relative;min-height:0}
+.cw canvas{position:absolute;inset:0;width:100%;height:100%}
+.tip{position:absolute;pointer-events:none;background:rgba(10,10,10,.94);border:1px solid #333;border-radius:3px;padding:6px 8px;font:11px 'IBM Plex Mono';color:var(--tx);display:none;z-index:3;white-space:nowrap}
+/* right column */
+.rc{display:grid;grid-template-rows:1fr 1fr 1fr auto;gap:8px;min-height:0}
+.rc .pn{display:flex;flex-direction:column}
+.rc .pn h5{margin:0;padding:6px 10px;font:500 11px 'IBM Plex Mono';color:var(--mu);border-bottom:1px solid var(--ln);display:flex;justify-content:space-between}
+.rc .pn h5 b{color:var(--tx);font-weight:500}
+.sm{padding:9px 10px;font-size:12px;line-height:1.5;color:#cfcfcf}
+.sm .rg{font:600 11px 'IBM Plex Mono';padding:2px 6px;border-radius:3px;margin-right:6px}
+.kp{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--ln);border-top:1px solid var(--ln)}
+.kp div{background:var(--pn);padding:6px 8px;font:11px 'IBM Plex Mono'}.kp div span{display:block;color:var(--mu);font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.pos{color:var(--gn)!important}.neg{color:var(--rd)!important}.cy{color:var(--cy)}.pu{color:var(--pu)}
+.live{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gn);margin-right:5px;animation:bl 1.6s infinite}@keyframes bl{50%{opacity:.25}}
+.note{color:var(--mu);font-size:12px;line-height:1.6;margin:14px 2px 30px;max-width:1100px}.note b{color:#bbb}
+.err{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mu);font:12px 'IBM Plex Mono';text-align:center;padding:20px}
+@media(max-width:1200px){.lay{grid-template-columns:220px minmax(0,1fr);height:auto}.rc{grid-column:1/-1;grid-template-rows:none;grid-template-columns:1fr 1fr}.rc .pn{min-height:230px}.mainp{min-height:720px}.st{max-height:720px}}
+@media(max-width:760px){.lay{grid-template-columns:1fr}.strip{grid-template-columns:repeat(3,1fr)}.rc{grid-template-columns:1fr}.mainp{min-height:620px}.st{max-height:none}}
 </style>
 </head>
 <body data-page="gex">
 <header class="site-head"></header>
-<main class="gx">
-  <h1>Gamma Exposure <b>(GEX)</b> Scanner</h1>
-  <p class="sub"><span class="live"></span>Dealer positioning from real option chains: US (SPY, QQQ, IWM, mega-caps) and India (NIFTY, BANKNIFTY, FINNIFTY). Refreshes every 60 s.</p>
+<main class="gt">
+  <div class="ttl"><h1>Gamma Exposure <b>Terminal</b></h1><p><span class="live"></span>Dealer positioning from real option chains · US via Alpaca · India via Upstox · updates every minute</p></div>
+  <div class="strip" id="strip"></div>
+  <div class="lay">
+    <aside class="pn st" id="state">
+      <h4>state</h4>
+      <select id="tk" aria-label="Ticker"></select>
+      <h4 class="g">gex profile</h4>
+      <button class="btn on" data-m="all">45d (agg)</button>
+      <button class="btn" data-m="week">this week</button>
+      <button class="btn" data-m="0dte" id="m0">latest</button>
+      <h4 class="o">options profile</h4>
+      <div class="rad">
+        <label><input type="radio" name="op" value="delta">delta</label>
+        <label><input type="radio" name="op" value="gamma" checked>gamma</label>
+        <label><input type="radio" name="op" value="vanna">vanna</label>
+        <label><input type="radio" name="op" value="charm">charm</label>
+        <label><input type="radio" name="op" value="oi">open int</label>
+        <label><input type="radio" name="op" value="none">off</label>
+      </div>
+      <h4>update</h4>
+      <div class="kv" id="upd"></div>
+      <h4>levels</h4>
+      <div class="kv" id="lvl"></div>
+      <h4>max change gex</h4>
+      <table class="mc" id="mc"></table>
+      <h4>replay</h4>
+      <button class="btn blue" id="live">● live</button>
+      <div class="rp"><button id="play" title="Play">▶</button><input type="range" id="rs" min="0" max="0" value="0"><span id="rt">live</span></div>
+    </aside>
 
-  <div class="board" id="board"></div>
+    <section class="pn mainp">
+      <div class="mh"><span id="mt">net gex by strike</span><span class="lg"><span><i style="background:var(--cy)"></i>+ gex</span><span><i style="background:var(--pu)"></i>− gex</span><span id="lgd"><i style="background:var(--gn)"></i>call <i style="background:var(--rd);margin-left:6px"></i>put</span></span></div>
+      <div class="cw" id="cw"><canvas id="cS"></canvas><div class="tip" id="tip"></div><div class="err" id="err">Loading…</div></div>
+    </section>
 
-  <div class="bar" id="syms"></div>
-  <div class="bar">
-    <span class="mu" style="font-size:12px">Expiries:</span>
-    <button class="chip on" data-m="all">All (45d)</button><button class="chip" data-m="week">This week</button><button class="chip" data-m="0dte">Nearest / 0DTE</button>
-    <span class="sep"></span><span class="mu" id="stamp" style="font-size:12px"></span>
+    <div class="rc">
+      <div class="pn"><h5><span>spot · net gex</span><b id="h1v"></b></h5><div class="cw"><canvas id="cA"></canvas></div></div>
+      <div class="pn"><h5><span>spot · zero gamma · walls</span><b id="h2v"></b></h5><div class="cw"><canvas id="cB"></canvas></div></div>
+      <div class="pn"><h5><span>gamma profile (if spot moves)</span><b id="h3v"></b></h5><div class="cw"><canvas id="cP"></canvas></div></div>
+      <div class="pn"><div class="sm" id="sum"></div><div class="kp" id="kp"></div></div>
+    </div>
   </div>
 
-  <div id="out"><div class="err">Loading…</div></div>
-
-  <p class="note"><b>How to read it.</b> Positive gamma (price above the flip): dealers hedge against the move, so ranges hold and dips get bought. Negative gamma (below the flip): dealers hedge with the move, so breaks extend and volatility expands. The call wall is the strike with the most positive call gamma (often resistance); the put wall is the most negative put gamma (often support). Vanna shows how dealer deltas shift if implied volatility moves; charm shows the delta drift as time passes, strongest into expiry.<br>
-  <b>Method.</b> Exposure = gamma × open interest × contract size × spot² × 1%, calls positive and puts negative (the standard assumption that customers buy calls and puts and dealers take the other side). It is a model of positioning, not a certainty. Open interest updates once a day; US option quotes use Alpaca's indicative feed. Information only, not investment advice.</p>
+  <p class="note"><b>How to read it.</b> Cyan bars are strikes where dealers are long gamma (they sell rallies and buy dips, so price tends to stick); purple bars are short gamma (they chase moves, so price tends to slip through). Above the zero-gamma flip the tape is usually calmer; below it, moves extend. The dots show the options profile you pick (delta, gamma, vanna or charm exposure) split into calls (green) and puts (red). Max change GEX shows which strike moved most over the last 1 to 30 minutes, and the replay slider plays back today's positioning minute by minute.<br>
+  <b>Method.</b> Exposure = gamma × open interest × contract size × spot² × 1%, calls positive and puts negative (the standard assumption that customers buy options and dealers take the other side). It is a model of positioning, not a certainty. Open interest updates once a day; US quotes use Alpaca's indicative feed. Information only, not investment advice.</p>
 </main>
 <script>
 (()=>{
-const US=['SPY','QQQ','IWM','AAPL','NVDA','TSLA','MSFT','AMZN','META','GOOGL','AMD'],IN=['NIFTY','BANKNIFTY','FINNIFTY'];
-let sym=(location.hash.slice(1)||'SPY').toUpperCase(),mode='all',view='gex',D=null;
-const $=s=>document.querySelector(s),fmt=(v,d=2)=>v==null?'—':(+v).toLocaleString('en-US',{maximumFractionDigits:d});
-const big=v=>{if(v==null)return'—';const a=Math.abs(v),s=v<0?'-':'';return s+(a>=1e9?(a/1e9).toFixed(2)+'B':a>=1e6?(a/1e6).toFixed(1)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':a.toFixed(0))};
+const US=['SPY','QQQ','IWM','AAPL','NVDA','TSLA','MSFT','AMZN','META','GOOGL','AMD'],IN=['NIFTY','BANKNIFTY','FINNIFTY'],BOARD=['SPY','QQQ','IWM','NIFTY','BANKNIFTY','FINNIFTY'];
+const C={cy:'#4fe3f0',pu:'#a35cf0',gn:'#8ee04a',rd:'#f0473c',ye:'#f5e642',or:'#f59e2c',bl:'#5aa9ff',tx:'#e8e8e8',mu:'#8b8b8b',gr:'#1e1e1e',ax:'#2a2a2a'};
+let sym=(location.hash.slice(1)||'SPY').toUpperCase(),mode='all',op='gamma',D=null,R=null,timer=null,hover=null;
+const $=s=>document.querySelector(s);
+const nf=(v,d=2)=>v==null||isNaN(v)?'—':(+v).toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:0});
+const big=v=>{if(v==null||isNaN(v))return'—';const a=Math.abs(v),s=v<0?'-':'';return s+(a>=1e12?(a/1e12).toFixed(2)+'T':a>=1e9?(a/1e9).toFixed(2)+'B':a>=1e6?(a/1e6).toFixed(1)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':a.toFixed(0))};
 const cur=()=>D&&D.market==='IN'?'₹':'$';
-function chips(){$('#syms').innerHTML=US.map(s=>`<button class="chip${s===sym?' on':''}" data-s="${s}">${s}<small>US</small></button>`).join('')+'<span class="sep"></span>'+IN.map(s=>`<button class="chip${s===sym?' on':''}" data-s="${s}">${s}<small>IN</small></button>`).join('')}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-s],[data-m],[data-v]');if(!b)return;
- if(b.dataset.s){sym=b.dataset.s;location.hash=sym;chips();load()}
- if(b.dataset.m){mode=b.dataset.m;document.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b));load()}
- if(b.dataset.v){view=b.dataset.v;render()}});
-async function board(){try{const j=await(await fetch('/gex_api.php?r=board')).json();if(!j.ok)return;
- $('#board').innerHTML=j.rows.map(r=>`<div class="bcard" data-s="${r.symbol}"><div class="s">${r.symbol} <span class="${r.regime==='positive'?'pos':'neg'}" style="float:right;font-size:11px">${r.regime==='positive'?'+γ RANGE':'−γ VOLATILE'}</span></div>
- <div class="r mu">Spot <b style="color:var(--tx)">${fmt(r.spot)}</b> · Flip ${fmt(r.zero_gamma)}</div><div class="r mu">CW <span class="pos">${fmt(r.call_wall)}</span> · PW <span class="neg">${fmt(r.put_wall)}</span></div></div>`).join('')}catch(e){}}
-async function load(){try{const r=await fetch(`/gex_api.php?s=${sym}&m=${mode}`);D=await r.json();if(!D.ok)throw 0;render()}catch(e){$('#out').innerHTML='<div class="err">Data for this symbol is temporarily unavailable. Sorry for the inconvenience.</div>'}}
-function render(){const d=D,c=cur(),S=d.spot;
- $('#stamp').textContent=`${d.symbol} · ${new Date(d.ts*1000).toLocaleTimeString()}${d.stale?' · cached':''}`;
- const dist=v=>v==null?'':`${((v/S-1)*100).toFixed(2)}% from spot`;
- const K=[['Spot',fmt(S),d.market==='IN'?'NSE index':'Last trade'],['Regime',d.regime==='positive'?'<span class=pos>Positive γ</span>':'<span class=neg>Negative γ</span>',d.regime==='positive'?'Mean-reverting':'Trend / vol expansion'],
- ['Zero gamma flip',fmt(d.zero_gamma),dist(d.zero_gamma)],['Call wall','<span class=pos>'+fmt(d.call_wall)+'</span>',dist(d.call_wall)],['Put wall','<span class=neg>'+fmt(d.put_wall)+'</span>',dist(d.put_wall)],
- ['Net GEX / 1%',`<span class="${d.net_gex>=0?'pos':'neg'}">${c}${big(d.net_gex)}</span>`,'Dealer hedge value'],['Dealer flow on +1%',`<span class="${d.hedge_per_1pct>=0?'pos':'neg'}">${d.hedge_per_1pct>=0?'Buy ':'Sell '}${c}${big(Math.abs(d.hedge_per_1pct))}</span>`,'Estimated hedge'],
- ['Net vanna',`${c}${big(d.net_vanna)}`,'Δ$ per +1 IV pt'],['Net charm',`${c}${big(d.net_charm)}`,'Δ$ drift per day'],['Max pain',fmt(d.max_pain),d.near_expiry||''],['Expected move',d.expected_move?'±'+fmt(d.expected_move):'—',d.expected_move?`${fmt(S-d.expected_move)} – ${fmt(S+d.expected_move)}`:''],['Put/Call OI',fmt(d.pcr_oi),'Vol P/C '+fmt(d.pcr_vol)]];
- $('#out').innerHTML=`<div class="sum">${d.summary}</div><div class="kp">${K.map(k=>`<div class="k"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="h">${k[2]}</div></div>`).join('')}</div>
- <div class="grid"><div class="pn"><h3>Exposure by strike <div class="tabs">${['gex','split','vanna','charm','oi'].concat(d.market==='IN'?['doi']:[]).map(v=>`<button class="chip${v===view?' on':''}" data-v="${v}">${{gex:'Net GEX',split:'Call/Put',vanna:'Vanna',charm:'Charm',oi:'OI',doi:'OI change'}[v]}</button>`).join('')}</div></h3><canvas id="cS"></canvas></div>
- <div><div class="pn"><h3>Gamma profile <span>total GEX if spot moves</span></h3><canvas id="cP" height="230"></canvas></div>
- <div class="pn" style="margin-top:12px"><h3>Intraday <span>spot vs flip & walls (today)</span></h3><canvas id="cH" height="200"></canvas></div>
- <div class="pn" style="margin-top:12px"><h3>Key levels</h3><table class="lv">${levels(d)}</table></div></div></div>`;
- strikes();profile();hist()}
-function levels(d){const L=[['Call wall',d.call_wall,'pos'],['Major γ strike',d.major_level,''],['Zero gamma',d.zero_gamma,''],['Spot',d.spot,''],['Max pain',d.max_pain,''],['Put wall',d.put_wall,'neg']].filter(x=>x[1]!=null).sort((a,b)=>b[1]-a[1]);
- return L.map(x=>`<tr><td class="${x[2]}">${x[0]}</td><td>${fmt(x[1])}</td></tr>`).join('')}
-function cv(id,h){const c=document.getElementById(id),r=devicePixelRatio||1,w=c.clientWidth;h=h||+c.getAttribute('height');c.width=w*r;c.height=h*r;c.style.height=h+'px';const x=c.getContext('2d');x.scale(r,r);x.font='11px IBM Plex Mono';return[x,w,h]}
-function strikes(){const d=D,st=d.strikes,f={gex:x=>[x.gex],split:x=>[x.cg,x.pg],vanna:x=>[x.vanna],charm:x=>[x.charm],oi:x=>[x.coi,-x.poi],doi:x=>[x.doi]}[view];
- const h=Math.max(320,st.length*13+30),[x,w]=cv('cS',h),L=64,R=w-10,mid=(L+R)/2;let mx=1;st.forEach(s=>f(s).forEach(v=>mx=Math.max(mx,Math.abs(v))));
- const bh=(h-24)/st.length,yOf=k=>{let i=st.findIndex(s=>s.k>=k);if(i<0)i=st.length;return h-12-(i+.5)*bh};
- x.strokeStyle='#2a2d35';x.beginPath();x.moveTo(mid,6);x.lineTo(mid,h-6);x.stroke();
- st.forEach((s,i)=>{const y=h-12-(i+1)*bh;f(s).forEach(v=>{x.fillStyle=v>=0?'#22ab94':'#f7525f';const ww=v/mx*(R-mid);x.fillRect(v>=0?mid:mid+ww,y+1,Math.abs(ww),Math.max(1,bh-2))});
-  if(st.length<40||i%2===0){x.fillStyle='#8a8f9c';x.fillText(fmt(s.k),4,y+bh/2+4)}});
- const line=(k,col,t)=>{if(k==null)return;const y=yOf(k);x.strokeStyle=col;x.setLineDash([4,3]);x.beginPath();x.moveTo(L,y);x.lineTo(R,y);x.stroke();x.setLineDash([]);x.fillStyle=col;x.fillText(t+' '+fmt(k),R-110,y-3)};
- line(d.spot,'#ededef','SPOT');line(d.zero_gamma,'#f4b740','FLIP');line(d.call_wall,'#22ab94','CW');line(d.put_wall,'#f7525f','PW')}
-function profile(){const p=D.profile,[x,w,h]=cv('cP'),xs=p.map(q=>q[0]),ys=p.map(q=>q[1]),x0=Math.min(...xs),x1=Math.max(...xs),m=Math.max(1,...ys.map(Math.abs));
- const X=v=>8+(v-x0)/(x1-x0)*(w-16),Y=v=>h/2-v/m*(h/2-14);x.strokeStyle='#2a2d35';x.beginPath();x.moveTo(0,h/2);x.lineTo(w,h/2);x.stroke();
- for(let i=1;i<p.length;i++){x.strokeStyle=p[i][1]>=0?'#22ab94':'#f7525f';x.lineWidth=2;x.beginPath();x.moveTo(X(p[i-1][0]),Y(p[i-1][1]));x.lineTo(X(p[i][0]),Y(p[i][1]));x.stroke()}x.lineWidth=1;
- const v=(k,c,t)=>{if(k==null||k<x0||k>x1)return;x.strokeStyle=c;x.setLineDash([3,3]);x.beginPath();x.moveTo(X(k),4);x.lineTo(X(k),h-4);x.stroke();x.setLineDash([]);x.fillStyle=c;x.fillText(t,X(k)+3,14)};
- v(D.spot,'#ededef','SPOT');v(D.zero_gamma,'#f4b740','FLIP');x.fillStyle='#8a8f9c';x.fillText(fmt(x0,0),4,h-4);x.fillText(fmt(x1,0),w-50,h-4)}
-function hist(){const H=D.history||[],[x,w,h]=cv('cH');if(H.length<2){x.fillStyle='#8a8f9c';x.fillText('Builds up through the session (snapshot every 2 min).',10,h/2);return}
- const vals=H.flatMap(q=>[q.s,q.f,q.cw,q.pw]).filter(v=>v!=null),lo=Math.min(...vals),hi=Math.max(...vals),t0=H[0].t,t1=H[H.length-1].t;
- const X=t=>8+(t-t0)/Math.max(1,t1-t0)*(w-16),Y=v=>h-10-(v-lo)/Math.max(1e-9,hi-lo)*(h-20);
- const ser=(k,c,dash)=>{x.strokeStyle=c;x.setLineDash(dash||[]);x.beginPath();let st=0;H.forEach(q=>{if(q[k]==null)return;st?x.lineTo(X(q.t),Y(q[k])):x.moveTo(X(q.t),Y(q[k]));st=1});x.stroke();x.setLineDash([])};
- ser('cw','#22ab94',[4,3]);ser('pw','#f7525f',[4,3]);ser('f','#f4b740',[2,2]);x.lineWidth=2;ser('s','#ededef');x.lineWidth=1}
-chips();board();load();setInterval(load,60000);setInterval(board,120000);addEventListener('resize',()=>D&&render());
+const tm=t=>new Date(t*1000).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+
+$('#tk').innerHTML='<optgroup label="US">'+US.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="India">'+IN.map(s=>`<option>${s}</option>`).join('')+'</optgroup>';
+$('#tk').value=sym;
+$('#tk').onchange=e=>{sym=e.target.value;location.hash=sym;stopReplay();load();strip()};
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b));stopReplay();load()});
+document.querySelectorAll('[name=op]').forEach(r=>r.onchange=()=>{op=r.value;$('#lgd').style.display=op==='none'?'none':'';draw(true)});
+$('#strip').addEventListener('click',e=>{const c=e.target.closest('[data-s]');if(c){sym=c.dataset.s;$('#tk').value=sym;location.hash=sym;stopReplay();load();strip()}});
+
+async function strip(){try{const j=await(await fetch('/gex_api.php?r=board')).json();if(!j.ok)return;
+ const m={};j.rows.forEach(r=>m[r.symbol]=r);
+ $('#strip').innerHTML=BOARD.filter(s=>m[s]).map(s=>{const r=m[s];return`<div class="sc${s===sym?' on':''}" data-s="${s}"><div class="a"><b>${s}</b><span class="${r.regime==='positive'?'pos':'neg'}">${r.regime==='positive'?'+γ':'−γ'}</span></div><div class="b">${nf(r.spot)} · flip <span style="color:var(--ye)">${nf(r.zero_gamma,1)}</span></div><div class="b">cw <span class="cy">${nf(r.call_wall)}</span> · pw <span class="pu">${nf(r.put_wall)}</span></div></div>`}).join('')}catch(e){}}
+
+async function load(){try{const r=await fetch(`/gex_api.php?s=${sym}&m=${mode}`);const j=await r.json();if(!j.ok)throw 0;D=j;$('#err').style.display='none';side();draw()}
+ catch(e){$('#err').style.display='flex';$('#err').textContent='Data for this symbol is temporarily unavailable. Sorry for the inconvenience.'}}
+
+/* ---------- sidebar ---------- */
+function snapAt(sec){const H=D.history||[];if(!H.length)return null;const t=H[H.length-1].t-sec;let b=null;for(const h of H){if(h.t<=t)b=h;else break}return b}
+function side(){const d=D,c=cur();
+ $('#m0').textContent='latest ('+(d.near_expiry||'').slice(5)+')';
+ const t=new Date(d.ts*1000);
+ $('#upd').innerHTML=`<span>date</span><span>${t.toLocaleDateString()}</span><span>time</span><span>${t.toLocaleTimeString()}</span><span>spot</span><span>${nf(d.spot)}</span><span>source</span><span>${d.src}${d.stale?' (cached)':''}</span>`;
+ $('#lvl').innerHTML=`<span class="pos">major call gamma</span><span class="cy">${nf(d.call_wall)}</span><span class="neg">major put gamma</span><span class="pu">${nf(d.put_wall)}</span><span style="color:var(--ye)">zero gamma</span><span>${nf(d.zero_gamma)}</span><span>net gex</span><span class="${d.net_gex>=0?'pos':'neg'}">${c}${big(d.net_gex)}</span><span>max pain</span><span>${nf(d.max_pain)}</span>`;
+ const cur0=new Map(d.strikes.map(s=>[s.k,s.gex]));
+ const rows=[[1,'1 min'],[5,'5 min'],[10,'10 min'],[15,'15 min'],[30,'30 min']].map(([m,l])=>{const h=snapAt(m*60);if(!h||!h.k)return`<tr><td>${l}</td><td>—</td><td class="mu">building</td></tr>`;
+  const old=new Map(h.k.map(x=>[x[0],x[1]]));let bk=null,bv=0;cur0.forEach((v,k)=>{const dv=v-(old.get(k)||0);if(Math.abs(dv)>Math.abs(bv)){bv=dv;bk=k}});
+  return`<tr><td>${l}</td><td>${bk==null?'—':nf(bk)}</td><td class="${bv>=0?'pos':'neg'}">${big(bv)}</td></tr>`});
+ $('#mc').innerHTML=rows.join('');
+ const H=d.history||[];$('#rs').max=Math.max(0,H.length-1);if(!R)$('#rs').value=$('#rs').max;
+ const rg=d.regime==='positive';
+ $('#sum').innerHTML=`<span class="rg" style="background:${rg?'rgba(142,224,74,.12)':'rgba(240,71,60,.12)'};color:${rg?C.gn:C.rd}">${rg?'POSITIVE γ':'NEGATIVE γ'}</span>${d.summary}`;
+ $('#kp').innerHTML=[['dealer flow +1%',`<b class="${d.hedge_per_1pct>=0?'pos':'neg'}">${d.hedge_per_1pct>=0?'buy ':'sell '}${c}${big(Math.abs(d.hedge_per_1pct))}</b>`],['net vanna',c+big(d.net_vanna)],['net charm',c+big(d.net_charm)],['expected move',d.expected_move?'±'+nf(d.expected_move):'—'],['put/call oi',nf(d.pcr_oi)],['put/call vol',nf(d.pcr_vol)]].map(x=>`<div><span>${x[0]}</span>${x[1]}</div>`).join('');
+ $('#mt').textContent=`net gex by strike · ${mode==='all'?'45d aggregate':mode==='week'?'this week':'expiry '+d.near_expiry}`;
+ $('#lgd').style.display=op==='none'?'none':'';}
+
+/* ---------- replay ---------- */
+function stopReplay(){R=null;clearInterval(timer);timer=null;$('#play').textContent='▶';$('#rt').textContent='live';$('#live').classList.add('blue')}
+$('#rs').oninput=e=>{const H=D.history||[];const i=+e.target.value;if(i>=H.length-1){stopReplay();draw();return}R=H[i];$('#rt').textContent=tm(R.t);$('#live').classList.remove('blue');draw()};
+$('#live').onclick=()=>{stopReplay();$('#rs').value=$('#rs').max;draw()};
+$('#play').onclick=()=>{const H=D.history||[];if(H.length<2)return;if(timer){clearInterval(timer);timer=null;$('#play').textContent='▶';return}
+ let i=R?H.indexOf(R):0;if(i<0||i>=H.length-1)i=0;$('#play').textContent='❚❚';
+ timer=setInterval(()=>{i++;if(i>=H.length){stopReplay();draw();return}$('#rs').value=i;R=H[i];$('#rt').textContent=tm(R.t);$('#live').classList.remove('blue');draw()},350)};
+
+/* ---------- canvas helpers ---------- */
+function cv(id){const c=document.getElementById(id),r=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;c.width=w*r;c.height=h*r;const x=c.getContext('2d');x.setTransform(r,0,0,r,0,0);x.clearRect(0,0,w,h);x.font='10px IBM Plex Mono';x.textBaseline='middle';return[x,w,h]}
+function tag(x,X,Y,t,bg,fg){x.font='10px IBM Plex Mono';const w=x.measureText(t).width+8;x.fillStyle=bg;x.fillRect(X,Y-8,w,16);x.fillStyle=fg;x.fillText(t,X+4,Y)}
+function nice(m){const p=Math.pow(10,Math.floor(Math.log10(m||1))),f=m/p;return(f<=1?1:f<=2?2:f<=5?5:10)*p}
+
+/* ---------- main strike chart ---------- */
+function opVals(s){switch(op){case'delta':return[s.cd,s.pd];case'gamma':return[s.cg,s.pg];case'vanna':return[s.cva,s.pva];case'charm':return[s.cch,s.pch];case'oi':return[s.coi,-s.poi];default:return null}}
+function main(){const d=D;const [x,w,h]=cv('cS');
+ let bars,spot,flip;
+ if(R){bars=R.k.map(q=>({k:q[0],v:q[1]}));spot=R.s;flip=R.f}else{bars=d.strikes.map(s=>({k:s.k,v:s.gex,s}));spot=d.spot;flip=d.zero_gamma}
+ if(!bars.length)return;
+ const L=58,Rm=72,T=28,B=26,cx0=L,cx1=w-Rm,mid=(cx0+cx1)/2,ks=bars.map(b=>b.k),kmin=Math.min(...ks),kmax=Math.max(...ks);
+ const Y=k=>T+(kmax-k)/((kmax-kmin)||1)*(h-T-B);
+ const step=bars.length>1?Math.abs(Y(bars[1].k)-Y(bars[0].k)):6,bh=Math.max(1.5,Math.min(9,step*.62));
+ // watermark
+ x.save();x.font='600 '+Math.min(64,w/9)+'px Inter';x.fillStyle='rgba(255,255,255,.05)';x.textBaseline='top';x.fillText(sym,L+12,T+8);x.restore();
+ // grid
+ let mx=Math.max(1,...bars.map(b=>Math.abs(b.v)));const nm=nice(mx);mx=nm;
+ x.strokeStyle=C.gr;x.lineWidth=1;x.fillStyle=C.mu;x.textAlign='center';
+ for(let i=-2;i<=2;i++){const X=mid+i/2*(cx1-mid);x.beginPath();x.moveTo(X,T);x.lineTo(X,h-B);x.stroke();x.fillText(big(i/2*nm),X,h-B+13)}
+ x.strokeStyle=C.ax;x.beginPath();x.moveTo(mid,T);x.lineTo(mid,h-B);x.stroke();
+ // y labels
+ x.textAlign='right';const every=Math.max(1,Math.ceil(13/step));
+ bars.forEach((b,i)=>{if(i%every)return;const y=Y(b.k);x.fillStyle=C.mu;x.fillText(nf(b.k),L-8,y);x.strokeStyle='rgba(255,255,255,.025)';x.beginPath();x.moveTo(cx0,y);x.lineTo(cx1,y);x.stroke()});
+ x.textAlign='left';
+ // bars
+ bars.forEach(b=>{const y=Y(b.k),len=b.v/mx*(cx1-mid);x.fillStyle=b.v>=0?C.cy:C.pu;x.globalAlpha=hover&&hover.k===b.k?1:.92;x.fillRect(b.v>=0?mid:mid+len,y-bh/2,Math.abs(len),bh);
+  if(Math.abs(len)>2){x.beginPath();x.arc(b.v>=0?mid+len:mid+len,y,bh/2,0,7);x.fill()}});x.globalAlpha=1;
+ // options-profile dots (live only)
+ if(!R&&op!=='none'){const pts=bars.map(b=>({k:b.k,v:opVals(b.s)}));let om=Math.max(1,...pts.flatMap(p=>p.v.map(Math.abs)));const on=nice(om);
+  x.fillStyle=C.mu;x.textAlign='center';for(let i=-2;i<=2;i++){x.fillText(big(i/2*on),mid+i/2*(cx1-mid),T-12)}x.textAlign='left';
+  const r=Math.max(1.8,Math.min(4,bh*.55));
+  pts.forEach(p=>{const y=Y(p.k);[[p.v[0],C.gn],[p.v[1],C.rd]].forEach(([v,col])=>{if(!v)return;x.fillStyle=col;x.beginPath();x.arc(mid+v/on*(cx1-mid),y,r,0,7);x.fill()})})}
+ // level lines
+ const hl=(k,col,lab,dash,bg,fg)=>{if(k==null||k<kmin-1e-9||k>kmax+1e-9)return;const y=Y(k);x.strokeStyle=col;x.setLineDash(dash||[]);x.beginPath();x.moveTo(cx0,y);x.lineTo(cx1,y);x.stroke();x.setLineDash([]);tag(x,cx1+4,y,lab,bg||col,fg||'#0b0b0b')};
+ if(!R){hl(d.call_wall,'rgba(79,227,240,.45)','CW '+nf(d.call_wall),[2,4],'#103236',C.cy);hl(d.put_wall,'rgba(163,92,240,.45)','PW '+nf(d.put_wall),[2,4],'#26173a','#c9a2ff')}
+ hl(flip,'rgba(245,230,66,.7)','0γ '+nf(flip,1),[5,4],'#33300c',C.ye);
+ hl(spot,'#f2f2f2',nf(spot),[],'#f2f2f2','#0b0b0b');
+ if(R){x.fillStyle=C.or;x.font='600 11px IBM Plex Mono';x.fillText('REPLAY '+tm(R.t),cx1-110,T-12)}
+ // hover
+ main.geo={Y,kmin,kmax,bars};
+ if(hover){const y=Y(hover.k);x.strokeStyle='rgba(255,255,255,.18)';x.beginPath();x.moveTo(cx0,y);x.lineTo(cx1,y);x.stroke()}}
+$('#cw').addEventListener('mousemove',e=>{const g=main.geo;if(!g||!D)return;const r=e.currentTarget.getBoundingClientRect(),y=e.clientY-r.top;let best=null,bd=1e9;g.bars.forEach(b=>{const dd=Math.abs(g.Y(b.k)-y);if(dd<bd){bd=dd;best=b}});
+ if(!best||bd>14){hover=null;$('#tip').style.display='none';draw(true);return}hover=best;const c=cur(),s=best.s;
+ $('#tip').innerHTML=`<b>${nf(best.k)}</b><br>net gex <span class="${best.v>=0?'cy':'pu'}">${c}${big(best.v)}</span>`+(s?`<br>call γ <span class="pos">${c}${big(s.cg)}</span> · put γ <span class="neg">${c}${big(s.pg)}</span><br>call δ ${c}${big(s.cd)} · put δ ${c}${big(s.pd)}<br>vanna ${c}${big(s.vanna)} · charm ${c}${big(s.charm)}<br>oi c ${nf(s.coi,0)} · p ${nf(s.poi,0)}`+(D.market==='IN'?`<br>oi chg ${nf(s.doi,0)}`:''):'');
+ const t=$('#tip');t.style.display='block';t.style.left=Math.min(e.clientX-r.left+14,r.width-t.offsetWidth-6)+'px';t.style.top=Math.max(4,y-t.offsetHeight/2)+'px';draw(true)});
+$('#cw').addEventListener('mouseleave',()=>{hover=null;$('#tip').style.display='none';draw(true)});
+
+/* ---------- time series ---------- */
+function series(id,lines,zero){const H=D.history||[];const[x,w,h]=cv(id);if(H.length<2){x.fillStyle=C.mu;x.fillText('builds through the session · 1 point per minute',10,h/2);return}
+ const L=8,Rm=58,T=8,B=18,t0=H[0].t,t1=H[H.length-1].t,X=t=>L+(t-t0)/Math.max(1,t1-t0)*(w-L-Rm);
+ x.strokeStyle=C.gr;for(let i=0;i<=4;i++){const yy=T+i/4*(h-T-B);x.beginPath();x.moveTo(L,yy);x.lineTo(w-Rm,yy);x.stroke()}
+ x.fillStyle=C.mu;x.textAlign='center';for(let i=0;i<=3;i++){const t=t0+i/3*(t1-t0);x.fillText(tm(t),X(t),h-8)}x.textAlign='left';
+ lines.forEach(ln=>{const v=H.map(q=>ln.f(q)).filter(v=>v!=null);if(!v.length)return;let lo=Math.min(...v),hi=Math.max(...v);if(ln.sym){const m=Math.max(Math.abs(lo),Math.abs(hi))||1;lo=-m;hi=m}if(hi===lo){hi+=1;lo-=1}
+  ln.Y=q=>T+(hi-q)/(hi-lo)*(h-T-B);if(ln.zero){x.strokeStyle=C.ye;x.lineWidth=1.2;x.beginPath();x.moveTo(L,ln.Y(0));x.lineTo(w-Rm,ln.Y(0));x.stroke()}
+  x.strokeStyle=ln.c;x.lineWidth=ln.w||1.3;x.setLineDash(ln.d||[]);x.beginPath();let s=0;H.forEach(q=>{const vv=ln.f(q);if(vv==null)return;s?x.lineTo(X(q.t),ln.Y(vv)):x.moveTo(X(q.t),ln.Y(vv));s=1});x.stroke();x.setLineDash([]);x.lineWidth=1;
+  if(ln.lab){const last=H[H.length-1],vv=ln.f(last);if(vv!=null)tag(x,w-Rm+3,ln.Y(vv),ln.lab(vv),ln.c,'#0b0b0b')}});
+ if(R){const xx=X(R.t);x.strokeStyle=C.or;x.beginPath();x.moveTo(xx,T);x.lineTo(xx,h-B);x.stroke()}}
+function charts(){const c=cur();
+ series('cA',[{f:q=>q.g,c:'#3fb6c2',sym:1,zero:1,w:1.4,lab:v=>big(v)},{f:q=>q.s,c:'#f2f2f2',w:1.6,lab:v=>nf(v)}]);
+ const P={};series('cB',[{f:q=>q.cw,c:'rgba(79,227,240,.8)',d:[3,3]},{f:q=>q.pw,c:'rgba(163,92,240,.9)',d:[3,3]},{f:q=>q.f,c:C.ye,d:[2,2],lab:v=>'0γ '+nf(v,1)},{f:q=>q.s,c:'#f2f2f2',w:1.6,lab:v=>nf(v)}]);
+ $('#h1v').innerHTML=`<span class="${D.net_gex>=0?'pos':'neg'}">${c}${big(D.net_gex)}</span>`;$('#h2v').textContent=nf(D.zero_gamma,1);
+ // gamma profile
+ const p=D.profile,[x,w,h]=cv('cP'),xs=p.map(q=>q[0]),ys=p.map(q=>q[1]),x0=Math.min(...xs),x1=Math.max(...xs),m=Math.max(1,...ys.map(Math.abs));
+ const X=v=>8+(v-x0)/(x1-x0)*(w-16),Y=v=>(h-18)/2-v/m*((h-18)/2-8);
+ x.strokeStyle=C.ye;x.beginPath();x.moveTo(0,Y(0));x.lineTo(w,Y(0));x.stroke();
+ const gp=x.createLinearGradient(0,Y(m),0,Y(-m));gp.addColorStop(0,'rgba(79,227,240,.35)');gp.addColorStop(.5,'rgba(79,227,240,0)');gp.addColorStop(.5,'rgba(163,92,240,0)');gp.addColorStop(1,'rgba(163,92,240,.35)');
+ x.fillStyle=gp;x.beginPath();x.moveTo(X(p[0][0]),Y(0));p.forEach(q=>x.lineTo(X(q[0]),Y(q[1])));x.lineTo(X(p[p.length-1][0]),Y(0));x.fill();
+ for(let i=1;i<p.length;i++){x.strokeStyle=p[i][1]>=0?C.cy:C.pu;x.lineWidth=1.8;x.beginPath();x.moveTo(X(p[i-1][0]),Y(p[i-1][1]));x.lineTo(X(p[i][0]),Y(p[i][1]));x.stroke()}x.lineWidth=1;
+ const vl=(k,col,t)=>{if(k==null||k<x0||k>x1)return;x.strokeStyle=col;x.setLineDash([3,3]);x.beginPath();x.moveTo(X(k),4);x.lineTo(X(k),h-16);x.stroke();x.setLineDash([]);tag(x,Math.min(X(k)+3,w-70),12,t,col,'#0b0b0b')};
+ vl(D.spot,'#f2f2f2',nf(D.spot));if(D.zero_gamma)vl(D.zero_gamma,C.ye,'0γ');
+ x.fillStyle=C.mu;x.fillText(nf(x0,0),6,h-7);x.textAlign='right';x.fillText(nf(x1,0),w-6,h-7);x.textAlign='left';
+ $('#h3v').textContent=D.regime==='positive'?'long gamma':'short gamma'}
+function draw(onlyMain){if(!D)return;main();if(!onlyMain)charts()}
+strip();load();setInterval(()=>{if(!R)load()},60000);setInterval(strip,120000);addEventListener('resize',()=>draw());
 })();
 </script>
 </body>
