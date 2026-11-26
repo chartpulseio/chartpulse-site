@@ -22,13 +22,16 @@ while (microtime(true) - $t0 < 36) {
 $gx = 0;
 try {
     require_once __DIR__ . '/gex_engine.php';
-    $gsyms = array_merge(['SPY', 'QQQ', 'IWM'], array_keys(GEX_IN), GEX_CR, array_slice(GEX_US, 3));
-    $gf = GEX_DIR . '/warm_idx.txt'; if (!is_dir(GEX_DIR)) @mkdir(GEX_DIR, 0755, true);
-    $gi = (int)@file_get_contents($gf); $g0 = microtime(true); $gchk = 0;
+    // 1) indices + BTC/ETH every minute; 2) the rest in rotation, refreshed when older than ~2.5 min
+    if (!is_dir(GEX_DIR)) @mkdir(GEX_DIR, 0755, true);
+    $age = fn($s) => is_file(GEX_DIR . "/chain_$s.json") ? time() - filemtime(GEX_DIR . "/chain_$s.json") : 1e9;
+    $g0 = microtime(true);
+    foreach (GEX_PRIORITY as $s) { if (microtime(true) - $g0 >= 12) break; if ($age($s) >= 55) { gex_get_symbol($s, 'all'); $gx++; } }
+    $gsyms = array_values(array_diff(GEX_US, GEX_PRIORITY));
+    $gf = GEX_DIR . '/warm_idx.txt'; $gi = (int)@file_get_contents($gf); $gchk = 0;
     while (microtime(true) - $g0 < 12 && $gchk++ < count($gsyms)) {
         $s = $gsyms[$gi % count($gsyms)]; $gi++;
-        $cf = GEX_DIR . "/chain_$s.json";
-        if (is_file($cf) && time() - filemtime($cf) < 55) continue;
+        if ($age($s) < 150) continue;
         gex_get_symbol($s, 'all'); $gx++;
     }
     @file_put_contents($gf, (string)($gi % 1000));

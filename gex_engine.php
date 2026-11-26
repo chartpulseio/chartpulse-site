@@ -9,7 +9,10 @@ require_once __DIR__ . '/torus_upstox.php';   // t_cfg (reads config via TORUS_C
 define('GEX_DIR', cp_data_dir() . '/gex');
 const GEX_TTL = 60;               // seconds a computed chain is reused
 const GEX_DAYS = 45;              // expiries considered (calendar days)
-const GEX_US = ['SPY', 'QQQ', 'IWM', 'AAPL', 'NVDA', 'TSLA', 'MSFT', 'AMZN', 'META', 'GOOGL', 'AMD'];
+const GEX_US = ['SPY', 'QQQ', 'IWM', 'DIA', 'AAPL', 'NVDA', 'TSLA', 'MSFT', 'AMZN', 'META', 'GOOGL', 'AMD',
+                'MSTR', 'COIN', 'PLTR', 'AVGO', 'NFLX', 'SMCI', 'MU', 'HOOD',          // added 26 Nov 2026
+                'GLD', 'SLV', 'TLT', 'SMH', 'XLE', 'USO'];
+const GEX_PRIORITY = ['SPY', 'QQQ', 'IWM', 'NIFTY', 'BANKNIFTY', 'FINNIFTY', 'BTC', 'ETH'];   // refreshed every minute
 const GEX_CR = ['BTC', 'ETH'];   // Deribit (public API, no key)
 const GEX_IN = [
     'NIFTY'     => ['key' => 'NSE_INDEX|Nifty 50',   'name' => 'NIFTY 50'],

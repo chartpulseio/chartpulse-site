@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Gamma Exposure (GEX) Scanner: SPY, QQQ, NIFTY, BTC, ETH · ChartPulse</title>
-<meta name="description" content="Free live gamma exposure (GEX) terminal: zero gamma flip, call wall, put wall, delta, vanna and charm profiles, max change GEX and intraday replay for SPY, QQQ, IWM, NIFTY, BANKNIFTY, Bitcoin and Ethereum from real option chains.">
+<meta name="description" content="Free live gamma exposure (GEX) terminal: zero gamma flip, call wall, put wall, delta, vanna and charm profiles, max change GEX and intraday replay for SPY, QQQ, IWM, DIA, gold, silver, bonds, oil, 16 big US stocks, NIFTY, BANKNIFTY, Bitcoin and Ethereum from real option chains.">
 <link rel="canonical" href="https://chartpulse.io/scanners/gex/">
 <meta property="og:title" content="Gamma Exposure (GEX) Scanner · ChartPulse">
 <meta property="og:description" content="Zero gamma, call/put walls, delta, vanna and charm profiles, max change GEX and replay for US and Indian index options. Free.">
@@ -126,7 +126,7 @@ html,body{background:var(--bg)!important}
 </main>
 <script>
 (()=>{
-const US=['SPY','QQQ','IWM','AAPL','NVDA','TSLA','MSFT','AMZN','META','GOOGL','AMD'],IN=['NIFTY','BANKNIFTY','FINNIFTY'],CR=['BTC','ETH'],BOARD=['SPY','QQQ','IWM','NIFTY','BANKNIFTY','FINNIFTY','BTC','ETH'];
+const UE=['SPY','QQQ','IWM','DIA','GLD','SLV','TLT','SMH','XLE','USO'],US=['AAPL','NVDA','TSLA','MSFT','AMZN','META','GOOGL','AMD','MSTR','COIN','PLTR','AVGO','NFLX','SMCI','MU','HOOD'],IN=['NIFTY','BANKNIFTY','FINNIFTY'],CR=['BTC','ETH'],BOARD=['SPY','QQQ','IWM','NIFTY','BANKNIFTY','FINNIFTY','BTC','ETH'];
 const C={cy:'#4fe3f0',pu:'#a35cf0',gn:'#8ee04a',rd:'#f0473c',ye:'#f5e642',or:'#f59e2c',bl:'#5aa9ff',tx:'#e8e8e8',mu:'#8b8b8b',gr:'#1e1e1e',ax:'#2a2a2a'};
 let sym=(location.hash.slice(1)||'SPY').toUpperCase(),mode='all',op='gamma',D=null,R=null,timer=null,hover=null;
 const $=s=>document.querySelector(s);
@@ -135,7 +135,7 @@ const big=v=>{if(v==null||isNaN(v))return'—';const a=Math.abs(v),s=v<0?'-':'';
 const cur=()=>D&&D.market==='IN'?'₹':'$';
 const tm=t=>new Date(t*1000).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 
-$('#tk').innerHTML='<optgroup label="US">'+US.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="India">'+IN.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="Crypto (Deribit)">'+CR.map(s=>`<option>${s}</option>`).join('')+'</optgroup>';
+$('#tk').innerHTML='<optgroup label="US ETFs">'+UE.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="US stocks">'+US.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="India">'+IN.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="Crypto (Deribit)">'+CR.map(s=>`<option>${s}</option>`).join('')+'</optgroup>';
 $('#tk').value=sym;
 $('#tk').onchange=e=>{sym=e.target.value;location.hash=sym;stopReplay();load();strip()};
 document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b));stopReplay();load()});
