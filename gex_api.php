@@ -8,11 +8,11 @@ require __DIR__ . '/gex_engine.php';
 $r = $_GET['r'] ?? '';
 try {
     if ($r === 'list') {
-        echo json_encode(['ok' => true, 'US' => GEX_US, 'IN' => array_keys(GEX_IN)]); exit;
+        echo json_encode(['ok' => true, 'US' => GEX_US, 'IN' => array_keys(GEX_IN), 'CR' => GEX_CR]); exit;
     }
     if ($r === 'board') {
         $out = [];
-        foreach (array_merge(['SPY', 'QQQ', 'IWM'], array_keys(GEX_IN)) as $s) {
+        foreach (array_merge(['SPY', 'QQQ', 'IWM'], array_keys(GEX_IN), GEX_CR) as $s) {
             $g = gex_get_symbol($s, 'all');
             if (!empty($g['ok'])) $out[] = array_intersect_key($g, array_flip(['symbol', 'market', 'spot', 'net_gex', 'zero_gamma', 'call_wall', 'put_wall', 'regime', 'expected_move', 'pcr_oi', 'ts']));
         }

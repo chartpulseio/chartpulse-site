@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Gamma Exposure (GEX) Scanner: SPY, QQQ, NIFTY, BANKNIFTY · ChartPulse</title>
-<meta name="description" content="Free live gamma exposure (GEX) terminal: zero gamma flip, call wall, put wall, delta, vanna and charm profiles, max change GEX and intraday replay for SPY, QQQ, IWM, NIFTY and BANKNIFTY from real option chains.">
+<meta name="description" content="Free live gamma exposure (GEX) terminal: zero gamma flip, call wall, put wall, delta, vanna and charm profiles, max change GEX and intraday replay for SPY, QQQ, IWM, NIFTY, BANKNIFTY, Bitcoin and Ethereum from real option chains.">
 <link rel="canonical" href="https://chartpulse.io/scanners/gex/">
 <meta property="og:title" content="Gamma Exposure (GEX) Scanner · ChartPulse">
 <meta property="og:description" content="Zero gamma, call/put walls, delta, vanna and charm profiles, max change GEX and replay for US and Indian index options. Free.">
@@ -25,7 +25,7 @@ html,body{background:var(--bg)!important}
 .ttl{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:4px 2px 10px}
 .ttl h1{font:600 18px Inter,sans-serif;margin:0;color:var(--tx)!important;letter-spacing:-.01em}
 .ttl h1 b{color:var(--cy)}.ttl p{margin:0;color:var(--mu)!important;font-size:12px}
-.strip{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:8px}
+.strip{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:8px}
 .sc{background:var(--pn);border:1px solid var(--ln);border-radius:4px;padding:7px 9px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:11px}
 .sc:hover,.sc.on{border-color:#3a3a3a;background:var(--pn2)}.sc.on{box-shadow:inset 2px 0 0 var(--cy)}
 .sc .a{display:flex;justify-content:space-between;font-size:12px;color:var(--tx)}.sc .b{color:var(--mu);margin-top:3px}
@@ -71,14 +71,14 @@ html,body{background:var(--bg)!important}
 .live{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gn);margin-right:5px;animation:bl 1.6s infinite}@keyframes bl{50%{opacity:.25}}
 .note{color:var(--mu);font-size:12px;line-height:1.6;margin:14px 2px 30px;max-width:1100px}.note b{color:#bbb}
 .err{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mu);font:12px 'IBM Plex Mono';text-align:center;padding:20px}
-@media(max-width:1200px){.lay{grid-template-columns:220px minmax(0,1fr);height:auto}.rc{grid-column:1/-1;grid-template-rows:none;grid-template-columns:1fr 1fr}.rc .pn{min-height:230px}.mainp{min-height:720px}.st{max-height:720px}}
+@media(max-width:1200px){.strip{grid-template-columns:repeat(4,1fr)}.lay{grid-template-columns:220px minmax(0,1fr);height:auto}.rc{grid-column:1/-1;grid-template-rows:none;grid-template-columns:1fr 1fr}.rc .pn{min-height:230px}.mainp{min-height:720px}.st{max-height:720px}}
 @media(max-width:760px){.lay{grid-template-columns:1fr}.strip{grid-template-columns:repeat(3,1fr)}.rc{grid-template-columns:1fr}.mainp{min-height:620px}.st{max-height:none}}
 </style>
 </head>
 <body data-page="gex">
 <header class="site-head"></header>
 <main class="gt">
-  <div class="ttl"><h1>Gamma Exposure <b>Terminal</b></h1><p><span class="live"></span>Dealer positioning from real option chains · US via Alpaca · India via Upstox · updates every minute</p></div>
+  <div class="ttl"><h1>Gamma Exposure <b>Terminal</b></h1><p><span class="live"></span>Dealer positioning from real option chains · US via Alpaca · India via Upstox · BTC &amp; ETH via Deribit · updates every minute</p></div>
   <div class="strip" id="strip"></div>
   <div class="lay">
     <aside class="pn st" id="state">
@@ -122,11 +122,11 @@ html,body{background:var(--bg)!important}
   </div>
 
   <p class="note"><b>How to read it.</b> Cyan bars are strikes where dealers are long gamma (they sell rallies and buy dips, so price tends to stick); purple bars are short gamma (they chase moves, so price tends to slip through). Above the zero-gamma flip the tape is usually calmer; below it, moves extend. The dots show the options profile you pick (delta, gamma, vanna or charm exposure) split into calls (green) and puts (red). Max change GEX shows which strike moved most over the last 1 to 30 minutes, and the replay slider plays back today's positioning minute by minute.<br>
-  <b>Method.</b> Exposure = gamma × open interest × contract size × spot² × 1%, calls positive and puts negative (the standard assumption that customers buy options and dealers take the other side). It is a model of positioning, not a certainty. Open interest updates once a day; US quotes use Alpaca's indicative feed. Information only, not investment advice.</p>
+  <b>Method.</b> Exposure = gamma × open interest × contract size × spot² × 1%, calls positive and puts negative (the standard assumption that customers buy options and dealers take the other side). It is a model of positioning, not a certainty. Open interest updates once a day for stocks and indices; US quotes use Alpaca's indicative feed. <b>Crypto:</b> BTC and ETH come from Deribit, where most crypto options trade. In crypto, large holders often sell calls themselves, so the dealer side can differ from the stock-market assumption; treat crypto walls as zones of heavy positioning rather than certain support or resistance. Information only, not investment advice.</p>
 </main>
 <script>
 (()=>{
-const US=['SPY','QQQ','IWM','AAPL','NVDA','TSLA','MSFT','AMZN','META','GOOGL','AMD'],IN=['NIFTY','BANKNIFTY','FINNIFTY'],BOARD=['SPY','QQQ','IWM','NIFTY','BANKNIFTY','FINNIFTY'];
+const US=['SPY','QQQ','IWM','AAPL','NVDA','TSLA','MSFT','AMZN','META','GOOGL','AMD'],IN=['NIFTY','BANKNIFTY','FINNIFTY'],CR=['BTC','ETH'],BOARD=['SPY','QQQ','IWM','NIFTY','BANKNIFTY','FINNIFTY','BTC','ETH'];
 const C={cy:'#4fe3f0',pu:'#a35cf0',gn:'#8ee04a',rd:'#f0473c',ye:'#f5e642',or:'#f59e2c',bl:'#5aa9ff',tx:'#e8e8e8',mu:'#8b8b8b',gr:'#1e1e1e',ax:'#2a2a2a'};
 let sym=(location.hash.slice(1)||'SPY').toUpperCase(),mode='all',op='gamma',D=null,R=null,timer=null,hover=null;
 const $=s=>document.querySelector(s);
@@ -135,7 +135,7 @@ const big=v=>{if(v==null||isNaN(v))return'—';const a=Math.abs(v),s=v<0?'-':'';
 const cur=()=>D&&D.market==='IN'?'₹':'$';
 const tm=t=>new Date(t*1000).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 
-$('#tk').innerHTML='<optgroup label="US">'+US.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="India">'+IN.map(s=>`<option>${s}</option>`).join('')+'</optgroup>';
+$('#tk').innerHTML='<optgroup label="US">'+US.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="India">'+IN.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="Crypto (Deribit)">'+CR.map(s=>`<option>${s}</option>`).join('')+'</optgroup>';
 $('#tk').value=sym;
 $('#tk').onchange=e=>{sym=e.target.value;location.hash=sym;stopReplay();load();strip()};
 document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b));stopReplay();load()});

@@ -22,7 +22,7 @@ while (microtime(true) - $t0 < 36) {
 $gx = 0;
 try {
     require_once __DIR__ . '/gex_engine.php';
-    $gsyms = array_merge(['SPY', 'QQQ', 'IWM'], array_keys(GEX_IN), array_slice(GEX_US, 3));
+    $gsyms = array_merge(['SPY', 'QQQ', 'IWM'], array_keys(GEX_IN), GEX_CR, array_slice(GEX_US, 3));
     $gf = GEX_DIR . '/warm_idx.txt'; if (!is_dir(GEX_DIR)) @mkdir(GEX_DIR, 0755, true);
     $gi = (int)@file_get_contents($gf); $g0 = microtime(true); $gchk = 0;
     while (microtime(true) - $g0 < 12 && $gchk++ < count($gsyms)) {

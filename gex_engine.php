@@ -10,6 +10,7 @@ define('GEX_DIR', cp_data_dir() . '/gex');
 const GEX_TTL = 60;               // seconds a computed chain is reused
 const GEX_DAYS = 45;              // expiries considered (calendar days)
 const GEX_US = ['SPY', 'QQQ', 'IWM', 'AAPL', 'NVDA', 'TSLA', 'MSFT', 'AMZN', 'META', 'GOOGL', 'AMD'];
+const GEX_CR = ['BTC', 'ETH'];   // Deribit (public API, no key)
 const GEX_IN = [
     'NIFTY'     => ['key' => 'NSE_INDEX|Nifty 50',   'name' => 'NIFTY 50'],
     'BANKNIFTY' => ['key' => 'NSE_INDEX|Nifty Bank', 'name' => 'NIFTY BANK'],
@@ -127,6 +128,23 @@ function gex_in_chain(string $sym): ?array {
     return ['spot' => $spot, 'mult' => 1, 'lot' => $lot, 'rows' => $rows, 'src' => 'upstox', 'tz' => 'Asia/Kolkata', 'close' => '15:30'];
 }
 
+function gex_cr_chain(string $sym): ?array {
+    $h = ['Accept: application/json'];
+    $ix = gex_get('https://www.deribit.com/api/v2/public/get_index_price?index_name=' . strtolower($sym) . '_usd', $h);
+    $spot = (float)($ix['result']['index_price'] ?? 0); if ($spot <= 0) return ['err' => 'no_spot'];
+    $j = gex_get("https://www.deribit.com/api/v2/public/get_book_summary_by_currency?currency=$sym&kind=option", $h);
+    $M = ['JAN' => 1, 'FEB' => 2, 'MAR' => 3, 'APR' => 4, 'MAY' => 5, 'JUN' => 6, 'JUL' => 7, 'AUG' => 8, 'SEP' => 9, 'OCT' => 10, 'NOV' => 11, 'DEC' => 12];
+    $lim = gmdate('Y-m-d', time() + GEX_DAYS * 86400); $today = gmdate('Y-m-d'); $rows = [];
+    foreach ($j['result'] ?? [] as $o) {
+        if (!preg_match('/^[A-Z]+-(\d{1,2})([A-Z]{3})(\d{2})-(\d+(?:d\d+)?)-([CP])$/', (string)$o['instrument_name'], $m)) continue;
+        $e = sprintf('20%02d-%02d-%02d', $m[3], $M[$m[2]] ?? 0, $m[1]); if ($e < $today || $e > $lim) continue;
+        $K = (float)str_replace('d', '.', $m[4]); if ($K < $spot * 0.6 || $K > $spot * 1.4) continue;
+        $rows[] = [$K, strtolower($m[5]), $e, (float)($o['open_interest'] ?? 0), (float)($o['mark_iv'] ?? 0) / 100, null, (float)($o['volume'] ?? 0), (float)($o['mid_price'] ?? $o['mark_price'] ?? 0) * $spot];
+    }
+    if (!$rows) return ['err' => 'no_chain'];
+    return ['spot' => $spot, 'mult' => 1, 'rows' => $rows, 'src' => 'deribit', 'tz' => 'UTC', 'close' => '08:00'];
+}
+
 // ---------- Exposure maths ----------
 function gex_T(string $exp, string $tz, string $close): float {
     $z = new DateTimeZone($tz); $end = new DateTime("$exp $close", $z);
@@ -212,7 +230,7 @@ function gex_summary(string $sym, array $g): string {
     return $s . '.';
 }
 
-function gex_market(string $sym): ?string { return isset(GEX_IN[$sym]) ? 'IN' : (in_array($sym, GEX_US, true) ? 'US' : null); }
+function gex_market(string $sym): ?string { return isset(GEX_IN[$sym]) ? 'IN' : (in_array($sym, GEX_US, true) ? 'US' : (in_array($sym, GEX_CR, true) ? 'CR' : null)); }
 
 function gex_get_symbol(string $sym, string $mode = 'all'): array {
     $sym = strtoupper($sym); $mk = gex_market($sym);
@@ -222,7 +240,7 @@ function gex_get_symbol(string $sym, string $mode = 'all'): array {
     $ch = null;
     if (is_file($cf) && time() - filemtime($cf) < GEX_TTL) $ch = json_decode((string)file_get_contents($cf), true);
     if (!$ch) {
-        $ch = $mk === 'US' ? gex_us_chain($sym) : gex_in_chain($sym);
+        $ch = $mk === 'US' ? gex_us_chain($sym) : ($mk === 'CR' ? gex_cr_chain($sym) : gex_in_chain($sym));
         if (!empty($ch['rows'])) { $ch['ts'] = time(); file_put_contents($cf, json_encode($ch), LOCK_EX); }
         elseif (is_file($cf)) { $ch = json_decode((string)file_get_contents($cf), true); $ch['stale'] = true; }
     }
@@ -257,7 +275,7 @@ function gex_history(string $sym, array $g, bool $write): array {
 }
 
 // ---------- Labels for other scanners (Day Drive, God-father): label only, never a filter ----------
-const GEX_YAHOO = ['^NSEI' => 'NIFTY', '^NSEBANK' => 'BANKNIFTY', 'NIFTY_FIN_SERVICE.NS' => 'FINNIFTY'];
+const GEX_YAHOO = ['BTC-USD' => 'BTC', 'ETH-USD' => 'ETH', '^NSEI' => 'NIFTY', '^NSEBANK' => 'BANKNIFTY', 'NIFTY_FIN_SERVICE.NS' => 'FINNIFTY'];
 function gex_label_save(string $sym, array $g): void {
     $f = GEX_DIR . '/labels.json';
     $m = is_file($f) ? (json_decode((string)file_get_contents($f), true) ?: []) : [];
