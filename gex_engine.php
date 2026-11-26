@@ -122,7 +122,7 @@ function gex_in_chain(string $sym): ?array {
         }
     }
     if ($spot <= 0) return ['err' => 'no_chain'];
-    return ['spot' => $spot, 'mult' => $lot ?: 1, 'rows' => $rows, 'src' => 'upstox', 'tz' => 'Asia/Kolkata', 'close' => '15:30'];
+    return ['spot' => $spot, 'mult' => 1, 'lot' => $lot, 'rows' => $rows, 'src' => 'upstox', 'tz' => 'Asia/Kolkata', 'close' => '15:30'];
 }
 
 // ---------- Exposure maths ----------
