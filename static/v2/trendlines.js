@@ -35,7 +35,18 @@
         + `<line class="tlx-l ${k} ext" x1="${xe.toFixed(1)}" y1="${ye.toFixed(1)}" x2="${xf.toFixed(1)}" y2="${yf.toFixed(1)}"/>`
         + `<circle class="tlx-p ${k}" cx="${xa.toFixed(1)}" cy="${ya.toFixed(1)}" r="3.2"/><circle class="tlx-p ${k}" cx="${X(L.i2).toFixed(1)}" cy="${Y(L.p2).toFixed(1)}" r="3.2"/>`;
     });
+    // v2 trap-aware lines (body-based, wicks = sweeps): dashed orange, best line bold, alternatives faint
+    if (f.v2) {
+      const lv2 = (L, i) => L.log ? Math.exp(L.ly + L.ls * (i - L.i1)) : L.ly + L.ls * (i - L.i1);
+      ["res", "sup"].forEach(k => (f.v2[k] || []).forEach((L, j) => {
+        const i0 = Math.max(L.i1, -EXT * 4), xa = X(i0), ya = Y(lv2(L, i0)), xf = X(n - 1 + EXT), yf = Y(lv2(L, n - 1 + EXT));
+        s += `<line x1="${xa.toFixed(1)}" y1="${ya.toFixed(1)}" x2="${xf.toFixed(1)}" y2="${yf.toFixed(1)}" stroke="#f59e2c" stroke-width="${j ? 1 : 2}" stroke-dasharray="${j ? "2 4" : "7 4"}" opacity="${j ? 0.45 : 0.95}"/>`;
+        if (!j) [[L.i1, L.p1], [L.i2, L.p2]].forEach(([i, p]) => { if (i >= 0) s += `<circle cx="${X(i).toFixed(1)}" cy="${Y(p).toFixed(1)}" r="3.4" fill="none" stroke="#f59e2c" stroke-width="1.6"/>`; });
+      }));
+    }
     s += `</g>`;
+    if (f.v2) { const r = (f.v2.res || [])[0], u = (f.v2.sup || [])[0], t = (L, nm) => L ? `${nm} ${L.touches}t+${L.sweeps}sw ${L.state}` : "";
+      s += `<text x="${PL + 4}" y="${PT + 11}" fill="#f59e2c" style="font:10px IBM Plex Mono,monospace">- - v2 body/trap-aware ${esc([t(r, "R"), t(u, "S")].filter(Boolean).join(" · "))}</text>`; }
     [["res", f.res], ["sup", f.sup]].forEach(([k, L]) => {
       if (!L) return; const y = Math.min(H - PB - 2, Math.max(PT + 8, Y(L.now)));
       s += `<rect class="tlx-tag ${k}" x="${W - PR + 2}" y="${(y - 8).toFixed(1)}" width="${PR - 4}" height="16" rx="3"/><text class="tlx-tagt" x="${W - PR + 6}" y="${(y + 3.5).toFixed(1)}">${fmt(L.now, f.dec)}</text>`;

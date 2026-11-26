@@ -373,6 +373,8 @@ function tl_build(string $sym): ?array {
         if (empty($src[$tf])) continue;
         $r = tl_read($tf, $src[$tf], $Z, $atrD, $mtf, true); if (!$r) continue;
         [, $sg, $x] = $r; $X[$tf] = $x; foreach ($sg as $g) $sigs[] = $g;
+        // v2 trap-aware lines (owner, 26 Nov 2026): drawn next to v1 for comparison only; no signal uses them
+        try { require_once __DIR__ . '/tl2_engine.php'; $v2 = tl2_frame($tf, $src[$tf], count($x['bars']['t'] ?? []) ?: TL_BARS); if ($v2) $x['v2'] = $v2; } catch (Throwable $e) {}
         foreach (['res', 'sup'] as $side) if (!empty($x[$side]['zone'])) {
             $z = $x[$side]['zone'];
             $x['text'][] = ($z['t'] === 'strong' ? 'STRONG ZONE: ' : 'Major zone: ') . 'the ' . ($side === 'res' ? 'resistance' : 'support') . ' line sits on ' . implode(' + ', $z['n']) . '.';
