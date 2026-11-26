@@ -14,4 +14,15 @@ if (!headers_sent() && str_contains((string)($_GET['gz'] ?? '1'), '1') && str_co
 if (!t_rl('rb', 40)) { header('Retry-After: 30'); rb_json(['error' => 'Too many requests. Please wait a few seconds.'], 429); }
 @set_time_limit(60);
 try { t_scan_step(); } catch (Throwable $e) {}
-rb_json(rb_scan());
+// GEX label (26 Nov 2026, owner): +γ = dealers damp the move (snap-back more likely), −γ = move can extend.
+// Label only: never filters or re-ranks a row. Only for symbols that have an options GEX (US, NIFTY, BTC, ETH...).
+$rbo = rb_scan();
+try {
+    require_once __DIR__ . '/gex_engine.php';
+    foreach ($rbo['rows'] ?? [] as $i => $r) {
+        $g = gex_label_for((string)($r['symbol'] ?? '')); if (!$g) continue;
+        $rbo['rows'][$i]['gex'] = $g;
+        $rbo['rows'][$i]['labels'][] = [$g['rg'] > 0 ? 'gexok' : 'gexno', $g['rg'] > 0 ? $g['txt'] . ' · snap-back favoured' : $g['txt'] . ' · move can extend'];
+    }
+} catch (Throwable $e) {}
+rb_json($rbo);
