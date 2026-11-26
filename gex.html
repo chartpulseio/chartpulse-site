@@ -220,7 +220,7 @@ async function loadCandles(force){if(!window.LightweightCharts)return;if(candSym
  try{const j=await(await fetch('/gex_api.php?r=candles&s='+sym)).json();if(!j.ok)throw 0;if(j.symbol!==sym)return;CAND=j.c;NATIVE=j.native||null;
   ensureChart();CS.setData(CAND.map(c=>({time:c[0]+TZO,open:c[1],high:c[2],low:c[3],close:c[4]})));if(force!=='keep')LC.timeScale().fitContent();setLines();flowMarkers()}catch(e){CAND=[];if(CS)CS.setData([])}}
 function ensureChart(){if(LC)return;const el=$('#lc');
- LC=LightweightCharts.createChart(el,{autoSize:true,layout:{background:{type:'solid',color:'transparent'},textColor:'#8b8b8b',fontFamily:'IBM Plex Mono',fontSize:11},
+ LC=LightweightCharts.createChart(el,{autoSize:true,handleScroll:{mouseWheel:false,pressedMouseMove:true,horzTouchDrag:true,vertTouchDrag:false},handleScale:{mouseWheel:false,pinch:true,axisPressedMouseMove:true},layout:{background:{type:'solid',color:'transparent'},textColor:'#8b8b8b',fontFamily:'IBM Plex Mono',fontSize:11},
   grid:{vertLines:{color:'rgba(255,255,255,.035)'},horzLines:{color:'rgba(255,255,255,.035)'}},rightPriceScale:{borderColor:'#232323',scaleMargins:{top:.06,bottom:.06}},
   timeScale:{borderColor:'#232323',timeVisible:true,secondsVisible:false,rightOffset:6},crosshair:{mode:0,vertLine:{color:'#444',labelBackgroundColor:'#222'},horzLine:{color:'#444',labelBackgroundColor:'#222'}}});
  CS=LC.addCandlestickSeries({upColor:'#2ec4b6',downColor:'#f0473c',borderUpColor:'#2ec4b6',borderDownColor:'#f0473c',wickUpColor:'#2ec4b6',wickDownColor:'#f0473c',
@@ -304,7 +304,7 @@ function mgOpts(sel){const g=(l,a)=>`<optgroup label="${l}">`+a.map(x=>`<option 
 function gridView(){const el=$('#mg');
  if(!window.LightweightCharts){el.innerHTML='<p class="mu">Chart library did not load.</p>';return}
  if(!MG){const syms=mgSyms();el.innerHTML=syms.map((x,i)=>`<div class="mgc" data-i="${i}"><select>${mgOpts(x)}</select><span class="mi"></span><div class="mc"></div><canvas class="mp"></canvas></div>`).join('');
-  MG=[...el.querySelectorAll('.mgc')].map((box,i)=>{const ch=LightweightCharts.createChart(box.querySelector('.mc'),{autoSize:true,layout:{background:{type:'solid',color:'transparent'},textColor:'#8b8b8b',fontFamily:'IBM Plex Mono',fontSize:10},grid:{vertLines:{color:'rgba(255,255,255,.03)'},horzLines:{color:'rgba(255,255,255,.03)'}},rightPriceScale:{borderColor:'#232323'},timeScale:{borderColor:'#232323',timeVisible:true}});
+  MG=[...el.querySelectorAll('.mgc')].map((box,i)=>{const ch=LightweightCharts.createChart(box.querySelector('.mc'),{autoSize:true,handleScroll:{mouseWheel:false,vertTouchDrag:false},handleScale:{mouseWheel:false},layout:{background:{type:'solid',color:'transparent'},textColor:'#8b8b8b',fontFamily:'IBM Plex Mono',fontSize:10},grid:{vertLines:{color:'rgba(255,255,255,.03)'},horzLines:{color:'rgba(255,255,255,.03)'}},rightPriceScale:{borderColor:'#232323'},timeScale:{borderColor:'#232323',timeVisible:true}});
    const se=ch.addCandlestickSeries({upColor:'#2ec4b6',downColor:'#f0473c',borderUpColor:'#2ec4b6',borderDownColor:'#f0473c',wickUpColor:'#2ec4b6',wickDownColor:'#f0473c'});
    const o={box,ch,se,sym:syms[i],d:null,pl:[]};box.querySelector('select').onchange=e=>{o.sym=e.target.value;const a=MG.map(m=>m.sym);mgSave(a);mgLoad(o,true)};
    ch.timeScale().subscribeVisibleLogicalRangeChange(()=>mgProf(o));return o});
