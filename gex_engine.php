@@ -162,8 +162,8 @@ function gex_compute(array $ch, string $mode = 'all'): array {
     // Walls
     $cw = null; $pw = null; $absMax = null;
     foreach ($st as $x) {
-        if ($x['cg'] > 0 && (!$cw || $x['cg'] > $cw['cg']) && $x['k'] >= $S * 0.97) $cw = $x;
-        if ($x['pg'] < 0 && (!$pw || $x['pg'] < $pw['pg']) && $x['k'] <= $S * 1.03) $pw = $x;
+        if ($x['cg'] > 0 && (!$cw || $x['cg'] > $cw['cg']) && $x['k'] >= $S) $cw = $x;
+        if ($x['pg'] < 0 && (!$pw || $x['pg'] < $pw['pg']) && $x['k'] <= $S) $pw = $x;
         if (!$absMax || abs($x['gex']) > abs($absMax['gex'])) $absMax = $x;
     }
     // Zero-gamma flip: sweep spot ±8%
