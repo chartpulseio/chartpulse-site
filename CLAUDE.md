@@ -16,11 +16,13 @@ Owner-approved update 17 Nov 2026 (owner unlocked Day Drive for it): Day Drive's
 
 Owner-approved update 26 Nov 2026 (unlocked for it, then re-locked): GEX label only. dd_api.php wraps its output with dd_gex() (adds a 'gex' field from gex_engine.php for SPY/QQQ/IWM/US mega-caps, NIFTY, BANKNIFTY, FINNIFTY) and day-drive.html shows it as one extra chip (green when it fits: +γ for reversals, −γ for trend). It never filters, ranks or changes a signal. dd_engine.php, gf_engine.php and bp_engine.php were NOT touched. gf_api.php / godfather.html got the same label (God-father is not on this lock list).
 
+Owner-approved update 26 Nov 2026, 22:56 IST (owner asked for it): the Day Drive symbol detail page embeds the GEX chart (iframe /scanners/gex/?embed=1#SYM) with the regime chip, call/put wall and zero gamma, for symbols that have a GEX label. Display only; no signal, filter or ranking change.
+
 These files must stay byte-identical to the commit that made that change unless the owner explicitly asks for a Day Drive change:
 
     dd_engine.php    65292eb5e406...
     dd_api.php       48941d614c63...
-    day-drive.html   ad3484c67868...
+    day-drive.html   3782c54ffb97...
     gf_engine.php    2db702737873...   (reads cp_data/daydrive/rows.json)
     bp_engine.php    106aa7e02e12...   (reads cp_data/daydrive/rows.json, uses status BOUNCE GO)
 

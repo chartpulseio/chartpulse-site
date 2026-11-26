@@ -20,6 +20,7 @@
 <style>
 :root{--bg:#0b0b0b;--pn:#121212;--pn2:#171717;--ln:#232323;--gr:#1c1c1c;--tx:#e8e8e8;--mu:#8b8b8b;--cy:#4fe3f0;--pu:#a35cf0;--gn:#8ee04a;--rd:#f0473c;--ye:#f5e642;--or:#f59e2c;--bl:#5aa9ff}
 html,body{background:var(--bg)!important}
+.gx-embed .site-head,.gx-embed .ttl,.gx-embed .strip,.gx-embed #state,.gx-embed .rc,.gx-embed .note,.gx-embed #vt{display:none!important}.gx-embed .gt{padding:0}.gx-embed .lay{grid-template-columns:1fr!important;height:100vh!important;min-height:0!important}.gx-embed .mainp{min-height:0!important}
 .gt,.gt *{box-sizing:border-box}
 .gt{color:var(--tx);font:13px/1.4 Inter,system-ui,sans-serif;padding:10px;max-width:1800px;margin:0 auto}
 .gt .mono{font-family:'IBM Plex Mono',monospace}
@@ -77,6 +78,7 @@ html,body{background:var(--bg)!important}
 </style>
 </head>
 <body data-page="gex">
+<script>if(/[?&]embed=1/.test(location.search))document.documentElement.classList.add('gx-embed')</script>
 <header class="site-head"></header>
 <main class="gt">
   <div class="ttl"><h1>Gamma Exposure <b>Terminal</b></h1><p><span class="live"></span>Dealer positioning from real option chains · US via Alpaca · India via Upstox · BTC &amp; ETH via Deribit · updates every minute</p></div>
@@ -115,7 +117,7 @@ html,body{background:var(--bg)!important}
 
     <section class="pn mainp">
       <div class="mh"><span><span id="vt" style="margin-right:10px"><b data-v="chart" class="vt on">chart</b> · <b data-v="bars" class="vt">strikes</b> · <b data-v="heat" class="vt">heatmap</b> · <b data-v="flows" class="vt">big flows</b> · <b data-v="grid" class="vt">multi-chart</b></span><span id="pm" style="margin-right:10px">profile: <b data-p="gex" class="vt on">gex</b> · <b data-p="hedge" class="vt">hedging</b></span><span id="mt">net gex by strike</span></span><span class="lg"><span><i style="background:var(--cy)"></i>+ gex</span><span><i style="background:var(--pu)"></i>− gex</span><span id="lgd"><i style="background:var(--gn)"></i>call <i style="background:var(--rd);margin-left:6px"></i>put</span></span></div>
-      <div class="cw" id="cw"><div id="mg" style="position:absolute;inset:0;display:none;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:4px;padding:4px"></div><div id="fl" style="position:absolute;inset:0;overflow:auto;display:none;padding:10px 12px;font:12px IBM Plex Mono"></div><div id="cc" style="position:absolute;inset:0;display:none"><canvas id="hmC" style="position:absolute;inset:0;width:100%;height:100%"></canvas><div id="lc" style="position:absolute;left:0;top:0;bottom:0;right:var(--gpw)"></div><canvas id="gpC" style="position:absolute;top:0;bottom:0;right:0;left:auto;width:var(--gpw);height:100%"></canvas></div><canvas id="cS"></canvas><div class="tip" id="tip"></div><div class="err" id="err">Loading…</div></div>
+      <div class="cw" id="cw"><div id="mg" style="position:absolute;inset:0;display:none;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:4px;padding:4px"></div><div id="fl" style="position:absolute;inset:0;overflow:auto;display:none;padding:10px 12px;font:12px IBM Plex Mono"></div><div id="cc" style="position:absolute;inset:0;display:none"><div id="lb" style="position:absolute;top:6px;left:8px;z-index:4;font:11px IBM Plex Mono;color:#8b8b8b;background:rgba(11,11,11,.75);padding:3px 8px;border-radius:3px;pointer-events:none"></div><canvas id="hmC" style="position:absolute;inset:0;width:100%;height:100%"></canvas><div id="lc" style="position:absolute;left:0;top:0;bottom:0;right:var(--gpw)"></div><canvas id="gpC" style="position:absolute;top:0;bottom:0;right:0;left:auto;width:var(--gpw);height:100%"></canvas></div><canvas id="cS"></canvas><div class="tip" id="tip"></div><div class="err" id="err">Loading…</div></div>
     </section>
 
     <div class="rc">
@@ -143,13 +145,13 @@ const tm=t=>new Date(t*1000).toLocaleTimeString([], {hour:'2-digit',minute:'2-di
 
 $('#tk').innerHTML='<optgroup label="Metals"><option value="GLD">Gold · XAUUSD (GLD)</option><option value="SLV">Silver · XAGUSD (SLV)</option></optgroup><optgroup label="US ETFs">'+UE.filter(s=>!MNAME[s]).map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="US stocks">'+US.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="India">'+IN.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="Crypto (Deribit)">'+CR.map(s=>`<option>${s}</option>`).join('')+'</optgroup>';
 $('#tk').value=sym;
-$('#tk').onchange=e=>{CAND=[];candSym=null;sym=e.target.value;location.hash=sym;stopReplay();load();strip()};
+$('#tk').onchange=e=>{CAND=[];candSym=null;LAST=null;NATIVE=null;sym=e.target.value;location.hash=sym;stopReplay();load();strip()};
 document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b));stopReplay();load()});
 document.querySelectorAll('[name=src]').forEach(r=>r.onchange=()=>{srcv=r.value;draw(true)});
 document.querySelectorAll('#pm .vt').forEach(b=>b.onclick=()=>{pmode=b.dataset.p;document.querySelectorAll('#pm .vt').forEach(x=>x.classList.toggle('on',x===b));overlay()});
 document.querySelectorAll('#vt .vt').forEach(b=>b.onclick=()=>{view=b.dataset.v;document.querySelectorAll('#vt .vt').forEach(x=>x.classList.toggle('on',x===b));$('#tip').style.display='none';draw(true)});
 document.querySelectorAll('[name=op]').forEach(r=>r.onchange=()=>{op=r.value;$('#lgd').style.display=op==='none'?'none':'';draw(true)});
-$('#strip').addEventListener('click',e=>{const c=e.target.closest('[data-s]');if(c){candSym=null;sym=c.dataset.s;$('#tk').value=sym;location.hash=sym;stopReplay();load();strip()}});
+$('#strip').addEventListener('click',e=>{const c=e.target.closest('[data-s]');if(c){candSym=null;LAST=null;NATIVE=null;sym=c.dataset.s;$('#tk').value=sym;location.hash=sym;stopReplay();load();strip()}});
 
 async function strip(){try{const j=await(await fetch('/gex_api.php?r=board')).json();if(!j.ok)return;
  const m={};j.rows.forEach(r=>m[r.symbol]=r);
@@ -204,24 +206,24 @@ function heat(){const d=D,H=d.heatmap||{},ex=Object.keys(H);const [x,w,h]=cv('cS
    if(ch>=13&&cw>=46&&Math.abs(v)/mx>.15){x.fillStyle='#0b0b0b';x.textAlign='center';x.fillText(big(v),L+cw*(i+.5),y+ch/2)}})});
  const ys=T+ch*(ks.findIndex(k=>k<=d.spot));x.strokeStyle='#fff';x.beginPath();x.moveTo(L,ys);x.lineTo(w-Rm,ys);x.stroke();x.textAlign='left';tag(x,L+4,ys,'spot '+nf(d.spot),'#f2f2f2','#0b0b0b')}
 /* ---------- candlestick chart + GEX overlays ---------- */
-let LC=null,CS=null,CAND=[],candSym=null,PL=[],ovT=null;const TZO=-new Date().getTimezoneOffset()*60;
+let LC=null,CS=null,CAND=[],candSym=null,PL=[],ovT=null,NATIVE=null,LAST=null;const KF=()=>(NATIVE&&D&&D.proxy&&D.symbol===sym)?D.proxy.ratio:1;const TZO=-new Date().getTimezoneOffset()*60;
 async function loadCandles(force){if(!window.LightweightCharts)return;if(candSym===sym&&!force)return;candSym=sym;
- try{const j=await(await fetch('/gex_api.php?r=candles&s='+sym)).json();if(!j.ok)throw 0;if(j.symbol!==sym)return;CAND=j.c;
+ try{const j=await(await fetch('/gex_api.php?r=candles&s='+sym)).json();if(!j.ok)throw 0;if(j.symbol!==sym)return;CAND=j.c;NATIVE=j.native||null;
   ensureChart();CS.setData(CAND.map(c=>({time:c[0]+TZO,open:c[1],high:c[2],low:c[3],close:c[4]})));if(force!=='keep')LC.timeScale().fitContent();setLines();flowMarkers()}catch(e){CAND=[];if(CS)CS.setData([])}}
 function ensureChart(){if(LC)return;const el=$('#lc');
  LC=LightweightCharts.createChart(el,{autoSize:true,layout:{background:{type:'solid',color:'transparent'},textColor:'#8b8b8b',fontFamily:'IBM Plex Mono',fontSize:11},
   grid:{vertLines:{color:'rgba(255,255,255,.035)'},horzLines:{color:'rgba(255,255,255,.035)'}},rightPriceScale:{borderColor:'#232323',scaleMargins:{top:.06,bottom:.06}},
   timeScale:{borderColor:'#232323',timeVisible:true,secondsVisible:false,rightOffset:6},crosshair:{mode:0,vertLine:{color:'#444',labelBackgroundColor:'#222'},horzLine:{color:'#444',labelBackgroundColor:'#222'}}});
  CS=LC.addCandlestickSeries({upColor:'#2ec4b6',downColor:'#f0473c',borderUpColor:'#2ec4b6',borderDownColor:'#f0473c',wickUpColor:'#2ec4b6',wickDownColor:'#f0473c',
-  autoscaleInfoProvider:o=>{const r=o();if(!r||!D||!D.levels)return r;const L=D.levels,v=[L.em_day&&L.em_day[0],L.em_day&&L.em_day[1],D.call_wall,D.put_wall].filter(x=>x!=null);
+  autoscaleInfoProvider:o=>{const r=o();if(!r||!D||!D.levels)return r;const L=D.levels,k=KF(),v=[L.em_day&&L.em_day[0],L.em_day&&L.em_day[1],D.call_wall,D.put_wall].filter(x=>x!=null).map(x=>x*k);
    v.forEach(x=>{r.priceRange.minValue=Math.min(r.priceRange.minValue,x);r.priceRange.maxValue=Math.max(r.priceRange.maxValue,x)});return r}});
  LC.timeScale().subscribeVisibleLogicalRangeChange(()=>overlay());
- LC.subscribeCrosshairMove(p=>{const t=$('#tip');if(!p||!p.point||!D||view!=='chart'){t.style.display='none';return}const pr=CS.coordinateToPrice(p.point.y);if(pr==null){t.style.display='none';return}
+ LC.subscribeCrosshairMove(p=>{const t=$('#tip');if(!p||!p.point||!D||view!=='chart'){t.style.display='none';return}const pr0=CS.coordinateToPrice(p.point.y);if(pr0==null){t.style.display='none';return}const pr=pr0/KF();
   let b=null;D.strikes.forEach(s=>{if(!b||Math.abs(s.k-pr)<Math.abs(b.k-pr))b=s});if(!b){t.style.display='none';return}const c=cur(),hg=hedgeAt(pr),dp=(pr/D.spot-1)*100;
-  t.innerHTML=`<b>${nf(pr)}</b> <span class="mu">(${dp>=0?'+':''}${dp.toFixed(2)}% from spot)</span><br>nearest strike <b>${nf(b.k)}</b> · net gex <span class="${b.gex>=0?'cy':'pu'}">${c}${big(b.gex)}</span><br>call γ <span class="pos">${c}${big(b.cg)}</span> · put γ <span class="neg">${c}${big(b.pg)}</span><br>oi call ${nf(b.coi,0)} · put ${nf(b.poi,0)}`+(hg!=null?`<br>to get here dealers ${hg>=0?'<span class="pos">buy</span>':'<span class="neg">sell</span>'} ≈ ${c}${big(Math.abs(hg))}`:'');
+  t.innerHTML=`<b>${nf(pr0)}</b>${KF()!==1?` <span class="mu">(${D.symbol} ${nf(pr)})</span>`:''} <span class="mu">(${dp>=0?'+':''}${dp.toFixed(2)}% from spot)</span><br>nearest strike <b>${nf(b.k)}</b> · net gex <span class="${b.gex>=0?'cy':'pu'}">${c}${big(b.gex)}</span><br>call γ <span class="pos">${c}${big(b.cg)}</span> · put γ <span class="neg">${c}${big(b.pg)}</span><br>oi call ${nf(b.coi,0)} · put ${nf(b.poi,0)}`+(hg!=null?`<br>to get here dealers ${hg>=0?'<span class="pos">buy</span>':'<span class="neg">sell</span>'} ≈ ${c}${big(Math.abs(hg))}`:'');
   t.style.display='block';const W=$('#cw').clientWidth;t.style.left=Math.min(p.point.x+16,W-t.offsetWidth-6)+'px';t.style.top=Math.max(4,p.point.y-t.offsetHeight-8)+'px'})}
 function setLines(){if(!CS||!D)return;PL.forEach(l=>CS.removePriceLine(l));PL=[];const L=D.levels||{};
- const add=(p,c,t,st,w)=>{if(p==null)return;PL.push(CS.createPriceLine({price:+p,color:c,lineWidth:w||1,lineStyle:st,axisLabelVisible:true,title:t}))};
+ const k=KF(),add=(p,c,t,st,w)=>{if(p==null)return;PL.push(CS.createPriceLine({price:+p*k,color:c,lineWidth:w||1,lineStyle:st,axisLabelVisible:true,title:t}))};
  (L.cw||[]).forEach((k,i)=>add(k,i?'rgba(79,227,240,.55)':'#4fe3f0',i?'CW'+(i+1):'CALL WALL',i?1:0,i?1:2));
  (L.pw||[]).forEach((k,i)=>add(k,i?'rgba(163,92,240,.6)':'#a35cf0',i?'PW'+(i+1):'PUT WALL',i?1:0,i?1:2));
  add(D.zero_gamma,'#f5e642','ZERO γ',2,2);if(L.abs!=null&&L.abs!==D.call_wall&&L.abs!==D.put_wall)add(L.abs,'rgba(255,255,255,.6)','ABS γ',1);
@@ -236,7 +238,7 @@ function hedgeAt(p){const hc=hedgeCurve();if(!hc.length)return null;let b=hc[0];
 function overlay(){if(view!=='chart'||!CS||!D||R)return;
  // gamma heatmap + expected-move envelope behind the candles
  const c1=document.getElementById('hmC'),r=devicePixelRatio||1,W=c1.clientWidth-($('#gpC').clientWidth||0),H=c1.clientHeight;c1.width=c1.clientWidth*r;c1.height=H*r;const x=c1.getContext('2d');x.setTransform(r,0,0,r,0,0);x.clearRect(0,0,c1.clientWidth,H);
- const ts=LC.timeScale(),Y=p=>CS.priceToCoordinate(p),L=D.levels||{};
+ const ts=LC.timeScale(),KK=KF(),Y=p=>CS.priceToCoordinate(p*KK),L=D.levels||{};
  if(L.em_day){const a=Y(L.em_day[1]),b=Y(L.em_day[0]);if(a!=null&&b!=null){const last=CAND.length?lx(ts,Math.max(0,CAND.length-80)):0;x.fillStyle='rgba(245,158,44,.07)';x.fillRect(last||0,a,W-(last||0)-60,b-a);x.strokeStyle='rgba(245,158,44,.35)';x.setLineDash([4,4]);[a,b].forEach(y=>{x.beginPath();x.moveTo(last||0,y);x.lineTo(W-60,y);x.stroke()});x.setLineDash([]);x.fillStyle='#f59e2c';x.font='10px IBM Plex Mono';x.fillText('expected move',(last||0)+6,a+12)}}
  const Hs=D.history||[];if(Hs.length&&CAND.length){let mx=1;Hs.forEach(h=>(h.k||[]).forEach(q=>mx=Math.max(mx,Math.abs(q[1]))));
   const ks=(Hs[Hs.length-1].k||[]).map(q=>q[0]).sort((a,b)=>a-b),sp=ks.length>1?Math.abs(Y(ks[0])-Y(ks[1]))||4:4;
@@ -260,8 +262,17 @@ function overlay(){if(view!=='chart'||!CS||!D||R)return;
  st.forEach((s,i)=>{const y=Y(s.k);if(y==null)return;const xx=mid+cs[i]/mc*(mid-8);f?g.lineTo(xx,y):g.moveTo(xx,y);f=1});g.stroke();g.lineWidth=1;
  const sy=Y(D.spot);if(sy!=null){g.strokeStyle='#f2f2f2';g.beginPath();g.moveTo(0,sy);g.lineTo(w2,sy);g.stroke()}
  g.fillStyle=C.mu;g.font='10px IBM Plex Mono';g.fillText(srcv==='vol'?'GEX (volume)':'GEX profile',6,12);g.fillStyle='rgba(245,230,66,.9)';g.fillText('— cumulative',6,24)}
+async function pollLast(){if(view!=='chart'||!CS||!CAND.length||R)return;const s0=sym;try{const j=await(await fetch('/gex_api.php?r=last&s='+s0)).json();if(!j.ok||s0!==sym||!CAND.length)return;LAST=j;
+  const bt=Math.floor(j.t/300)*300,lc=CAND[CAND.length-1];
+  if(bt>lc[0]){if(j.now-j.t<900){CAND.push([bt,j.p,j.p,j.p,j.p,0])}}else if(bt===lc[0]){lc[2]=Math.max(lc[2],j.p);lc[3]=Math.min(lc[3],j.p);lc[4]=j.p}else return;
+  const c=CAND[CAND.length-1];CS.update({time:c[0]+TZO,open:c[1],high:c[2],low:c[3],close:c[4]})}catch(e){}}
+setInterval(pollLast,5000);
+setInterval(()=>{const el=document.getElementById('lb');if(!el)return;if(view!=='chart'||!LAST||LAST.ok===false){el.textContent='';return}
+ const now=Date.now()/1000,live=(now-LAST.t)<600,left=300-Math.floor(now)%300,mm=Math.floor(left/60),ss=String(left%60).padStart(2,'0');
+ el.innerHTML=live?`<span style="color:#8ee04a">●</span> LIVE ${nf(LAST.p)} · 5m bar closes in <b style="color:#e8e8e8">${mm}:${ss}</b>`:`<span style="color:#8b8b8b">●</span> market closed · last ${nf(LAST.p)} at ${new Date(LAST.t*1000).toLocaleString([], {month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'})}`;
+ if(NATIVE)el.innerHTML+=` · <span style="color:#e9c46a">${NATIVE} price · levels from ${D?D.symbol:''} options</span>`},1000);
 function chartView(){$('#cc').style.display='block';$('#cS').style.display='none';main.geo=null;if(!window.LightweightCharts){$('#err').style.display='flex';$('#err').textContent='Chart library did not load. Use the strikes view.';return}
- ensureChart();loadCandles();setLines();overlay();loadFlows().then(flowMarkers);if(!ovT)ovT=setInterval(()=>{if(view==='chart'&&!R)overlay()},400)}
+ ensureChart();loadCandles();setLines();overlay();loadFlows().then(flowMarkers);if(!LAST||LAST._s!==sym){LAST=null;pollLast().then(()=>{if(LAST)LAST._s=sym})}if(!ovT)ovT=setInterval(()=>{if(view==='chart'&&!R)overlay()},400)}
 let FL=null,flSym=null;
 async function loadFlows(){if(!['BTC','ETH'].includes(sym)){FL=null;return}if(flSym===sym&&FL&&Date.now()-FL._at<60000)return;flSym=sym;
  try{const j=await(await fetch('/gex_api.php?r=flows&s='+sym)).json();if(j.ok){j._at=Date.now();FL=j}else FL=null}catch(e){FL=null}}
@@ -290,8 +301,8 @@ function gridView(){const el=$('#mg');el.style.display='grid';$('#cc').style.dis
    ch.timeScale().subscribeVisibleLogicalRangeChange(()=>mgProf(o));return o});
   (async()=>{for(const o of MG)await mgLoad(o,true)})();setInterval(async()=>{if(view==='grid')for(const o of MG)await mgLoad(o,false)},60000);setInterval(()=>{if(view==='grid')MG.forEach(mgProf)},500)}}
 async function mgLoad(o,fit){const s0=o.sym;try{const d=await fetch('/gex_api.php?s='+s0).then(r=>r.json());const c=await fetch('/gex_api.php?r=candles&s='+s0).then(r=>r.json());if(o.sym!==s0)return;
-  o.d=d.ok?d:null;o.se.setData(c.ok?c.c.map(k=>({time:k[0]+TZO,open:k[1],high:k[2],low:k[3],close:k[4]})):[]);if(fit)o.ch.timeScale().fitContent();
-  o.pl.forEach(l=>o.se.removePriceLine(l));o.pl=[];if(o.d){const add=(p,c,t,st)=>{if(p!=null)o.pl.push(o.se.createPriceLine({price:+p,color:c,lineWidth:st?1:2,lineStyle:st||0,axisLabelVisible:true,title:t}))};
+  o.d=d.ok?d:null;o.k=(c.ok&&c.native&&d.proxy)?d.proxy.ratio:1;o.se.setData(c.ok?c.c.map(k=>({time:k[0]+TZO,open:k[1],high:k[2],low:k[3],close:k[4]})):[]);if(fit)o.ch.timeScale().fitContent();
+  o.pl.forEach(l=>o.se.removePriceLine(l));o.pl=[];if(o.d){const add=(p,c,t,st)=>{if(p!=null)o.pl.push(o.se.createPriceLine({price:+p*o.k,color:c,lineWidth:st?1:2,lineStyle:st||0,axisLabelVisible:true,title:t}))};
    add(o.d.call_wall,'#4fe3f0','CW');add(o.d.put_wall,'#a35cf0','PW');add(o.d.zero_gamma,'#f5e642','0γ',2);
    const rg=o.d.regime==='positive';o.box.querySelector('.mi').innerHTML=`<span style="color:${rg?'#8ee04a':'#f0473c'}">${rg?'+γ range':'−γ trend'}</span> · net ${cur2(o.d)}${big(o.d.net_gex)}`}
   else o.box.querySelector('.mi').textContent='data unavailable';mgProf(o)}catch(e){o.box.querySelector('.mi').textContent='data unavailable'}}
@@ -299,8 +310,8 @@ function cur2(d){return d.market==='IN'?'₹':'$'}
 function mgProf(o){const c=o.box.querySelector('canvas.mp'),r=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;c.width=w*r;c.height=h*r;const g=c.getContext('2d');g.setTransform(r,0,0,r,0,0);g.clearRect(0,0,w,h);
  g.fillStyle='#101010';g.fillRect(0,0,w,h);if(!o.d)return;const st=o.d.strikes;let m=1;st.forEach(s=>m=Math.max(m,Math.abs(s.gex)));const md=w/2;
  g.strokeStyle='#262626';g.beginPath();g.moveTo(md,0);g.lineTo(md,h);g.stroke();
- st.forEach(s=>{const y=o.se.priceToCoordinate(s.k);if(y==null||y<0||y>h)return;const len=s.gex/m*(md-3);g.fillStyle=s.gex>=0?'#4fe3f0':'#a35cf0';g.fillRect(s.gex>=0?md:md+len,y-1.5,Math.abs(len),3)});
- const sy=o.se.priceToCoordinate(o.d.spot);if(sy!=null){g.strokeStyle='#f2f2f2';g.beginPath();g.moveTo(0,sy);g.lineTo(w,sy);g.stroke()}}
+ st.forEach(s=>{const y=o.se.priceToCoordinate(s.k*(o.k||1));if(y==null||y<0||y>h)return;const len=s.gex/m*(md-3);g.fillStyle=s.gex>=0?'#4fe3f0':'#a35cf0';g.fillRect(s.gex>=0?md:md+len,y-1.5,Math.abs(len),3)});
+ const sy=o.se.priceToCoordinate(o.d.spot*(o.k||1));if(sy!=null){g.strokeStyle='#f2f2f2';g.beginPath();g.moveTo(0,sy);g.lineTo(w,sy);g.stroke()}}
 function main(){$('#mg').style.display=view==='grid'&&!R?'grid':'none';if(view==='grid'&&!R){$('#fl').style.display='none';$('#mt').style.display='none';$('#pm').style.display='none';return gridView()}$('#fl').style.display=view==='flows'&&!R?'block':'none';if(view==='flows'&&!R){$('#mt').style.display='none';$('#pm').style.display='none';return flowsView()}const cvw=view==='chart'&&!R;$('#mt').style.display=cvw?'none':'';$('#pm').style.display=cvw?'':'none';if(cvw)return chartView();$('#cc').style.display='none';$('#cS').style.display='block';if(view==='heat'&&!R)return heat();const d=D;const [x,w,h]=cv('cS');
  let bars,spot,flip;
  if(R){bars=R.k.map(q=>({k:q[0],v:q[1]}));spot=R.s;flip=R.f}else{bars=d.strikes.map(s=>({k:s.k,v:srcv==='vol'?(s.vg||0):s.gex,s}));spot=d.spot;flip=d.zero_gamma}

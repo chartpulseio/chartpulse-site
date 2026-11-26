@@ -356,7 +356,12 @@ function gex_candles(string $sym): array {
     if (is_file($cf) && time() - filemtime($cf) < 30) { $c = json_decode((string)file_get_contents($cf), true); if ($c) return $c; }
     $out = [];
     try {
-        if ($mk === 'US') {
+        if (isset(GEX_METAL[$sym]) && is_file(__DIR__ . '/torus_engine.php')) {
+            require_once __DIR__ . '/torus_engine.php';
+            foreach (GEX_METAL[$sym]['src'] as $y) { $f = t_m5($y); if ($f && !empty($f['t'])) { foreach ($f['t'] as $i => $tt) if ($f['c'][$i] !== null) $out[] = [(int)$tt, (float)$f['o'][$i], (float)$f['h'][$i], (float)$f['l'][$i], (float)$f['c'][$i], (float)($f['v'][$i] ?? 0)]; break; } }
+        }
+        if ($out) {}
+        elseif ($mk === 'US') {
             $h = gex_alpaca_hdr();
             if ($h) { $st = gmdate('Y-m-d\TH:i:s\Z', time() - 6 * 86400); $tok = ''; $g = 0;
                 do { $j = gex_get("https://data.alpaca.markets/v2/stocks/$sym/bars?timeframe=5Min&feed=iex&limit=10000&adjustment=raw&start=$st" . ($tok ? '&page_token=' . urlencode($tok) : ''), $h);
@@ -443,4 +448,21 @@ function gex_flows(string $sym): array {
             'buy_prem' => round(array_sum(array_map(fn($x) => $x['side'] === 'buy' ? $x['prem'] : 0, $out))), 'sell_prem' => round(array_sum(array_map(fn($x) => $x['side'] === 'sell' ? $x['prem'] : 0, $out)))];
     @file_put_contents($cf, json_encode($res), LOCK_EX);
     return $res;
+}
+
+// ---------- Live last price for the chart's forming bar (Phase D, 26 Nov 2026), cached 3 s ----------
+function gex_last(string $sym): ?array {
+    $sym = strtoupper($sym); $mk = gex_market($sym); if (!$mk) return null;
+    $cf = GEX_DIR . "/last_$sym.json";
+    if (is_file($cf) && time() - filemtime($cf) < 3) { $c = json_decode((string)file_get_contents($cf), true); if ($c) return $c; }
+    $p = 0.0; $t = time();
+    if (isset(GEX_METAL[$sym])) { $c = gex_candles($sym); if ($c) { $l = end($c); $p = (float)$l[4]; $t = (int)$l[0]; } }
+    elseif ($mk === 'US') { $h = gex_alpaca_hdr(); $j = $h ? gex_get("https://data.alpaca.markets/v2/stocks/$sym/trades/latest?feed=iex", $h) : null; $p = (float)($j['trade']['p'] ?? 0); if (!empty($j['trade']['t'])) $t = strtotime($j['trade']['t']); }
+    elseif ($mk === 'CR') { $j = gex_get("https://www.deribit.com/api/v2/public/ticker?instrument_name=$sym-PERPETUAL", ['Accept: application/json']); $p = (float)($j['result']['last_price'] ?? 0); $t = intdiv((int)($j['result']['timestamp'] ?? time() * 1000), 1000); }
+    else { $h = gex_upstox_hdr(); $k = GEX_IN[$sym]['key']; $j = $h ? gex_get('https://api.upstox.com/v2/market-quote/ltp?instrument_key=' . rawurlencode($k), $h) : null;
+           foreach ($j['data'] ?? [] as $v) { $p = (float)($v['last_price'] ?? 0); break; } }
+    if ($p <= 0) return null;
+    $r = ['p' => $p, 't' => $t, 'now' => time()];
+    @file_put_contents($cf, json_encode($r), LOCK_EX);
+    return $r;
 }

@@ -14,12 +14,16 @@ try {
         $f = gex_flows((string)($_GET['s'] ?? 'BTC'));
         echo json_encode($f); exit;
     }
+    if ($r === 'last') {
+        $s = preg_replace('/[^A-Z]/', '', strtoupper((string)($_GET['s'] ?? 'SPY')));
+        $l = gex_last($s); echo json_encode($l ? ['ok' => true] + $l : ['ok' => false]); exit;
+    }
     if ($r === 'candles') {
         $s = preg_replace('/[^A-Z]/', '', strtoupper((string)($_GET['s'] ?? 'SPY')));
         $s = ['GOLD' => 'GLD', 'XAUUSD' => 'GLD', 'SILVER' => 'SLV', 'XAGUSD' => 'SLV'][$s] ?? $s;
         $c = gex_candles($s);
         if (!$c) { http_response_code(503); echo json_encode(['ok' => false, 'msg' => 'Chart data is temporarily unavailable. Sorry for the inconvenience.']); exit; }
-        echo json_encode(['ok' => true, 'symbol' => $s, 'tf' => '5m', 'c' => $c]); exit;
+        echo json_encode(['ok' => true, 'symbol' => $s, 'tf' => '5m', 'c' => $c, 'native' => isset(GEX_METAL[$s]) ? GEX_METAL[$s]['name'] : null]); exit;
     }
     if ($r === 'board') {
         $out = [];

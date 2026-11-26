@@ -375,6 +375,7 @@ function detail(r) {
   ${r.mode === "bounce" ? "" : `<div class="dd-cols">${cards}</div>
   ${plan}`}
   <div class="dd-links"><a class="pri" href="/desk/?s=${encodeURIComponent(r.symbol)}">Run AI Scan on ${esc(r.name)}</a><a href="/tier2.html?s=${encodeURIComponent(r.symbol)}&bias=${esc(r.side)}">Open in Tier 2</a><a href="${BASE}">Back to the list</a></div>
+  ${r.gex ? `<div class="dd-gex" style="margin:18px 0"><p class="sub" style="margin:0 0 8px"><b>Options gamma (GEX)</b> · <i class="dd-btag ${(r.mode === "bounce") === (r.gex.rg > 0) ? "ok" : ""}">${esc(r.gex.txt)}</i>${/#(GLD|SLV)$/.test(r.gex.url) ? "" : ` · call wall ${esc(String(r.gex.cw ?? "–"))} · put wall ${esc(String(r.gex.pw ?? "–"))} · zero gamma ${esc(String(r.gex.flip ?? "–"))}`} · <a href="${esc(r.gex.url)}">open the full GEX terminal</a></p><iframe src="/scanners/gex/?embed=1${esc(r.gex.url.slice(r.gex.url.indexOf("#")))}" title="GEX chart" loading="lazy" style="width:100%;height:560px;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:#0b0b0b"></iframe></div>` : ""}
   <div id="ddTl"></div>
   <p class="dd-foot">Market mood: ${esc(r.regime ? r.regime.trend : "–")}, volatility ${esc(r.regime ? r.regime.vol : "–")}. Items marked "est." are estimates, not exchange data. The score is a checklist total, not a probability. Education and demonstration only, not financial advice.</p>`;
   if (window.CP && CP.trendlines) CP.trendlines.mount($("#ddTl"), r.symbol);
