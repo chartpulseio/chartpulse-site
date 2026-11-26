@@ -23,8 +23,6 @@ $U = [
     ['/scanners/squeeze/', $mt('squeeze.html')],
     ['/scanners/crypto-arbitrage/', $mt('crypto-arbitrage.html')],
     ['/scanners/gex/', $mt('gex.html')],
-    ['/scanners/gex/gold/', $mt('gex.html')],
-    ['/scanners/gex/silver/', $mt('gex.html')],
     ['/scanners/order-flow/', $mt('order-flow.html')],
     ...array_map(fn($c) => ["/scanners/order-flow/$c/", $mt('order-flow.html')], ['btc','eth','sol','xrp','bnb','doge','hype','sui','ada','link','avax','ltc','dot','trx','ton','pepe','shib','bch','near','apt','arb','op','uni','aave','ena','wif','tia','inj','fil','etc','wld','bonk','trump','ondo','fartcoin','xlm','hbar','atom','pengu','virtual']),
     ['/scanners/binary/', $mt('binary.html')],
