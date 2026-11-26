@@ -245,6 +245,7 @@ function overlay(){if(view!=='chart'||!CS||!D||R)return;
  st.forEach((s,i)=>{const y=Y(s.k);if(y==null)return;const xx=mid+cs[i]/mc*(mid-8);f?g.lineTo(xx,y):g.moveTo(xx,y);f=1});g.stroke();g.lineWidth=1;
  const sy=Y(D.spot);if(sy!=null){g.strokeStyle='#f2f2f2';g.beginPath();g.moveTo(0,sy);g.lineTo(w2,sy);g.stroke()}
  g.fillStyle=C.mu;g.font='10px IBM Plex Mono';g.fillText(srcv==='vol'?'GEX (volume)':'GEX profile',6,12);g.fillStyle='rgba(245,230,66,.9)';g.fillText('— cumulative',6,24)}
+window.CPGX={st:()=>({LC,CS,n:CAND.length,lg:t=>lgOf(t)})};
 function chartView(){$('#cc').style.display='block';$('#cS').style.display='none';main.geo=null;if(!window.LightweightCharts){$('#err').style.display='flex';$('#err').textContent='Chart library did not load. Use the strikes view.';return}
  ensureChart();loadCandles();setLines();overlay();if(!ovT)ovT=setInterval(()=>{if(view==='chart'&&!R)overlay()},400)}
 function main(){if(view==='chart'&&!R)return chartView();$('#cc').style.display='none';$('#cS').style.display='block';if(view==='heat'&&!R)return heat();const d=D;const [x,w,h]=cv('cS');
