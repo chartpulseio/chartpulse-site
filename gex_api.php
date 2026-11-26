@@ -10,6 +10,13 @@ try {
     if ($r === 'list') {
         echo json_encode(['ok' => true, 'US' => GEX_US, 'IN' => array_keys(GEX_IN), 'CR' => GEX_CR]); exit;
     }
+    if ($r === 'candles') {
+        $s = preg_replace('/[^A-Z]/', '', strtoupper((string)($_GET['s'] ?? 'SPY')));
+        $s = ['GOLD' => 'GLD', 'XAUUSD' => 'GLD', 'SILVER' => 'SLV', 'XAGUSD' => 'SLV'][$s] ?? $s;
+        $c = gex_candles($s);
+        if (!$c) { http_response_code(503); echo json_encode(['ok' => false, 'msg' => 'Chart data is temporarily unavailable. Sorry for the inconvenience.']); exit; }
+        echo json_encode(['ok' => true, 'symbol' => $s, 'tf' => '5m', 'c' => $c]); exit;
+    }
     if ($r === 'board') {
         $out = [];
         foreach (array_merge(['SPY', 'QQQ', 'IWM'], array_keys(GEX_IN), GEX_CR) as $s) {

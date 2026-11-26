@@ -15,6 +15,7 @@
 <link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=8">
 <script defer src="/static/v2/sitehead.js?v=24"></script>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"ChartPulse GEX Scanner","url":"https://chartpulse.io/scanners/gex/","applicationCategory":"FinanceApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@type":"Organization","name":"ChartPulse"}}</script>
 <style>
 :root{--bg:#0b0b0b;--pn:#121212;--pn2:#171717;--ln:#232323;--gr:#1c1c1c;--tx:#e8e8e8;--mu:#8b8b8b;--cy:#4fe3f0;--pu:#a35cf0;--gn:#8ee04a;--rd:#f0473c;--ye:#f5e642;--or:#f59e2c;--bl:#5aa9ff}
@@ -56,7 +57,7 @@ html,body{background:var(--bg)!important}
 .mh{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid var(--ln);font:11px 'IBM Plex Mono';color:var(--mu)}
 .mh .vt{cursor:pointer;font-weight:500;color:var(--mu)}.mh .vt.on{color:var(--cy)}.mh .lg{display:flex;gap:12px}.mh .lg i{display:inline-block;width:10px;height:4px;margin-right:4px;vertical-align:middle;border-radius:2px}
 .cw{flex:1;position:relative;min-height:0}
-.cw canvas{position:absolute;inset:0;width:100%;height:100%}
+.cw{--gpw:170px}.cw>canvas{position:absolute;inset:0;width:100%;height:100%}@media(max-width:760px){.cw{--gpw:96px}}
 .tip{position:absolute;pointer-events:none;background:rgba(10,10,10,.94);border:1px solid #333;border-radius:3px;padding:6px 8px;font:11px 'IBM Plex Mono';color:var(--tx);display:none;z-index:3;white-space:nowrap}
 /* right column */
 .rc{display:grid;grid-template-rows:1fr 1fr 1fr auto;gap:8px;min-height:0}
@@ -113,8 +114,8 @@ html,body{background:var(--bg)!important}
     </aside>
 
     <section class="pn mainp">
-      <div class="mh"><span><span id="vt" style="margin-right:10px"><b data-v="bars" class="vt on">strikes</b> · <b data-v="heat" class="vt">heatmap</b></span><span id="mt">net gex by strike</span></span><span class="lg"><span><i style="background:var(--cy)"></i>+ gex</span><span><i style="background:var(--pu)"></i>− gex</span><span id="lgd"><i style="background:var(--gn)"></i>call <i style="background:var(--rd);margin-left:6px"></i>put</span></span></div>
-      <div class="cw" id="cw"><canvas id="cS"></canvas><div class="tip" id="tip"></div><div class="err" id="err">Loading…</div></div>
+      <div class="mh"><span><span id="vt" style="margin-right:10px"><b data-v="chart" class="vt on">chart</b> · <b data-v="bars" class="vt">strikes</b> · <b data-v="heat" class="vt">heatmap</b></span><span id="mt">net gex by strike</span></span><span class="lg"><span><i style="background:var(--cy)"></i>+ gex</span><span><i style="background:var(--pu)"></i>− gex</span><span id="lgd"><i style="background:var(--gn)"></i>call <i style="background:var(--rd);margin-left:6px"></i>put</span></span></div>
+      <div class="cw" id="cw"><div id="cc" style="position:absolute;inset:0;display:none"><canvas id="hmC" style="position:absolute;inset:0;width:100%;height:100%"></canvas><div id="lc" style="position:absolute;left:0;top:0;bottom:0;right:var(--gpw)"></div><canvas id="gpC" style="position:absolute;top:0;bottom:0;right:0;left:auto;width:var(--gpw);height:100%"></canvas></div><canvas id="cS"></canvas><div class="tip" id="tip"></div><div class="err" id="err">Loading…</div></div>
     </section>
 
     <div class="rc">
@@ -133,7 +134,7 @@ html,body{background:var(--bg)!important}
 const UE=['SPY','QQQ','IWM','DIA','GLD','SLV','TLT','SMH','XLE','USO'],US=['AAPL','NVDA','TSLA','MSFT','AMZN','META','GOOGL','AMD','MSTR','COIN','PLTR','AVGO','NFLX','SMCI','MU','HOOD'],IN=['NIFTY','BANKNIFTY','FINNIFTY'],CR=['BTC','ETH'],BOARD=['SPY','QQQ','IWM','NIFTY','BANKNIFTY','FINNIFTY','BTC','ETH'];
 const C={cy:'#4fe3f0',pu:'#a35cf0',gn:'#8ee04a',rd:'#f0473c',ye:'#f5e642',or:'#f59e2c',bl:'#5aa9ff',tx:'#e8e8e8',mu:'#8b8b8b',gr:'#1e1e1e',ax:'#2a2a2a'};
 const ALIAS={GOLD:'GLD',XAUUSD:'GLD',XAU:'GLD',SILVER:'SLV',XAGUSD:'SLV',XAG:'SLV'},MNAME={GLD:'GOLD',SLV:'SILVER'};
-let sym=(location.hash.slice(1)||'SPY').toUpperCase();sym=ALIAS[sym]||sym;let mode='all',op='gamma',srcv='oi',view='bars',D=null,R=null,timer=null,hover=null;
+let sym=(location.hash.slice(1)||'SPY').toUpperCase();sym=ALIAS[sym]||sym;let mode='all',op='gamma',srcv='oi',view='chart',D=null,R=null,timer=null,hover=null;
 const $=s=>document.querySelector(s);
 const nf=(v,d=2)=>v==null||isNaN(v)?'—':(+v).toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:0});
 const big=v=>{if(v==null||isNaN(v))return'—';const a=Math.abs(v),s=v<0?'-':'';return s+(a>=1e12?(a/1e12).toFixed(2)+'T':a>=1e9?(a/1e9).toFixed(2)+'B':a>=1e6?(a/1e6).toFixed(1)+'M':a>=1e3?(a/1e3).toFixed(0)+'K':a.toFixed(0))};
@@ -142,12 +143,12 @@ const tm=t=>new Date(t*1000).toLocaleTimeString([], {hour:'2-digit',minute:'2-di
 
 $('#tk').innerHTML='<optgroup label="Metals"><option value="GLD">Gold · XAUUSD (GLD)</option><option value="SLV">Silver · XAGUSD (SLV)</option></optgroup><optgroup label="US ETFs">'+UE.filter(s=>!MNAME[s]).map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="US stocks">'+US.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="India">'+IN.map(s=>`<option>${s}</option>`).join('')+'</optgroup><optgroup label="Crypto (Deribit)">'+CR.map(s=>`<option>${s}</option>`).join('')+'</optgroup>';
 $('#tk').value=sym;
-$('#tk').onchange=e=>{sym=e.target.value;location.hash=sym;stopReplay();load();strip()};
+$('#tk').onchange=e=>{CAND=[];candSym=null;sym=e.target.value;location.hash=sym;stopReplay();load();strip()};
 document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('[data-m]').forEach(x=>x.classList.toggle('on',x===b));stopReplay();load()});
 document.querySelectorAll('[name=src]').forEach(r=>r.onchange=()=>{srcv=r.value;draw(true)});
 document.querySelectorAll('#vt .vt').forEach(b=>b.onclick=()=>{view=b.dataset.v;document.querySelectorAll('#vt .vt').forEach(x=>x.classList.toggle('on',x===b));$('#tip').style.display='none';draw(true)});
 document.querySelectorAll('[name=op]').forEach(r=>r.onchange=()=>{op=r.value;$('#lgd').style.display=op==='none'?'none':'';draw(true)});
-$('#strip').addEventListener('click',e=>{const c=e.target.closest('[data-s]');if(c){sym=c.dataset.s;$('#tk').value=sym;location.hash=sym;stopReplay();load();strip()}});
+$('#strip').addEventListener('click',e=>{const c=e.target.closest('[data-s]');if(c){candSym=null;sym=c.dataset.s;$('#tk').value=sym;location.hash=sym;stopReplay();load();strip()}});
 
 async function strip(){try{const j=await(await fetch('/gex_api.php?r=board')).json();if(!j.ok)return;
  const m={};j.rows.forEach(r=>m[r.symbol]=r);
@@ -201,7 +202,52 @@ function heat(){const d=D,H=d.heatmap||{},ex=Object.keys(H);const [x,w,h]=cv('cS
   ex.forEach((e,i)=>{const v=H[e][String(k)]||0;if(!v)return;const a=Math.min(1,Math.pow(Math.abs(v)/mx,.5));x.fillStyle=v>=0?`rgba(79,227,240,${a})`:`rgba(163,92,240,${a})`;x.fillRect(L+cw*i+1,y+.5,cw-2,Math.max(1,ch-1));
    if(ch>=13&&cw>=46&&Math.abs(v)/mx>.15){x.fillStyle='#0b0b0b';x.textAlign='center';x.fillText(big(v),L+cw*(i+.5),y+ch/2)}})});
  const ys=T+ch*(ks.findIndex(k=>k<=d.spot));x.strokeStyle='#fff';x.beginPath();x.moveTo(L,ys);x.lineTo(w-Rm,ys);x.stroke();x.textAlign='left';tag(x,L+4,ys,'spot '+nf(d.spot),'#f2f2f2','#0b0b0b')}
-function main(){if(view==='heat'&&!R)return heat();const d=D;const [x,w,h]=cv('cS');
+/* ---------- candlestick chart + GEX overlays ---------- */
+let LC=null,CS=null,CAND=[],candSym=null,PL=[],ovT=null;const TZO=-new Date().getTimezoneOffset()*60;
+async function loadCandles(force){if(!window.LightweightCharts)return;if(candSym===sym&&!force)return;candSym=sym;
+ try{const j=await(await fetch('/gex_api.php?r=candles&s='+sym)).json();if(!j.ok)throw 0;if(j.symbol!==sym)return;CAND=j.c;
+  ensureChart();CS.setData(CAND.map(c=>({time:c[0]+TZO,open:c[1],high:c[2],low:c[3],close:c[4]})));if(force!=='keep')LC.timeScale().fitContent();setLines()}catch(e){CAND=[];if(CS)CS.setData([])}}
+function ensureChart(){if(LC)return;const el=$('#lc');
+ LC=LightweightCharts.createChart(el,{autoSize:true,layout:{background:{type:'solid',color:'transparent'},textColor:'#8b8b8b',fontFamily:'IBM Plex Mono',fontSize:11},
+  grid:{vertLines:{color:'rgba(255,255,255,.035)'},horzLines:{color:'rgba(255,255,255,.035)'}},rightPriceScale:{borderColor:'#232323',scaleMargins:{top:.06,bottom:.06}},
+  timeScale:{borderColor:'#232323',timeVisible:true,secondsVisible:false,rightOffset:6},crosshair:{mode:0,vertLine:{color:'#444',labelBackgroundColor:'#222'},horzLine:{color:'#444',labelBackgroundColor:'#222'}}});
+ CS=LC.addCandlestickSeries({upColor:'#2ec4b6',downColor:'#f0473c',borderUpColor:'#2ec4b6',borderDownColor:'#f0473c',wickUpColor:'#2ec4b6',wickDownColor:'#f0473c',
+  autoscaleInfoProvider:o=>{const r=o();if(!r||!D||!D.levels)return r;const L=D.levels,v=[L.em_day&&L.em_day[0],L.em_day&&L.em_day[1],D.call_wall,D.put_wall].filter(x=>x!=null);
+   v.forEach(x=>{r.priceRange.minValue=Math.min(r.priceRange.minValue,x);r.priceRange.maxValue=Math.max(r.priceRange.maxValue,x)});return r}});
+ LC.timeScale().subscribeVisibleLogicalRangeChange(()=>overlay())}
+function setLines(){if(!CS||!D)return;PL.forEach(l=>CS.removePriceLine(l));PL=[];const L=D.levels||{};
+ const add=(p,c,t,st,w)=>{if(p==null)return;PL.push(CS.createPriceLine({price:+p,color:c,lineWidth:w||1,lineStyle:st,axisLabelVisible:true,title:t}))};
+ (L.cw||[]).forEach((k,i)=>add(k,i?'rgba(79,227,240,.55)':'#4fe3f0',i?'CW'+(i+1):'CALL WALL',i?1:0,i?1:2));
+ (L.pw||[]).forEach((k,i)=>add(k,i?'rgba(163,92,240,.6)':'#a35cf0',i?'PW'+(i+1):'PUT WALL',i?1:0,i?1:2));
+ add(D.zero_gamma,'#f5e642','ZERO γ',2,2);if(L.abs!=null&&L.abs!==D.call_wall&&L.abs!==D.put_wall)add(L.abs,'rgba(255,255,255,.6)','ABS γ',1);
+ if(L.cw0!=null&&L.cw0!==D.call_wall)add(L.cw0,'#2ec4b6','0DTE CW',3);if(L.pw0!=null&&L.pw0!==D.put_wall)add(L.pw0,'#d06cf0','0DTE PW',3);
+ add(L.max_pain,'rgba(160,160,160,.6)','MAX PAIN',1)}
+function lgOf(t){let lo=0,hi=CAND.length-1;if(hi<0)return null;const tt=t;if(tt<CAND[0][0])return null;while(lo<hi){const m=(lo+hi+1)>>1;if(CAND[m][0]<=tt)lo=m;else hi=m-1}
+ const step=lo<CAND.length-1?CAND[lo+1][0]-CAND[lo][0]:300;return lo+Math.min(1,(tt-CAND[lo][0])/Math.min(step,300))}
+function overlay(){if(view!=='chart'||!CS||!D||R)return;
+ // gamma heatmap + expected-move envelope behind the candles
+ const c1=document.getElementById('hmC'),r=devicePixelRatio||1,W=c1.clientWidth-($('#gpC').clientWidth||0),H=c1.clientHeight;c1.width=c1.clientWidth*r;c1.height=H*r;const x=c1.getContext('2d');x.setTransform(r,0,0,r,0,0);x.clearRect(0,0,c1.clientWidth,H);
+ const ts=LC.timeScale(),Y=p=>CS.priceToCoordinate(p),L=D.levels||{};
+ if(L.em_day){const a=Y(L.em_day[1]),b=Y(L.em_day[0]);if(a!=null&&b!=null){const last=CAND.length?ts.logicalToCoordinate(Math.max(0,CAND.length-80)):0;x.fillStyle='rgba(245,158,44,.07)';x.fillRect(last||0,a,W-(last||0)-60,b-a);x.strokeStyle='rgba(245,158,44,.35)';x.setLineDash([4,4]);[a,b].forEach(y=>{x.beginPath();x.moveTo(last||0,y);x.lineTo(W-60,y);x.stroke()});x.setLineDash([]);x.fillStyle='#f59e2c';x.font='10px IBM Plex Mono';x.fillText('expected move',(last||0)+6,a+12)}}
+ const Hs=D.history||[];if(Hs.length&&CAND.length){let mx=1;Hs.forEach(h=>(h.k||[]).forEach(q=>mx=Math.max(mx,Math.abs(q[1]))));
+  const ks=(Hs[Hs.length-1].k||[]).map(q=>q[0]).sort((a,b)=>a-b),sp=ks.length>1?Math.abs(Y(ks[0])-Y(ks[1]))||4:4;
+  for(let i=0;i<Hs.length;i++){const h=Hs[i],l0=lgOf(h.t),l1=lgOf(i<Hs.length-1?Hs[i+1].t:h.t+60);if(l0==null)continue;const x0=ts.logicalToCoordinate(l0),x1=ts.logicalToCoordinate(l1);if(x0==null||x1==null||x1<0||x0>W)continue;
+   (h.k||[]).forEach(q=>{const y=Y(q[0]);if(y==null||y<-10||y>H+10)return;const a=Math.min(.55,Math.pow(Math.abs(q[1])/mx,.6)*.55);if(a<.03)return;x.fillStyle=q[1]>=0?`rgba(79,227,240,${a})`:`rgba(163,92,240,${a})`;x.fillRect(x0,y-sp/2,Math.max(1,x1-x0+.5),Math.max(1,sp-.5))})}}
+ // GEX profile docked on the right, aligned to the price scale
+ const c2=document.getElementById('gpC'),w2=c2.clientWidth,h2=c2.clientHeight;c2.width=w2*r;c2.height=h2*r;const g=c2.getContext('2d');g.setTransform(r,0,0,r,0,0);g.clearRect(0,0,w2,h2);
+ g.fillStyle='#101010';g.fillRect(0,0,w2,h2);g.strokeStyle='#232323';g.beginPath();g.moveTo(.5,0);g.lineTo(.5,h2);g.stroke();
+ const st=D.strikes.map(s=>({k:s.k,v:srcv==='vol'?(s.vg||0):s.gex}));let m2=1;st.forEach(s=>m2=Math.max(m2,Math.abs(s.v)));const mid=w2*.5;
+ const sp2=st.length>1?Math.max(1.5,Math.min(10,Math.abs(Y(st[0].k)-Y(st[1].k))*.7)):4;
+ g.strokeStyle='#2a2a2a';g.beginPath();g.moveTo(mid,0);g.lineTo(mid,h2);g.stroke();
+ st.forEach(s=>{const y=Y(s.k);if(y==null||y<0||y>h2)return;const len=s.v/m2*(mid-8);g.fillStyle=s.v>=0?'#4fe3f0':'#a35cf0';g.fillRect(s.v>=0?mid:mid+len,y-sp2/2,Math.abs(len),sp2)});
+ // cumulative GEX line (ATAS style)
+ let cum=0,mc=1;const cs=st.map(s=>(cum+=s.v,cum));cs.forEach(v=>mc=Math.max(mc,Math.abs(v)));g.strokeStyle='rgba(245,230,66,.8)';g.lineWidth=1.2;g.beginPath();let f=0;
+ st.forEach((s,i)=>{const y=Y(s.k);if(y==null)return;const xx=mid+cs[i]/mc*(mid-8);f?g.lineTo(xx,y):g.moveTo(xx,y);f=1});g.stroke();g.lineWidth=1;
+ const sy=Y(D.spot);if(sy!=null){g.strokeStyle='#f2f2f2';g.beginPath();g.moveTo(0,sy);g.lineTo(w2,sy);g.stroke()}
+ g.fillStyle=C.mu;g.font='10px IBM Plex Mono';g.fillText(srcv==='vol'?'GEX (volume)':'GEX profile',6,12);g.fillStyle='rgba(245,230,66,.9)';g.fillText('— cumulative',6,24)}
+function chartView(){$('#cc').style.display='block';$('#cS').style.display='none';main.geo=null;if(!window.LightweightCharts){$('#err').style.display='flex';$('#err').textContent='Chart library did not load. Use the strikes view.';return}
+ ensureChart();loadCandles();setLines();overlay();if(!ovT)ovT=setInterval(()=>{if(view==='chart'&&!R)overlay()},400)}
+function main(){if(view==='chart'&&!R)return chartView();$('#cc').style.display='none';$('#cS').style.display='block';if(view==='heat'&&!R)return heat();const d=D;const [x,w,h]=cv('cS');
  let bars,spot,flip;
  if(R){bars=R.k.map(q=>({k:q[0],v:q[1]}));spot=R.s;flip=R.f}else{bars=d.strikes.map(s=>({k:s.k,v:srcv==='vol'?(s.vg||0):s.gex,s}));spot=d.spot;flip=d.zero_gamma}
  if(!bars.length)return;
@@ -281,7 +327,7 @@ $('#tvx').onclick=()=>{if(!D)return;const d=D,L=d.levels||{},q=d.proxy,cv=v=>q?+
  const done=()=>{$('#tvx').textContent='✓ copied: TradingView → Pine Editor → paste → Add to chart';setTimeout(()=>$('#tvx').textContent='⧉ copy levels for TradingView',4000)};
  try{navigator.clipboard.writeText(pine).then(done,()=>{prompt('Copy:',pine)})}catch(e){prompt('Copy:',pine)}};
 function draw(onlyMain){if(!D)return;main();if(!onlyMain)charts()}
-strip();load();setInterval(()=>{if(!R)load()},60000);setInterval(strip,120000);addEventListener('resize',()=>draw());
+strip();load();setInterval(()=>{if(!R)load()},60000);setInterval(()=>{if(view==='chart')loadCandles('keep')},60000);setInterval(strip,120000);addEventListener('resize',()=>draw());
 })();
 </script>
 </body>

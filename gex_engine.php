@@ -340,3 +340,40 @@ function gex_metal_proxy(string $sym, float $etf): ?array {
     foreach (GEX_METAL[$sym]['src'] as $y) { $px = (float)($rows[$y]['price'] ?? 0); if ($px > 0) return ['name' => GEX_METAL[$sym]['name'], 'label' => GEX_METAL[$sym]['label'], 'via' => $y, 'px' => $px, 'ratio' => round($px / $etf, 5)]; }
     return null;
 }
+
+// ---------- Candles for the GEX price chart (same live sources as the option chains), 5-minute, last ~3 sessions ----------
+function gex_candles(string $sym): array {
+    $sym = strtoupper($sym); $mk = gex_market($sym); if (!$mk) return [];
+    if (!is_dir(GEX_DIR)) @mkdir(GEX_DIR, 0755, true);
+    $cf = GEX_DIR . "/candles_$sym.json";
+    if (is_file($cf) && time() - filemtime($cf) < 30) { $c = json_decode((string)file_get_contents($cf), true); if ($c) return $c; }
+    $out = [];
+    try {
+        if ($mk === 'US') {
+            $h = gex_alpaca_hdr();
+            if ($h) { $st = gmdate('Y-m-d\TH:i:s\Z', time() - 6 * 86400); $tok = ''; $g = 0;
+                do { $j = gex_get("https://data.alpaca.markets/v2/stocks/$sym/bars?timeframe=5Min&feed=iex&limit=10000&adjustment=raw&start=$st" . ($tok ? '&page_token=' . urlencode($tok) : ''), $h);
+                     foreach ($j['bars'] ?? [] as $b) $out[] = [strtotime($b['t']), (float)$b['o'], (float)$b['h'], (float)$b['l'], (float)$b['c'], (float)($b['v'] ?? 0)];
+                     $tok = (string)($j['next_page_token'] ?? ''); } while ($tok && ++$g < 5); }
+        } elseif ($mk === 'CR') {
+            $e = time() * 1000; $s = $e - 3 * 86400 * 1000;
+            $j = gex_get("https://www.deribit.com/api/v2/public/get_tradingview_chart_data?instrument_name=$sym-PERPETUAL&resolution=5&start_timestamp=$s&end_timestamp=$e", ['Accept: application/json']);
+            $r = $j['result'] ?? []; foreach ($r['ticks'] ?? [] as $i => $t) $out[] = [intdiv((int)$t, 1000), (float)$r['open'][$i], (float)$r['high'][$i], (float)$r['low'][$i], (float)$r['close'][$i], (float)($r['volume'][$i] ?? 0)];
+        } else {
+            $h = gex_upstox_hdr(); $k = rawurlencode(GEX_IN[$sym]['key']);
+            if ($h) {
+                $to = date('Y-m-d', time() - 86400); $fr = date('Y-m-d', time() - 7 * 86400);
+                foreach (["https://api.upstox.com/v3/historical-candle/$k/minutes/5/$to/$fr", "https://api.upstox.com/v3/historical-candle/intraday/$k/minutes/5"] as $u) {
+                    $j = gex_get($u, $h);
+                    foreach ($j['data']['candles'] ?? [] as $c) $out[] = [strtotime($c[0]), (float)$c[1], (float)$c[2], (float)$c[3], (float)$c[4], (float)($c[5] ?? 0)];
+                }
+            }
+        }
+    } catch (Throwable $e) {}
+    $u = []; foreach ($out as $c) $u[$c[0]] = $c; ksort($u); $out = array_values($u);
+    // keep the last ~3 sessions worth of bars
+    $out = array_slice($out, -900);
+    if ($out) @file_put_contents($cf, json_encode($out), LOCK_EX);
+    elseif (is_file($cf)) $out = json_decode((string)file_get_contents($cf), true) ?: [];
+    return $out;
+}
