@@ -362,7 +362,7 @@ function tl_match(array $Z, float $lv, float $tol): ?array {
 }
 
 /** MTF trend: Supertrend(10,3) direction on 30m / 1H / 4H / 1D / 1W, and the bias when 75%+ of them agree. */
-function tl_mtf(array $src): array {
+function tl_mtf(array $src, bool $dw = false): array {
     $d = []; $up = 0; $dn = 0;
     foreach (TL_MTF as $k) {
         $F = $src[$k] ?? null; if (!$F || count($F['c']) < 20) { $d[$k] = 0; continue; }
@@ -370,7 +370,14 @@ function tl_mtf(array $src): array {
     }
     $n = $up + $dn; $bias = null;
     if ($n >= 4) { if ($up / $n >= 0.75) $bias = 'CALL'; elseif ($dn / $n >= 0.75) $bias = 'PUT'; }
-    return ['d' => $d, 'up' => $up, 'down' => $dn, 'n' => $n, 'bias' => $bias];
+    if ($dw) $bias = tl_bias_dw($d);   // trend line scanners (owner, 27 Nov 2026): Day + Week only
+    return ['d' => $d, 'up' => $up, 'down' => $dn, 'n' => $n, 'bias' => $bias, 'rule' => $dw ? 'D+W' : '75%'];
+}
+
+/** HTF bias for the trend line scanners (owner, 27 Nov 2026): the daily AND the weekly trend point the same way. */
+function tl_bias_dw(array $d): ?string {
+    $D = (int)($d['1D'] ?? 0); $W = (int)($d['1W'] ?? 0);
+    return ($D !== 0 && $D === $W) ? ($D > 0 ? 'CALL' : 'PUT') : null;
 }
 
 /** How well the pattern's textbook lean fits the signal (0-10). */
@@ -484,7 +491,7 @@ function tl_build(string $sym): ?array {
     $fr = t_read_frames($sym); if (!$fr) return null;
     $lf = T_DATA . '/tl3/' . preg_replace('/[^A-Za-z0-9._-]/', '_', $sym) . '.json'; if (!is_file($lf)) tl3_fetch($sym);   // symbol page: long history now, not after the background fill
     $src = tl_src($fr, t_m5($sym) ?: ($fr['5m'] ?? null), $sym);
-    $Z = tl_zones($fr); $A = t_atr($fr['1D'], 14); $atrD = (float)end($A); $mtf = tl_mtf($src);
+    $Z = tl_zones($fr); $A = t_atr($fr['1D'], 14); $atrD = (float)end($A); $mtf = tl_mtf($src, true);
     $out = []; $lean = ['up' => 0, 'down' => 0, 'squeeze' => 0, 'side' => 0, 'none' => 0]; $sigs = []; $X = [];
     foreach (TL_TFS as $tf => $_) {
         if (empty($src[$tf])) continue;
@@ -527,7 +534,7 @@ function tl_class(string $sym): string {
 function tl_row(string $sym, array $row, int $now): ?array {
     $fr = t_read_frames($sym); if (!$fr) return null;
     $src = tl_src($fr, $fr['5m'] ?? null, $sym);
-    $Z = tl_zones($fr); $A = t_atr($fr['1D'], 14); $atrD = (float)end($A); $mtf = tl_mtf($src);
+    $Z = tl_zones($fr); $A = t_atr($fr['1D'], 14); $atrD = (float)end($A); $mtf = tl_mtf($src, true);
     $tf = []; $sigs = [];
     foreach (TL_VIEWS as $tfs) foreach ($tfs as $k) {
         if (empty($src[$k])) continue;
@@ -630,7 +637,7 @@ function tlh_anchors(array $D, string $tz, bool $put): array {
 function tlh_row(string $sym, array $row, int $now, array $tfs = TLH_TFS, string $ePref = '15m', bool $hero = false): ?array {
     $fr = t_read_frames($sym); if (!$fr) return null;
     $D = $fr['1D'] ?? null; $nD = count($D['c'] ?? []); if ($nD < 30) return null;
-    $src = tl_src($fr, $fr['5m'] ?? null, $sym); $mtf = tl_mtf($src); $bias = tlh_bias($mtf); if (!$bias) return null;
+    $src = tl_src($fr, $fr['5m'] ?? null, $sym); $mtf = tl_mtf($src, true); $bias = $mtf['bias']; if (!$bias) return null;
     $A = t_atr($D, 14); $atrD = (float)end($A); if ($atrD <= 0) return null;
     $put = $bias === 'PUT'; $s = $put ? 1 : -1;                       // +1: the line is above (resistance), -1: below (support)
     $dayX = $put ? (float)$D['h'][$nD - 1] : (float)$D['l'][$nD - 1];
@@ -763,7 +770,7 @@ function tlh_detail(string $sym): ?array {
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 20) return $c;
     $fr = t_read_frames($sym); if (!$fr || count($fr['1D']['c'] ?? []) < 30) return null;
     $m5 = t_m5($sym) ?: ($fr['5m'] ?? null);
-    $src = tl_src($fr, $m5, $sym); $mtf = tl_mtf($src); $bias = tlh_bias($mtf);
+    $src = tl_src($fr, $m5, $sym); $mtf = tl_mtf($src, true); $bias = $mtf['bias'];
     $scan = t_scan_load(); $base = $scan['rows'][$sym] ?? [];
     $D = $fr['1D']; $nD = count($D['c']); $A = t_atr($D, 14); $atrD = (float)end($A);
     $row = null; try { $row = tlh_row($sym, $base, $now, TLHERO_TFS, '30m', true); } catch (Throwable $e) {}

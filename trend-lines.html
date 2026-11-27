@@ -263,7 +263,7 @@ a.dd-row:hover{background:var(--card2)}
       <dt>Channel</dt><dd>Two lines sloping the same way. Falling channel: sellers in control. Rising channel: buyers in control.</dd>
       <dt>Triangle and wedge</dt><dd>Two lines closing in on each other. Price is being squeezed and usually leaves with a strong move.</dd>
       <dt>Major / strong zone</dt><dd>The line sits on a key level: today's high or low, previous day high, low or close, weekly or monthly high or low, a pivot or a Fibonacci level. One match is a major zone, two or more a strong zone.</dd>
-      <dt>MTF bias</dt><dd>Trend direction on 30m, 1H, 4H, 1D and 1W. Standard Supertrend (10, 3). CALL bias when at least 4 of 5 point up, PUT bias when at least 4 of 5 point down (3 of 4 where there is no 30m data). It is a label on each signal, not a filter.</dd>
+      <dt>MTF bias</dt><dd>Trend direction on 30m, 1H, 4H, 1D and 1W. Standard Supertrend (10, 3). The bias comes from the big charts only: CALL when the daily AND the weekly trend both point up, PUT when both point down, no bias when they disagree. Signals with the bias score higher; signals against it are kept but scored lower. The smaller charts are shown for context.</dd>
     </dl>
   </section>
   <p class="dd-foot">Lines are drawn by rule from swing highs and lows on the last 140 candles of each chart. They describe the chart; they are not a forecast. The grade (Top, Good, Basic) comes from the labelled factors on each row. It is a rule-based checklist, not a win probability; it has not been measured. Intraday charts are shown for markets with recent intraday data. Education and demonstration only, not financial advice.</p>
@@ -303,7 +303,7 @@ function cell(r, k) {
 }
 function mtf(r) {
   const m = r.mtf || { d: {} };
-  const lab = m.bias ? `<b class="${m.bias}">${m.bias === "CALL" ? "▲" : "▼"} ${m.bias} ${m.bias === "CALL" ? m.up : m.down}/${m.n}</b>` : `<b class="none">mixed ${m.up || 0}▲ ${m.down || 0}▼</b>`;
+  const lab = m.bias ? `<b class="${m.bias}">${m.bias === "CALL" ? "▲" : "▼"} ${m.bias} · D+W</b>` : `<b class="none">no bias · D/W mixed</b>`;
   return `<span class="tls-mtf" title="MTF trend: ${MTF.map(k => k + " " + ((m.d[k] || 0) > 0 ? "up" : (m.d[k] || 0) < 0 ? "down" : "n/a")).join(", ")}"><span class="sq">${MTF.map(k => `<i class="${(m.d[k] || 0) > 0 ? "u" : (m.d[k] || 0) < 0 ? "d" : ""}"></i>`).join("")}</span>${lab}</span>`;
 }
 // Which chart is touching or has broken right now, all seven charts, so page 2 is not needed (owner, 11 Nov 2026).
