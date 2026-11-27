@@ -102,11 +102,11 @@ h1{font:600 clamp(24px,3.4vw,36px)/1.15 var(--sans);margin:8px 0 6px;letter-spac
     <div class="g4" id="sTech"></div>
     <div class="lad"><div><ol id="sLad"></ol></div><div id="sPlan"></div></div>
     <div class="txt" id="sTxt"></div></section>
-  <section class="sec"><div class="sh"><span class="n">2</span><b>Order flow</b><small id="sOfNote">volume profile, volume delta and big-volume bubbles</small></div>
+  <section class="sec" id="sOfSec"><div class="sh"><span class="n">2</span><b>Order flow</b><small id="sOfNote">volume profile, volume delta and big-volume bubbles</small></div>
     <div id="sOf"></div></section>
-  <section class="sec"><div class="sh"><span class="n">3</span><b>Mixture</b><small>technical + order flow on one chart: candles, the zone and each chart's line, session volume profile, volume bubbles, GEX levels, entry / stop / targets, volume delta</small></div>
+  <section class="sec"><div class="sh"><span class="n" id="sMixN">3</span><b>Mixture</b><small>technical + order flow on one chart: candles, the zone and each chart's line, session volume profile, volume bubbles, GEX levels, entry / stop / targets, volume delta</small></div>
     <div style="position:relative"><canvas class="cv" id="sMix"></canvas><div class="tt" id="sMixT"></div></div></section>
-  <p class="foot">For education and demonstrations, not financial advice. Volume delta is estimated from where each candle closed in its range.</p>
+  <p class="foot">For education and demonstrations, not financial advice.</p>
 </main>
 <footer class="dd-ftr"><nav aria-label="Site links"><a href="/">ChartPulse home</a><a href="/scanners/trendline-hero/">Trendline Hero</a><a href="/scanners/trend-lines/">Trend Line Scanner</a><a href="/scanners/gex/">GEX</a><a href="/scanners/">All scanners</a></nav></footer>
 <script>
@@ -180,10 +180,10 @@ function vp(B, i0, i1, rows) { let lo = Infinity, hi = -Infinity; for (let i = i
 function delta(B) { return B.t.map((_, i) => { const r = B.h[i] - B.l[i]; return r > 0 ? (B.v[i] || 0) * (2 * B.c[i] - B.h[i] - B.l[i]) / r : 0; }); }
 function orderflow() {
   const M = S.mix, hasV = M.v.some(v => v > 0), el = $("#sOf");
-  let h = "";
+  $("#sOfSec").hidden = !hasV && !(S.gex && S.gex.url); let h = "";
   if (S.gex && S.gex.url) h += `<iframe class="ifr" loading="lazy" src="/scanners/gex/?embed=1${S.gex.url.slice(S.gex.url.indexOf("#"))}" title="Gamma exposure"></iframe>`;
-  h += hasV ? `<div style="position:relative"><canvas class="cv" id="sOfC"></canvas></div>` : `<p class="empty">This market has no volume data in our feeds, so there is no order flow to show.</p>`;
-  el.innerHTML = h; $("#sOfNote").textContent = (S.gex ? "gamma exposure (GEX) from real option chains, then " : "") + "volume profile, volume delta and big-volume bubbles on " + M.tf + " candles";
+  h += hasV ? `<div style="position:relative"><canvas class="cv" id="sOfC"></canvas></div>` : "";
+  el.innerHTML = h; $("#sOfNote").textContent = (S.gex ? "gamma exposure (GEX) from real option chains, then " : "") + (hasV ? "volume profile, volume delta and big-volume bubbles on " + M.tf + " candles" : "");
   if (!hasV) return;
   const cv = $("#sOfC"), H = 420, [g, W] = setup(cv, H), n = M.t.length, vpw = Math.min(260, W * .22), pw = W - vpw - 62, ph = H - 130, dt = ph + 30, dh = H - dt - 18, cw = pw / n, X = i => vpw + i * cw + cw / 2;
   let lo = Infinity, hi = -Infinity; M.l.forEach(v => lo = Math.min(lo, v)); M.h.forEach(v => hi = Math.max(hi, v)); const pad = (hi - lo) * .05; lo -= pad; hi += pad; const Y = p => 12 + (hi - p) / (hi - lo) * (ph - 12);
@@ -199,6 +199,7 @@ function orderflow() {
   let cum = 0; const cv2 = dl.map(v => cum += v); let mc = 1; cv2.forEach(v => mc = Math.max(mc, Math.abs(v))); g.strokeStyle = "#f5e642"; g.lineWidth = 1.4; g.beginPath(); cv2.forEach((v, i) => { const y = z - v / mc * dh * .45; i ? g.lineTo(X(i), y) : g.moveTo(X(i), y); }); g.stroke(); g.lineWidth = 1;
 }
 function mixture() {
+  $("#sMixN").textContent = $("#sOfSec").hidden ? "2" : "3";
   const M = S.mix, cv = $("#sMix"), H = 720, [g, W] = setup(cv, H), n = M.t.length, ax = 78, pw = W - ax, ph = H - 150, dt = ph + 26, dh = H - dt - 22, cw = pw / (n + 8), X = i => i * cw + cw / 2, d = S.dec, put = S.bias === "PUT";
   let lo = Infinity, hi = -Infinity; M.l.forEach(v => lo = Math.min(lo, v)); M.h.forEach(v => hi = Math.max(hi, v));
   const P = S.plan; if (S.zone) { lo = Math.min(lo, S.zone[0]); hi = Math.max(hi, S.zone[1]); } if (P) [P.stop, P.t1].forEach(v => { lo = Math.min(lo, v); hi = Math.max(hi, v); });
