@@ -268,9 +268,13 @@ a.hy:hover{background:var(--card2)}
 </style>
 </head>
 <body>
+<div class="nwTabs" style="max-width:1240px;margin:18px auto 0;padding:0 20px;display:flex;gap:6px">
+  <button type="button" data-v="market" class="on">By market</button><button type="button" data-v="story">By story</button></div>
+<style>.nwTabs button{font:600 12px "IBM Plex Mono",monospace;padding:7px 16px;border-radius:16px;border:1px solid #23262d;background:#0c0e11;color:#a9aeb8;cursor:pointer}.nwTabs button.on{border-color:rgba(233,196,106,.7);color:#fff;background:rgba(233,196,106,.1)}#nwStory{display:none;max-width:1280px;margin:10px auto 40px;padding:0 10px}#nwStory iframe{width:100%;height:2400px;border:0;display:block;background:#050506}</style>
+<div id="nwStory"></div>
 <main class="dd" id="nsApp">
   <div class="dd-eyebrow">Free scanner</div>
-  <h1>News Scanner</h1>
+  <h1>News</h1>
   <p class="dd-lede">Which markets are in the news right now, and what the news is saying. One row per market: the headlines, their tone, how far price has moved since, and whether the news agrees with the trend.</p>
   <ol class="dd-steps">
     <li><span>STEP 1</span><b>In the news</b><p>A market is listed when at least one story in the last 48 hours names it.</p></li>
@@ -378,6 +382,16 @@ $("#nsQ").addEventListener("input", e => { L.q = e.target.value.trim().toLowerCa
 $("#nsMore").addEventListener("click", () => { L.show += 30; paint(); });
 load();
 })();
+</script>
+<script>
+/* One News page (owner, 27 Nov 2026): "By market" = the News Scanner, "By story" = the stories list (old /news page). */
+(() => { const tb = document.querySelector(".nwTabs"), app = document.getElementById("nsApp"), st = document.getElementById("nwStory");
+  const set = v => { [...tb.children].forEach(b => b.classList.toggle("on", b.dataset.v === v)); app.style.display = v === "story" ? "none" : ""; st.style.display = v === "story" ? "block" : "none";
+    if (v === "story" && !st.firstChild) st.innerHTML = '<iframe src="/news-stories/?embed=1" title="News by story" loading="lazy"></iframe>';
+    const u = new URL(location.href); v === "story" ? u.searchParams.set("view", "story") : u.searchParams.delete("view"); history.replaceState(null, "", u); };
+  tb.addEventListener("click", e => { const b = e.target.closest("button"); if (b) set(b.dataset.v); });
+  if (new URLSearchParams(location.search).get("view") === "story") set("story");
+  addEventListener("message", e => { if (e.data && e.data.nwH && st.firstChild) st.firstChild.style.height = Math.max(800, e.data.nwH) + "px"; }); })();
 </script>
 <script src="/static/v2/tg-join.js?v=1" defer></script>
 </body>

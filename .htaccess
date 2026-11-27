@@ -59,6 +59,9 @@ RewriteCond %{THE_REQUEST} \ /legal\.php\?p=contact[ &]
 RewriteRule ^legal\.php$ /contact/? [R=301,L]
 
 # --- keep existing page URLs working where no redirect applies
+RewriteCond %{THE_REQUEST} \ /news(\.html)?[/? ]
+RewriteRule ^news(\.html)?/?$  /scanners/news/?view=story [R=301,L]
+RewriteRule ^news-stories/?$  /news.html  [L]
 RewriteRule ^news\.html$        /news.html         [L]
 RewriteRule ^insights\.html$    /insights.html     [L]
 RewriteRule ^pricing\.html$     /pricing.html      [L]

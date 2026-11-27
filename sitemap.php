@@ -44,7 +44,6 @@ $U = [
     ['/ai-backtesting/', $mt('ai-backtesting.html')],
     ['/backtesting/', $mt('backtesting.html')],
     ['/desk/', $mt('desk.html')],
-    ['/news.html', $mt('news.html')],
     ['/insights.html', $mt('insights.html')],
     ['/pricing.html', $mt('pricing.html')],
     ['/affiliates/', $mt('affiliates.html')],
