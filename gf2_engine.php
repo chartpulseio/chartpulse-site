@@ -23,7 +23,7 @@ const GF2_DIR_NAME = 'gf2';
 const GF2_TTL = 60;
 const GF2_HOLD = 86400;          // time limit for the result, seconds
 const GF2_MIN_N = 100;
-const GF2_VER = 'gf2.2';        // stats count only the current rule version           // closed trades before a win rate is shown as a number
+const GF2_VER = 'gf2.3';        // stats count only the current rule version           // closed trades before a win rate is shown as a number
 
 function gf2_dir(): string { $d = T_DATA . '/' . GF2_DIR_NAME; if (!is_dir($d)) @mkdir($d, 0755, true); return $d; }
 
@@ -79,7 +79,7 @@ function gf2_scan(): array {
         // TRIGGER
         $trig = []; if ($c && $c['stage'] >= 5) $trig[] = 'Confluence GO (5m turn)';
         if ($h && (int)($h['stage'] ?? 0) >= 4 && !empty($h['live'])) $trig[] = 'Hero alert';
-        if ($g) foreach ($g['checks'] ?? [] as $ch) if (($ch['k'] ?? '') === 'trig' && !empty($ch['ok'])) $trig[] = (string)$ch['d'];
+        if ($g && in_array($g['grade'] ?? '', ['A+', 'A'], true) && empty($g['late'])) foreach ($g['checks'] ?? [] as $ch) if (($ch['k'] ?? '') === 'trig' && !empty($ch['ok'])) $trig[] = (string)$ch['d'];   // God-father's own trigger only when its board graded it A+/A with fresh data
         $trigOk = (bool)$trig;
         // NEWS
         $news = false; if ($g) foreach ($g['checks'] ?? [] as $ch) if (($ch['k'] ?? '') === 'news' && empty($ch['ok'])) $news = true;
