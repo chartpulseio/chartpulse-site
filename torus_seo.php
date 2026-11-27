@@ -255,6 +255,11 @@ function seo_indexnow(int $now): ?string {
         foreach ($dates as $d) $P[] = "/movers/$d";
     } else {
         if (($S['day'] ?? '') !== $today) array_push($P, '/', '/bias/', '/movers/');
+        // 27 Nov 2026: new SEO pages (GEX per market, guides, scanners) -- once in full, then the daily ones every day
+        $gx = ['spy','qqq','iwm','dia','gold','silver','nifty','banknifty','finnifty','bitcoin','ethereum','aapl','nvda','tsla','msft','amzn','meta','googl','amd','mstr','coin','pltr','avgo','nflx','smci','mu','hood','tlt','smh','xle','uso'];
+        if (empty($S['v2'])) { $S['v2'] = $today; array_push($P, '/gex/', '/learn/', '/today/', '/scanners/', '/scanners/confluence/', '/scanners/godfather/', '/scanners/gex/', '/scanners/trendline-hero/', '/scanners/trend-lines/', '/scanners/news/', '/backtesting/', '/ai-backtesting/', '/scanners/next-candle/');
+            foreach ($gx as $g) $P[] = "/gex/$g/"; foreach (['gamma-exposure-gex','call-wall-put-wall','trend-line-confluence','break-and-retest','liquidity-sweep-fake-breakout','order-flow-volume-delta','volume-profile-poc','backtesting-trading-strategy','ai-price-forecast','smart-money-concepts','200-ema-strategy','trend-line-trading'] as $l) $P[] = "/learn/$l/"; }
+        elseif (($S['day'] ?? '') !== $today) { array_push($P, '/gex/', '/today/'); foreach ($gx as $g) $P[] = "/gex/$g/"; }
         $old = (array)($S['bias'] ?? []);
         foreach ($bias as $s => $w) if (isset($old[$s]) && $old[$s] !== $w) $P[] = seo_url($s);
         $seen = (array)($S['arch'] ?? []);

@@ -49,6 +49,7 @@
       ] },
       { h: "More", items: [
         { t: "All scanners", d: "Every scanner on one page", href: "/scanners/", exact: true },
+        { t: "Today's report", d: "Best setups, GEX and movers today", href: "/today/" },
         { t: "Learn", d: "Plain-English guides: GEX, trend lines, order flow, AI", href: "/learn/" },
         { t: "GEX levels today", d: "Call wall, put wall, zero gamma for every market", href: "/gex/" },
         { t: "Insights", d: "Breadth, volatility and momentum", href: "/insights.html" },
