@@ -109,12 +109,15 @@ function cf_row(string $sym, array $row, int $now, bool $full = false): ?array {
                 $piv = $put ? min(array_slice($F5['l'], max(0, $xi - 8), max(1, $xi - max(0, $xi - 8)))) : max(array_slice($F5['h'], max(0, $xi - 8), max(1, $xi - max(0, $xi - 8))));
                 for ($i = $xi + 1; $i < $n5; $i++) if (($F5['c'][$i] - $piv) * $sg < 0) { $go = true; $gi = $i; break; }
                 if ($go && ($px - $ext5) * $sg > 0) $go = false;   // made a new extreme after the break: not valid any more
+                if ($go && $gi < $n5 - 12) $go = false;           // the turn is older than ~1 hour: not a fresh entry any more
             }
         }
         $ladder[] = ['k' => 'Rejection candle (15m wick or engulfing)', 'ok' => $rej];
         $ladder[] = ['k' => 'CHoCH on 5m (structure turned)', 'ok' => $go];
         if ($stage >= 2 && $rej) $stage = 4;
         if ($stage >= 2 && $go) $stage = 5;
+        $away = ($near - $px) * $sg / $atr;     // how far price has already moved away from the zone, in the trade direction
+        if ($away > 1.0) { $stage = 0; $why = 'Price already moved more than 1 ATR away from the zone: the reversal has played out.'; }
         if ($brk) $why = 'Price closed more than 0.5 ATR through the zone: breakout, no reversal setup.';
         // plan
         $stop = $X + $sg * 0.25 * $atr; $entry = $stage >= 5 ? $px : $near; $risk = max(abs($stop - $entry), 0.2 * $atr);
