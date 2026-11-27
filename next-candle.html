@@ -179,6 +179,15 @@ const F = {show:"sig", side:"all"}; let D = null, tick = null;
 const hm = t => new Date(t*1000).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
 const rate = t => !t ? "–" : t.rate == null ? "not enough yet" : t.rate + "%";
 function left(r){ const s = r.bar + 600 - Math.floor(Date.now()/1000); return s > 0 ? `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}` : "closed"; }
+/* GEX label (27 Nov 2026): does dealer gamma / delta point the same way as the models? Label only. */
+function gexL(r){ const g = r.gex; if (!g) return ""; const dir = r.up * 2 > r.n ? 1 : r.up * 2 < r.n ? -1 : 0; if (!dir) return "";
+  const S = g.s || 0, pc = k => S && k ? (k / S - 1) * 100 : null, cw = pc(g.cw), pw = pc(g.pw); let sc = 0; const why = [];
+  if (g.dx != null && g.dx !== 0) { const w = (g.dx > 0) === (dir > 0); sc += w ? 1 : -1; why.push("delta " + (w ? "with" : "against")); }
+  if (dir > 0 && cw != null && cw >= 0 && cw <= 0.3) { sc -= 1; why.push("call wall just above"); }
+  if (dir < 0 && pw != null && pw <= 0 && pw >= -0.3) { sc -= 1; why.push("put wall just below"); }
+  why.unshift(g.rg > 0 ? "+γ (moves fade)" : "−γ (moves run)");
+  const v = sc > 0 ? ["#2ee59d", "GEX agrees"] : sc < 0 ? ["#ef5350", "GEX against"] : ["#a9aeb8", "GEX neutral"];
+  return `<div style="margin:6px 0 2px;font:11px var(--mono,monospace)"><span style="border:1px solid ${v[0]}88;color:${v[0]};border-radius:4px;padding:2px 7px">${v[1]}</span> <span style="color:#8b8f99">${why.join(" · ")}</span></div>`; }
 function card(r){ const up = r.side > 0, gc = r.sig ? (r.strong ? "ap" : "a") : "no", nm = (D.names||{})[r.s] || r.s;
   const lo = Math.min(r.h1[0], r.last), hi = Math.max(r.h1[1], r.last), w = (hi - lo) || 1, pc = x => Math.max(0, Math.min(100, (x - lo) / w * 100));
   return `<article class="gc g-${gc}" data-bar="${r.bar}"><div class="gc-top"><div class="gc-grade cd num" title="Time left in the candle being guessed">${left(r)}</div>
@@ -188,6 +197,7 @@ function card(r){ const up = r.side > 0, gc = r.sig ? (r.strong ? "ap" : "a") : 
     <div class="nc-v">${Object.entries(r.v).map(([m,v]) => `<i class="${v>0?"u":v<0?"d":""}">${esc(MN[m]||m)} ${v>0?"▲":v<0?"▼":"–"}</i>`).join("")}</div>
     <div class="kv" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div><span>Next candle, likely close</span><b>${fmt(r.next[0],r.dec)} – ${fmt(r.next[2],r.dec)}</b></div><div><span>Next hour, likely range</span><b>${fmt(r.h1[0],r.dec)} – ${fmt(r.h1[1],r.dec)}</b></div></div>
     <div class="nc-bar"><s style="left:${pc(r.h1[0])}%;width:${pc(r.h1[1])-pc(r.h1[0])}%"></s><b style="left:${pc(r.last)}%"></b></div><div class="nc-sub"><span>${fmt(lo,r.dec)}</span><span>gold line = price now · blue = next-hour range</span><span>${fmt(hi,r.dec)}</span></div>
+    ${gexL(r)}
     <div class="gc-foot"><span class="gc-mtf"></span><a href="/desk/?s=${encodeURIComponent(r.s)}">AI Scan</a></div></article>`; }
 function render(){ if (!D) return; const R = D.rows || [], st = D.stats || {}, ru = st.rule || {};
   $("#ncTiles").innerHTML = [[R.filter(r => r.sig).length, "Calls now", "all models agree · forex"], [R.length, "Markets live", (D.closed||[]).length ? (D.closed.length + " closed") : "5m candles"], [rate(ru.d7), "Hit rate · 7 days", ru.d7 ? `${ru.d7.w} right · ${ru.d7.l} wrong` : "live count"], [rate(ru.d1), "Hit rate · 24 hours", ru.d1 ? `${ru.d1.w} right · ${ru.d1.l} wrong` : "live count"]]

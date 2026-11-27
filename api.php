@@ -176,6 +176,8 @@ if ($r === 'scan') {
     $d['age'] = t_now() - (int)$d['at']; $names = [];
     foreach (($d['rows'] ?? []) as $x) $names[(string)$x['s']] = t_name((string)$x['s']);
     foreach (($d['closed'] ?? []) as $x) $names[(string)$x] = t_name((string)$x);
+    // GEX label (owner, 27 Nov 2026): gamma regime, net delta and walls for BTC / ETH / Gold -- label only, the guess is unchanged
+    try { require_once __DIR__ . '/gex_engine.php'; foreach (($d['rows'] ?? []) as $i => $x) { $l = gex_label_for((string)$x['s']); if ($l) $d['rows'][$i]['gex'] = $l; } } catch (Throwable $e) {}
     $d['names'] = $names; t_json($d);
 } elseif ($r === 'desklive') {   // Live AI view (owner, 5 Oct 2026): 4 Gemini analysts + judge in about 30 s, shared per symbol for 1 hour
     require __DIR__ . '/torus_desk.php'; require_once __DIR__ . '/torus_live.php';
