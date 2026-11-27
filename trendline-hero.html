@@ -258,6 +258,8 @@ a.hy:hover{background:var(--card2)}
 .h2-tv{height:520px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#0B0C0F}
 .h2-tv .tradingview-widget-container,.h2-tv .tradingview-widget-container__widget{height:100%}
 @media (max-width:760px){.h2-checks{grid-template-columns:minmax(0,1fr)}.h2-tv{height:420px}}
+.hy-conf{display:inline-block;font:600 10.5px "IBM Plex Mono",monospace;letter-spacing:.06em;color:#1a1200;background:linear-gradient(90deg,#f5c542,#ffdd7a);border-radius:4px;padding:2px 8px;margin:4px 6px 0 0;box-shadow:0 0 12px rgba(245,197,66,.35)}
+.hy:has(.hy-conf){border-color:rgba(245,197,66,.55)!important}
 </style>
 </head>
 <body>
@@ -397,9 +399,12 @@ function plan(r) {
   const p = r.plan; if (!p) return "";
   return `<div class="hy-plan"><div><span>Entry (now)</span><b>${fmt(p.entry, r.dec)}</b></div><div class="sl"><span>Stop-loss · ${p.risk_pct}%</span><b>${fmt(p.sl, r.dec)}</b></div><div class="tg"><span>Target 1 · ${p.t1x || 1.5} × risk</span><b>${fmt(p.t1, r.dec)}</b></div><div class="tg"><span>Target 2 · ${esc(p.t2why)}</span><b>${fmt(p.t2, r.dec)}</b></div></div>`;
 }
+/* Confluence setup (owner, 27 Nov 2026): the day/week/month extreme touches trend lines on 2+ different charts on the
+   bias side (support lines in a CALL bias, resistance lines in a PUT bias). Ranked on top, most charts first. */
+function conf(r) { const t = [...new Set((r.all || []).filter(x => x.stage >= 3).map(x => x.tf))]; return t.length >= 2 ? t : null; }
 function card(r) {
   return `<a class="hy s${r.stage >= 4 && !r.live ? "0" : r.stage}" href="/scanners/trendline-hero/?s=${encodeURIComponent(r.symbol)}">
-    <div class="hy-top"><span class="tls-call ${r.bias}">${r.bias === "CALL" ? "▲ CALL" : "▼ PUT"}</span><h3>${esc(r.name)}</h3><small>${esc(r.symbol)} · ${esc(r.market || "")} · ${fmt(r.price, r.dec)}</small><span class="hy-stage">${stg(r)}${L.fresh.has(r.symbol) ? '<span class="hy-new">NEW</span>' : ""}</span></div>
+    <div class="hy-top"><span class="tls-call ${r.bias}">${r.bias === "CALL" ? "▲ CALL" : "▼ PUT"}</span><h3>${esc(r.name)}</h3><small>${esc(r.symbol)} · ${esc(r.market || "")} · ${fmt(r.price, r.dec)}</small>${conf(r) ? `<span class="hy-conf">★ CONFLUENCE SETUP · ${conf(r).length} charts (${conf(r).join(", ")}) ${r.bias === "CALL" ? "support" : "resistance"}</span>` : ""}<span class="hy-stage">${stg(r)}${L.fresh.has(r.symbol) ? '<span class="hy-new">NEW</span>' : ""}</span></div>
     <p class="hy-say">${say(r)}</p>
     ${nowline(r)}
     <div class="hy-row2">${mtf(r)}${chips(r)}</div>
@@ -418,6 +423,7 @@ function paint() {
   if (L.tfq === "big") rows = rows.filter(r => BIG[r.tf]); else if (L.tfq !== "all") rows = rows.filter(r => (r.all || []).some(x => x.tf === L.tfq));
   if (L.stage === "alert") rows = rows.filter(r => r.stage >= 4 && r.live); else if (L.stage === "old") rows = rows.filter(r => r.stage >= 4 && !r.live); else if (L.stage !== "all" && L.stage !== "alert") rows = rows.filter(r => r.stage === +L.stage);
   if (L.side !== "all") rows = rows.filter(r => r.bias === L.side);
+  rows = rows.map((r, i) => [r, i]).sort((a, b) => ((conf(b[0]) || []).length - (conf(a[0]) || []).length) || a[1] - b[1]).map(x => x[0]);
   if (L.q) rows = rows.filter(r => (r.name + " " + r.symbol).toLowerCase().includes(L.q));
   $("#hyList").innerHTML = rows.length ? rows.slice(0, L.show).map(card).join("") : `<p class="dd-empty">${all.length ? "Nothing matches this filter right now." : (p < 1 ? "Scanning every market…" : "No market has its day high or low at a trend line in the direction of the trend right now.")}</p>`;
   $("#hyMore").hidden = rows.length <= L.show;
