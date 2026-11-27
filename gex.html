@@ -132,8 +132,8 @@ html,body{background:var(--bg)!important}
     <div class="cw" id="cwS" style="height:680px"><canvas id="cS"></canvas><div class="tip" id="tipS"></div></div></section>
   <section class="pn xsec"><div class="mh"><span><b style="color:var(--tx);font-weight:600">gamma by expiry × strike</b> <span class="mu">· which expiry holds the gamma at each strike</span></span></div>
     <div class="cw" style="height:600px"><canvas id="cH"></canvas></div></section>
-  <section class="pn xsec"><div class="mh"><span><b style="color:var(--tx);font-weight:600">multi-chart</b> <span class="mu">· pick any 4 markets, remembered on this device</span></span></div>
-    <div id="mg" style="display:grid;height:760px;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:4px;padding:4px"></div></section>
+  <section class="pn xsec"><div class="mh"><span><b style="color:var(--tx);font-weight:600">multi-chart</b> <span class="mu">· pick any 4 markets, remembered on this device</span></span><button id="mgt" style="font:11px IBM Plex Mono;padding:3px 12px;border-radius:12px;cursor:pointer;border:1px solid #333;background:transparent;color:#e8e8e8">Show ▾</button></div>
+    <div id="mg" style="display:none;height:760px;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:4px;padding:4px"></div></section>
   <section class="pn xsec"><div class="mh"><span><b style="color:var(--tx);font-weight:600">big flows</b> <span class="mu">· largest option trades as they print (BTC / ETH)</span></span></div>
     <div id="fl" style="padding:10px 12px;font:12px IBM Plex Mono;max-height:620px;overflow:auto"></div></section>
 
@@ -305,7 +305,12 @@ let MG=null;const MGDEF=['SPY','QQQ','NIFTY','BTC'];
 function mgSyms(){try{const v=JSON.parse(localStorage.getItem('cp_gex_grid')||'null');if(Array.isArray(v)&&v.length===4)return v}catch(e){}return MGDEF.slice()}
 function mgSave(a){try{localStorage.setItem('cp_gex_grid',JSON.stringify(a))}catch(e){}}
 function mgOpts(sel){const g=(l,a)=>`<optgroup label="${l}">`+a.map(x=>`<option ${x===sel?'selected':''} value="${x}">${MNAME[x]?MNAME[x]+' ('+x+')':x}</option>`).join('')+'</optgroup>';return g('Metals',['GLD','SLV'])+g('US ETFs',UE.filter(x=>!MNAME[x]))+g('US stocks',US)+g('India',IN)+g('Crypto',CR)}
-function gridView(){const el=$('#mg');
+/* multi-chart is optional: hidden by default, opened by the user; the choice is remembered and nothing loads while it is closed */
+let MGON=false;try{MGON=localStorage.getItem('cp_gex_mg_on')==='1'}catch(e){}
+function mgToggle(){const el=$('#mg'),b=$('#mgt');if(!el||!b)return;el.style.display=MGON?'grid':'none';b.textContent=MGON?'Hide ▴':'Show ▾';if(MGON)gridView0()}
+document.addEventListener('click',e=>{if(e.target&&e.target.id==='mgt'){MGON=!MGON;try{localStorage.setItem('cp_gex_mg_on',MGON?'1':'0')}catch(x){}mgToggle()}});
+function gridView(){mgToggle()}
+function gridView0(){const el=$('#mg');
  if(!window.LightweightCharts){el.innerHTML='<p class="mu">Chart library did not load.</p>';return}
  if(!MG){const syms=mgSyms();el.innerHTML=syms.map((x,i)=>`<div class="mgc" data-i="${i}"><select>${mgOpts(x)}</select><span class="mi"></span><div class="mc"></div><canvas class="mp"></canvas></div>`).join('');
   MG=[...el.querySelectorAll('.mgc')].map((box,i)=>{const ch=LightweightCharts.createChart(box.querySelector('.mc'),{autoSize:true,handleScroll:{mouseWheel:false,vertTouchDrag:false},handleScale:{mouseWheel:false},layout:{background:{type:'solid',color:'transparent'},textColor:'#8b8b8b',fontFamily:'IBM Plex Mono',fontSize:10},grid:{vertLines:{color:'rgba(255,255,255,.03)'},horzLines:{color:'rgba(255,255,255,.03)'}},rightPriceScale:{borderColor:'#232323'},timeScale:{borderColor:'#232323',timeVisible:true}});
