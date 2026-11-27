@@ -304,7 +304,9 @@ function gex_history(string $sym, array $g, bool $write): array {
         // Day Drive / God-father / Tier 1 signals by symbol + time to measure win rate per gamma regime.
         $rg = $g['zero_gamma'] ? ($g['spot'] >= $g['zero_gamma'] ? 1 : -1) : ($g['net_gex'] >= 0 ? 1 : -1);
         @file_put_contents(GEX_DIR . '/regime_' . date('Ym') . '.jsonl', json_encode(['t' => time(), 'sym' => $sym, 's' => $g['spot'], 'rg' => $rg,
-            'f' => $g['zero_gamma'], 'cw' => $g['call_wall'], 'pw' => $g['put_wall'], 'g' => $g['net_gex'], 'em' => $g['expected_move']]) . "\n", FILE_APPEND | LOCK_EX);
+            'f' => $g['zero_gamma'], 'cw' => $g['call_wall'], 'pw' => $g['put_wall'], 'g' => $g['net_gex'], 'em' => $g['expected_move'],
+            // 27 Nov 2026: net delta, vanna and charm too, for the Next Candle x GEX test
+            'dx' => round(array_sum(array_map(fn($x) => (float)($x['cd'] ?? 0) + (float)($x['pd'] ?? 0), $g['strikes']))), 'va' => round(array_sum(array_column($g['strikes'], 'vanna'))), 'ch' => round(array_sum(array_column($g['strikes'], 'charm')))]) . "\n", FILE_APPEND | LOCK_EX);
         // Heavy per-strike history: keep 10 days only
         if (mt_rand(1, 200) === 1) foreach (glob(GEX_DIR . '/hist_*.json') ?: [] as $old) if (filemtime($old) < time() - 10 * 86400) @unlink($old);
     }
@@ -468,4 +470,53 @@ function gex_last(string $sym): ?array {
     $r = ['p' => $p, 't' => $t, 'now' => time()];
     @file_put_contents($cf, json_encode($r), LOCK_EX);
     return $r;
+}
+
+
+/**
+ * Next Candle x GEX join (owner, 27 Nov 2026): every closed Next Candle guess on a symbol that has GEX gets the gamma /
+ * delta state at the time of the guess, so the test (gex_nc_test) can compare win rates per regime. Permanent JSONL.
+ * The Next Candle job keeps only its last 300 guesses, so this runs from the worker every few minutes.
+ */
+function gex_nc_join(): int {
+    if (!function_exists('ml_dir')) require_once __DIR__ . '/torus_ml.php';
+    $nc = t_read_json(ml_dir() . '/nc.json', null); $hist = $nc['state']['hist'] ?? []; if (!$hist) return 0;
+    $pf = GEX_DIR . '/nc_join_last.txt'; $last = (int)@file_get_contents($pf); $max = $last; $n = 0; $reg = [];
+    foreach ([date('Ym'), date('Ym', strtotime('-1 month'))] as $ym) { $f = GEX_DIR . "/regime_$ym.jsonl"; if (!is_file($f)) continue;
+        $sz = filesize($f); $h = fopen($f, 'r'); if ($sz > 3000000) fseek($h, $sz - 3000000);
+        while (($ln = fgets($h)) !== false) { $j = json_decode($ln, true); if ($j && isset($j['sym'])) $reg[$j['sym']][] = $j; } fclose($h); }
+    $out = '';
+    foreach ($hist as $e) {
+        $t = (int)($e['t'] ?? 0); if ($t <= $last || empty($e['res'])) continue; $max = max($max, $t);
+        $g = GEX_YAHOO[$e['s']] ?? null; if (!$g || empty($reg[$g])) continue;
+        $best = null; foreach ($reg[$g] as $r) if ($r['t'] <= $t + 60 && $t - $r['t'] <= 600) $best = $r;   // GEX state up to 10 min before the guess
+        if (!$best) continue; $S = (float)$best['s'];
+        $out .= json_encode(['t' => $t, 's' => $e['s'], 'g' => $g, 'side' => (int)$e['side'], 'sig' => (int)($e['sig'] ?? 0), 'res' => $e['res'],
+            'rg' => $best['rg'], 'ng' => $best['g'], 'dx' => $best['dx'] ?? null, 'va' => $best['va'] ?? null,
+            'dcw' => $best['cw'] ? round(($best['cw'] / $S - 1) * 100, 3) : null, 'dpw' => $best['pw'] ? round(($best['pw'] / $S - 1) * 100, 3) : null,
+            'dfl' => $best['f'] ? round(($best['f'] / $S - 1) * 100, 3) : null]) . "\n"; $n++;
+    }
+    if ($out !== '') @file_put_contents(GEX_DIR . '/nc_join.jsonl', $out, FILE_APPEND | LOCK_EX);
+    if ($max > $last) @file_put_contents($pf, (string)$max);
+    return $n;
+}
+
+/** The test: Next Candle win rate split by gamma regime, net delta sign and distance to the walls / flip. */
+function gex_nc_test(): array {
+    $f = GEX_DIR . '/nc_join.jsonl'; $rows = is_file($f) ? array_filter(array_map(fn($l) => json_decode($l, true), file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES))) : [];
+    $B = []; $add = function (string $k, array $e) use (&$B) { if ($e['res'] === 'flat') return; $B[$k]['n'] = ($B[$k]['n'] ?? 0) + 1; $B[$k]['w'] = ($B[$k]['w'] ?? 0) + ($e['res'] === 'win' ? 1 : 0); };
+    foreach ($rows as $e) {
+        $add('all', $e); $add('regime ' . ($e['rg'] > 0 ? '+gamma' : '-gamma'), $e);
+        if ($e['sig']) $add('signals only · ' . ($e['rg'] > 0 ? '+gamma' : '-gamma'), $e);
+        if ($e['dx'] !== null) { $with = ($e['dx'] >= 0) === ($e['side'] > 0); $add('net delta ' . ($with ? 'WITH the guess' : 'AGAINST the guess'), $e); }
+        $nearW = ($e['side'] > 0 && $e['dcw'] !== null && $e['dcw'] >= 0 && $e['dcw'] <= 0.3) || ($e['side'] < 0 && $e['dpw'] !== null && $e['dpw'] <= 0 && $e['dpw'] >= -0.3);
+        $add($nearW ? 'guess INTO a wall (<0.3%)' : 'not into a wall', $e);
+        if ($e['dfl'] !== null && abs($e['dfl']) <= 0.2) $add('within 0.2% of zero gamma', $e);
+    }
+    $out = [];
+    foreach ($B as $k => $v) { $w = $v['w']; $n = $v['n']; $z = 1.96; $p = $n ? $w / $n : 0; $d = 1 + $z * $z / max($n, 1);
+        $c = ($p + $z * $z / (2 * max($n, 1))) / $d; $h = $n ? $z * sqrt($p * (1 - $p) / $n + $z * $z / (4 * $n * $n)) / $d : 0;
+        $out[$k] = ['n' => $n, 'win_pct' => $n ? round($p * 100, 1) : null, 'ci95' => [round(max(0, $c - $h) * 100, 1), round(min(1, $c + $h) * 100, 1)]]; }
+    $first = $rows ? min(array_column($rows, 't')) : null;
+    return ['rows' => count($rows), 'since' => $first ? gmdate('Y-m-d H:i', $first) . ' UTC' : null, 'buckets' => $out];
 }

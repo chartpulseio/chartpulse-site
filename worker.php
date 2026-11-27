@@ -35,7 +35,8 @@ try {
         gex_get_symbol($s, 'all'); $gx++;
     }
     @file_put_contents($gf, (string)($gi % 1000));
-    try { gex_alerts_step(); } catch (Throwable $e) {}   // Telegram: gamma flip lost/regained, price at call/put wall
+    try { gex_alerts_step(); } catch (Throwable $e) {}
+    try { gex_nc_join(); } catch (Throwable $e) {}   // Next Candle x GEX test log (27 Nov 2026)   // Telegram: gamma flip lost/regained, price at call/put wall
 } catch (Throwable $e) {}
 // Trend lines v3 (26 Nov 2026): 20-year daily history for the whole universe, a few symbols per call, refreshed every 3 days
 try { require_once __DIR__ . '/tl_engine.php'; tl3c_gc(); tl3_fill(4, 5.0); } catch (Throwable $e) {}

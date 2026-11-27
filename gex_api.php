@@ -7,6 +7,7 @@ require __DIR__ . '/gex_engine.php';
 
 $r = $_GET['r'] ?? '';
 try {
+    if ($r === 'nctest') { gex_nc_join(); echo json_encode(gex_nc_test()); exit; }   // Next Candle x GEX test (27 Nov 2026)
     if ($r === 'list') {
         echo json_encode(['ok' => true, 'US' => GEX_US, 'IN' => array_keys(GEX_IN), 'CR' => GEX_CR]); exit;
     }
