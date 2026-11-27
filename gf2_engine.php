@@ -22,7 +22,8 @@ require_once __DIR__ . '/cf_engine.php';
 const GF2_DIR_NAME = 'gf2';
 const GF2_TTL = 60;
 const GF2_HOLD = 86400;          // time limit for the result, seconds
-const GF2_MIN_N = 100;           // closed trades before a win rate is shown as a number
+const GF2_MIN_N = 100;
+const GF2_VER = 'gf2.2';        // stats count only the current rule version           // closed trades before a win rate is shown as a number
 
 function gf2_dir(): string { $d = T_DATA . '/' . GF2_DIR_NAME; if (!is_dir($d)) @mkdir($d, 0755, true); return $d; }
 
@@ -44,7 +45,7 @@ function gf2_wilson(int $w, int $n): array {
 
 function gf2_scan(): array {
     $dir = gf2_dir(); $now = t_now(); $ck = $dir . '/_board1.json';
-    $c = t_read_json($ck, null); if (is_array($c) && $now - (int)($c['at'] ?? 0) < GF2_TTL && isset($c['rows'])) return $c;
+    $c = t_read_json($ck, null); if (is_array($c) && ($c['v'] ?? '') === GF2_VER && $now - (int)($c['at'] ?? 0) < GF2_TTL && isset($c['rows'])) return $c;
     $gf = []; $he = []; $cf = [];
     try { $gf = gf_scan()['rows'] ?? []; } catch (Throwable $e) {}
     try { $he = tlh_scan(true)['rows'] ?? []; } catch (Throwable $e) {}
@@ -92,11 +93,12 @@ function gf2_scan(): array {
         if ($gx && (int)($gx['rg'] ?? 0) > 0) $fl[] = '+γ: dealers fade moves';
         foreach (($c['labels'] ?? []) as $lb) if (str_starts_with((string)$lb, 'GEX ')) $fl[] = $lb;
         // GRADE (rules fixed in advance)
-        if ($loc >= 2.5 && $set >= 2.5 && $trigOk) $grade = 'A+';
+        $nsrc = (int)(bool)$c + (int)(bool)$h + (int)(bool)$g;
+        if ($loc >= 2.5 && $set >= 2.5 && $trigOk && $nsrc >= 2) $grade = 'A+';   // A+ also needs two independent inputs agreeing
         elseif ($loc >= 2.0 && $set >= 2.0 && $trigOk) $grade = 'A';
         elseif ($loc >= 2.0 && $set >= 1.5) $grade = $trigOk ? 'B' : 'READY';
         else $grade = 'WATCH';
-        $boost = false; if ($grade === 'A' && count($fl) >= 1) { $grade = 'A+'; $boost = true; }
+        $boost = false; if ($grade === 'A' && count($fl) >= 2) { $grade = 'A+'; $boost = true; }
         if ($news) $grade = 'NEWS RISK';
         // PLAN: confluence > hero > god-father
         $p = null;
@@ -113,7 +115,7 @@ function gf2_scan(): array {
     usort($rows, fn($a, $b) => $b['key'] <=> $a['key']);
     gf2_log($rows, $now);
     $cnt = []; foreach ($rows as $r) $cnt[$r['grade']] = ($cnt[$r['grade']] ?? 0) + 1;
-    $out = ['at' => $now, 'rows' => $rows, 'meta' => ['counts' => $cnt, 'inputs' => ['god-father' => count($gf), 'hero' => count($he), 'confluence' => count($cf)]], 'stats' => gf2_stats()];
+    $out = ['v' => GF2_VER, 'at' => $now, 'rows' => $rows, 'meta' => ['counts' => $cnt, 'inputs' => ['god-father' => count($gf), 'hero' => count($he), 'confluence' => count($cf)]], 'stats' => gf2_stats()];
     t_write_json($ck, $out);
     return $out;
 }
@@ -124,8 +126,8 @@ function gf2_log(array $rows, int $now): void {
     $day = gmdate('Ymd', $now); $done = t_read_json($dir . '/done.json', []); if (!is_array($done)) $done = [];
     foreach ($rows as $r) {
         if (!in_array($r['grade'], ['A+', 'A'], true) || empty($r['plan']['entry']) || empty($r['plan']['sl'])) continue;
-        $id = $r['symbol'] . '|' . $r['side'] . '|' . $day; if (isset($open[$id]) || isset($done[$id])) continue;
-        $e = ['id' => $id, 'at' => $now, 'v' => 'gf2.1', 'symbol' => $r['symbol'], 'side' => $r['side'], 'grade' => $r['grade'], 'boost' => $r['boost'], 'loc_from' => $r['loc_from'],
+        $id = $r['symbol'] . '|' . $r['side'] . '|' . $day . '|' . GF2_VER; if (isset($open[$id]) || isset($done[$id])) continue;
+        $e = ['id' => $id, 'at' => $now, 'v' => GF2_VER, 'symbol' => $r['symbol'], 'side' => $r['side'], 'grade' => $r['grade'], 'boost' => $r['boost'], 'loc_from' => $r['loc_from'],
               'setup' => $r['setup_name'], 'flow' => $r['flow'], 'sources' => $r['sources'], 'plan' => $r['plan']];
         $open[$id] = $e; @file_put_contents($dir . '/log_' . gmdate('Ym', $now) . '.jsonl', json_encode($e) . "\n", FILE_APPEND); $add++;
     }
@@ -161,9 +163,9 @@ function gf2_eval(float $budget = 4.0): int {
 function gf2_stats(): array {
     $dir = gf2_dir(); $sp = $dir . '/_stats.json'; $c = t_read_json($sp, null); if (is_array($c) && time() - (int)($c['at'] ?? 0) < 600) return $c;
     $g = []; $f = $dir . '/results.jsonl';
-    if (is_file($f)) foreach (file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $ln) { $e = json_decode($ln, true); if (!$e) continue; $k = $e['grade'];
+    if (is_file($f)) foreach (file($f, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $ln) { $e = json_decode($ln, true); if (!$e || ($e['v'] ?? '') !== GF2_VER) continue; $k = $e['grade'];
         $g[$k]['n'] = ($g[$k]['n'] ?? 0) + 1; $g[$k]['w'] = ($g[$k]['w'] ?? 0) + (($e['result']['out'] ?? '') === 'target' ? 1 : 0); $g[$k]['r'] = ($g[$k]['r'] ?? 0) + (float)($e['result']['r'] ?? 0); }
-    $out = ['at' => time(), 'min_n' => GF2_MIN_N, 'open' => count(t_read_json($dir . '/open.json', []) ?: []), 'grades' => []];
+    $out = ['at' => time(), 'min_n' => GF2_MIN_N, 'open' => count(array_filter(t_read_json($dir . '/open.json', []) ?: [], fn($e) => ($e['v'] ?? '') === GF2_VER)), 'grades' => []];
     foreach (['A+', 'A'] as $k) { $n = (int)($g[$k]['n'] ?? 0); $w = (int)($g[$k]['w'] ?? 0);
         $out['grades'][$k] = ['n' => $n, 'wins' => $w, 'win_pct' => $n ? round($w / $n * 100, 1) : null, 'ci' => gf2_wilson($w, $n), 'avg_r' => $n ? round($g[$k]['r'] / $n, 2) : null, 'ready' => $n >= GF2_MIN_N]; }
     t_write_json($sp, $out);
