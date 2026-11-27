@@ -288,7 +288,7 @@ a.hy:hover{background:var(--card2)}
   <h1>Trendline Hero</h1>
   <p class="dd-lede">One simple idea: trade <b>with the big trend</b>, at a <b>trend line</b>, where <b>today's, this week's or this month's high or low</b> is. Trend down: look for a <b>PUT</b> at a resistance line that is also the day, week or month high. Trend up: look for a <b>CALL</b> at a support line that is also the day, week or month low. A week or month extreme on the line ranks higher. Lines from big charts (4-hour, Daily, Weekly) get longer targets.</p>
   <ol class="dd-steps">
-    <li><span>STEP 1</span><b>Find the big trend</b><p>The Daily and the Weekly trend must point the same way. Both down = PUT only. Both up = CALL only. Pick <b>Swing</b> (Weekly to 30m lines, long targets) or <b>Intraday</b> (Daily to 15m lines, today's high or low, 15m entry, short targets).</p></li>
+    <li><span>STEP 1</span><b>Find the big trend</b><p>The Daily and the Weekly trend must point the same way. Both down = PUT only. Both up = CALL only.</p></li>
     <li><span>STEP 2</span><b>Line + day / week / month high or low</b><p>PUT: today's, this week's or this month's high sits on a resistance trend line. CALL: the day, week or month low sits on a support trend line. Lines come from 30m, 1H, 4H, Daily and Weekly charts.</p></li>
     <li><span>STEP 3</span><b>Wait for the turn</b><p>Price at the line is the signal. It becomes an alert when a 30-minute candle touches the line and closes away, or closes through it and then closes back.</p></li>
     <li><span>STEP 4</span><b>Entry, stop, targets</b><p>Each signal shows the entry, the stop-loss and two targets. A bigger chart's line gets a longer second target. Zones on the line are labelled.</p></li>
@@ -297,9 +297,7 @@ a.hy:hover{background:var(--card2)}
   <div class="tls-prog" id="hyProg" hidden><i></i></div>
   <div id="hyAlert"></div>
   <div class="dd-bar hm-bar">
-    <div class="dd-tabs" id="hyMode" role="group" aria-label="Mode">
-      <button type="button" data-o="swing" class="on" title="Lines from Weekly to 30m · day, week or month high/low · 30m entry · long targets">Swing · 1W–30m</button><button type="button" data-o="intraday" title="Lines from Daily to 15m · today's high/low only · 15m entry · short targets">Intraday · 1D–15m</button>
-    </div>
+    <div class="dd-tabs" id="hyMode" hidden></div>
     <label class="hy-opt" id="hyEmaL"><input type="checkbox" id="hyEma"> Only with the 1H 200 EMA on the line</label>
   </div>
   <div class="dd-bar">
@@ -359,7 +357,7 @@ const ago = t => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); ret
 /* one scanner, two modes (owner, 27 Nov 2026): Swing = the old Trendline Hero, Intraday = the old Hybrid scanner;
    "1H 200 EMA on the line" = the old Hero with 200 EMA page. Choice kept in the URL (?mode=intraday, ?ema=1) and on this device. */
 const HQS = new URLSearchParams(location.search);
-let HM = HQS.get("mode") || (() => { try { return localStorage.getItem("cp_hero_mode"); } catch (e) { return null; } })() || "swing"; if (HM !== "intraday") HM = "swing";
+let HM = "swing";   // Intraday mode removed (owner, 27 Nov 2026): the Confluence Scanner covers intraday
 let HE = HQS.get("ema") === "1"; if (HE) HM = "swing";
 const L = { rows: [], meta: {}, at: 0, stage: "all", side: "all", mkt: "all", tfq: "all", q: "", show: 40, timer: null, seen: null, fresh: new Set() };
 
