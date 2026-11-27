@@ -39,6 +39,8 @@ try {
 } catch (Throwable $e) {}
 // Trend lines v3 (26 Nov 2026): 20-year daily history for the whole universe, a few symbols per call, refreshed every 3 days
 try { require_once __DIR__ . '/tl_engine.php'; tl3c_gc(); tl3_fill(4, 5.0); } catch (Throwable $e) {}
+// God-father v2 (27 Nov 2026): keep the board and the A+/A log running without visitors, then grade open trades
+try { $g2 = T_DATA . '/gf2_last.txt'; if (time() - (int)@file_get_contents($g2) >= 120) { @file_put_contents($g2, (string)time()); require_once __DIR__ . '/gf2_engine.php'; gf2_scan(); gf2_eval(4.0); } } catch (Throwable $e) {}
 $scan = t_scan_load(); $due = count(t_due($scan, t_now()));
 @file_put_contents(T_DATA . '/worker_last.txt', date('c') . " steps $n due $due\n");
 echo json_encode(['ok' => 1, 'steps' => $n, 'due' => $due, 'gex' => $gx, 'ms' => (int)round((microtime(true) - $t0) * 1000)]);
