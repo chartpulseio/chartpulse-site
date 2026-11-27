@@ -20,14 +20,15 @@ Owner-approved update 26 Nov 2026, 22:56 IST (owner asked for it): the Day Drive
 
 Owner decision 26 Nov 2026, 23:50 IST (option A): trend lines v3 (tl_engine.php: multi-level zigzag, wick anchors, sweeps, body/2-close break, 20-year history via tl3_long) is the ONLY trend-line engine; v1 and v2 were removed. Day Drive reads its daily line from it through tl_row, so its bounce rows follow v3 lines. No Day Drive file changed.
 
+Owner decision 27 Nov 2026, 21:43 IST: the old God-father (gf_engine.php, gf_api.php, godfather.html) was DELETED permanently. /scanners/godfather/ now serves God-father v2 (gf2_engine.php, gf2_api.php, godfather-v2.html): Daily+Weekly bias, one vote per group (Location = best of Confluence / Hero + day high/low + 1H 200 EMA), trap-first setup, order flow only lifts A to A+, A+/A logged and graded. Telegram God-father alerts now come from v2. Day Drive files untouched.
+
 These files must stay byte-identical to the commit that made that change unless the owner explicitly asks for a Day Drive change:
 
     dd_engine.php    65292eb5e406...
     dd_api.php       48941d614c63...
     day-drive.html   3782c54ffb97...
-    gf_engine.php    2db702737873...   (reads cp_data/daydrive/rows.json)
     bp_engine.php    106aa7e02e12...   (reads cp_data/daydrive/rows.json, uses status BOUNCE GO)
 
-Check with: `sha256sum dd_engine.php dd_api.php day-drive.html gf_engine.php bp_engine.php`
+Check with: `sha256sum dd_engine.php dd_api.php day-drive.html bp_engine.php`
 If an owner request seems to need a change here, ask the owner first and quote this note.
 Full note: claude.ai Project "HOST" → claude/chartpulse-day-drive-LOCKED-14nov.md

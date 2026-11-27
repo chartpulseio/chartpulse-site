@@ -1,8 +1,9 @@
 <?php
 /**
  * God-father v2 (owner, 27 Nov 2026)                                       chartpulse.io
- * Built in NEW files: it only READS the existing God-father board (gf_scan), Trendline Hero (tlh_scan),
- * the Confluence Scanner (cf_scan) and GEX labels. The locked files (gf_engine.php, Day Drive) are not changed.
+ * Inputs: Trendline Hero (tlh_scan), the Confluence Scanner (cf_scan), GEX labels and the symbol's own bars.
+ * The old God-father (gf_engine.php / gf_api.php / godfather.html) was deleted by the owner on 27 Nov 2026; this page
+ * now lives at /scanners/godfather/. Location also counts today's high / low and the 1H 200 EMA on the zone.
  *
  * One vote per group (research: fixed, roughly equal weights beat tuned weights out of sample):
  *   BIAS      Daily + Weekly trend agree (hard gate)
@@ -16,18 +17,25 @@
  * (target 1 first = win, stop first = loss, same bar = loss, 24 h time limit = result in R at the last close).
  */
 declare(strict_types=1);
-require_once __DIR__ . '/gf_engine.php';
 require_once __DIR__ . '/cf_engine.php';
 
 const GF2_DIR_NAME = 'gf2';
 const GF2_TTL = 60;
 const GF2_HOLD = 86400;          // time limit for the result, seconds
 const GF2_MIN_N = 100;
-const GF2_VER = 'gf2.3';        // stats count only the current rule version           // closed trades before a win rate is shown as a number
+const GF2_VER = 'gf2.4';        // stats count only the current rule version           // closed trades before a win rate is shown as a number
 
 function gf2_dir(): string { $d = T_DATA . '/' . GF2_DIR_NAME; if (!is_dir($d)) @mkdir($d, 0755, true); return $d; }
 
 /** Order flow from the 5m bars (only where volume exists). Returns null when there is no usable volume. */
+function gf2_side_of(?string $b): ?string { return in_array($b, ['CALL', 'UP', 'LONG', 'BUY'], true) ? 'CALL' : (in_array($b, ['PUT', 'DOWN', 'SHORT', 'SELL'], true) ? 'PUT' : null); }
+
+/** 1H 200 EMA within 0.25 daily ATR of the level (null when there are not enough bars). */
+function gf2_ema_at(string $sym, float $lvl, float $atr): ?float {
+    $fr = t_read_frames($sym); $H = $fr['1H'] ?? null; if (!$H || count($H['c'] ?? []) < 220 || $atr <= 0) return null;
+    $e = t_ema($H['c'], 200); $v = (float)end($e); return abs($v - $lvl) <= 0.25 * $atr ? $v : null;
+}
+
 function gf2_flow(string $sym, string $side): ?array {
     $fr = t_read_frames($sym); $F = $fr['5m'] ?? null; if (!$F || count($F['t'] ?? []) < 70) return null;
     $v = $F['v'] ?? []; $n = count($F['t']); if (!$v || array_sum(array_slice($v, -60)) <= 0) return null;
@@ -47,11 +55,10 @@ function gf2_scan(): array {
     $dir = gf2_dir(); $now = t_now(); $ck = $dir . '/_board1.json';
     $c = t_read_json($ck, null); if (is_array($c) && ($c['v'] ?? '') === GF2_VER && $now - (int)($c['at'] ?? 0) < GF2_TTL && isset($c['rows'])) return $c;
     $gf = []; $he = []; $cf = [];
-    try { $gf = gf_scan()['rows'] ?? []; } catch (Throwable $e) {}
     try { $he = tlh_scan(true)['rows'] ?? []; } catch (Throwable $e) {}
     try { $cf = cf_scan()['rows'] ?? []; } catch (Throwable $e) {}
     $by = [];
-    foreach ($gf as $r) { $s = gf_side_of($r['side'] ?? null); if ($s) $by[$r['symbol'] . '|' . $s]['gf'] = $r; }
+    
     foreach ($he as $r) if (!empty($r['bias'])) $by[$r['symbol'] . '|' . $r['bias']]['he'] = $r;
     foreach ($cf as $r) if (!empty($r['bias'])) $by[$r['symbol'] . '|' . $r['bias']]['cf'] = $r;
     $fc = t_read_json($dir . '/_flow.json', []); if (!is_array($fc)) $fc = []; $t0 = microtime(true); $fnew = 0;
@@ -68,6 +75,16 @@ function gf2_scan(): array {
         if ($h) { $big = in_array($h['tf'] ?? '', ['1W', '1D'], true) || in_array($h['anchor'] ?? '', ['Week High', 'Week Low', 'Month High', 'Month Low'], true); $v = $big ? 2.5 : 2.0;
                   if ($v > $loc) { $loc = $v; $locw = 'Hero · ' . ($h['tf'] ?? '') . ' line' . (!empty($h['anchor']) ? ' + ' . $h['anchor'] : ''); } }
         if ($g) { $pz = (int)($g['pz'] ?? 0); $v = $pz >= 4 ? 2.5 : ($pz >= 2 ? 2.0 : ($pz >= 1 ? 1.5 : 0)); if ($v > $loc) { $loc = $v; $locw = "Power Zone · $pz levels"; } }
+        // + today's high / low and the 1H 200 EMA on the zone (owner, 27 Nov 2026): +0.5 each, capped at 3
+        $extra = [];
+        if (($c && $c['stage'] >= 2) || ($h && str_starts_with((string)($h['anchor'] ?? ''), 'Day'))) $extra[] = $side === 'PUT' ? 'Day High on the zone' : 'Day Low on the zone';
+        elseif ($h && preg_match('/^(Week|Month)/', (string)($h['anchor'] ?? ''))) $extra[] = $h['anchor'] . ' on the line';
+        $lvl = $c ? (($c['zone'][0] + $c['zone'][1]) / 2) : (float)($h['lv'] ?? 0);
+        if ($h && !empty($h['e200']['ok'])) $extra[] = '1H 200 EMA on the line';
+        elseif ($c && $lvl > 0) { $ek = $sym . '|ema'; $ev = $fc[$ek] ?? null;
+            if ((!is_array($ev) || $now - (int)($ev['at'] ?? 0) > 600) && microtime(true) - $t0 < 6) { try { $ev = ['at' => $now, 'x' => gf2_ema_at($sym, $lvl, (float)$c['atr'])]; } catch (Throwable $e) { $ev = ['at' => $now, 'x' => null]; } $fc[$ek] = $ev; $fnew++; }
+            if (!empty($ev['x'])) $extra[] = '1H 200 EMA on the zone'; }
+        $loc = min(3.0, $loc + 0.5 * count($extra)); if ($extra) $locw .= ' + ' . implode(' + ', $extra);
         if ($loc < 1.5) continue;
         // SETUP
         $set = 0.0; $setw = '';
@@ -93,7 +110,7 @@ function gf2_scan(): array {
         if ($gx && (int)($gx['rg'] ?? 0) > 0) $fl[] = '+γ: dealers fade moves';
         foreach (($c['labels'] ?? []) as $lb) if (str_starts_with((string)$lb, 'GEX ')) $fl[] = $lb;
         // GRADE (rules fixed in advance)
-        $nsrc = (int)(bool)$c + (int)(bool)$h + (int)(bool)$g;
+        $nsrc = (int)(bool)$c + (int)(bool)$h + (int)(count($extra) >= 2);   // two inputs, or one plus day extreme AND 200 EMA
         if ($loc >= 2.5 && $set >= 2.5 && $trigOk && $nsrc >= 2) $grade = 'A+';   // A+ also needs two independent inputs agreeing
         elseif ($loc >= 2.0 && $set >= 2.0 && $trigOk) $grade = 'A';
         elseif ($loc >= 2.0 && $set >= 1.5) $grade = $trigOk ? 'B' : 'READY';
@@ -115,7 +132,7 @@ function gf2_scan(): array {
     usort($rows, fn($a, $b) => $b['key'] <=> $a['key']);
     gf2_log($rows, $now);
     $cnt = []; foreach ($rows as $r) $cnt[$r['grade']] = ($cnt[$r['grade']] ?? 0) + 1;
-    $out = ['v' => GF2_VER, 'at' => $now, 'rows' => $rows, 'meta' => ['counts' => $cnt, 'inputs' => ['god-father' => count($gf), 'hero' => count($he), 'confluence' => count($cf)]], 'stats' => gf2_stats()];
+    $out = ['v' => GF2_VER, 'at' => $now, 'rows' => $rows, 'meta' => ['counts' => $cnt, 'inputs' => ['hero' => count($he), 'confluence' => count($cf)]], 'stats' => gf2_stats()];
     t_write_json($ck, $out);
     return $out;
 }

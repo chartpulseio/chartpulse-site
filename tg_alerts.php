@@ -188,15 +188,16 @@ function tga_step(int $now): string {
         tga_push($S, 'dd', 'Day Drive Scanner', $ev, $now, $sent, $err);
     } catch (Throwable $e) { $err = 'daydrive ' . $e->getMessage(); }
 
-    // ---- God-father Scanner: A+ only (every scanner lined up)
+    // ---- God-father (v2 since 27 Nov 2026): A+ only
     try {
-        require_once __DIR__ . '/gf_engine.php';
-        $p = gf_scan(); $ev = [];
+        require_once __DIR__ . '/gf2_engine.php';
+        $p = gf2_scan(); $ev = [];
         foreach ($p['rows'] ?? [] as $r) {
-            if ($r['grade'] !== 'A+' || empty($r['live'])) continue;
+            if ($r['grade'] !== 'A+' || empty($r['plan'])) continue;
             $d = (int)$r['dec']; $pl = $r['plan'];
-            $plan = $pl ? [tl_px((float)$pl['entry'], $d), tl_px((float)$pl['sl'], $d), tl_px((float)$pl['t1'], $d)] : null;
-            $ev[$r['symbol'] . '|' . $r['side']] = [[(int)$r['pz']], tga_item((string)$r['side'], (string)$r['name'], tl_px((float)$r['price'], $d), 'A+ · ' . $r['setup'], (string)$r['say'], $plan)];
+            $plan = [tl_px((float)$pl['entry'], $d), tl_px((float)$pl['sl'], $d), tl_px((float)$pl['t1'], $d)];
+            $why = $r['loc_from'] . ' · ' . $r['setup_name'] . ($r['flow'] ? ' · ' . implode(', ', $r['flow']) : '');
+            $ev[$r['symbol'] . '|' . $r['side']] = [[(float)$r['loc']], tga_item((string)$r['side'], (string)$r['name'], tl_px((float)$r['price'], $d), 'A+ · ' . $r['setup_name'], $why, $plan)];
         }
         tga_push($S, 'gf', 'God-father Scanner', $ev, $now, $sent, $err);
     } catch (Throwable $e) { $err = 'godfather ' . $e->getMessage(); }
