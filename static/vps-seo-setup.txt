@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# ChartPulse SEO automation for the Oracle VPS (Oracle Linux 9, ARM). Safe to run more than once.
+#   1. Docker   2. SerpBear rank tracker on port 3000   3. Weekly site crawl (advertools) with a summary report
+# Contains no secrets: the SerpBear password is generated on the VPS and printed only in your terminal.
+set -e
+echo "== 1/4 Docker"
+if ! command -v docker >/dev/null 2>&1; then
+  sudo dnf install -y dnf-plugins-core >/dev/null
+  sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin >/dev/null
+fi
+sudo systemctl enable --now docker
+
+echo "== 2/4 SerpBear (rank tracker)"
+mkdir -p ~/seo && cd ~/seo
+if [ ! -f serpbear.env ]; then
+  PW=$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 16)
+  printf 'USER=admin\nPASSWORD=%s\nSECRET=%s\nAPIKEY=%s\nSESSION_DURATION=168\nNEXT_PUBLIC_APP_URL=http://130.210.61.121:3000\n' \
+    "$PW" "$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 40)" "$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)" > serpbear.env
+  chmod 600 serpbear.env
+fi
+sudo docker rm -f serpbear >/dev/null 2>&1 || true
+sudo docker run -d --name serpbear --restart unless-stopped -p 3000:3000 --env-file serpbear.env -v serpbear_data:/app/data towfiqi/serpbear:latest >/dev/null
+sudo firewall-cmd --permanent --add-port=3000/tcp >/dev/null 2>&1 && sudo firewall-cmd --reload >/dev/null 2>&1 || true
+
+echo "== 3/4 Weekly site crawl"
+sudo dnf install -y python3-pip >/dev/null 2>&1 || true
+python3 -m pip install --user --quiet advertools pandas
+cat > ~/seo/crawl.py <<'PY'
+import advertools as adv, pandas as pd, json, datetime, os
+d = datetime.date.today().isoformat(); out = os.path.expanduser(f'~/seo/crawl-{d}.jl')
+adv.crawl('https://chartpulse.io/sitemap.xml', out, follow_links=True, allowed_domains=['chartpulse.io'],
+          custom_settings={'CLOSESPIDER_PAGECOUNT': 3000, 'DOWNLOAD_DELAY': 0.3, 'USER_AGENT': 'ChartPulseSEOBot/1.0'})
+df = pd.read_json(out, lines=True)
+t = df.get('title', pd.Series(dtype=str)).fillna(''); m = df.get('meta_desc', pd.Series(dtype=str)).fillna('')
+rep = {'date': d, 'pages': len(df), 'status': df['status'].value_counts().to_dict(),
+       'broken': df[df['status'] >= 400]['url'].tolist()[:50],
+       'no_title': df[t == '']['url'].tolist()[:50], 'long_title': df[t.str.len() > 60]['url'].tolist()[:50],
+       'no_description': df[m == '']['url'].tolist()[:50], 'long_description': df[m.str.len() > 160]['url'].tolist()[:50],
+       'duplicate_titles': t[t.duplicated(keep=False) & (t != '')].value_counts().head(20).to_dict()}
+json.dump(rep, open(os.path.expanduser(f'~/seo/report-{d}.json'), 'w'), indent=1)
+print(json.dumps({k: (v if not isinstance(v, list) else len(v)) for k, v in rep.items()}, indent=1))
+PY
+( crontab -l 2>/dev/null | grep -v 'seo/crawl.py' ; echo '0 3 * * 1 cd ~/seo && python3 ~/seo/crawl.py > ~/seo/last-crawl.log 2>&1' ) | crontab -
+
+echo "== 4/4 Done"
+echo
+echo "SerpBear:  http://130.210.61.121:3000"
+echo "Login:     admin"
+echo "Password:  $(grep '^PASSWORD=' ~/seo/serpbear.env | cut -d= -f2)   <- keep this private, do not paste it in chat"
+echo "Site crawl runs every Monday 03:00 (server time). Run it now with: python3 ~/seo/crawl.py"
