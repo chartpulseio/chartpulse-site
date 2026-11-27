@@ -153,7 +153,10 @@ function cf_row(string $sym, array $row, int $now, bool $full = false): ?array {
                 'c' => array_slice($MB['c'], $m0), 'v' => array_slice($MB['v'] ?? array_fill(0, $mn, 0), $m0), 'lines' => []];
         if ($best) foreach ($best['tfs'] as $tf => $c) {
             $fb = $frames[$tf]['bars']['t']; $pts = [];
-            foreach ($mix['t'] as $T) { $j = cf_idx($fb, (int)$T); $pts[] = $j < 0 ? null : round(cf_line_at($c['L'], $j), $d + 1); }
+            $nfb = count($fb); $sec = $nfb > 1 ? max(60, $fb[$nfb - 1] - $fb[$nfb - 2]) : 3600;
+            foreach ($mix['t'] as $T) { $j = cf_idx($fb, (int)$T); if ($j < 0) { $pts[] = null; continue; }
+                $nx = $j + 1 < $nfb ? $fb[$j + 1] : $fb[$j] + $sec; $fi = $j + min(1, max(0, ((int)$T - $fb[$j]) / max(1, $nx - $fb[$j])));   // smooth: fraction inside the bigger bar
+                $pts[] = round(cf_line_at($c['L'], $fi), $d + 1); }
             $mix['lines'][] = ['tf' => $tf, 'pts' => $pts];
         }
         $out['mix'] = $mix;
