@@ -59,10 +59,8 @@ RewriteCond %{THE_REQUEST} \ /legal\.php\?p=contact[ &]
 RewriteRule ^legal\.php$ /contact/? [R=301,L]
 
 # --- keep existing page URLs working where no redirect applies
-RewriteCond %{THE_REQUEST} \ /news(\.html)?[/? ]
-RewriteRule ^news(\.html)?/?$  /scanners/news/?view=story [R=301,L]
-RewriteRule ^news-stories/?$  /news.html  [L]
-RewriteRule ^news\.html$        /news.html         [L]
+# the old News & Impact page was removed (owner, 27 Nov 2026): one News page = the News Scanner
+RewriteRule ^(news|news-stories)(\.html)?/?$  /scanners/news/? [R=301,L]
 RewriteRule ^insights\.html$    /insights.html     [L]
 RewriteRule ^pricing\.html$     /pricing.html      [L]
 

@@ -50,7 +50,7 @@ function strat_head(string $title, string $desc, string $canon): void { ?>
 
 <link rel="stylesheet" href="/static/v2/fonts.css?v=1">
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=8">
-<script defer src="/static/v2/sitehead.js?v=24"></script>
+<script defer src="/static/v2/sitehead.js?v=25"></script>
 <style>
 :root{--bg:#050506;--card:#0E0F13;--card2:#15171D;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.15);
   --ink:#EDEDEF;--dim:#A3A5AF;--mute:#6B6D78;--gold:#E9C46A;--gold2:#F6DE9A;--up:#22AB94;--dn:#F7525F;--blue:#6EA8FE;

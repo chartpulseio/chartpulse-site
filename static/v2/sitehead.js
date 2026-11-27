@@ -43,7 +43,6 @@
       { h: "Markets", items: [
         { t: "News Scanner", d: "Markets in the news, tone and trend", href: "/scanners/news/" },
         { t: "All scanners", d: "Every scanner on one page", href: "/scanners/", exact: true },
-        { t: "News & impact", d: "Headlines and what they moved", href: "/news.html" },
         { t: "Insights", d: "Breadth, volatility and momentum", href: "/insights.html" }
       ] },
       { h: "Tools", items: [
