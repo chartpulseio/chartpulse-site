@@ -68,8 +68,8 @@ RewriteRule ^scanners/bottom-reversal/?$                 /scanners/             
 RewriteRule ^scanners/day-drive/?$                       /day-drive.html              [L]
 RewriteRule ^scanners/trend-lines/?$                     /trend-lines.html            [L]
 # Hybrid and Hero with 200 EMA are now modes of Trendline Hero (owner, 27 Nov 2026)
-RewriteRule ^scanners/hybrid-trend-lines/?$  /scanners/confluence/ [R=301,L]
-RewriteRule ^hybrid-trend-lines\.html$  /scanners/confluence/ [R=301,L]
+RewriteRule ^scanners/hybrid-trend-lines/?$  /scanners/trendline-hero/?mode=intraday [R=301,L,QSA]
+RewriteRule ^hybrid-trend-lines\.html$  /scanners/trendline-hero/?mode=intraday [R=301,L,QSA]
 RewriteRule ^scanners/reversal/?$                        /movers/                     [R=301,L]
 RewriteRule ^scanners/movers-reversal/?$                 /movers/                     [R=301,L]
 RewriteRule ^reversal\.html$                             /movers/                     [R=301,L]
@@ -82,8 +82,6 @@ RewriteRule ^scanners/order-flow/([A-Za-z0-9]{1,15})/?$     /order-flow-coin.php
 RewriteRule ^scanners/binary/?$                          /binary.html                 [L]
 RewriteRule ^scanners/next-candle/?$                     /next-candle.html            [L]
 RewriteRule ^scanners/forecast-24h/?$                    /forecast-24h.html           [L]
-RewriteCond %{QUERY_STRING} (^|&)mode=intraday
-RewriteRule ^scanners/trendline-hero/?$  /scanners/confluence/? [R=301,L]
 RewriteRule ^scanners/trendline-hero/?$                  /trendline-hero.html         [L]
 RewriteRule ^scanners/confluence/?$  /confluence.html  [L]
 RewriteRule ^scanners/hero-200-ema/?$  /scanners/trendline-hero/?ema=1 [R=301,L,QSA]
