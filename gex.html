@@ -75,6 +75,48 @@ html,body{background:var(--bg)!important}
 .err{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mu);font:12px 'IBM Plex Mono';text-align:center;padding:20px}
 @media(max-width:1200px){.strip{grid-template-columns:repeat(4,1fr)}.lay{grid-template-columns:220px minmax(0,1fr);height:auto}.rc{grid-column:1/-1;grid-template-rows:none;grid-template-columns:1fr 1fr}.rc .pn{min-height:230px}.mainp{min-height:720px}.st{max-height:720px}}
 @media(max-width:760px){.lay{grid-template-columns:1fr}.strip{grid-template-columns:repeat(3,1fr)}.rc{grid-template-columns:1fr}.mainp{min-height:620px}.st{max-height:none}}
+
+/* ---------- hi-fi terminal skin (27 Nov 2026): GEXbot-style dark, neon accents, uppercase micro-labels, KPI bar ---------- */
+:root{--bg:#050608;--pn:#0b0c0f;--pn2:#111318;--ln:#1a1c22;--mu:#7c818c}
+.gt{max-width:1880px}
+.ttl{align-items:center;margin:6px 2px 12px}
+.ttl h1{font:600 15px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+.ttl h1 b{color:var(--cy);text-shadow:0 0 18px rgba(79,227,240,.45)}
+.ttl p{font:11px 'IBM Plex Mono',monospace;letter-spacing:.02em}
+.ttl .live{display:inline-block;width:7px;height:7px;border-radius:50%;background:#2ee59d;box-shadow:0 0 0 0 rgba(46,229,157,.6);animation:gxp 1.8s infinite;margin-right:7px;vertical-align:middle}
+@keyframes gxp{0%{box-shadow:0 0 0 0 rgba(46,229,157,.55)}70%{box-shadow:0 0 0 8px rgba(46,229,157,0)}100%{box-shadow:0 0 0 0 rgba(46,229,157,0)}}
+.pn{background:linear-gradient(180deg,#0d0e12 0%,#0a0b0e 100%);border:1px solid var(--ln);border-radius:6px;box-shadow:0 1px 0 rgba(255,255,255,.02) inset,0 10px 30px rgba(0,0,0,.35)}
+.mh,.rc .pn h5{font:500 10px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--mu);padding:8px 12px;background:rgba(255,255,255,.012)}
+.mh b,.rc .pn h5 b{letter-spacing:.12em}
+.mh .mu{letter-spacing:.02em;text-transform:none}
+.st h4,.st h4.g,.st h4.o{font:500 10px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:var(--mu);margin:16px 0 7px;padding-bottom:5px;border-bottom:1px solid var(--ln)}
+.st h4::before{content:'';display:inline-block;width:5px;height:5px;border-radius:1px;background:var(--cy);margin-right:7px;vertical-align:middle;box-shadow:0 0 8px var(--cy)}
+.st h4.o::before{background:var(--or);box-shadow:0 0 8px var(--or)}
+.st h4:first-child{margin-top:2px}
+.st select{background:#07080a;border-color:#23262d;border-radius:5px;padding:7px 8px}
+.btn{background:#0f1115;border-color:#1f2229;border-radius:5px;padding:7px;transition:all .15s}
+.btn:hover{border-color:#2f3440;background:#13161b}
+.btn.on{background:rgba(79,227,240,.08);border-color:rgba(79,227,240,.55);color:#dffbfe;box-shadow:0 0 12px rgba(79,227,240,.12)}
+.btn.blue{background:linear-gradient(180deg,#2ee59d,#1fbf80);border-color:#2ee59d;color:#04140d}
+.rad{gap:5px}
+.rad label{border:1px solid #1f2229;border-radius:5px;padding:5px 8px;font:11px 'IBM Plex Mono';color:#a9aeb8;background:#0c0e11;transition:all .15s}
+.rad label:hover{border-color:#2f3440}
+.rad label:has(input:checked){border-color:rgba(79,227,240,.55);color:#e8fdff;background:rgba(79,227,240,.07)}
+.rad input{width:10px;height:10px;margin:0}
+.kv{border-top:0;padding-top:0;gap:4px 8px}
+.sc{background:linear-gradient(180deg,#0d0e12,#0a0b0e);border-color:var(--ln);border-radius:6px;padding:8px 10px;transition:all .15s}
+.sc:hover{border-color:#2a2e37;transform:translateY(-1px)}
+.sc.on{border-color:rgba(79,227,240,.5);box-shadow:0 0 0 1px rgba(79,227,240,.15),0 0 18px rgba(79,227,240,.08)}
+.kpi{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:8px}
+.kpi div{background:linear-gradient(180deg,#0d0e12,#0a0b0e);border:1px solid var(--ln);border-radius:6px;padding:9px 12px;font-family:'IBM Plex Mono',monospace;position:relative;overflow:hidden}
+.kpi div::after{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--k,#333)}
+.kpi small{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
+.kpi b{display:block;font-size:19px;font-weight:600;margin-top:3px;color:var(--tx);letter-spacing:-.01em}
+.kpi em{font-style:normal;font-size:10.5px;color:var(--mu)}
+@media(max-width:1200px){.kpi{grid-template-columns:repeat(4,1fr)}}@media(max-width:640px){.kpi{grid-template-columns:repeat(2,1fr)}}
+.gx-embed .kpi{display:none!important}
+.lay{height:calc(100vh - 205px);min-height:660px}
+.gt ::-webkit-scrollbar{width:6px;height:6px}.gt ::-webkit-scrollbar-thumb{background:#22252c;border-radius:3px}.gt ::-webkit-scrollbar-track{background:transparent}
 </style>
 </head>
 <body data-page="gex">
@@ -82,6 +124,7 @@ html,body{background:var(--bg)!important}
 <header class="site-head"></header>
 <main class="gt">
   <div class="ttl"><h1>Gamma Exposure <b>Terminal</b></h1><p><span class="live"></span>Dealer positioning from real option chains · US via Alpaca · India via Upstox · BTC &amp; ETH via Deribit · updates every minute</p></div>
+  <div class="kpi" id="kpi"></div>
   <div class="strip" id="strip"></div>
   <div class="lay">
     <aside class="pn st" id="state">
@@ -397,6 +440,14 @@ function aioView(){const cv=$('#aio');if(!cv||!D||!D.strikes)return;if(!$('#aioc
   else if(x<AIO.pw){const i=Math.floor(x/AIO.cw),c=AIO.bars[i];if(c)h=`<b>${tm(c[0])}</b> O ${nf(c[1])} H ${nf(c[2])} L ${nf(c[3])} C ${nf(c[4])}<br>vol ${big(c[5])} · delta ${big(AIO.dl[i])}`+(y>AIO.top&&y<AIO.top+AIO.ph?`<br>cursor ${nf(AIO.P(y))}`:'')}
   if(!h){tt.style.display='none';return}tt.innerHTML=h;tt.style.display='block';tt.style.left=Math.min(x+14,r.width-230)+'px';tt.style.top=(y+14)+'px'}})();
 setInterval(()=>{try{aioView()}catch(e){}},5000);addEventListener('resize',()=>{try{aioView()}catch(e){}});
+/* KPI bar (hi-fi header): spot, net gex, regime, zero gamma, call wall, put wall, expected move */
+function kpiView(){const el=$('#kpi');if(!el||!D)return;const k=KF(),c=cur(),L=D.levels||{},sp=(LAST&&LAST.p)?LAST.p:D.spot*k,pos=D.zero_gamma?sp/k>=D.zero_gamma:(D.net_gex||0)>=0,pc=v=>v?((v*k/sp-1)*100).toFixed(2)+'%':'';
+ const box=(lab,val,sub,col,vc)=>`<div style="--k:${col}"><small>${lab}</small><b style="color:${vc||'var(--tx)'}">${val}</b><em>${sub||'&nbsp;'}</em></div>`;
+ el.innerHTML=box((MNAME[sym]||sym)+' spot',nf(sp,sp>1000?0:2),D.source||D.src||'',C.tx)+box('net gex',c+big(D.net_gex),'per 1% move',(D.net_gex||0)>=0?C.cy:C.pu,(D.net_gex||0)>=0?C.cy:C.pu)
+ +box('regime',pos?'+ GAMMA':'− GAMMA',pos?'dealers dampen moves':'dealers chase moves',pos?C.cy:C.pu,pos?C.cy:C.pu)+box('zero gamma',nf(D.zero_gamma*k),pc(D.zero_gamma)+' from spot',C.ye,C.ye)
+ +box('call wall',nf(D.call_wall*k),pc(D.call_wall)+' · resistance',C.gn,C.gn)+box('put wall',nf(D.put_wall*k),pc(D.put_wall)+' · support',C.rd,C.rd)
+ +box('expected move',L.em_day?'±'+nf((L.em_day[1]-L.em_day[0])/2*k):'—','today (ATM straddle)',C.or)}
+setInterval(()=>{try{kpiView()}catch(e){}},2000);
 function main(){chartView();strikesView();heat();gridView();flowsView();aioView()}
 function strikesView(){const d=D;const [x,w,h]=cv('cS');
  let bars,spot,flip;
