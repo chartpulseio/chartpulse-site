@@ -22,7 +22,12 @@ const GXS = [   // slug => [GEX symbol, display name, market, search phrase]
     'xle' => ['XLE', 'XLE (Energy ETF)', 'US', 'XLE'], 'uso' => ['USO', 'USO (Oil ETF)', 'US', 'USO'],
 ];
 
-function gxs_res(string $sym): ?array { $f = GEX_DIR . "/res_{$sym}_all.json"; if (!is_file($f)) return null; $j = json_decode((string)file_get_contents($f), true); return is_array($j) ? $j : null; }
+function gxs_res(string $sym): ?array { $f = GEX_DIR . "/res_{$sym}_all.json"; if (!is_file($f)) return null; $j = json_decode((string)file_get_contents($f), true); if (!is_array($j)) return null;
+    // Gold / Silver: show the levels in XAUUSD / XAGUSD terms (GLD / SLV levels x the live spot ratio), like the GEX terminal
+    if (isset(GEX_METAL[$sym]) && !empty($j['spot'])) { $m = gex_metal_proxy($sym, (float)$j['spot']);
+        if ($m) { $k = (float)$m['ratio']; foreach (['spot', 'call_wall', 'put_wall', 'zero_gamma', 'max_pain'] as $x) if (isset($j[$x]) && is_numeric($j[$x])) $j[$x] = $j[$x] * $k;
+                  if (isset($j['expected_move']) && is_numeric($j['expected_move'])) $j['expected_move'] *= $k; $j['proxy'] = $m; } }
+    return $j; }
 function gxs_n($v, int $d = 2): string { return $v === null || $v === '' ? '–' : number_format((float)$v, $d); }
 function gxs_big($v): string { $a = abs((float)$v); $s = $v < 0 ? '-' : ''; return $s . ($a >= 1e9 ? number_format($a / 1e9, 2) . 'B' : ($a >= 1e6 ? number_format($a / 1e6, 1) . 'M' : number_format($a, 0))); }
 
