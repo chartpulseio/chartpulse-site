@@ -56,6 +56,7 @@ $U = [
     ['/movers/', $today],
 ];
 foreach (array_keys(t_symbols()) as $s) $U[] = [seo_url($s), $today];
+$U[] = ['/gex/', $today]; foreach (['spy','qqq','iwm','dia','gold','silver','nifty','banknifty','finnifty','bitcoin','ethereum','aapl','nvda','tsla','msft','amzn','meta','googl','amd','mstr','coin','pltr','avgo','nflx','smci','mu','hood','tlt','smh','xle','uso'] as $g) $U[] = ["/gex/$g/", $today];   // GEX SEO pages (27 Nov 2026)
 foreach (seo_movers_dates(365) as $d) if ($d !== $today) $U[] = ["/movers/$d", $d];
 echo '<?xml version="1.0" encoding="UTF-8"?>', "\n", '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">', "\n";
 foreach ($U as $u) echo '<url><loc>', htmlspecialchars(SEO_BASE . $u[0], ENT_XML1), '</loc><lastmod>', $u[1], "</lastmod></url>\n";
