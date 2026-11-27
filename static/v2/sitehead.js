@@ -117,6 +117,13 @@
     var old = document.getElementById("siteNav"), h = build();
     var wrap = old ? (old.closest("header.site-head") || (old.parentElement && old.parentElement.classList.contains("rail") && old.parentElement.parentElement === document.body ? old.parentElement : old)) : null;
     if (wrap) wrap.parentNode.replaceChild(h, wrap); else document.body.insertBefore(h, document.body.firstChild);
+    /* Offer strip (owner, 27 Nov 2026): free for a limited time, then 99 USD a month. Not shown inside embedded charts. */
+    if (!/[?&]embed=1/.test(location.search) && !document.getElementById("cpOffer")) {
+      var ob = document.createElement("div"); ob.id = "cpOffer";
+      ob.setAttribute("style", "position:relative;z-index:5;text-align:center;font:600 12.5px/1.4 'IBM Plex Sans',system-ui,sans-serif;padding:7px 12px;color:#1a1200;background:linear-gradient(90deg,#F4B740,#ffd97a,#F4B740)");
+      ob.innerHTML = '\uD83C\uDF81 <b>Free access for a limited time</b> \u2014 every scanner, GEX and AI tool is open now. After that ChartPulse Pro is <b>$99/month</b>. <a href="/pricing.html" style="color:#1a1200;text-decoration:underline;font-weight:700;margin-left:6px">Lock your spot \u2192</a>';
+      h.parentNode.insertBefore(ob, h.nextSibling);
+    }
 
     var dds = [].slice.call(h.querySelectorAll(".cph-dd"));
     var close = function (except) { dds.forEach(function (d) { if (d !== except) { d.classList.remove("open"); d.firstChild.setAttribute("aria-expanded", "false"); } }); };
