@@ -1271,3 +1271,4 @@ h1,h2,h3{letter-spacing:-.012em}
 .tlx-badge.strong{box-shadow:0 0 0 1px rgba(244,183,64,.55) inset}
 .tlx-badge.strong::before{content:"★ ";color:#F4B740}
 .e2x-badge{color:#9DB4FF;background:rgba(41,98,255,.12);border-color:rgba(41,98,255,.4)}
+.seo-table{width:100%;border-collapse:collapse;margin:12px 0}.seo-table th,.seo-table td{border:1px solid #26262d;padding:8px 10px;text-align:left;vertical-align:top}.seo-table th{background:#111116}
