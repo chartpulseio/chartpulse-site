@@ -358,7 +358,7 @@ const ago = t => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); ret
    "1H 200 EMA on the line" = the old Hero with 200 EMA page. Choice kept in the URL (?mode=intraday, ?ema=1) and on this device. */
 const HQS = new URLSearchParams(location.search);
 let HM = HQS.get("mode") || (() => { try { return localStorage.getItem("cp_hero_mode"); } catch (e) { return null; } })() || "swing"; if (HM !== "intraday") HM = "swing";
-let HE = HQS.get("ema") === "1";
+let HE = HQS.get("ema") === "1"; if (HE) HM = "swing";
 const L = { rows: [], meta: {}, at: 0, stage: "all", side: "all", mkt: "all", tfq: "all", q: "", show: 40, timer: null, seen: null, fresh: new Set() };
 
 function mtf(r) {
