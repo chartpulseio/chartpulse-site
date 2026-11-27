@@ -83,6 +83,7 @@ RewriteRule ^scanners/binary/?$                          /binary.html           
 RewriteRule ^scanners/next-candle/?$                     /next-candle.html            [L]
 RewriteRule ^scanners/forecast-24h/?$                    /forecast-24h.html           [L]
 RewriteRule ^scanners/trendline-hero/?$                  /trendline-hero.html         [L]
+RewriteRule ^scanners/confluence/?$  /confluence.html  [L]
 RewriteRule ^scanners/hero-200-ema/?$  /scanners/trendline-hero/?ema=1 [R=301,L,QSA]
 RewriteRule ^hero-200-ema\.html$  /scanners/trendline-hero/?ema=1 [R=301,L,QSA]
 RewriteRule ^scanners/news/?$                            /news-scanner.html           [L]
