@@ -163,3 +163,13 @@ RewriteRule ^sitemap\.xml$                               /sitemap.php           
   ExpiresByType image/x-icon "access plus 1 month"
   ExpiresByType text/html "access plus 0 seconds"
 </IfModule>
+# the site menu changes often: browsers re-check it every hour, so menu edits reach every page without a version bump (27 Nov 2026)
+<FilesMatch "^sitehead\.js$">
+  <IfModule mod_expires.c>
+    ExpiresByType application/javascript "access plus 1 hour"
+    ExpiresByType text/javascript "access plus 1 hour"
+  </IfModule>
+  <IfModule mod_headers.c>
+    Header set Cache-Control "public, max-age=3600"
+  </IfModule>
+</FilesMatch>

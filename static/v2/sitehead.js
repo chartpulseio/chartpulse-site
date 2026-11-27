@@ -2,20 +2,25 @@
    markup the page shipped with, so the menu is the same everywhere and is edited in ONE place -- MENU below. */
 (function () {
   "use strict";
+  /* Menu (owner, 27 Nov 2026): the important scanners on the bar, everything else by category. tag = small highlight. */
   var MENU = [
-    { t: "Scanner", href: "/scanner.html", match: ["/scanner.html", "/tier2.html"] },
-    { t: "God-father", href: "/scanners/godfather/" },
-    { t: "200 EMA", href: "/scanners/ema-200/" },
+    { t: "Tier-1 Scanner", href: "/scanner.html", match: ["/scanner.html", "/tier2.html"] },
+    { t: "God-father", href: "/scanners/godfather/", tag: "TOP", match: ["/scanners/godfather-v2/"] },
+    { t: "Confluence", href: "/scanners/confluence/", tag: "NEW" },
     { t: "Day Drive", href: "/scanners/day-drive/" },
-    { t: "Trend Scanners", cols: [{ items: [
-      { t: "Trendline Hero", d: "Trend line + day / week / month high or low, with the big trend", href: "/scanners/trendline-hero/" },
-      { t: "Hero with 200 EMA", d: "Hero setups with the 1H 200 EMA on the line", href: "/scanners/hero-200-ema/" },
-      { t: "Hybrid Trend Lines", d: "Day high or low at a line, with the trend", href: "/scanners/hybrid-trend-lines/" },
-      { t: "Trend Line Scanner", d: "Breakouts and tests on seven timeframes", href: "/scanners/trend-lines/" },
-      { t: "Movers Reversal Scanner", d: "Today's biggest movers and which are snapping back", href: "/movers/" }
+    { t: "GEX", href: "/scanners/gex/" },
+    { t: "Trend Lines", cols: [{ items: [
+      { t: "Confluence Scanner", d: "Lines of 4H, 1H, 30m, 15m in one zone: intraday reversal, trap-aware, 5m entry", href: "/scanners/confluence/", tag: "NEW" },
+      { t: "Trendline Hero", d: "Swing reversal: big trend + a line on the day / week / month high or low (200 EMA filter inside)", href: "/scanners/trendline-hero/", match: ["/scanners/hero-200-ema/", "/scanners/hybrid-trend-lines/"] },
+      { t: "Trend Line Scanner", d: "Breakouts and retests on seven timeframes", href: "/scanners/trend-lines/" }
     ] }] },
-    { t: "Strategy Scanners", cols: [
-      { h: "Institutional (smart money)", items: [
+    { t: "Scanners", cols: [
+      { h: "Reversal & trend", items: [
+        { t: "200 EMA", d: "Setups at the 200 EMA", href: "/scanners/ema-200/" },
+        { t: "Movers Reversal", d: "Today's biggest movers and which are snapping back", href: "/movers/" },
+        { t: "News Scanner", d: "Markets in the news, tone and trend", href: "/scanners/news/" }
+      ] },
+      { h: "Smart money", items: [
         { t: "Liquidity Sweep + Order Block + FVG", d: "Stop hunt, then order block and fair value gap", href: "/institutional/scanner.php?id=3-liquidity-fvg" },
         { t: "SMC Power of 3 + OTE", d: "Accumulation, manipulation, distribution with the OTE entry", href: "/institutional/scanner.php?id=1-smc-power-of-3" },
         { t: "Range Breakout + VWAP + Volume", d: "Opening range break with VWAP and a volume spike", href: "/institutional/scanner.php?id=4-orb-vwap" }
@@ -26,32 +31,31 @@
         { t: "VWAP + EMA 200 Combo", d: "Price on the right side of VWAP and the 200 EMA", href: "/ema-strategies/scanner.php?id=5-vwap-ema-combo" }
       ] }
     ] },
-    { t: "Crypto Scanners", cols: [{ items: [
+    { t: "Crypto", cols: [{ items: [
       { t: "Crypto Order Flow", d: "CVD, open interest, order book, liquidations and the liquidation heatmap", href: "/scanners/order-flow/" },
-      { t: "Crypto Arbitrage Scanner", d: "Funding rate arbitrage and price gaps across seven exchanges", href: "/scanners/crypto-arbitrage/" },
-      { t: "Liquidation Squeeze Scanner", d: "Crowded longs or shorts at a key zone, and squeezes starting", href: "/scanners/squeeze/" }
+      { t: "Liquidation Squeeze Scanner", d: "Crowded longs or shorts at a key zone, and squeezes starting", href: "/scanners/squeeze/" },
+      { t: "Crypto Arbitrage Scanner", d: "Funding rate arbitrage and price gaps across seven exchanges", href: "/scanners/crypto-arbitrage/" }
     ] }] },
-    { t: "Binary Scanner", href: "/scanners/binary/" },
-    { t: "GEX", href: "/scanners/gex/" },
-    { t: "AI Forecast", cols: [{ items: [
-      { t: "Next Candle AI", d: "Four AI forecast models guess the next 5-minute candle. For fun, every guess graded", href: "/scanners/next-candle/" },
-      { t: "24-Hour AI Forecast", d: "Likely price path and range for the next 24 hours, refreshed every hour", href: "/scanners/forecast-24h/" },
-      { t: "AI Scanner", d: "Bias, four forecast models and the AI committee for any symbol", href: "/bias/", match: ["/desk/"] }
+    { t: "AI", cols: [{ items: [
+      { t: "AI Scanner", d: "Bias, four forecast models and the AI committee for any symbol", href: "/bias/", match: ["/desk/"] },
+      { t: "Next Candle AI", d: "Four AI models guess the next 5-minute candle, with a GEX label", href: "/scanners/next-candle/" },
+      { t: "24-Hour AI Forecast", d: "Likely price path and range for the next 24 hours", href: "/scanners/forecast-24h/" },
+      { t: "Binary Scanner", d: "Short-expiry setups", href: "/scanners/binary/" }
     ] }] },
-    { t: "AI Backtesting", href: "/ai-backtesting/" },
-    { t: "More", cols: [
-      { h: "Markets", items: [
-        { t: "News Scanner", d: "Markets in the news, tone and trend", href: "/scanners/news/" },
-        { t: "All scanners", d: "Every scanner on one page", href: "/scanners/", exact: true },
-        { t: "Insights", d: "Breadth, volatility and momentum", href: "/insights.html" }
-      ] },
-      { h: "Tools", items: [
+    { t: "Tools", cols: [
+      { h: "Test", items: [
         { t: "Backtesting", d: "Test your own strategy on history", href: "/backtesting/" },
+        { t: "AI Backtesting", d: "Let AI test a strategy for you", href: "/ai-backtesting/" }
+      ] },
+      { h: "More", items: [
+        { t: "All scanners", d: "Every scanner on one page", href: "/scanners/", exact: true },
+        { t: "Insights", d: "Breadth, volatility and momentum", href: "/insights.html" },
         { t: "Affiliates", d: "Earn 20% for every trader you bring", href: "/affiliates/" }
       ] }
     ] },
     { t: "Pricing", href: "/pricing.html" }
   ];
+  var TAG = function (x) { return x ? '<i style="font-style:normal;font:700 8.5px/1 IBM Plex Mono,monospace;letter-spacing:.06em;margin-left:5px;padding:2px 4px;border-radius:3px;vertical-align:2px;background:' + (x === "TOP" ? "#F4B740;color:#1a1200" : "#2ee59d;color:#04140d") + '">' + x + "</i>" : ""; };
   /* affiliate link: ?ref=CODE is remembered for checkout (30 days) and counted once per browser */
   try {
     var rf = (new URLSearchParams(location.search).get("ref") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 16);
@@ -79,13 +83,13 @@
   function build() {
     var nav = "";
     MENU.forEach(function (m, i) {
-      if (m.href) { nav += '<a href="' + m.href + '"' + (isOn(m.href, m.match) ? ' class="on" aria-current="page"' : "") + ">" + esc(m.t) + "</a>"; return; }
+      if (m.href) { nav += '<a href="' + m.href + '"' + (isOn(m.href, m.match) ? ' class="on" aria-current="page"' : "") + ">" + esc(m.t) + TAG(m.tag) + "</a>"; return; }
       var any = false, cols = "";
       m.cols.forEach(function (c) {
         cols += '<div class="cph-col">' + (c.h ? "<p>" + esc(c.h) + "</p>" : "");
         c.items.forEach(function (it) {
           var on = isOn(it.href, it.match, it.exact); any = any || on;
-          cols += '<a href="' + it.href + '"' + (on ? ' class="on" aria-current="page"' : "") + "><b>" + esc(it.t) + "</b><span>" + esc(it.d) + "</span></a>";
+          cols += '<a href="' + it.href + '"' + (on ? ' class="on" aria-current="page"' : "") + "><b>" + esc(it.t) + TAG(it.tag) + "</b><span>" + esc(it.d) + "</span></a>";
         });
         cols += "</div>";
       });
