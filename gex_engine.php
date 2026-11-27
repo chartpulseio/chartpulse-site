@@ -479,7 +479,7 @@ function gex_last(string $sym): ?array {
  * The Next Candle job keeps only its last 300 guesses, so this runs from the worker every few minutes.
  */
 function gex_nc_join(): int {
-    $mf = (defined('ML_DIR') ? ML_DIR : T_DATA . '/ml') . '/nc.json';
+    $mf = (defined('ML_DIR') ? ML_DIR : cp_data_dir() . '/ml') . '/nc.json';
     $nc = is_file($mf) ? json_decode((string)file_get_contents($mf), true) : null; $hist = $nc['state']['hist'] ?? []; if (!$hist) return 0;
     $pf = GEX_DIR . '/nc_join_last.txt'; $last = (int)@file_get_contents($pf); $max = $last; $n = 0; $reg = [];
     foreach ([date('Ym'), date('Ym', strtotime('-1 month'))] as $ym) { $f = GEX_DIR . "/regime_$ym.jsonl"; if (!is_file($f)) continue;
