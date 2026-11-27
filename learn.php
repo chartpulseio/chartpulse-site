@@ -99,7 +99,7 @@ if ($slug === '' || !isset(LRN[$slug])) {
 <main class="page wrap seo" id="main">
   <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span>/</span> <span>Learn</span></nav>
   <h1>Trading guides</h1>
-  <p class="muted">Short, plain-English guides to every tool on ChartPulse. Each one links to the free live scanner.</p>
+  <p class="muted">Short, plain-English guides to every tool on ChartPulse. Each one links to the free live scanner. See <a href="/features/">all tools</a>.</p>
   <ul class="seo-grid">
 <?php foreach (LRN as $s => $x) { ?>    <li><a href="/learn/<?= $s ?>/"><b><?= seo_e($x[2]) ?></b><small><?= seo_e($x[3]) ?></small></a></li>
 <?php } ?>

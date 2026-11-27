@@ -172,7 +172,8 @@ function seo_foot(): void { ?>
       <a class="logo" href="/" aria-label="ChartPulse home"><svg viewBox="0 0 88 88" aria-hidden="true"><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F4B740" stroke-width="3"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#22AB94" stroke-width="2.4" transform="rotate(60 44 44)"/><ellipse cx="44" cy="44" rx="32" ry="12.5" fill="none" stroke="#F7525F" stroke-width="2.4" transform="rotate(-60 44 44)"/><circle cx="44" cy="44" r="4.5" fill="#EDEDEF"/></svg><span>Chart<b>Pulse</b></span></a>
       <p>Live trend bias, market movers and a rule-based signal scanner for stocks, indices, futures, forex and crypto.</p>
     </div>
-    <div><h4>Free tools</h4><a href="/#bias">AI Scan</a><a href="/bias/">All symbols</a><a href="/movers/">Market movers today</a><a href="/news.html">News &amp; Impact</a></div>
+    <div><h4>Free tools</h4><a href="/#bias">AI Scan</a><a href="/bias/">All symbols</a><a href="/movers/">Market movers today</a><a href="/scanners/news/">News Scanner</a><a href="/gex/">GEX levels</a><a href="/today/">Today's report</a></div>
+    <div><h4>Tools</h4><a href="/features/">All tools</a><a href="/features/backtesting/">Backtesting</a><a href="/features/ai-forecast/">AI Forecast</a><a href="/features/next-candle/">Next Candle AI</a><a href="/features/godfather/">God-father</a><a href="/learn/">Trading guides</a></div>
     <div><h4>Product</h4><a href="/scanner.html">Tier-1 Scanner</a><a href="/insights.html">Market Insights</a><a href="/pricing.html">Pricing</a></div>
     <div><h4>Company</h4><a href="/legal.php?p=contact">Contact us</a><a href="/legal.php?p=terms">Terms &amp; Conditions</a><a href="/legal.php?p=privacy">Privacy Policy</a><a href="/legal.php?p=disclaimer">Risk disclaimer</a></div>
   </div>
@@ -257,6 +258,7 @@ function seo_indexnow(int $now): ?string {
         if (($S['day'] ?? '') !== $today) array_push($P, '/', '/bias/', '/movers/');
         // 27 Nov 2026: new SEO pages (GEX per market, guides, scanners) -- once in full, then the daily ones every day
         $gx = ['spy','qqq','iwm','dia','gold','silver','nifty','banknifty','finnifty','bitcoin','ethereum','aapl','nvda','tsla','msft','amzn','meta','googl','amd','mstr','coin','pltr','avgo','nflx','smci','mu','hood','tlt','smh','xle','uso'];
+        if (empty($S['v3'])) { $S['v3'] = $today; $P[] = '/features/'; foreach (['backtesting','ai-backtesting','ai-forecast','next-candle','gex','godfather','confluence-scanner','trendline-scanner','day-drive','smc-scanner','crypto-scanner','order-flow','news-scanner','ai-scanner'] as $f) $P[] = "/features/$f/"; }
         if (empty($S['v2'])) { $S['v2'] = $today; array_push($P, '/gex/', '/learn/', '/today/', '/scanners/', '/scanners/confluence/', '/scanners/godfather/', '/scanners/gex/', '/scanners/trendline-hero/', '/scanners/trend-lines/', '/scanners/news/', '/backtesting/', '/ai-backtesting/', '/scanners/next-candle/');
             foreach ($gx as $g) $P[] = "/gex/$g/"; foreach (['gamma-exposure-gex','call-wall-put-wall','trend-line-confluence','break-and-retest','liquidity-sweep-fake-breakout','order-flow-volume-delta','volume-profile-poc','backtesting-trading-strategy','ai-price-forecast','smart-money-concepts','200-ema-strategy','trend-line-trading'] as $l) $P[] = "/learn/$l/"; }
         elseif (($S['day'] ?? '') !== $today) { array_push($P, '/gex/', '/today/'); foreach ($gx as $g) $P[] = "/gex/$g/"; }
