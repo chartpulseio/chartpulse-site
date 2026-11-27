@@ -137,9 +137,10 @@ html,body{background:var(--bg)!important}
   <section class="pn xsec"><div class="mh"><span><b style="color:var(--tx);font-weight:600">big flows</b> <span class="mu">· largest option trades as they print (BTC / ETH)</span></span></div>
     <div id="fl" style="padding:10px 12px;font:12px IBM Plex Mono;max-height:620px;overflow:auto"></div></section>
 
-  <section class="pn xsec"><div class="mh"><span><b style="color:var(--tx);font-weight:600">all-in-one</b> <span class="mu">· candles + order-flow bubbles + gamma heat + walls, flip, max pain, expected move + strike ladder (net GEX, call/put delta, OI) + cumulative delta · hover anything</span></span><span class="lg"><span><i style="background:var(--gn)"></i>buy bubble</span><span><i style="background:var(--rd)"></i>sell bubble</span><span><i style="background:var(--cy)"></i>+γ</span><span><i style="background:var(--pu)"></i>−γ</span><span><i style="background:#5aa9ff"></i>OI</span></span></div>
+  <section class="pn xsec"><div class="mh"><span><b style="color:var(--tx);font-weight:600">all-in-one</b> <span class="mu">· price, order flow and gamma on one chart · tap a chip to show or hide a layer · hover for details</span></span></div>
+    <div id="aioc" style="padding:8px 10px 2px"></div>
     <div style="position:relative;padding:4px"><canvas id="aio"></canvas><div id="aiot" style="display:none;position:absolute;pointer-events:none;background:#111;border:1px solid #333;padding:7px 9px;font:11px IBM Plex Mono;line-height:1.55;z-index:5;max-width:230px"></div></div>
-    <p class="mu" style="padding:0 12px 10px;font-size:11px">Bubbles appear on candles with unusual volume (1.3× average or more); size = volume, green = buyers pushed the close up, red = sellers. Delta is estimated from where each candle closed in its range (true tape delta is not in our feeds). Ladder: cyan/purple bar = dealer gamma, green/red bubble = call/put delta exposure, blue bubble = open interest.</p></section>
+    <p class="mu" style="padding:0 12px 10px;font-size:11px"><b>Volume profile</b> per session: green = buying, red = selling, white line = POC (most traded price), grey lines = value area (70% of volume). <b>Bubbles</b> = only the biggest volume candles (ring = the very biggest). <b>CW / PW / 0γ / MP</b> = call wall, put wall, zero gamma, max pain. <b>Ladder</b> = dealer gamma per strike (cyan +, purple −), blue dot = open interest. Delta is estimated from where each candle closed in its range.</p></section>
   <p class="note"><b>How to read it.</b> Cyan bars are strikes where dealers are long gamma (they sell rallies and buy dips, so price tends to stick); purple bars are short gamma (they chase moves, so price tends to slip through). Above the zero-gamma flip the tape is usually calmer; below it, moves extend. The dots show the options profile you pick (delta, gamma, vanna or charm exposure) split into calls (green) and puts (red). Max change GEX shows which strike moved most over the last 1 to 30 minutes, and the replay slider plays back today's positioning minute by minute.<br>
   <b>Method.</b> Exposure = gamma × open interest × contract size × spot² × 1%, calls positive and puts negative (the standard assumption that customers buy options and dealers take the other side). It is a model of positioning, not a certainty. Open interest updates once a day for stocks and indices; US quotes use Alpaca's indicative feed. <b>Crypto:</b> BTC and ETH come from Deribit, where most crypto options trade. In crypto, large holders often sell calls themselves, so the dealer side can differ from the stock-market assumption; treat crypto walls as zones of heavy positioning rather than certain support or resistance. Information only, not investment advice.</p>
 </main>
@@ -324,60 +325,71 @@ function mgProf(o){const c=o.box.querySelector('canvas.mp'),r=devicePixelRatio||
  g.strokeStyle='#262626';g.beginPath();g.moveTo(md,0);g.lineTo(md,h);g.stroke();
  st.forEach(s=>{const y=o.se.priceToCoordinate(s.k*(o.k||1));if(y==null||y<0||y>h)return;const len=s.gex/m*(md-3);g.fillStyle=s.gex>=0?'#4fe3f0':'#a35cf0';g.fillRect(s.gex>=0?md:md+len,y-1.5,Math.abs(len),3)});
  const sy=o.se.priceToCoordinate(o.d.spot*(o.k||1));if(sy!=null){g.strokeStyle='#f2f2f2';g.beginPath();g.moveTo(0,sy);g.lineTo(w,sy);g.stroke()}}
-/* ---------- all-in-one: candles + order-flow bubbles + gamma heat + walls/flip/EM + strike ladder (GEX, delta, OI bubbles) + cumulative delta ---------- */
-let AIO=null,AIOH=null;
-function aioView(){const cv=$('#aio');if(!cv||!D||!D.strikes)return;const box=cv.parentElement,W=box.clientWidth,H=760,dpr=devicePixelRatio||1;
+/* ---------- all-in-one (Vela-style, clean): candles + session volume profiles (buy/sell, POC, value area) + filtered volume bubbles + GEX levels as thin lines with axis tags + slim strike ladder + volume-delta pane; every layer has an on/off chip ---------- */
+let AIO=null;const AIOK={cand:1,vp:1,bub:1,lvl:1,heat:0,lad:1,dl:1};try{Object.assign(AIOK,JSON.parse(localStorage.getItem('cp_aio')||'{}'))}catch(e){}
+function aioChips(){const el=$('#aioc');if(!el)return;const N={cand:'Candles',vp:'Volume profile',bub:'Bubbles',lvl:'GEX levels',heat:'Gamma heat',lad:'Strike ladder',dl:'Volume delta'};
+ el.innerHTML=Object.keys(N).map(k=>`<button data-k="${k}" style="font:11px IBM Plex Mono;padding:3px 9px;margin:0 4px 4px 0;border-radius:12px;cursor:pointer;border:1px solid ${AIOK[k]?'#4fe3f0':'#333'};background:${AIOK[k]?'rgba(79,227,240,.12)':'transparent'};color:${AIOK[k]?'#e8e8e8':'#8b8b8b'}">${N[k]}</button>`).join('');
+ el.onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;AIOK[b.dataset.k]=AIOK[b.dataset.k]?0:1;try{localStorage.setItem('cp_aio',JSON.stringify(AIOK))}catch(x){}aioChips();aioView()}}
+function aioView(){const cv=$('#aio');if(!cv||!D||!D.strikes)return;if(!$('#aioc').innerHTML)aioChips();
+ const box=cv.parentElement,W=box.clientWidth-8,H=AIOK.dl?780:640,dpr=devicePixelRatio||1;
  if(cv.width!==W*dpr||cv.height!==H*dpr){cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px'}
- const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);g.font='10px IBM Plex Mono';
- const KK=KF(),cu=cur(),L=D.levels||{};const bars=(CAND||[]).slice(-120);
- const ladW=Math.max(170,Math.min(300,W*.26)),pw=W-ladW-56,top=26,ph=H-top-170,dt=top+ph+24,dh=H-dt-22;
- // price range: candles + key levels
+ const g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.fillStyle='#131416';g.fillRect(0,0,W,H);g.font='10px IBM Plex Mono';g.lineWidth=1;
+ const KK=KF(),L=D.levels||{},bars=(CAND||[]).slice(-Math.max(150,Math.min(500,Math.floor(W/3.2))));
+ const ladW=AIOK.lad?Math.max(140,Math.min(220,W*.17)):0,axW=70,pw=W-ladW-axW,top=10,ph=(AIOK.dl?H-150:H-30)-top,dt=top+ph+14,dh=H-dt-24;
  let lo=Infinity,hi=-Infinity;bars.forEach(b=>{lo=Math.min(lo,b[3]);hi=Math.max(hi,b[2])});
- [D.call_wall,D.put_wall,D.zero_gamma,D.spot].forEach(v=>{if(v){lo=Math.min(lo,v*KK);hi=Math.max(hi,v*KK)}});
- if(!isFinite(lo)){lo=D.spot*KK*.97;hi=D.spot*KK*1.03}const pad=(hi-lo)*.06;lo-=pad;hi+=pad;
- const Y=p=>top+(hi-p)/(hi-lo)*ph,P=y=>hi-(y-top)/ph*(hi-lo);
- const st=D.strikes.filter(s=>s.k*KK>=lo&&s.k*KK<=hi);let mg=1,md=1,mo=1;st.forEach(s=>{mg=Math.max(mg,Math.abs(s.gex));md=Math.max(md,Math.abs(s.cd||0),Math.abs(s.pd||0));mo=Math.max(mo,(s.coi||0)+(s.poi||0))});
- // gamma heat behind price
- const kstep=st.length>1?Math.abs(st[1].k-st[0].k)*KK:(hi-lo)/40;
- st.forEach(s=>{const a=Math.min(.32,Math.abs(s.gex)/mg*.32);g.fillStyle=s.gex>=0?`rgba(79,227,240,${a})`:`rgba(163,92,240,${a})`;const y0=Y(s.k*KK+kstep/2),y1=Y(s.k*KK-kstep/2);g.fillRect(0,y0,pw,Math.max(1,y1-y0))});
- // expected move band
- if(L.em_day&&L.em_day[0]){const a=Y(L.em_day[1]*KK),b=Y(L.em_day[0]*KK);g.fillStyle='rgba(245,230,66,.05)';g.fillRect(0,a,pw,b-a);g.strokeStyle='rgba(245,230,66,.35)';g.setLineDash([2,4]);[a,b].forEach(y=>{g.beginPath();g.moveTo(0,y);g.lineTo(pw,y);g.stroke()});g.setLineDash([])}
- // grid + axis
- g.fillStyle='#8b8b8b';g.strokeStyle='rgba(255,255,255,.04)';for(let i=0;i<=8;i++){const p=lo+(hi-lo)*i/8,y=Y(p);g.beginPath();g.moveTo(0,y);g.lineTo(pw,y);g.stroke();g.fillText(nf(p,p>1000?0:2),pw+4,y+3)}
- // candles + order-flow bubbles
- const n=bars.length,cw=n?pw/n:pw,X=i=>i*cw+cw/2;let va=0;bars.forEach(b=>va+=b[5]||0);va=n?va/n:1;
- const dl=bars.map(b=>{const r=b[2]-b[3];return r>0?(b[5]||0)*(b[4]-b[1])/r:0});let mdl=1;dl.forEach(v=>mdl=Math.max(mdl,Math.abs(v)));
- bars.forEach((b,i)=>{const up=b[4]>=b[1],x=X(i);g.strokeStyle=up?'#22AB94':'#F7525F';g.fillStyle=g.strokeStyle;g.beginPath();g.moveTo(x,Y(b[2]));g.lineTo(x,Y(b[3]));g.stroke();
-  const y0=Y(Math.max(b[1],b[4])),y1=Y(Math.min(b[1],b[4]));g.fillRect(x-Math.max(1,cw*.32),y0,Math.max(2,cw*.64),Math.max(1,y1-y0))});
- const BUB=[];bars.forEach((b,i)=>{const v=b[5]||0;if(!va||v<va*1.3)return;const r=Math.min(26,4+Math.sqrt(v/va)*5.5),d=dl[i],x=X(i),y=Y((b[2]+b[3]+b[4])/3);
-  const grd=g.createRadialGradient(x-r*.3,y-r*.3,1,x,y,r);const c=d>=0?'142,224,74':'240,71,60';grd.addColorStop(0,`rgba(${c},.85)`);grd.addColorStop(1,`rgba(${c},.18)`);
-  g.fillStyle=grd;g.beginPath();g.arc(x,y,r,0,7);g.fill();g.strokeStyle=`rgba(${c},.9)`;g.lineWidth=1;g.stroke();if(r>15){g.fillStyle='#fff';g.textAlign='center';g.fillText(big(v),x,y+3);g.textAlign='left'}BUB.push({x,y,r,b,d})});
- // key level lines
- const lv=(p,c,t,dash)=>{if(!p)return;const y=Y(p*KK);if(y<top||y>top+ph)return;g.strokeStyle=c;g.lineWidth=1.3;g.setLineDash(dash||[]);g.beginPath();g.moveTo(0,y);g.lineTo(pw,y);g.stroke();g.setLineDash([]);g.fillStyle=c;g.fillRect(2,y-13,g.measureText(t).width+8,12);g.fillStyle='#000';g.fillText(t,6,y-4)};
- lv(D.call_wall,C.gn,'CALL WALL '+nf(D.call_wall*KK));lv(D.put_wall,C.rd,'PUT WALL '+nf(D.put_wall*KK));lv(D.zero_gamma,C.ye,'ZERO γ '+nf(D.zero_gamma*KK),[6,4]);lv(L.max_pain,C.or,'MAX PAIN '+nf(L.max_pain*KK),[2,3]);
- const last=LAST&&LAST.p?LAST.p:(n?bars[n-1][4]:D.spot*KK);const ly=Y(last);g.strokeStyle='#f2f2f2';g.setLineDash([1,2]);g.beginPath();g.moveTo(0,ly);g.lineTo(pw,ly);g.stroke();g.setLineDash([]);g.fillStyle='#f2f2f2';g.fillRect(pw+1,ly-7,54,14);g.fillStyle='#000';g.fillText(nf(last,last>1000?0:2),pw+4,ly+3);
- // regime badge
- const pos=D.zero_gamma?last/KK>=D.zero_gamma:(D.net_gex||0)>=0;g.fillStyle=pos?'rgba(79,227,240,.18)':'rgba(163,92,240,.2)';g.fillRect(6,4,250,18);g.fillStyle=pos?C.cy:C.pu;g.font='11px IBM Plex Mono';g.fillText(pos?'+γ  dealers dampen · fade the walls':'−γ  dealers chase · moves can run',12,17);g.font='10px IBM Plex Mono';
- // strike ladder: net GEX bar + call/put delta bubbles + OI bubble
- const lx=pw+56,mid=lx+ladW*.42;g.strokeStyle='#232323';g.beginPath();g.moveTo(lx,top);g.lineTo(lx,top+ph);g.moveTo(mid,top);g.lineTo(mid,top+ph);g.stroke();
- g.fillStyle='#8b8b8b';g.fillText('net gex',lx+4,top-6);g.fillText('Δ call · Δ put · OI',mid+6,top-6);
- const LAD=[];st.forEach(s=>{const y=Y(s.k*KK),bw=Math.abs(s.gex)/mg*(ladW*.4),bh=Math.max(2,Math.min(10,ph/st.length*.7));g.fillStyle=s.gex>=0?C.cy:C.pu;g.fillRect(s.gex>=0?mid-bw:mid-bw,y-bh/2,bw,bh);
-  const bub=(x,v,m,c,mx)=>{const r=Math.max(1.5,Math.sqrt(Math.abs(v)/m)*mx);g.fillStyle=`rgba(${c},.55)`;g.beginPath();g.arc(x,y,r,0,7);g.fill();g.strokeStyle=`rgba(${c},.95)`;g.stroke()};
-  bub(mid+ladW*.14,s.cd||0,md,'142,224,74',9);bub(mid+ladW*.3,s.pd||0,md,'240,71,60',9);bub(mid+ladW*.48,(s.coi||0)+(s.poi||0),mo,'90,169,255',10);LAD.push({y,s})});
- // crypto: big flows as bubbles on the ladder edge
- if(FL&&FL.top&&['BTC','ETH'].includes(sym)){let mp=1;FL.top.forEach(f=>mp=Math.max(mp,f.prem));FL.top.slice(0,25).forEach(f=>{const y=Y(f.k*KK);if(y<top||y>top+ph)return;const bull=(f.cp==='C')===(f.side==='buy'),r=3+Math.sqrt(f.prem/mp)*12;g.fillStyle=bull?'rgba(142,224,74,.35)':'rgba(240,71,60,.35)';g.beginPath();g.arc(W-r-2,y,r,0,7);g.fill()})}
- // bottom pane: volume + cumulative delta
- g.fillStyle='#8b8b8b';g.fillText('volume · est. cumulative delta (order flow)',4,dt-6);let cvd=0;const cv2=dl.map(v=>cvd+=v);let mc=1,mv=1;cv2.forEach(v=>mc=Math.max(mc,Math.abs(v)));bars.forEach(b=>mv=Math.max(mv,b[5]||0));
- bars.forEach((b,i)=>{const h=(b[5]||0)/mv*dh*.9;g.fillStyle=dl[i]>=0?'rgba(34,171,148,.45)':'rgba(247,82,95,.45)';g.fillRect(X(i)-cw*.35,dt+dh-h,Math.max(1,cw*.7),h)});
- g.strokeStyle=C.ye;g.lineWidth=1.6;g.beginPath();cv2.forEach((v,i)=>{const y=dt+dh/2-v/mc*dh*.45;i?g.lineTo(X(i),y):g.moveTo(X(i),y)});g.stroke();g.lineWidth=1;
- if(n){g.fillStyle='#8b8b8b';[0,Math.floor(n/2),n-1].forEach(i=>g.fillText(tm(bars[i][0]),Math.min(X(i),pw-40),H-6))}
- AIO={BUB,LAD,Y,P,pw,top,ph,X,cw,bars,dl,KK,cu};}
+ if(AIOK.lvl)[D.call_wall,D.put_wall,D.zero_gamma].forEach(v=>{if(v&&Math.abs(v*KK/(D.spot*KK)-1)<.06){lo=Math.min(lo,v*KK);hi=Math.max(hi,v*KK)}});
+ if(!isFinite(lo)){lo=D.spot*KK*.97;hi=D.spot*KK*1.03}const pad=(hi-lo)*.05;lo-=pad;hi+=pad;
+ const Y=p=>top+(hi-p)/(hi-lo)*ph,P=y=>hi-(y-top)/ph*(hi-lo),n=bars.length,cw=n?pw/n:pw,X=i=>i*cw+cw/2;
+ // grid + price axis
+ const stp=(()=>{const r=(hi-lo)/8,m=Math.pow(10,Math.floor(Math.log10(r)));return[1,2,2.5,5,10].map(x=>x*m).find(x=>x>=r)})();
+ g.strokeStyle='rgba(255,255,255,.045)';g.fillStyle='#7d8087';for(let p=Math.ceil(lo/stp)*stp;p<=hi;p+=stp){const y=Y(p);g.beginPath();g.moveTo(0,y);g.lineTo(pw,y);g.stroke();g.fillText(nf(p,stp<1?2:0),pw+ladW+8,y+3)}
+ g.strokeStyle='#26282c';g.beginPath();g.moveTo(pw+ladW+.5,top);g.lineTo(pw+ladW+.5,H);g.stroke();
+ // sessions (gap > 1h or UTC day change for 24h markets)
+ const S=[];let s0=0;const h24=['BTC','ETH','GLD','SLV'].includes(sym);for(let i=1;i<=n;i++){if(i===n||bars[i][0]-bars[i-1][0]>3600||(h24&&Math.floor(bars[i][0]/86400)!==Math.floor(bars[i-1][0]/86400))){S.push([s0,i-1]);s0=i}}
+ g.strokeStyle='rgba(255,255,255,.07)';g.setLineDash([3,4]);S.slice(1).forEach(s=>{const x=s[0]*cw;g.beginPath();g.moveTo(x,top);g.lineTo(x,H-20);g.stroke()});g.setLineDash([]);
+ // gamma heat (off by default)
+ const st=D.strikes.filter(s=>s.k*KK>=lo&&s.k*KK<=hi);let mg=1;st.forEach(s=>mg=Math.max(mg,Math.abs(s.gex)));const kstep=st.length>1?Math.abs(st[1].k-st[0].k)*KK:(hi-lo)/40;
+ if(AIOK.heat)st.forEach(s=>{const a=Math.min(.22,Math.abs(s.gex)/mg*.22);g.fillStyle=s.gex>=0?`rgba(79,227,240,${a})`:`rgba(163,92,240,${a})`;const y0=Y(s.k*KK+kstep/2);g.fillRect(0,y0,pw,Math.max(1,Y(s.k*KK-kstep/2)-y0))});
+ // session volume profile: buy (green) / sell (red) per price row, POC + value area 70%
+ if(AIOK.vp)S.forEach(([a,b])=>{if(b-a<6)return;let sl=Infinity,sh=-Infinity;for(let i=a;i<=b;i++){sl=Math.min(sl,bars[i][3]);sh=Math.max(sh,bars[i][2])}
+  const R=Math.max(12,Math.min(40,Math.round((Y(sl)-Y(sh))/7))),rs=(sh-sl)/R||1,bu=new Array(R).fill(0),se=new Array(R).fill(0);
+  for(let i=a;i<=b;i++){const[,o,h,l,c,v]=bars[i];if(!v)continue;const r0=Math.max(0,Math.floor((l-sl)/rs)),r1=Math.min(R-1,Math.floor((h-sl)/rs)),k=r1-r0+1,bs=h>l?(c-l)/(h-l):.5;for(let r=r0;r<=r1;r++){bu[r]+=v*bs/k;se[r]+=v*(1-bs)/k}}
+  const tot=bu.map((x,i)=>x+se[i]);let poc=0;tot.forEach((x,i)=>{if(x>tot[poc])poc=i});const mx=tot[poc]||1,sum=tot.reduce((p,q)=>p+q,0);let va=tot[poc],up=poc,dn=poc;while(va<sum*.7&&(up<R-1||dn>0)){const u=up<R-1?tot[up+1]:-1,d=dn>0?tot[dn-1]:-1;if(u>=d){up++;va+=u}else{dn--;va+=d}}
+  const x0=a*cw,sw=(b-a+1)*cw*.42;for(let r=0;r<R;r++){const y0=Y(sl+(r+1)*rs),hh=Math.max(1,Y(sl+r*rs)-y0-1),wb=bu[r]/mx*sw,ws=se[r]/mx*sw,inva=r>=dn&&r<=up;
+   g.fillStyle=inva?'rgba(34,171,148,.55)':'rgba(34,171,148,.25)';g.fillRect(x0,y0,wb,hh);g.fillStyle=inva?'rgba(247,82,95,.55)':'rgba(247,82,95,.25)';g.fillRect(x0+wb,y0,ws,hh)}
+  const yp=Y(sl+(poc+.5)*rs),xe=(b+1)*cw;g.strokeStyle='#e8e8e8';g.lineWidth=1.5;g.beginPath();g.moveTo(x0,yp);g.lineTo(xe,yp);g.stroke();g.lineWidth=1;
+  g.strokeStyle='rgba(200,200,200,.35)';[Y(sl+(up+1)*rs),Y(sl+dn*rs)].forEach(y=>{g.beginPath();g.moveTo(x0,y);g.lineTo(xe,y);g.stroke()})});
+ // candles (thin, TradingView colours)
+ if(AIOK.cand)bars.forEach((b,i)=>{const up=b[4]>=b[1],x=Math.round(X(i))+.5;g.strokeStyle=g.fillStyle=up?'#26a69a':'#ef5350';g.beginPath();g.moveTo(x,Y(b[2]));g.lineTo(x,Y(b[3]));g.stroke();const y0=Y(Math.max(b[1],b[4])),bw=Math.max(1,cw*.6);g.fillRect(x-bw/2,y0,bw,Math.max(1,Y(Math.min(b[1],b[4]))-y0))});
+ // volume bubbles: only the big ones (>= 50% of the largest on screen), ring around the top ones (>= 80%)
+ const dl=bars.map(b=>{const r=b[2]-b[3];return r>0?(b[5]||0)*(2*b[4]-b[2]-b[3])/r:0});let vmx=1;bars.forEach(b=>vmx=Math.max(vmx,b[5]||0));const BUB=[];
+ if(AIOK.bub)bars.forEach((b,i)=>{const v=b[5]||0;if(v<vmx*.5)return;const r=4+Math.sqrt(v/vmx)*14,x=X(i),bs=b[2]>b[3]?(b[4]-b[3])/(b[2]-b[3]):.5,y=Y(b[3]+(b[2]-b[3])*(bs>=.5?.66:.34)),buy=dl[i]>=0,c=buy?'38,166,154':'239,83,80';
+  g.fillStyle=`rgba(${c},.32)`;g.beginPath();g.arc(x,y,r,0,7);g.fill();g.strokeStyle=`rgba(${c},.85)`;g.stroke();if(v>=vmx*.8){g.strokeStyle='rgba(255,255,255,.8)';g.beginPath();g.arc(x,y,r+3,0,7);g.stroke();g.fillStyle='#d0d0d0';g.textAlign='center';g.fillText(big(v),x,y-r-6);g.textAlign='left'}BUB.push({x,y,r,b,d:dl[i]})});
+ // GEX levels: thin lines, tag only on the axis
+ const tag=(y,c,t,tc)=>{g.fillStyle=c;g.fillRect(pw+ladW+1,y-8,axW-2,16);g.fillStyle=tc||'#000';g.fillText(t,pw+ladW+5,y+4)};
+ if(AIOK.lvl){[[D.call_wall,'#8ee04a','CW'],[D.put_wall,'#f0473c','PW'],[D.zero_gamma,'#f5e642','0γ'],[L.max_pain,'#f59e2c','MP']].forEach(([p,c,t])=>{if(!p)return;const y=Y(p*KK);if(y<top||y>top+ph)return;g.strokeStyle=c;g.globalAlpha=.75;g.setLineDash(t==='0γ'||t==='MP'?[5,4]:[]);g.beginPath();g.moveTo(0,y);g.lineTo(pw+ladW,y);g.stroke();g.setLineDash([]);g.globalAlpha=1;tag(y,c,t+' '+nf(p*KK,p*KK>1000?0:1))});
+  if(L.em_day&&L.em_day[0]){g.fillStyle='rgba(245,230,66,.035)';const a=Y(L.em_day[1]*KK),b=Y(L.em_day[0]*KK);g.fillRect(0,a,pw,b-a)}}
+ const last=LAST&&LAST.p?LAST.p:(n?bars[n-1][4]:D.spot*KK),ly=Y(last),lup=n?last>=bars[n-1][1]:true;g.strokeStyle=lup?'#26a69a':'#ef5350';g.setLineDash([2,3]);g.beginPath();g.moveTo(0,ly);g.lineTo(pw+ladW,ly);g.stroke();g.setLineDash([]);tag(ly,lup?'#26a69a':'#ef5350',nf(last,last>1000?2:2),'#fff');
+ // regime chip (top-left, small)
+ const pos=D.zero_gamma?last/KK>=D.zero_gamma:(D.net_gex||0)>=0;g.font='11px IBM Plex Mono';const rt=pos?'+γ regime · walls hold, fade extremes':'−γ regime · moves can run, trade breaks';g.fillStyle='rgba(19,20,22,.85)';g.fillRect(6,top+2,g.measureText(rt).width+14,18);g.fillStyle=pos?C.cy:C.pu;g.fillText(rt,13,top+15);g.font='10px IBM Plex Mono';
+ // slim strike ladder: net GEX bars from the centre, call/put delta and OI as dots
+ const LAD=[];if(AIOK.lad){const lx=pw,mid=lx+ladW/2;let md=1,mo=1;st.forEach(s=>{md=Math.max(md,Math.abs(s.cd||0),Math.abs(s.pd||0));mo=Math.max(mo,(s.coi||0)+(s.poi||0))});
+  g.fillStyle='#17181b';g.fillRect(lx,top,ladW,ph);g.strokeStyle='#26282c';g.beginPath();g.moveTo(lx+.5,top);g.lineTo(lx+.5,top+ph);g.moveTo(mid,top);g.lineTo(mid,top+ph);g.stroke();g.fillStyle='#7d8087';g.fillText('− gex',lx+6,top+12);g.fillText('+ gex',lx+ladW-36,top+12);
+  st.forEach(s=>{const y=Y(s.k*KK),bw=Math.abs(s.gex)/mg*(ladW/2-6),bh=Math.max(2,Math.min(8,ph/Math.max(1,st.length)*.65));g.fillStyle=s.gex>=0?'rgba(79,227,240,.85)':'rgba(163,92,240,.85)';g.fillRect(s.gex>=0?mid:mid-bw,y-bh/2,bw,bh);
+   const oi=(s.coi||0)+(s.poi||0);if(oi>mo*.25){g.fillStyle='rgba(90,169,255,.35)';g.beginPath();g.arc(s.gex>=0?mid-8:mid+8,y,2+Math.sqrt(oi/mo)*6,0,7);g.fill()}LAD.push({y,s})});
+  if(FL&&FL.top&&['BTC','ETH'].includes(sym)){let mp=1;FL.top.forEach(f=>mp=Math.max(mp,f.prem));FL.top.slice(0,20).forEach(f=>{const y=Y(f.k*KK);if(y<top||y>top+ph)return;const bull=(f.cp==='C')===(f.side==='buy'),r=2+Math.sqrt(f.prem/mp)*8;g.strokeStyle=bull?'#8ee04a':'#f0473c';g.beginPath();g.arc(lx+ladW-r-3,y,r,0,7);g.stroke()})}}
+ // volume delta pane
+ if(AIOK.dl&&n){g.strokeStyle='#26282c';g.beginPath();g.moveTo(0,dt-6.5);g.lineTo(W,dt-6.5);g.stroke();let mx=1;dl.forEach(v=>mx=Math.max(mx,Math.abs(v)));const z=dt+dh/2;
+  g.strokeStyle='rgba(255,255,255,.08)';g.beginPath();g.moveTo(0,z);g.lineTo(pw,z);g.stroke();dl.forEach((v,i)=>{const h=v/mx*dh*.48;g.fillStyle=v>=0?'#26a69a':'#ef5350';g.fillRect(X(i)-Math.max(.5,cw*.3),v>=0?z-h:z,Math.max(1,cw*.6),Math.abs(h))});
+  g.fillStyle='#b8bac0';g.font='11px IBM Plex Mono';g.fillText('Volume Delta (est.)',6,dt+8);const lv=dl[n-1];g.fillStyle=lv>=0?'#26a69a':'#ef5350';g.fillText(big(lv),140,dt+8);g.font='10px IBM Plex Mono'}
+ if(n){g.fillStyle='#7d8087';S.forEach(([a])=>{const d=new Date(bars[a][0]*1000);g.fillText(d.toLocaleDateString([],{month:'short',day:'2-digit'}),a*cw+4,H-7)})}
+ AIO={BUB,LAD,Y,P,pw,top,ph,X,cw,bars,dl,KK,ladW}}
 (()=>{const cv=$('#aio'),tt=$('#aiot');if(!cv)return;cv.onmouseleave=()=>tt.style.display='none';
  cv.onmousemove=e=>{if(!AIO)return;const r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;let h='';
-  const b=AIO.BUB.find(q=>Math.hypot(q.x-x,q.y-y)<=q.r);
-  if(b)h=`<b>${tm(b.b[0])} · volume bubble</b><br>vol ${big(b.b[5])} · est. delta <span class="${b.d>=0?'pos':'neg'}">${big(b.d)}</span><br>${b.d>=0?'buyers in control':'sellers in control'}`;
-  else if(x>AIO.pw+50){let q=null;AIO.LAD.forEach(o=>{if(!q||Math.abs(o.y-y)<Math.abs(q.y-y))q=o});if(q){const s=q.s;h=`<b>strike ${nf(s.k*AIO.KK)}</b><br>net gex <span class="${s.gex>=0?'cy':'pu'}">${big(s.gex)}</span><br>call Δ ${big(s.cd)} · put Δ ${big(s.pd)}<br>OI call ${big(s.coi)} · put ${big(s.poi)}`}}
-  else if(x<AIO.pw&&y>AIO.top&&y<AIO.top+AIO.ph){const i=Math.floor(x/AIO.cw),c=AIO.bars[i];if(c)h=`<b>${tm(c[0])}</b> O ${nf(c[1])} H ${nf(c[2])} L ${nf(c[3])} C ${nf(c[4])}<br>vol ${big(c[5])} · Δ ${big(AIO.dl[i])}<br>price at cursor ${nf(AIO.P(y))}`}
+  const b=AIO.BUB.find(q=>Math.hypot(q.x-x,q.y-y)<=q.r+2);
+  if(b)h=`<b>${tm(b.b[0])} · big volume</b><br>vol ${big(b.b[5])} · delta <span class="${b.d>=0?'pos':'neg'}">${big(b.d)}</span><br>${b.d>=0?'buyers in control':'sellers in control'}`;
+  else if(AIO.ladW&&x>AIO.pw&&x<AIO.pw+AIO.ladW){let q=null;AIO.LAD.forEach(o=>{if(!q||Math.abs(o.y-y)<Math.abs(q.y-y))q=o});if(q){const s=q.s;h=`<b>strike ${nf(s.k*AIO.KK)}</b><br>net gex <span class="${s.gex>=0?'cy':'pu'}">${big(s.gex)}</span><br>call Δ ${big(s.cd)} · put Δ ${big(s.pd)}<br>OI call ${big(s.coi)} · put ${big(s.poi)}`}}
+  else if(x<AIO.pw){const i=Math.floor(x/AIO.cw),c=AIO.bars[i];if(c)h=`<b>${tm(c[0])}</b> O ${nf(c[1])} H ${nf(c[2])} L ${nf(c[3])} C ${nf(c[4])}<br>vol ${big(c[5])} · delta ${big(AIO.dl[i])}`+(y>AIO.top&&y<AIO.top+AIO.ph?`<br>cursor ${nf(AIO.P(y))}`:'')}
   if(!h){tt.style.display='none';return}tt.innerHTML=h;tt.style.display='block';tt.style.left=Math.min(x+14,r.width-230)+'px';tt.style.top=(y+14)+'px'}})();
 setInterval(()=>{try{aioView()}catch(e){}},5000);addEventListener('resize',()=>{try{aioView()}catch(e){}});
 function main(){chartView();strikesView();heat();gridView();flowsView();aioView()}
