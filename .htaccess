@@ -101,6 +101,8 @@ RewriteRule ^contact/?$                                  /legal.php?p=contact   
 # --- existing clean URLs
 RewriteRule ^movers/?$                                   /movers.php                  [L,QSA]
 RewriteRule ^movers/([0-9]{4}-[0-9]{2}-[0-9]{2})/?$      /movers.php?d=$1             [L,QSA]
+RewriteRule ^learn/?$  /learn.php  [L,QSA]
+RewriteRule ^learn/([a-z0-9-]+)/?$  /learn.php?slug=$1  [L,QSA]
 RewriteRule ^gex/?$  /gex_seo.php  [L,QSA]
 RewriteRule ^gex/([a-z0-9-]+)/?$  /gex_seo.php?slug=$1  [L,QSA]
 RewriteRule ^bias/?$                                     /bias.php                    [L,QSA]
