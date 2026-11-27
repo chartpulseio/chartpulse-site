@@ -212,6 +212,19 @@ function tl_text(string $tf, string $name, ?array $R, ?array $S, float $px, int 
     return $out;
 }
 
+/** Delete up to $max files in $dir (then the dir itself when empty). Uses readdir so huge folders do not load into memory. */
+function tl3c_rm(string $dir, int $max = 5000): int {
+    $h = @opendir($dir); if (!$h) return 0; $k = 0; $t0 = microtime(true);
+    while ($k < $max && ($f = readdir($h)) !== false) { if ($f === '.' || $f === '..') continue; $p = $dir . '/' . $f; if (is_dir($p)) $k += tl3c_rm($p, $max - $k); else { @unlink($p); $k++; } if (($k & 255) === 0 && microtime(true) - $t0 > 8) break; }
+    closedir($h); @rmdir($dir); return $k;
+}
+/** Worker step: clear the old flat tl3c/*.json files (pre-27 Nov layout) in time-boxed batches. */
+function tl3c_gc(int $max = 40000): int {
+    $d = T_DATA . '/tl3c'; $h = @opendir($d); if (!$h) return 0; $k = 0; $t0 = microtime(true);
+    while ($k < $max && ($f = readdir($h)) !== false) { if (substr($f, -5) !== '.json') continue; @unlink($d . '/' . $f); $k++; if (($k & 511) === 0 && microtime(true) - $t0 > 10) break; }
+    closedir($h); return $k;
+}
+
 /** One timeframe. Returns null when there are not enough bars or no line holds. */
 function tl_frame(string $tf, array $F, bool $bars = true): ?array {
     $N = count($F['t'] ?? []); if ($N < 40) return null;
@@ -219,9 +232,16 @@ function tl_frame(string $tf, array $F, bool $bars = true): ?array {
     foreach (['t', 'o', 'h', 'l', 'c'] as $k) $G[$k] = array_map($k === 't' ? 'intval' : 'floatval', array_slice($F[$k], $o, $n));
     $A = t_atr($F, 14); $ATR = array_map('floatval', array_slice($A, $o, $n)); $atr = (float)end($ATR); if ($atr <= 0) return null;
     // cache the heavy part (line search) per series; states and distances are recomputed from fresh bars
-    $ck = T_DATA . '/tl3c/' . md5($tf . '|' . $G['t'][0] . '|' . $G['o'][0] . '|' . $n . '|' . intdiv(time(), ['1W' => 21600, '1D' => 3600, '4H' => 900][$tf] ?? 300)) . '.json';
+    // one folder per timeframe and time bucket; older buckets are deleted whole, so the cache stays at ~1 file per series
+    // (27 Nov 2026: the old flat cache wrote a new file per series every bucket and filled the host's inode limit)
+    $bk = intdiv(time(), ['1W' => 21600, '1D' => 3600, '4H' => 900][$tf] ?? 300); $dir = T_DATA . '/tl3c/' . $tf . '/' . $bk;
+    $ck = $dir . '/' . md5($G['t'][0] . '|' . $G['o'][0] . '|' . $n) . '.json';
     $V = is_file($ck) ? json_decode((string)file_get_contents($ck), true) : null;
-    if (!is_array($V)) { $V = tl3_lines($tf, $G, $n, $ATR); if (!is_dir(dirname($ck))) @mkdir(dirname($ck), 0755, true); @file_put_contents($ck, json_encode($V)); if (mt_rand(1, 300) === 1) foreach (glob(dirname($ck) . '/*.json') ?: [] as $f) if (filemtime($f) < time() - 86400) @unlink($f); }
+    if (!is_array($V)) {
+        $V = tl3_lines($tf, $G, $n, $ATR);
+        if (!is_dir($dir)) { @mkdir($dir, 0755, true); foreach (glob(T_DATA . '/tl3c/' . $tf . '/*', GLOB_ONLYDIR) ?: [] as $od) if ((int)basename($od) < $bk - 1) tl3c_rm($od, 20000); }
+        @file_put_contents($ck, json_encode($V));
+    }
     $R = $V['best'][1] ?? $V['best']['1'] ?? null; $S = $V['best'][-1] ?? $V['best']['-1'] ?? null;
     // a support line above a resistance line is not a structure -- keep the stronger one
     if ($R && $S && $S['now'] >= $R['now'] && $R['state'] !== 'broken' && $S['state'] !== 'broken') { if ($R['score'] >= $S['score']) $S = null; else $R = null; }
