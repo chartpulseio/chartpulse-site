@@ -286,7 +286,7 @@ a.hy:hover{background:var(--card2)}
   <h1>Trendline Hero</h1>
   <p class="dd-lede">One simple idea: trade <b>with the big trend</b>, at a <b>trend line</b>, where <b>today's, this week's or this month's high or low</b> is. Trend down: look for a <b>PUT</b> at a resistance line that is also the day, week or month high. Trend up: look for a <b>CALL</b> at a support line that is also the day, week or month low. A week or month extreme on the line ranks higher. Lines from big charts (4-hour, Daily, Weekly) get longer targets.</p>
   <ol class="dd-steps">
-    <li><span>STEP 1</span><b>Find the big trend</b><p>The Daily trend decides. The 4-hour or the Weekly trend must agree with it. Trend down = PUT only. Trend up = CALL only.</p></li>
+    <li><span>STEP 1</span><b>Find the big trend</b><p>The Daily and the Weekly trend must point the same way. Both down = PUT only. Both up = CALL only. Pick <b>Swing</b> (Weekly to 30m lines, long targets) or <b>Intraday</b> (Daily to 15m lines, today's high or low, 15m entry, short targets).</p></li>
     <li><span>STEP 2</span><b>Line + day / week / month high or low</b><p>PUT: today's, this week's or this month's high sits on a resistance trend line. CALL: the day, week or month low sits on a support trend line. Lines come from 30m, 1H, 4H, Daily and Weekly charts.</p></li>
     <li><span>STEP 3</span><b>Wait for the turn</b><p>Price at the line is the signal. It becomes an alert when a 30-minute candle touches the line and closes away, or closes through it and then closes back.</p></li>
     <li><span>STEP 4</span><b>Entry, stop, targets</b><p>Each signal shows the entry, the stop-loss and two targets. A bigger chart's line gets a longer second target. Zones on the line are labelled.</p></li>
@@ -294,6 +294,12 @@ a.hy:hover{background:var(--card2)}
   <div class="dd-tiles four" id="hyTiles"></div>
   <div class="tls-prog" id="hyProg" hidden><i></i></div>
   <div id="hyAlert"></div>
+  <div class="dd-bar hm-bar">
+    <div class="dd-tabs" id="hyMode" role="group" aria-label="Mode">
+      <button type="button" data-o="swing" class="on" title="Lines from Weekly to 30m · day, week or month high/low · 30m entry · long targets">Swing · 1W–30m</button><button type="button" data-o="intraday" title="Lines from Daily to 15m · today's high/low only · 15m entry · short targets">Intraday · 1D–15m</button>
+    </div>
+    <label class="hy-opt" id="hyEmaL"><input type="checkbox" id="hyEma"> Only with the 1H 200 EMA on the line</label>
+  </div>
   <div class="dd-bar">
     <div class="dd-tabs" id="hyStage" role="group" aria-label="Stage">
       <button type="button" data-s="all" class="on">Everything</button><button type="button" data-s="alert">Alerts only</button><button type="button" data-s="3">At the line</button><button type="button" data-s="2">Broken, waiting</button><button type="button" data-s="1">Approaching</button><button type="button" data-s="old">Last session</button>
@@ -307,7 +313,7 @@ a.hy:hover{background:var(--card2)}
       <button type="button" data-m="all" class="on">All</button><button type="button" data-m="forex">Forex</button><button type="button" data-m="crypto">Crypto</button><button type="button" data-m="commodity">Commodities</button><button type="button" data-m="other">Stocks &amp; indices</button>
     </div>
     <div class="dd-tabs" id="hyTf" role="group" aria-label="Chart of the line">
-      <button type="button" data-t="all" class="on">Any chart</button><button type="button" data-t="big">Long targets (4H, Daily, Weekly)</button><button type="button" data-t="1W">Weekly</button><button type="button" data-t="1D">Daily</button><button type="button" data-t="4H">4H</button><button type="button" data-t="1H">1H</button><button type="button" data-t="30m">30m</button>
+      <button type="button" data-t="all" class="on">Any chart</button><button type="button" data-t="big">Long targets (4H, Daily, Weekly)</button><button type="button" data-t="1W">Weekly</button><button type="button" data-t="1D">Daily</button><button type="button" data-t="4H">4H</button><button type="button" data-t="1H">1H</button><button type="button" data-t="30m">30m</button><button type="button" data-t="15m" class="hm-intra">15m</button>
     </div>
     <label class="hy-opt"><input type="checkbox" id="hySound"> Sound on a new alert</label>
     <input class="dd-search" id="hyQ" type="search" placeholder="Find a market…" aria-label="Find a market">
@@ -348,6 +354,11 @@ const STG = { 5: "ALERT · Failed break", 4: "ALERT · Rejection", 3: "SIGNAL ·
 const stg = r => r.stage >= 4 && !r.live ? (r.stage === 5 ? "Last session · Failed break" : "Last session · Rejection") : STG[r.stage];
 const fmt = (v, d) => Number(v).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
 const ago = t => { const s = Math.max(0, Math.round(Date.now() / 1000 - t)); return s < 60 ? `${s}s ago` : `${Math.round(s / 60)} min ago`; };
+/* one scanner, two modes (owner, 27 Nov 2026): Swing = the old Trendline Hero, Intraday = the old Hybrid scanner;
+   "1H 200 EMA on the line" = the old Hero with 200 EMA page. Choice kept in the URL (?mode=intraday, ?ema=1) and on this device. */
+const HQS = new URLSearchParams(location.search);
+let HM = HQS.get("mode") || (() => { try { return localStorage.getItem("cp_hero_mode"); } catch (e) { return null; } })() || "swing"; if (HM !== "intraday") HM = "swing";
+let HE = HQS.get("ema") === "1";
 const L = { rows: [], meta: {}, at: 0, stage: "all", side: "all", mkt: "all", tfq: "all", q: "", show: 40, timer: null, seen: null, fresh: new Set() };
 
 function mtf(r) {
@@ -416,7 +427,7 @@ function paint() {
 async function load() {
   let wait = 30000;
   try {
-    const r = await fetch("/tl_api.php?r=hero", { cache: "no-store" }); const j = await r.json();
+    const r = await fetch("/tl_api.php?r=" + (HM === "intraday" ? "hybrid" : (HE ? "hero200" : "hero")), { cache: "no-store" }); const j = await r.json();
     if (j.error) throw new Error(j.error);
     const now = new Set((j.rows || []).filter(x => x.stage >= 4 && x.live).map(x => x.symbol + ":" + x.stage + ":" + x.bar_t));
     L.fresh = new Set();
@@ -431,6 +442,17 @@ function tabs(id, key, attr) {
   const el = $(id);
   el.addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; L[key] = b.dataset[attr]; [...el.children].forEach(x => x.classList.toggle("on", x === b)); L.show = 40; paint(); });
 }
+function hmSet() {
+  [...$("#hyMode").children].forEach(b => b.classList.toggle("on", b.dataset.o === HM));
+  $("#hyEma").checked = HE && HM === "swing"; $("#hyEmaL").style.opacity = HM === "swing" ? 1 : .4; $("#hyEma").disabled = HM !== "swing";
+  document.querySelectorAll(".hm-intra").forEach(b => b.hidden = HM !== "intraday");
+  const u = new URL(location.href); if (HM === "intraday") u.searchParams.set("mode", "intraday"); else u.searchParams.delete("mode");
+  if (HE && HM === "swing") u.searchParams.set("ema", "1"); else u.searchParams.delete("ema"); if (!u.searchParams.get("s")) history.replaceState(null, "", u);
+  try { localStorage.setItem("cp_hero_mode", HM); } catch (e) {}
+}
+$("#hyMode").addEventListener("click", e => { const b = e.target.closest("button"); if (!b || b.dataset.o === HM) return; HM = b.dataset.o; if (HM === "intraday") HE = false; hmSet(); L.rows = []; L.seen = null; L.show = 40; $("#hyList").innerHTML = '<p class="dd-empty">Loading…</p>'; load(); });
+$("#hyEma").addEventListener("change", e => { HE = e.target.checked; hmSet(); L.rows = []; L.seen = null; L.show = 40; load(); });
+hmSet();
 tabs("#hyStage", "stage", "s"); tabs("#hySide", "side", "d"); tabs("#hyMkt", "mkt", "m"); tabs("#hyTf", "tfq", "t");
 $("#hyQ").addEventListener("input", e => { L.q = e.target.value.trim().toLowerCase(); L.show = 40; paint(); });
 $("#hyMore").addEventListener("click", () => { L.show += 40; paint(); });
