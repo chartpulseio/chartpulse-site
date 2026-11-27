@@ -42,7 +42,7 @@ $U = [
     ['/ema-strategies/scanner.php?id=5-vwap-ema-combo', $mt('ema-strategies/includes/strategies.php')],
     ['/features/', $mt('features/index.html')],
     ['/ai-backtesting/', $mt('ai-backtesting.html')],
-    ['/backtesting/', $mt('pro-backtesting.html')],
+    ['/backtesting/', $mt('backtesting.html')],
     ['/desk/', $mt('desk.html')],
     ['/news.html', $mt('news.html')],
     ['/insights.html', $mt('insights.html')],
