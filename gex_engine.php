@@ -479,8 +479,8 @@ function gex_last(string $sym): ?array {
  * The Next Candle job keeps only its last 300 guesses, so this runs from the worker every few minutes.
  */
 function gex_nc_join(): int {
-    if (!function_exists('ml_dir')) require_once __DIR__ . '/torus_ml.php';
-    $nc = t_read_json(ml_dir() . '/nc.json', null); $hist = $nc['state']['hist'] ?? []; if (!$hist) return 0;
+    $mf = (defined('ML_DIR') ? ML_DIR : T_DATA . '/ml') . '/nc.json';
+    $nc = is_file($mf) ? json_decode((string)file_get_contents($mf), true) : null; $hist = $nc['state']['hist'] ?? []; if (!$hist) return 0;
     $pf = GEX_DIR . '/nc_join_last.txt'; $last = (int)@file_get_contents($pf); $max = $last; $n = 0; $reg = [];
     foreach ([date('Ym'), date('Ym', strtotime('-1 month'))] as $ym) { $f = GEX_DIR . "/regime_$ym.jsonl"; if (!is_file($f)) continue;
         $sz = filesize($f); $h = fopen($f, 'r'); if ($sz > 3000000) fseek($h, $sz - 3000000);
