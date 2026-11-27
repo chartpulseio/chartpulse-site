@@ -100,7 +100,7 @@ seo_head($title, $desc, $path, [
   <p>Full detail: <a href="<?= seo_e(seo_url($sym)) ?>"><?= seo_e($name) ?> trend bias and news</a><?php if ($gx) { ?> · <a href="/gex/<?= $gx ?>/"><?= seo_e($name) ?> gamma exposure (GEX)</a><?php } ?></p>
 
   <h2>Trading <?= seo_e($name) ?>: what to know</h2>
-  <p><?= seo_e($name) ?> is a <?= seo_e($C[0]) ?> that trades <?= seo_e($C[1]) ?>. <?= seo_e($C[3]) ?> For most traders, <?= seo_e($C[2]) ?> charts give the best balance of signal and noise. On ChartPulse: <?= seo_e($C[4]) ?>.</p>
+  <p><?= seo_e($name) ?> is <?= preg_match("/^[aeiou]/i", $C[0]) ? "an" : "a" ?> <?= seo_e($C[0]) ?> that trades <?= seo_e($C[1]) ?>. <?= seo_e($C[3]) ?> For most traders, <?= seo_e($C[2]) ?> charts give the best balance of signal and noise. On ChartPulse: <?= seo_e($C[4]) ?>.</p>
 
   <h2>How to use <?= seo_e($tool) ?> on <?= seo_e($name) ?></h2>
   <ol>
