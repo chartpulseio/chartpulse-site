@@ -6,7 +6,8 @@
  * Marketing pages only: they link to the live tools and change no scanner (Day Drive files untouched).
  */
 declare(strict_types=1);
-require __DIR__ . '/torus_seo.php';
+require_once __DIR__ . '/torus_seo.php';
+require_once __DIR__ . '/pseo.php';
 
 // slug => [title<60, desc<155, H1, intro, [[h2, p], ...], [steps], [key features], [[q, a], ...], [tool name, url], [learn slugs], category]
 const FEAT = [
@@ -220,6 +221,9 @@ seo_head($t, $d, "/features/$slug/", [
 <?php foreach ($steps as $s) { ?>    <li><?= seo_e($s) ?></li>
 <?php } ?>
   </ol>
+<?php if (isset(PT[$slug])) { ?>  <h2><?= seo_e($tool[0]) ?> by market</h2>
+  <p><?php $o = []; foreach (PM as $s => $x) $o[] = '<a href="/features/' . $slug . '/' . $s . '/">' . seo_e($x[1]) . '</a>'; echo implode(' · ', $o); ?></p>
+<?php } ?>
   <h2>Markets covered</h2>
   <p>US stocks and ETFs (SPY, QQQ, AAPL, NVDA, TSLA), Indian markets (NIFTY, BANKNIFTY, FINNIFTY, NSE stocks), forex majors, Gold (XAUUSD), Silver, oil, Bitcoin, Ethereum and leading altcoins. See live bias pages in the <a href="/bias/">market directory</a> and gamma levels on the <a href="/gex/">GEX hub</a>.</p>
   <h2>Frequently asked questions</h2>
