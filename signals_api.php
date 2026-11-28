@@ -38,41 +38,47 @@ function sa_mt5(string $s): string {
 function sa_halt(): bool { return is_file(SA_DIR . '/halt'); }
 
 function sa_signals(): array {
-    $now = t_now(); $ck = SA_DIR . '/_signals1.json'; $c = t_read_json($ck, null);
+    $now = t_now(); $ck = SA_DIR . '/_signals2.json'; $c = t_read_json($ck, null);
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 45) return $c;
     $scan = t_scan_load()['rows'] ?? [];
     $live = fn(string $s) => t_status($s, $scan[$s] ?? null, $now)['live'];
     $S = [];   // sym|side => signal
-    $add = function (string $sym, string $side, string $src, ?array $zone, string $stage) use (&$S, $live) {
+    $add = function (string $sym, string $side, string $src, ?array $zone, string $stage, ?int $D = null, ?int $W = null) use (&$S, $live) {
         if (!$zone || !$live($sym)) return;
         $lo = (float)min($zone); $hi = (float)max($zone); if ($lo <= 0) return;
         $k = "$sym|$side";
         if (!isset($S[$k])) $S[$k] = ['symbol' => $sym, 'mt5' => sa_mt5($sym), 'side' => $side, 'zone' => [$lo, $hi], 'sources' => [], 'stages' => []];
         $S[$k]['sources'][] = $src; $S[$k]['stages'][$src] = $stage;
+        if ($D !== null && $W !== null && !isset($S[$k]['dw'])) $S[$k]['dw'] = [$D, $W];
         if ($src === 'confluence') $S[$k]['zone'] = [$lo, $hi];   // the confluence zone is the most precise one
     };
     $sd = fn($b) => in_array($b, ['PUT', 'DOWN', 'SELL'], true) ? 'SELL' : 'BUY';
     // Confluence: rejection or GO
-    try { require_once __DIR__ . '/cf_engine.php'; foreach (cf_scan()['rows'] ?? [] as $r) if ((int)($r['stage'] ?? 0) >= 4 && !empty($r['zone'])) $add($r['symbol'], $sd($r['bias']), 'confluence', $r['zone'], (string)$r['stage_name']); } catch (Throwable $e) {}
+    try { require_once __DIR__ . '/cf_engine.php'; foreach (cf_scan()['rows'] ?? [] as $r) if ((int)($r['stage'] ?? 0) >= 4 && !empty($r['zone'])) $add($r['symbol'], $sd($r['bias']), 'confluence', $r['zone'], (string)$r['stage_name'], (int)($r['mtf']['d']['1D'] ?? 0), (int)($r['mtf']['d']['1W'] ?? 0)); } catch (Throwable $e) {}
     // God-father v2: A+ / A
     try { require_once __DIR__ . '/gf2_engine.php'; foreach (gf2_scan()['rows'] ?? [] as $r) if (in_array($r['grade'] ?? '', ['A+', 'A'], true)) {
         $z = $r['zone'] ?? null; if (!$z && !empty($r['plan']['entry']) && !empty($r['plan']['stop'])) $z = [(float)$r['plan']['entry'], (float)$r['plan']['stop']];
-        $add($r['symbol'], $sd($r['side']), 'godfather', $z, (string)$r['grade']); } } catch (Throwable $e) {}
+        $gs = $sd($r['side']) === 'SELL' ? -1 : 1; $add($r['symbol'], $sd($r['side']), 'godfather', $z, (string)$r['grade'], $gs, $gs); } } catch (Throwable $e) {}
     // Day Drive: read-only from its own cache file (the Day Drive engine and its files are not loaded or changed)
     $dd = t_read_json(T_DATA . '/daydrive/rows.json', []);
     if (is_array($dd)) foreach ($dd as $sym => $r) { $b = is_array($r) ? ($r['bounce'] ?? null) : null;
         if (!is_array($b) || !in_array($b['status'] ?? '', ['BOUNCE GO', 'BOUNCE READY'], true) || empty($b['d_line'])) continue;
         if ($now - (int)($r['at'] ?? $now) > 1800) continue;
-        $add((string)$sym, $sd($b['side'] ?? ''), 'daydrive', [(float)$b['d_line'], (float)($b['extreme'] ?? $b['d_line'])], (string)$b['status']); }
+        $tr = $b['trends'] ?? []; $tv = fn($x) => $x === 'up' ? 1 : ($x === 'down' ? -1 : 0);
+        $add((string)$sym, $sd($b['side'] ?? ''), 'daydrive', [(float)$b['d_line'], (float)($b['extreme'] ?? $b['d_line'])], (string)$b['status'], isset($tr['1D']) ? $tv($tr['1D']) : null, isset($tr['1W']) ? $tv($tr['1W']) : null); }
     // Reversal: turning / snapping
     try { require_once __DIR__ . '/rb_engine.php'; foreach (rb_scan()['rows'] ?? [] as $r) if ((int)($r['stage'] ?? 0) >= 2 && !empty($r['ext'])) {
-        $px = (float)($r['price'] ?? 0); $add($r['symbol'], $sd($r['side'] ?? ''), 'reversal', [(float)$r['ext'], $px ?: (float)$r['ext']], (string)$r['stage_name']); } } catch (Throwable $e) {}
+        $px = (float)($r['price'] ?? 0); $add($r['symbol'], $sd($r['side'] ?? ''), 'reversal', [(float)$r['ext'], $px ?: (float)$r['ext']], (string)$r['stage_name'], isset($r['mtf']['1D']) ? (int)$r['mtf']['1D'] : null, isset($r['mtf']['1W']) ? (int)$r['mtf']['1W'] : null); } } catch (Throwable $e) {}
     // News: high impact in the last 60 minutes blocks new entries on that market
     $block = [];
     try { require_once __DIR__ . '/news_scan.php'; foreach (ns_scan()['rows'] ?? [] as $r) if (($r['imp'] ?? '') === 'high' && $now - (int)($r['last'] ?? 0) <= 3600) $block[$r['symbol']] = true; } catch (Throwable $e) {}
     $gexOk = is_file(__DIR__ . '/gex_engine.php'); if ($gexOk) require_once __DIR__ . '/gex_engine.php';
     $out = [];
     foreach ($S as $x) {
+        // owner, 28 Nov 2026: trade only with the HTF bias -- Daily AND Weekly both bearish = SELL only, both bullish = BUY only
+        $dw = $x['dw'] ?? null; $want = $x['side'] === 'SELL' ? -1 : 1;
+        if (!$dw || (int)$dw[0] !== $want || (int)$dw[1] !== $want) continue;
+        $x['bias'] = $want < 0 ? 'BEAR (D+W)' : 'BULL (D+W)'; unset($x['dw']);
         $x['sources'] = array_values(array_unique($x['sources'])); $x['news_block'] = isset($block[$x['symbol']]);
         $x['gex'] = null; if ($gexOk) { try { $g = gex_label_for($x['symbol']); if ($g) $x['gex'] = ['regime' => ((float)($g['rg'] ?? 0)) > 0 ? 'positive' : 'negative', 'call_wall' => $g['cw'] ?? null, 'put_wall' => $g['pw'] ?? null, 'flip' => $g['flip'] ?? null]; } catch (Throwable $e) {} }
         $x['id'] = substr(sha1($x['symbol'] . '|' . $x['side'] . '|' . gmdate('Y-m-d', $now) . '|' . round($x['zone'][0], 4)), 0, 12);

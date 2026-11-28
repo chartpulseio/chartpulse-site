@@ -1,5 +1,7 @@
 //+------------------------------------------------------------------+
-//| ChartPulse_AutoEntry.mq5   v2.0                                    |
+//| ChartPulse_AutoEntry.mq5   v3.0  "HTF Day-Extreme Reversal"        |
+//| Bias: Daily+Weekly (server). Bear = SELL from day high, Bull = BUY |
+//| from day low, at a ChartPulse zone, on a confirmed candle pattern. |
 //| Auto ENTRY from ChartPulse signals + candle-pattern confirmation. |
 //| Scans M5, M10, M15, M30 on every signal symbol in the background. |
 //| One position per symbol (no duplicates across timeframes).        |
@@ -14,7 +16,7 @@
 //+------------------------------------------------------------------+
 #property copyright "ChartPulse"
 #property link      "https://chartpulse.io"
-#property version   "2.00"
+#property version   "3.00"
 #property strict
 #include <Trade\Trade.mqh>
 
@@ -41,6 +43,8 @@ input bool   UseEngulfing    = true;
 input bool   UseStar         = true;
 input bool   UseDoubleDenial = true;
 input bool   Use3BarPlay     = true;
+input bool   DayExtremeOnly  = true;                            // SELL only near today's HIGH, BUY only near today's LOW
+input double DayExtremeATR   = 0.3;                             // "near" = pattern extreme within this x daily ATR of the day high/low
 input int    RolloverSkipMin = 15;                              // no entries this many minutes either side of server midnight
 input string SymbolSuffix    = "";                              // broker suffix, e.g. ".m" or "pro"
 input string SymbolMap       = "";                              // overrides, e.g. "XAUUSD=GOLD,US500=SPX500"
@@ -229,6 +233,13 @@ bool TryEntry(const string sym, const string side, const string id, double zlo, 
       double a = ATR(sym, tf); if (a <= 0) continue;
       double pstop = 0; string pat = Pattern(r, dir, a, zlo, zhi, A, tick, pstop);
       if (pat == "") continue;
+      string tfn0 = TfName(tf);
+      if (DayExtremeOnly) {                                                                // bear: sell from the day high, bull: buy from the day low
+         double dh = iHigh(sym, PERIOD_D1, 0), dl = iLow(sym, PERIOD_D1, 0);
+         double px = dir < 0 ? MathMax(r[1].high, MathMax(r[2].high, r[3].high)) : MathMin(r[1].low, MathMin(r[2].low, r[3].low));
+         bool nearX = dir < 0 ? px >= dh - DayExtremeATR * A : px <= dl + DayExtremeATR * A;
+         if (dh <= 0 || dl <= 0 || !nearX) { Log(sym, tfn0, side, pat, "skip not at day " + (dir < 0 ? "high" : "low"), 0, 0, 0); continue; }
+      }
       double ask = SymbolInfoDouble(sym, SYMBOL_ASK), bid = SymbolInfoDouble(sym, SYMBOL_BID), spr = ask - bid;
       double entry = dir > 0 ? ask : bid;
       int dg = (int)SymbolInfoInteger(sym, SYMBOL_DIGITS);
@@ -276,7 +287,7 @@ void Process(const string o) {
 
 int OnInit() {
    if (StringLen(ApiKey) < 32) { Alert("ChartPulse: paste your API key (chartpulse.io/api/) into the ApiKey input."); return INIT_PARAMETERS_INCORRECT; }
-   EventSetTimer(10); Print("ChartPulse Auto-Entry v2 started. Scanning M5/M10/M15/M30, one position per symbol.");
+   EventSetTimer(10); Print("ChartPulse Auto-Entry v3 started: D+W bias, sell day high / buy day low, M5-M30 patterns, one position per symbol.");
    return INIT_SUCCEEDED;
 }
 void OnDeinit(const int reason) { EventKillTimer(); for (int i = 0; i < ArraySize(g_hv); i++) IndicatorRelease(g_hv[i]); }
