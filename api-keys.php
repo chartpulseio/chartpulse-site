@@ -20,7 +20,7 @@ seo_head('ChartPulse API & MT5 Auto-Entry EA | ChartPulse', 'ChartPulse signals 
   </ol>
   <h2>What it does</h2>
   <ul>
-    <li>Reads live setups (Confluence, God-father A+/A, Day Drive, Reversal) for markets that are open, and keeps only those in the Daily + Weekly trend: bearish = SELL from the day high, bullish = BUY from the day low.</li>
+    <li>Reads live setups (Confluence, God-father A+/A, Day Drive, Reversal) for markets that are open, Confluence and God-father setups must follow the Daily + Weekly trend (bearish = SELL, bullish = BUY); Day Drive and Reversal setups are reversals and can go against it. Every entry is a SELL near the day high or a BUY near the day low.</li>
     <li>Watches M5, M10, M15 and M30 on every setup symbol. Enters only when a candle pattern confirms at the zone: Double Denial, Morning/Evening Star, Engulfing, Pin Bar, 3-Bar Play.</li>
     <li>One position per symbol, whatever the timeframe; a cooldown stops re-entries. High-impact news and rollover time are skipped.</li>
     <li>Stop-loss beyond the pattern plus a buffer; no take-profit, you close the trade yourself.</li>
