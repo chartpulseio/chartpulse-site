@@ -24,6 +24,8 @@ Owner decision 27 Nov 2026, 21:43 IST: the old God-father (gf_engine.php, gf_api
 
 Owner-approved 27 Nov 2026, 23:00 IST: day-drive.html menu script version only (sitehead.js v=23 -> v=25) so the removed News & Impact menu item disappears there too. No scanner change.
 
+Owner request 28 Nov 2026, 15:02 IST: MT5 auto-entry API (signals_api.php) reads Day Drive BOUNCE rows READ-ONLY from cp_data/daydrive/rows.json. No Day Drive file changed. List views of Trendline Hero/Trend Lines filter closed markets in tl_api.php only (not tl_engine), so bp_engine inputs are unchanged.
+
 These files must stay byte-identical to the commit that made that change unless the owner explicitly asks for a Day Drive change:
 
     dd_engine.php    65292eb5e406...
