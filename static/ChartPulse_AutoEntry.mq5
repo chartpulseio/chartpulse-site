@@ -30,8 +30,8 @@ input bool   TF_M30          = true;
 input double BufferATR       = 0.25;                            // SL buffer = BufferATR x ATR(14) of the pattern TF + spread
 input double MaxStopATRDaily = 0.6;                             // skip if stop is wider than this x daily ATR
 input double MaxSpreadATR    = 0.25;                            // skip if spread > this x ATR(14) of the pattern TF
-input int    MaxTradesPerDay = 3;
-input int    MaxOpenTrades   = 3;
+input int    MaxTradesPerDay = 0;                               // 0 = no limit
+input int    MaxOpenTrades   = 0;                               // 0 = no limit (still one per symbol)
 input int    CooldownMin     = 60;                              // no new trade on the same symbol for this long after an entry
 input int    MinSources      = 1;                               // min ChartPulse scanners agreeing
 input bool   UseConfluence   = true;
@@ -279,9 +279,9 @@ void Process(const string o) {
    if (UseReversal   && StringFind(o, "\"reversal\"")   >= 0) src++;
    if (src < MathMax(1, MinSources) || GlobalVariableCheck("CP_id_" + id)) return;
    string sym = MapSymbol(api); if (!SymbolSelect(sym, true)) return;
-   int total; if (Positions(sym, total) > 0 || total >= MaxOpenTrades) return;            // one position per symbol, all timeframes
+   int total; if (Positions(sym, total) > 0 || (MaxOpenTrades > 0 && total >= MaxOpenTrades)) return;            // one position per symbol, all timeframes
    if (GlobalVariableCheck("CP_cool_" + sym) && TimeCurrent() - (datetime)GlobalVariableGet("CP_cool_" + sym) < CooldownMin * 60) return;
-   if (GlobalVariableGet(DayKey()) >= MaxTradesPerDay) return;
+   if (MaxTradesPerDay > 0 && GlobalVariableGet(DayKey()) >= MaxTradesPerDay) return;
    TryEntry(sym, side, id, zlo, zhi);
 }
 
