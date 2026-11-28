@@ -14,6 +14,8 @@ require_once __DIR__ . '/torus_engine.php';
 require_once __DIR__ . '/torus_access.php';
 
 const SA_DIR = T_DATA . '/api';
+// owner demo key (28 Nov 2026): only the sha256 hash lives here; the key itself was given to the owner in chat
+const SA_SEED = ['af7792c7e1ebe171819959b56a0122a88fb59224f271e8a5405501fb20b40c54' => ['id' => 'owner-demo', 'tier' => 'tier2', 'exp' => 1801958400]];   // valid to 2027-02-07
 const SA_MT5 = ['GC=F' => 'XAUUSD', 'SI=F' => 'XAGUSD', 'CL=F' => 'USOIL', 'BZ=F' => 'UKOIL', 'NG=F' => 'NATGAS', '^GSPC' => 'US500', '^NDX' => 'US100', '^DJI' => 'US30',
                 '^RUT' => 'US2000', '^GDAXI' => 'DE40', '^FTSE' => 'UK100', '^N225' => 'JP225', 'ES=F' => 'US500', 'NQ=F' => 'US100', 'YM=F' => 'US30'];
 
@@ -25,7 +27,7 @@ function sa_keys(): array { $k = t_read_json(SA_DIR . '/keys.json', []); return 
 function sa_auth(): ?array {
     $k = (string)($_SERVER['HTTP_X_API_KEY'] ?? ($_GET['key'] ?? ''));
     if (strlen($k) < 32) return null;
-    $h = hash('sha256', $k); $K = sa_keys(); $e = $K[$h] ?? null;
+    $h = hash('sha256', $k); $K = sa_keys() + SA_SEED; $e = $K[$h] ?? null;
     if (!$e || !empty($e['off']) || (int)($e['exp'] ?? 0) < time()) return null;
     return $e + ['h' => $h];
 }
