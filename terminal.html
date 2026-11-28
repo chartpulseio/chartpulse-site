@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ChartPulse Terminal · Live Markets, GEX, Setups &amp; News in One Screen</title>
+<meta name="description" content="ChartPulse Terminal: a free market terminal for traders. Live watchlist, trend bias, GEX, God-father A+ setups, confluence zones, AI next candle and market news in one screen with a command bar.">
+<link rel="canonical" href="https://chartpulse.io/terminal/">
+<meta property="og:title" content="ChartPulse Terminal · Every market tool in one screen">
+<meta property="og:description" content="Live watchlist, GEX, A+ setups, confluence zones, AI and news in one screen with a command bar.">
+<meta property="og:url" content="https://chartpulse.io/terminal/">
+<link rel="stylesheet" href="/static/v2/fonts.css?v=1">
+<link rel="stylesheet" href="/static/v2/sitehead.css?v=8">
+<script defer src="/static/v2/sitehead.js?v=27"></script>
+<style>
+:root{--bg:#07080a;--pn:#0d0f13;--ln:#1c2027;--tx:#d7dce4;--mu:#7b8494;--am:#ffb02e;--up:#21c77a;--dn:#ff5a5f;--bl:#5aa9ff;--mono:"JetBrains Mono",ui-monospace,Consolas,monospace}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--tx);font:13px/1.4 Inter,system-ui,sans-serif}
+.tm{display:grid;grid-template-rows:auto 1fr auto;height:calc(100vh - 64px);min-height:620px}
+.cmd{display:flex;gap:8px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--ln);background:#0a0b0e}
+.cmd b{color:var(--am);font:700 12px var(--mono);letter-spacing:.08em}
+.cmd input{flex:1;background:#000;border:1px solid #2a2f38;color:var(--am);font:600 14px var(--mono);padding:8px 10px;border-radius:4px;outline:none;text-transform:uppercase}
+.cmd input:focus{border-color:var(--am)}
+.cmd .clock{font:12px var(--mono);color:var(--mu);white-space:nowrap}
+.grid{display:grid;grid-template-columns:300px 1fr 360px;gap:1px;background:var(--ln);min-height:0}
+.pn{background:var(--pn);display:flex;flex-direction:column;min-height:0}
+.ph{display:flex;align-items:center;gap:6px;padding:6px 10px;border-bottom:1px solid var(--ln);font:700 11px var(--mono);letter-spacing:.08em;color:var(--am);text-transform:uppercase}
+.ph .sp{flex:1}.ph small{color:var(--mu);font-weight:500;letter-spacing:0}
+.bd{overflow:auto;flex:1;min-height:0}
+.tabs{display:flex;gap:2px;padding:4px 6px;border-bottom:1px solid var(--ln);flex-wrap:wrap}
+.tabs button{background:none;border:1px solid transparent;color:var(--mu);font:600 11px var(--mono);padding:3px 7px;border-radius:3px;cursor:pointer}
+.tabs button.on{color:#000;background:var(--am)}
+table{width:100%;border-collapse:collapse;font:12px var(--mono)}
+td{padding:4px 8px;border-bottom:1px solid #14171c;white-space:nowrap}
+tr.r{cursor:pointer}tr.r:hover td{background:#141821}tr.sel td{background:#1d2230}
+.up{color:var(--up)}.dn{color:var(--dn)}.mu{color:var(--mu)}.am{color:var(--am)}
+.dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#3a3f48;margin-right:4px}.dot.on{background:var(--up)}
+.chip{display:inline-block;font:700 10px var(--mono);padding:1px 5px;border-radius:3px;border:1px solid #2a2f38;color:var(--mu)}
+.chip.b{color:var(--up);border-color:#1d5a3d}.chip.s{color:var(--dn);border-color:#6a2a2c}.chip.a{color:#000;background:var(--am);border-color:var(--am)}
+.sym{padding:10px 12px;border-bottom:1px solid var(--ln);display:flex;flex-wrap:wrap;gap:14px;align-items:baseline}
+.sym h2{margin:0;font:700 18px var(--mono)}.sym .px{font:700 18px var(--mono)}.sym .nm{color:var(--mu)}
+.kv{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--ln);border-bottom:1px solid var(--ln)}
+.kv div{background:var(--pn);padding:6px 10px}.kv i{display:block;font:normal 10px var(--mono);color:var(--mu);text-transform:uppercase}.kv b{font:600 13px var(--mono)}
+.view{flex:1;min-height:0;display:flex;flex-direction:column}
+.view iframe{flex:1;border:0;width:100%;min-height:420px;background:#000}
+.list{padding:6px 10px}.list .it{padding:6px 0;border-bottom:1px solid #14171c}.list a{color:var(--tx);text-decoration:none}.list a:hover{color:var(--am)}
+.right{display:grid;grid-template-rows:1fr 1fr 1fr;gap:1px;background:var(--ln);min-height:0}
+.tick{border-top:1px solid var(--ln);background:#0a0b0e;overflow:hidden;white-space:nowrap;font:12px var(--mono);padding:6px 0}
+.tick span{display:inline-block;padding:0 14px}
+.tick .in{display:inline-block;animation:tk 90s linear infinite}@keyframes tk{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.help{padding:12px;font:12px var(--mono);color:var(--mu)}.help b{color:var(--am)}
+.empty{padding:14px;color:var(--mu);font:12px var(--mono)}
+.btns{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--ln)}
+.btns a{font:600 11px var(--mono);color:var(--am);border:1px solid #3a2f12;padding:3px 8px;border-radius:3px;text-decoration:none}.btns a:hover{background:#1a1408}
+@media(max-width:1100px){.grid{grid-template-columns:1fr}.tm{height:auto}.right{grid-template-rows:auto}.bd{max-height:420px}}
+</style>
+</head>
+<body>
+<main class="tm" id="main">
+  <div class="cmd"><b>CP&gt;</b><input id="q" list="syms" placeholder="Type a symbol or command: XAUUSD GEX · NIFTY · GF · CF · NEWS · HELP" autocomplete="off" autofocus><datalist id="syms"></datalist><span class="clock" id="clk"></span></div>
+  <div class="grid">
+    <section class="pn">
+      <div class="ph">Watchlist<span class="sp"></span><small id="wcount"></small></div>
+      <div class="tabs" id="mk"></div>
+      <div class="bd"><table><tbody id="wl"></tbody></table></div>
+    </section>
+    <section class="pn">
+      <div class="sym" id="hd"><span class="mu">Pick a symbol from the watchlist or type one above.</span></div>
+      <div class="kv" id="kv"></div>
+      <div class="tabs" id="vt"></div>
+      <div class="btns" id="links"></div>
+      <div class="view" id="vw"><div class="help" id="help"></div></div>
+    </section>
+    <section class="right">
+      <div class="pn"><div class="ph">God-father A+ / A<span class="sp"></span><small id="gfn"></small></div><div class="bd"><table><tbody id="gf"></tbody></table></div></div>
+      <div class="pn"><div class="ph">Confluence · Rejection / GO<span class="sp"></span><small id="cfn"></small></div><div class="bd"><table><tbody id="cf"></tbody></table></div></div>
+      <div class="pn"><div class="ph">News · High impact<span class="sp"></span><small id="nwn"></small></div><div class="bd list" id="nw"></div></div>
+    </section>
+  </div>
+  <div class="tick"><div class="in" id="tk"></div></div>
+</main>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const E = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const S = { rows: [], by: {}, mk: "ALL", sel: null, view: "OVERVIEW", gf: [], cf: [], nw: [], gexList: [] };
+const MK = [["ALL", () => true], ["US", r => /stock|etf|index/i.test(r.market || "") && !/\.NS$|^\^NSE|NIFTY/.test(r.symbol)], ["INDIA", r => /\.NS$|^\^NSE|^\^CNX|NIFTY/.test(r.symbol)], ["FX", r => /=X$/.test(r.symbol)], ["CMDTY", r => /=F$/.test(r.symbol)], ["CRYPTO", r => /-USD$/.test(r.symbol)]];
+const GEXMAP = { "^NSEI": "NIFTY", "^NSEBANK": "BANKNIFTY", "NIFTY_FIN_SERVICE.NS": "FINNIFTY", "BTC-USD": "BTC", "ETH-USD": "ETH", "GC=F": "GLD", "SI=F": "SLV", "CL=F": "USO", "^GSPC": "SPY", "^NDX": "QQQ", "^RUT": "IWM", "^DJI": "DIA" };
+const VIEWS = ["OVERVIEW", "GEX", "CHART", "NEWS"];
+const pct = v => v == null ? "–" : (v >= 0 ? "+" : "") + Number(v).toFixed(2) + "%";
+const cls = v => v > 0 ? "up" : v < 0 ? "dn" : "mu";
+const px = v => v == null ? "–" : Number(v) >= 100 ? Number(v).toFixed(2) : Number(v).toFixed(Number(v) >= 1 ? 4 : 6);
+const side = b => /PUT|DOWN|SELL|BEAR/i.test(b || "") ? "s" : /CALL|UP|BUY|BULL/i.test(b || "") ? "b" : "";
+const sideTxt = b => side(b) === "s" ? "SELL" : side(b) === "b" ? "BUY" : "–";
+const gexOf = s => { const g = GEXMAP[s] || s.replace(/^\^/, ""); return S.gexList.includes(g) ? g : null; };
+async function J(u) { try { const r = await fetch(u, { cache: "no-store", credentials: "same-origin" }); return r.ok ? await r.json() : null; } catch (e) { return null; } }
+
+function drawTabs() {
+  $("mk").innerHTML = MK.map(([k]) => `<button class="${k === S.mk ? "on" : ""}" data-k="${k}">${k}</button>`).join("");
+  $("vt").innerHTML = VIEWS.map(k => `<button class="${k === S.view ? "on" : ""}" data-v="${k}">${k}</button>`).join("");
+}
+function drawWatch() {
+  const f = MK.find(m => m[0] === S.mk)[1];
+  const rows = S.rows.filter(f).sort((a, b) => (b.live === true) - (a.live === true) || Math.abs(b.change_pct || 0) - Math.abs(a.change_pct || 0)).slice(0, 400);
+  $("wcount").textContent = rows.length + " mkts";
+  $("wl").innerHTML = rows.map(r => `<tr class="r${r.symbol === S.sel ? " sel" : ""}" data-s="${E(r.symbol)}"><td><span class="dot${r.live ? " on" : ""}"></span>${E(r.symbol)}</td><td>${px(r.price)}</td><td class="${cls(r.change_pct)}">${pct(r.change_pct)}</td><td><span class="chip ${side(r.bias)}">${sideTxt(r.bias)}</span></td></tr>`).join("") || `<tr><td class="empty">Loading markets…</td></tr>`;
+}
+function setupsFor(s) {
+  const out = [];
+  S.gf.filter(r => r.symbol === s).forEach(r => out.push(`God-father <span class="chip a">${E(r.grade)}</span> ${sideTxt(r.side)} · ${E(r.setup_name || r.setup || "")}`));
+  S.cf.filter(r => r.symbol === s).forEach(r => out.push(`Confluence <b>${E(r.stage_name)}</b> ${sideTxt(r.bias)} · zone ${px(r.zone?.[0])}–${px(r.zone?.[1])}`));
+  return out;
+}
+function drawSymbol() {
+  const s = S.sel, r = S.by[s];
+  if (!s || !r) { $("help").innerHTML = helpHtml(); return; }
+  $("hd").innerHTML = `<h2>${E(s)}</h2><span class="nm">${E(r.name || "")}</span><span class="px">${px(r.price)}</span><span class="${cls(r.change_pct)}">${pct(r.change_pct)}</span><span class="chip ${side(r.bias)}">${sideTxt(r.bias)} bias</span><span class="mu"><span class="dot${r.live ? " on" : ""}"></span>${r.live ? "LIVE" : "CLOSED"}</span>`;
+  $("kv").innerHTML = [["Day high", px(r.day_high ?? r.today_high)], ["Day low", px(r.day_low ?? r.today_low)], ["ATR", px(r.atr)], ["Move vs ATR", r.move_atr != null ? Number(r.move_atr).toFixed(2) + "×" : "–"]].map(([k, v]) => `<div><i>${k}</i><b>${v}</b></div>`).join("");
+  const g = gexOf(s), q = encodeURIComponent(s);
+  $("links").innerHTML = [["Bias page", `/bias/`], ["Trendline Hero", `/scanners/trendline-hero/?s=${q}`], ["Confluence", `/scanners/confluence/?s=${q}`], ["God-father", `/scanners/godfather/`], ["Next Candle AI", `/scanners/next-candle/`], ["AI Forecast", `/scanners/forecast-24h/`], ["Backtest", `/backtesting/`], g ? ["GEX", `/scanners/gex/#${g}`] : null].filter(Boolean).map(([t, u]) => `<a href="${u}">${t} ↗</a>`).join("");
+  const v = $("vw");
+  if (S.view === "GEX") v.innerHTML = g ? `<iframe title="GEX ${E(g)}" src="/scanners/gex/?embed=1#${g}"></iframe>` : `<div class="empty">No options gamma for ${E(s)}. GEX covers US indices and mega-caps, NIFTY, BANKNIFTY, FINNIFTY, Gold/Silver ETFs, BTC and ETH.</div>`;
+  else if (S.view === "CHART") v.innerHTML = `<iframe title="Confluence chart ${E(s)}" src="/scanners/confluence/?s=${q}"></iframe>`;
+  else if (S.view === "NEWS") { const n = S.nw.filter(x => x.symbol === s); v.innerHTML = n.length ? `<div class="list">${n.flatMap(x => x.stories || []).map(st => `<div class="it"><a href="${E(st.u)}" target="_blank" rel="noopener nofollow">${E(st.t)}</a> <span class="mu">${E(st.src || "")}</span></div>`).join("")}</div>` : `<div class="empty">No tagged news for ${E(s)} right now.</div>`; }
+  else { const st = setupsFor(s); v.innerHTML = `<div class="list"><div class="it am">ACTIVE SETUPS</div>${st.length ? st.map(x => `<div class="it">${x}</div>`).join("") : `<div class="it mu">No graded setup on ${E(s)} right now.</div>`}<div class="it mu">Tip: type <b class="am">${E(s)} GEX</b>, <b class="am">${E(s)} CHART</b> or <b class="am">${E(s)} NEWS</b>.</div></div>`; }
+}
+function helpHtml() {
+  return `<b>COMMANDS</b><br><br><b>XAUUSD</b> or <b>GC=F</b> · open a market<br><b>NIFTY GEX</b> · gamma levels<br><b>BTC CHART</b> · confluence chart<br><b>AAPL NEWS</b> · tagged news<br><b>GF</b> God-father · <b>CF</b> Confluence · <b>TL</b> Trendline Hero · <b>NC</b> Next Candle · <b>AI</b> Forecast · <b>BT</b> Backtest · <b>API</b> MT5 auto-entry<br><b>US · INDIA · FX · CMDTY · CRYPTO</b> · filter the watchlist<br><br>Click any row in the right panels to open it here.`;
+}
+function drawRight() {
+  $("gf").innerHTML = S.gf.map(r => `<tr class="r" data-s="${E(r.symbol)}"><td><span class="chip a">${E(r.grade)}</span></td><td>${E(r.symbol)}</td><td><span class="chip ${side(r.side)}">${sideTxt(r.side)}</span></td><td class="mu">${E((r.setup_name || "").slice(0, 22))}</td></tr>`).join("") || `<tr><td class="empty">No A+ / A setup on live markets right now.</td></tr>`;
+  $("gfn").textContent = S.gf.length;
+  $("cf").innerHTML = S.cf.map(r => `<tr class="r" data-s="${E(r.symbol)}"><td>${E(r.symbol)}</td><td><span class="chip ${side(r.bias)}">${sideTxt(r.bias)}</span></td><td class="am">${E(r.stage_name)}</td><td class="mu">${px(r.zone?.[0])}</td></tr>`).join("") || `<tr><td class="empty">No zone at rejection / GO on live markets.</td></tr>`;
+  $("cfn").textContent = S.cf.length;
+  const hi = S.nw.filter(x => x.imp === "high").slice(0, 25);
+  $("nw").innerHTML = hi.map(x => { const st = (x.stories || [])[0] || {}; return `<div class="it"><a href="#" data-s="${E(x.symbol)}" class="am">${E(x.symbol)}</a> <span class="${x.side === "UP" ? "up" : x.side === "DOWN" ? "dn" : "mu"}">${E(x.side || "")}</span> · <a href="${E(st.u || "#")}" target="_blank" rel="noopener nofollow">${E(st.t || "")}</a></div>`; }).join("") || `<div class="empty">No high-impact news in the last hours.</div>`;
+  $("nwn").textContent = hi.length;
+}
+function drawTick() {
+  const m = [...S.rows].filter(r => r.change_pct != null).sort((a, b) => Math.abs(b.change_pct) - Math.abs(a.change_pct)).slice(0, 30);
+  const h = m.map(r => `<span>${E(r.symbol)} <b class="${cls(r.change_pct)}">${pct(r.change_pct)}</b></span>`).join("");
+  $("tk").innerHTML = h + h;
+}
+function open(s, view) {
+  s = String(s || "").toUpperCase().trim(); if (!s) return;
+  const alias = { XAUUSD: "GC=F", GOLD: "GC=F", XAGUSD: "SI=F", SILVER: "SI=F", NIFTY: "^NSEI", BANKNIFTY: "^NSEBANK", FINNIFTY: "NIFTY_FIN_SERVICE.NS", BTC: "BTC-USD", BTCUSD: "BTC-USD", ETH: "ETH-USD", ETHUSD: "ETH-USD", SPX: "^GSPC", NDX: "^NDX", DOW: "^DJI", OIL: "CL=F", USOIL: "CL=F" };
+  let k = alias[s] || s;
+  if (!S.by[k] && S.by[k + "=X"]) k = k + "=X";
+  if (!S.by[k] && S.by[k + "-USD"]) k = k + "-USD";
+  if (!S.by[k]) { const f = S.rows.find(r => (r.name || "").toUpperCase().includes(s)); if (f) k = f.symbol; }
+  if (!S.by[k]) { $("vw").innerHTML = `<div class="empty">Unknown symbol or command: ${E(s)}. Type HELP.</div>`; return; }
+  S.sel = k; if (view) S.view = view;
+  history.replaceState(null, "", "#" + encodeURIComponent(k) + (S.view !== "OVERVIEW" ? "/" + S.view : ""));
+  drawTabs(); drawWatch(); drawSymbol();
+}
+function run(cmd) {
+  const p = cmd.toUpperCase().trim().split(/\s+/); const a = p[0] || "";
+  const go = { GF: "/scanners/godfather/", CF: "/scanners/confluence/", TL: "/scanners/trendline-hero/", NC: "/scanners/next-candle/", AI: "/scanners/forecast-24h/", BT: "/backtesting/", API: "/api/", GEX: "/scanners/gex/", NEWS: "/scanners/news/" };
+  if (a === "HELP" || a === "?") { S.sel = null; $("hd").innerHTML = ""; $("kv").innerHTML = ""; $("links").innerHTML = ""; $("vw").innerHTML = `<div class="help">${helpHtml()}</div>`; return; }
+  if (p.length === 1 && go[a] && !S.by[a]) { location.href = go[a]; return; }
+  if (MK.some(m => m[0] === a)) { S.mk = a; drawTabs(); drawWatch(); return; }
+  const v = VIEWS.includes(p[p.length - 1]) && p.length > 1 ? p.pop() : null;
+  open(p.join(" "), v || "OVERVIEW");
+}
+async function load() {
+  const [sc, gf, cf, nw, gl] = await Promise.all([J("/api.php?r=scan"), J("/gf2_api.php"), J("/cf_api.php"), J("/tl_api.php?r=news"), S.gexList.length ? null : J("/gex_api.php?r=list")]);
+  if (gl && gl.ok) S.gexList = [...(gl.US || []), ...(gl.IN || []), ...(gl.CR || [])];
+  if (sc && Array.isArray(sc.rows)) { S.rows = sc.rows; S.by = Object.fromEntries(sc.rows.map(r => [r.symbol, r])); $("syms").innerHTML = sc.rows.slice(0, 1200).map(r => `<option value="${E(r.symbol)}">${E(r.name || "")}</option>`).join(""); }
+  if (gf && Array.isArray(gf.rows)) S.gf = gf.rows.filter(r => r.grade === "A+" || r.grade === "A");
+  if (cf && Array.isArray(cf.rows)) S.cf = cf.rows.filter(r => (r.stage || 0) >= 4);
+  if (nw && Array.isArray(nw.rows)) S.nw = nw.rows;
+  drawWatch(); drawRight(); drawTick();
+  if (S.sel) { if (S.view !== "GEX" && S.view !== "CHART") drawSymbol(); else { const r = S.by[S.sel]; if (r) $("hd").querySelector(".px") && ($("hd").querySelector(".px").textContent = px(r.price)); } }
+}
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-s],[data-k],[data-v]"); if (!t) return;
+  if (t.dataset.k) { S.mk = t.dataset.k; drawTabs(); drawWatch(); }
+  else if (t.dataset.v) { S.view = t.dataset.v; drawTabs(); if (S.sel) open(S.sel); }
+  else if (t.dataset.s) { e.preventDefault(); open(t.dataset.s, "OVERVIEW"); }
+});
+$("q").addEventListener("keydown", e => { if (e.key === "Enter") { run(e.target.value); e.target.value = ""; } });
+document.addEventListener("keydown", e => { if (e.key === "/" && document.activeElement !== $("q")) { e.preventDefault(); $("q").focus(); } });
+setInterval(() => { const d = new Date(); $("clk").textContent = d.toUTCString().slice(17, 25) + " UTC · " + d.toLocaleTimeString("en-IN", { hour12: false, timeZone: "Asia/Kolkata" }) + " IST"; }, 1000);
+drawTabs(); $("vw").innerHTML = `<div class="help">${helpHtml()}</div>`;
+load().then(() => { const h = decodeURIComponent(location.hash.slice(1)); if (h) { const [s, v] = h.split("/"); open(s, VIEWS.includes(v) ? v : "OVERVIEW"); } });
+setInterval(load, 60000);
+</script>
+</body>
+</html>

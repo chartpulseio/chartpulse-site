@@ -182,6 +182,7 @@ if ($slug === '' || !isset(FEAT[$slug])) {
   <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> <span>/</span> <span>Features</span></nav>
   <h1>Every ChartPulse trading tool</h1>
   <p class="muted">Professional scanners, gamma exposure, AI forecasts and backtesting for stocks, NIFTY, forex, gold and crypto. Free access for a limited time, then $99/month.</p>
+  <p><a class="btn" href="/terminal/">Open ChartPulse Terminal: every tool in one screen →</a></p>
 <?php foreach (feat_kw() as $cat) { ?>  <h2><?= seo_e($cat) ?></h2>
   <ul class="seo-grid">
 <?php foreach (FEAT as $s => $x) if ($x[10] === $cat) { ?>    <li><a href="/features/<?= $s ?>/"><b><?= seo_e($x[2]) ?></b><small><?= seo_e($x[1]) ?></small></a></li>
