@@ -214,3 +214,12 @@ function ta_get_full(string $dir, array $map, int $minBars, array $ids, string $
     if ($lock) fclose($lock);
     return $read() ?? ['sig' => []];
 }
+
+/** owner, 28 Nov 2026: a strategy list shows only markets that are live now (weekend / holiday / closed session hidden). */
+function ta_live_only(array $p): array {
+    if (empty($p['data']) || !ta_boot() || !function_exists('t_status')) return $p;
+    $scan = t_scan_load()['rows'] ?? []; $now = t_now(); $n0 = count($p['data']);
+    $p['data'] = array_values(array_filter($p['data'], fn($r) => t_status((string)($r['symbol'] ?? ''), $scan[$r['symbol'] ?? ''] ?? null, $now)['live']));
+    $p['closed'] = $n0 - count($p['data']); $p['count'] = count($p['data']);
+    return $p;
+}

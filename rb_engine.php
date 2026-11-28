@@ -104,7 +104,7 @@ function rb_scan(): array {
     $TL = []; try { foreach (tl_scan()['rows'] as $r) $TL[$r['symbol']] = $r; } catch (Throwable $e) {}
     $rows = []; $t0 = microtime(true);
     foreach ($T as $sym => $t1) {
-        if (empty($t1['live']) && abs((float)($t1['change_pct'] ?? 0)) <= 0) continue;
+        if (empty($t1['live'])) continue;   // owner, 28 Nov 2026: only live markets are ranked
         try { $r = rb_row($sym, $t1, $SC['rows'][$sym] ?? [], $TL[$sym] ?? null, $now); } catch (Throwable $e) { $r = null; }
         if ($r) $rows[] = $r;
     }
