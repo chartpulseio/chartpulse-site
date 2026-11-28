@@ -7,15 +7,26 @@ seo_head('ChartPulse API & MT5 Auto-Entry EA | ChartPulse', 'ChartPulse signals 
 <main class="page wrap seo" id="main">
   <h1>ChartPulse API &amp; MT5 auto-entry</h1>
   <p>Your API key connects the ChartPulse EA in MetaTrader 5 to live setups from Confluence, God-father (A+/A), Day Drive and Reversal. The EA enters only after a candle pattern confirms at the zone; exit stays manual.</p>
-  <p><button class="btn" id="mk" type="button">Create my API key</button></p>
+  <p><b>Step 1.</b> <button class="btn" id="mk" type="button">Create my API key</button></p>
   <pre id="out" style="white-space:pre-wrap;background:#111116;padding:12px;border-radius:8px;display:none"></pre>
-  <h2>Setup in MT5</h2>
+  <p><b>Step 2.</b> <a class="btn" href="/static/ChartPulse_AutoEntry.mq5" download>Download the MT5 EA</a></p>
+  <h2>Step 3. Add it to MT5 (2 minutes)</h2>
   <ol>
-    <li>Tools → Options → Expert Advisors → tick "Allow WebRequest for listed URL" and add <code>https://chartpulse.io</code>.</li>
-    <li>Copy <code>ChartPulse_AutoEntry.mq5</code> into MQL5/Experts, compile it in MetaEditor.</li>
-    <li>Attach it to any one chart, paste the key in <b>ApiKey</b>, set risk and broker symbol suffix.</li>
-    <li>Run on a demo account first. Creating a new key switches off the old one.</li>
+    <li>In MT5: <b>Tools → Options → Expert Advisors</b> → tick <b>Allow WebRequest for listed URL</b> → add <code>https://chartpulse.io</code> → OK.</li>
+    <li><b>File → Open Data Folder → MQL5 → Experts</b>, paste <code>ChartPulse_AutoEntry.mq5</code> there.</li>
+    <li>In the Navigator press <b>Refresh</b>, double-click the EA (MetaEditor opens) and press <b>Compile</b>.</li>
+    <li>Drag <b>ChartPulse_AutoEntry</b> onto any one chart, paste your key in <b>ApiKey</b>, turn on <b>Algo Trading</b>.</li>
+    <li>If your broker adds a suffix to names (like <code>EURUSD.m</code>), set <b>SymbolSuffix</b>. Different names (like <code>GOLD</code>)? Use <b>SymbolMap</b>: <code>XAUUSD=GOLD</code>.</li>
   </ol>
+  <h2>What it does</h2>
+  <ul>
+    <li>Reads live setups (Confluence, God-father A+/A, Day Drive, Reversal) for markets that are open.</li>
+    <li>Watches M5, M10, M15 and M30 on every setup symbol. Enters only when a candle pattern confirms at the zone: Double Denial, Morning/Evening Star, Engulfing, Pin Bar, 3-Bar Play.</li>
+    <li>One position per symbol, whatever the timeframe; a cooldown stops re-entries. High-impact news and rollover time are skipped.</li>
+    <li>Stop-loss beyond the pattern plus a buffer; no take-profit, you close the trade yourself.</li>
+    <li>Every pattern it finds is logged to <code>MQL5/Files/ChartPulse_log.csv</code>.</li>
+  </ul>
+  <p><b>Start on a demo account.</b> Set <b>TradingEnabled = false</b> to watch without trading.</p>
   <p class="muted">API access needs a paid plan. Not financial advice; automated trading can lose money.</p>
 </main>
 <script>
