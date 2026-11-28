@@ -135,10 +135,10 @@ function paint() {
   $("#kp").innerHTML = [["GO", c[5], "#2ee59d"], ["Rejection", c[4], "#f5c542"], ["Sweep", c[3], "#f59e2c"], ["At zone", c[2], "#4fe3f0"], ["Approaching", c[1], "#7c818c"], ["Markets scanned", L.meta.scanned || 0, "#a35cf0"]]
     .map(([k, v, col]) => `<div style="--k:${col}"><small>${k}</small><b style="color:${col}">${v || 0}</b></div>`).join("");
   let rows = L.rows.filter(r => (L.st === "all" || r.stage === +L.st) && (L.d === "all" || r.bias === L.d) && r.tfs.length >= L.n && (!L.q || (r.name + " " + r.symbol).toLowerCase().includes(L.q)));
-  $("#list").innerHTML = rows.length ? rows.slice(0, L.show).map(card).join("") : `<p class="empty">${L.at ? "No setup matches this filter right now." : "Scanning every market…"}</p>`;
+  $("#list").innerHTML = rows.length ? rows.slice(0, L.show).map(card).join("") : `<p class="empty">${L.at ? (L.meta.closed && !L.rows.length ? "Markets are closed right now. Setups are ranked only while a market is live." : "No setup matches this filter right now.") : "Scanning every market…"}</p>`;
   $("#more").hidden = rows.length <= L.show;
   const p = L.meta.progress ?? 1;
-  $("#upd").textContent = L.at ? `${rows.length} setups · ${L.meta.scanned || 0}/${L.meta.universe || 0} markets${p < 1 ? " (scanning)" : ""} · ${ago(L.at)}` : "";
+  $("#upd").textContent = L.at ? `${rows.length} setups · ${L.meta.scanned || 0}/${L.meta.universe || 0} markets${p < 1 ? " (scanning)" : ""}${L.meta.closed ? ` · ${L.meta.closed} closed markets hidden` : ""} · ${ago(L.at)}` : "";
 }
 async function load() {
   let w = 30000;

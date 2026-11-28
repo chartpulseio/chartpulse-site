@@ -182,12 +182,19 @@ function cf_scan(): array {
     }
     foreach ($cache as $s => $_) if (!isset($scan['rows'][$s])) unset($cache[$s]);
     if ($fresh) t_write_json($cp, $cache);
-    $rows = array_values(array_filter($cache, fn($r) => is_array($r) && empty($r['none'])));
+    // owner, 28 Nov 2026: a market that is not live (weekend, holiday, closed session) is not ranked
+    $closed = 0;
+    $rows = array_values(array_filter($cache, function ($r) use ($scan, $now, &$closed) {
+        if (!is_array($r) || !empty($r['none'])) return false;
+        $st = t_status($r['symbol'], $scan['rows'][$r['symbol']] ?? null, $now);
+        if (!$st['live']) { $closed++; return false; }
+        return true;
+    }));
     usort($rows, fn($a, $b) => $b['key'] <=> $a['key']);
     $cnt = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
     foreach ($rows as $r) $cnt[$r['stage']] = ($cnt[$r['stage']] ?? 0) + 1;
     $p = ['at' => $now, 'rows' => $rows, 'meta' => ['universe' => count($syms), 'scanned' => $done, 'progress' => count($syms) ? round($done / count($syms), 3) : 1,
-          'counts' => $cnt, 'took_ms' => (int)round((microtime(true) - $t0) * 1000)]];
+          'counts' => $cnt, 'closed' => $closed, 'took_ms' => (int)round((microtime(true) - $t0) * 1000)]];
     t_write_json($ck, $p);
     return $p;
 }

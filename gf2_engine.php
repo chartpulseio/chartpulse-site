@@ -57,7 +57,7 @@ function gf2_scan(): array {
     $gf = []; $he = []; $cf = [];
     try { $he = tlh_scan(true)['rows'] ?? []; } catch (Throwable $e) {}
     try { $cf = cf_scan()['rows'] ?? []; } catch (Throwable $e) {}
-    $by = [];
+    $by = []; $scanR = t_scan_load()['rows'] ?? [];
     
     foreach ($he as $r) if (!empty($r['bias'])) $by[$r['symbol'] . '|' . $r['bias']]['he'] = $r;
     foreach ($cf as $r) if (!empty($r['bias'])) $by[$r['symbol'] . '|' . $r['bias']]['cf'] = $r;
@@ -65,6 +65,7 @@ function gf2_scan(): array {
     $rows = [];
     foreach ($by as $k => $x) {
         [$sym, $side] = explode('|', $k, 2); $g = $x['gf'] ?? null; $h = $x['he'] ?? null; $c = $x['cf'] ?? null;
+        if (!t_status($sym, $scanR[$sym] ?? null, $now)['live']) continue;   // owner, 28 Nov 2026: closed markets are not graded or logged
         $base = $c ?? $h ?? $g;
         // BIAS: Daily + Weekly (from whichever input carries the per-chart trend)
         $d = $c['mtf']['d'] ?? $h['mtf']['d'] ?? $g['mtf'] ?? []; $D = (int)($d['1D'] ?? 0); $W = (int)($d['1W'] ?? 0);
