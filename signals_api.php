@@ -38,7 +38,7 @@ function sa_mt5(string $s): string {
 function sa_halt(): bool { return is_file(SA_DIR . '/halt'); }
 
 function sa_signals(): array {
-    $now = t_now(); $ck = SA_DIR . '/_signals2.json'; $c = t_read_json($ck, null);
+    $now = t_now(); $ck = SA_DIR . '/_signals3.json'; $c = t_read_json($ck, null);
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 45) return $c;
     $scan = t_scan_load()['rows'] ?? [];
     $live = fn(string $s) => t_status($s, $scan[$s] ?? null, $now)['live'];
@@ -76,9 +76,13 @@ function sa_signals(): array {
     $out = [];
     foreach ($S as $x) {
         // owner, 28 Nov 2026: trade only with the HTF bias -- Daily AND Weekly both bearish = SELL only, both bullish = BUY only
+        // owner, 28 Nov 2026, 16:03: Day Drive and Reversal are reversal tools -- they skip the D+W filter
         $dw = $x['dw'] ?? null; $want = $x['side'] === 'SELL' ? -1 : 1;
-        if (!$dw || (int)$dw[0] !== $want || (int)$dw[1] !== $want) continue;
-        $x['bias'] = $want < 0 ? 'BEAR (D+W)' : 'BULL (D+W)'; unset($x['dw']);
+        $rev = (bool)array_intersect($x['sources'], ['daydrive', 'reversal']);
+        $withHtf = $dw && (int)$dw[0] === $want && (int)$dw[1] === $want;
+        if (!$withHtf && !$rev) continue;
+        if (!$withHtf) $x['sources'] = array_values(array_intersect($x['sources'], ['daydrive', 'reversal']));   // trend tools only count when they agree with D+W
+        $x['bias'] = $withHtf ? ($want < 0 ? 'BEAR (D+W)' : 'BULL (D+W)') : 'COUNTER-TREND REVERSAL'; unset($x['dw']);
         $x['sources'] = array_values(array_unique($x['sources'])); $x['news_block'] = isset($block[$x['symbol']]);
         $x['gex'] = null; if ($gexOk) { try { $g = gex_label_for($x['symbol']); if ($g) $x['gex'] = ['regime' => ((float)($g['rg'] ?? 0)) > 0 ? 'positive' : 'negative', 'call_wall' => $g['cw'] ?? null, 'put_wall' => $g['pw'] ?? null, 'flip' => $g['flip'] ?? null]; } catch (Throwable $e) {} }
         $x['id'] = substr(sha1($x['symbol'] . '|' . $x['side'] . '|' . gmdate('Y-m-d', $now) . '|' . round($x['zone'][0], 4)), 0, 12);
