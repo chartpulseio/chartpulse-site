@@ -40,7 +40,7 @@ function sa_mt5(string $s): string {
 function sa_halt(): bool { return is_file(SA_DIR . '/halt'); }
 
 function sa_signals(): array {
-    $now = t_now(); $ck = SA_DIR . '/_signals3.json'; $c = t_read_json($ck, null);
+    $now = t_now(); $ck = SA_DIR . '/_signals4.json'; $c = t_read_json($ck, null);
     if (is_array($c) && $now - (int)($c['at'] ?? 0) < 45) return $c;
     $scan = t_scan_load()['rows'] ?? [];
     $live = fn(string $s) => t_status($s, $scan[$s] ?? null, $now)['live'];
@@ -71,6 +71,30 @@ function sa_signals(): array {
     // Reversal: turning / snapping
     try { require_once __DIR__ . '/rb_engine.php'; foreach (rb_scan()['rows'] ?? [] as $r) if ((int)($r['stage'] ?? 0) >= 2 && !empty($r['ext'])) {
         $px = (float)($r['price'] ?? 0); $add($r['symbol'], $sd($r['side'] ?? ''), 'reversal', [(float)$r['ext'], $px ?: (float)$r['ext']], (string)$r['stage_name'], isset($r['mtf']['1D']) ? (int)$r['mtf']['1D'] : null, isset($r['mtf']['1W']) ? (int)$r['mtf']['1W'] : null); } } catch (Throwable $e) {}
+    // owner, 28 Nov 2026, 18:05: three trend-side tools, D+W bias required (same filter as Confluence / God-father)
+    $bm = [];   // symbol => [D, W] trend from the trend-line engine and the 200 EMA cache
+    try { require_once __DIR__ . '/tl_engine.php'; foreach (tl_scan()['rows'] ?? [] as $r) if (isset($r['mtf']['d'])) $bm[$r['symbol']] = [(int)($r['mtf']['d']['1D'] ?? 0), (int)($r['mtf']['d']['1W'] ?? 0)]; } catch (Throwable $e) {}
+    $e2 = json_decode((string)@file_get_contents(T_DATA . '/ema200_signals2.json'), true);
+    foreach ((array)($e2['signals'] ?? []) as $r) if (isset($r['mtf']['d']) && !isset($bm[$r['symbol']])) $bm[$r['symbol']] = [(int)($r['mtf']['d']['1D'] ?? 0), (int)($r['mtf']['d']['1W'] ?? 0)];
+    $dwOf = fn(string $sym) => $bm[$sym] ?? [null, null];
+    // Liquidity Sweep + OB + FVG (1H, plus 15m only next to a 1H setup) and SMC Power of 3 + OTE (1H) -- the retest price is the zone
+    try {
+        require_once __DIR__ . '/institutional/includes/config.php'; require_once __DIR__ . '/institutional/includes/strategies.php';
+        $icache = __DIR__ . '/institutional/cache';
+        foreach ([['3-liquidity-fvg', '1H', 'fvg'], ['1-smc-power-of-3', '1H', 'po3'], ['3-liquidity-fvg', '15m', 'fvg15']] as [$sid, $tf, $tag]) {
+            foreach (ta_get($icache, scan_map(), SCAN_MIN_BARS, $sid, $tf)['data'] ?? [] as $r) {
+                $sym = (string)($r['symbol'] ?? ''); $side = $sd($r['bias'] ?? ''); $px = (float)($r['entry'] ?? 0); if (!$sym || $px <= 0) continue;
+                if ($tag === 'fvg15' && !isset($S["$sym|$side"])) continue;   // 15m only alongside a 1H setup
+                [$D, $W] = $dwOf($sym); $add($sym, $side, $tag === 'fvg15' ? 'fvg' : $tag, [$px, $px], "$sid $tf", $D, $W);
+            }
+        }
+    } catch (Throwable $e) {}
+    // 200 EMA (4H and 1H): price in the ATR zone of the EMA; the side is the D+W trend (support in a bull, resistance in a bear)
+    foreach ((array)($e2['signals'] ?? []) as $r) {
+        $sym = (string)($r['symbol'] ?? ''); [$D, $W] = $dwOf($sym); if (!$sym || !$D || $D !== $W) continue;
+        foreach (['4H', '1H'] as $tf) { $q = $r['tfs'][$tf] ?? null;
+            if (is_array($q) && !empty($q['in']) && (float)($q['e'] ?? 0) > 0) { $e = (float)$q['e']; $add($sym, $D > 0 ? 'BUY' : 'SELL', 'ema200', [$e, $e], "200 EMA $tf", $D, $W); break; } }
+    }
     // News: high impact in the last 60 minutes blocks new entries on that market
     $block = [];
     try { require_once __DIR__ . '/news_scan.php'; foreach (ns_scan()['rows'] ?? [] as $r) if (($r['imp'] ?? '') === 'high' && $now - (int)($r['last'] ?? 0) <= 3600) $block[$r['symbol']] = true; } catch (Throwable $e) {}

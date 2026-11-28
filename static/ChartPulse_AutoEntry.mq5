@@ -16,7 +16,7 @@
 //+------------------------------------------------------------------+
 #property copyright "ChartPulse"
 #property link      "https://chartpulse.io"
-#property version   "3.00"
+#property version   "3.10"
 #property strict
 #include <Trade\Trade.mqh>
 
@@ -38,6 +38,9 @@ input bool   UseConfluence   = true;
 input bool   UseGodfather    = true;
 input bool   UseDayDrive     = true;
 input bool   UseReversal     = true;
+input bool   UseFVG          = true;                            // Liquidity Sweep + Order Block + FVG (1H)
+input bool   UsePO3          = true;                            // SMC Power of 3 + OTE (1H)
+input bool   UseEMA200       = true;                            // 200 EMA (4H / 1H)
 input bool   UsePinBar       = true;
 input bool   UseEngulfing    = true;
 input bool   UseStar         = true;
@@ -277,6 +280,9 @@ void Process(const string o) {
    if (UseGodfather  && StringFind(o, "\"godfather\"")  >= 0) src++;
    if (UseDayDrive   && StringFind(o, "\"daydrive\"")   >= 0) src++;
    if (UseReversal   && StringFind(o, "\"reversal\"")   >= 0) src++;
+   if (UseFVG        && StringFind(o, "\"fvg\"")        >= 0) src++;
+   if (UsePO3        && StringFind(o, "\"po3\"")        >= 0) src++;
+   if (UseEMA200     && StringFind(o, "\"ema200\"")     >= 0) src++;
    if (src < MathMax(1, MinSources) || GlobalVariableCheck("CP_id_" + id)) return;
    string sym = MapSymbol(api); if (!SymbolSelect(sym, true)) return;
    int total; if (Positions(sym, total) > 0 || (MaxOpenTrades > 0 && total >= MaxOpenTrades)) return;            // one position per symbol, all timeframes
