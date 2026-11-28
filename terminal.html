@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="/static/v2/fonts.css?v=1">
 <link rel="stylesheet" href="/static/v2/sitehead.css?v=8">
 <script defer src="/static/v2/sitehead.js?v=27"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 :root{--bg:#07080a;--pn:#0d0f13;--ln:#1c2027;--tx:#d7dce4;--mu:#7b8494;--am:#ffb02e;--up:#21c77a;--dn:#ff5a5f;--bl:#5aa9ff;--mono:"JetBrains Mono",ui-monospace,Consolas,monospace}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--tx);font:13px/1.4 Inter,system-ui,sans-serif}
@@ -47,6 +48,9 @@ tr.r{cursor:pointer}tr.r:hover td{background:#141821}tr.sel td{background:#1d223
 .tick{border-top:1px solid var(--ln);background:#0a0b0e;overflow:hidden;white-space:nowrap;font:12px var(--mono);padding:6px 0}
 .tick span{display:inline-block;padding:0 14px}
 .tick .in{display:inline-block;animation:tk 90s linear infinite}@keyframes tk{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+#chart{flex:1;min-height:420px}.tfb{display:flex;gap:4px;padding:6px 10px}.tfb button{background:none;border:1px solid #2a2f38;color:var(--mu);font:600 11px var(--mono);padding:2px 8px;border-radius:3px;cursor:pointer}.tfb button.on{color:#000;background:var(--am)}
+.imp-High{color:var(--dn)}.imp-Medium{color:var(--am)}.imp-Low,.imp-Holiday{color:var(--mu)}
+.frm{display:flex;gap:10px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--ln);font:12px var(--mono)}.frm select,.frm input{background:#000;color:var(--tx);border:1px solid #2a2f38;font:12px var(--mono);padding:3px 6px}
 .help{padding:12px;font:12px var(--mono);color:var(--mu)}.help b{color:var(--am)}
 .empty{padding:14px;color:var(--mu);font:12px var(--mono)}
 .btns{display:flex;gap:6px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--ln)}
@@ -56,7 +60,7 @@ tr.r{cursor:pointer}tr.r:hover td{background:#141821}tr.sel td{background:#1d223
 </head>
 <body>
 <main class="tm" id="main">
-  <div class="cmd"><b>CP&gt;</b><input id="q" list="syms" placeholder="Type a symbol or command: XAUUSD GEX · NIFTY · GF · CF · NEWS · HELP" autocomplete="off" autofocus><datalist id="syms"></datalist><span class="clock" id="clk"></span></div>
+  <div class="cmd"><b>CP&gt;</b><input id="q" list="syms" placeholder="Type a symbol or command: XAUUSD GEX · NIFTY · GF · CF · NEWS · HELP" autocomplete="off" autofocus><datalist id="syms"></datalist><span class="clock am" id="nx"></span><span class="clock" id="clk"></span></div>
   <div class="grid">
     <section class="pn">
       <div class="ph">Watchlist<span class="sp"></span><small id="wcount"></small></div>
@@ -82,10 +86,12 @@ tr.r{cursor:pointer}tr.r:hover td{background:#141821}tr.sel td{background:#1d223
 "use strict";
 const $ = id => document.getElementById(id);
 const E = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-const S = { rows: [], by: {}, mk: "ALL", sel: null, view: "OVERVIEW", gf: [], cf: [], nw: [], gexList: [] };
+const S = { rows: [], by: {}, mk: "ALL", sel: null, view: "OVERVIEW", gf: [], cf: [], nw: [], gexList: [], board: [], econ: [], tf: "1H", alerts: [], seen: null, alertsOn: false, chart: null };
+const LS = { get(k, d) { try { const v = localStorage.getItem("cpt_" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("cpt_" + k, JSON.stringify(v)); } catch (e) {} } };
 const MK = [["ALL", () => true], ["US", r => /stock|etf|index/i.test(r.market || "") && !/\.NS$|^\^NSE|NIFTY/.test(r.symbol)], ["INDIA", r => /\.NS$|^\^NSE|^\^CNX|NIFTY/.test(r.symbol)], ["FX", r => /=X$/.test(r.symbol)], ["CMDTY", r => /=F$/.test(r.symbol)], ["CRYPTO", r => /-USD$/.test(r.symbol)]];
 const GEXMAP = { "^NSEI": "NIFTY", "^NSEBANK": "BANKNIFTY", "NIFTY_FIN_SERVICE.NS": "FINNIFTY", "BTC-USD": "BTC", "ETH-USD": "ETH", "GC=F": "GLD", "SI=F": "SLV", "CL=F": "USO", "^GSPC": "SPY", "^NDX": "QQQ", "^RUT": "IWM", "^DJI": "DIA" };
-const VIEWS = ["OVERVIEW", "GEX", "CHART", "NEWS"];
+const VIEWS = ["OVERVIEW", "CHART", "GEX", "ZONES", "NEWS", "WHY"];
+const GLOBAL = ["CAL", "ALERTS", "SCREEN", "JOURNAL"];
 const pct = v => v == null ? "–" : (v >= 0 ? "+" : "") + Number(v).toFixed(2) + "%";
 const cls = v => v > 0 ? "up" : v < 0 ? "dn" : "mu";
 const px = v => v == null ? "–" : Number(v) >= 100 ? Number(v).toFixed(2) : Number(v).toFixed(Number(v) >= 1 ? 4 : 6);
@@ -96,7 +102,7 @@ async function J(u) { try { const r = await fetch(u, { cache: "no-store", creden
 
 function drawTabs() {
   $("mk").innerHTML = MK.map(([k]) => `<button class="${k === S.mk ? "on" : ""}" data-k="${k}">${k}</button>`).join("");
-  $("vt").innerHTML = VIEWS.map(k => `<button class="${k === S.view ? "on" : ""}" data-v="${k}">${k}</button>`).join("");
+  $("vt").innerHTML = VIEWS.map(k => `<button class="${k === S.view && S.sel ? "on" : ""}" data-v="${k}">${k}</button>`).join("") + `<span style="flex:1"></span>` + GLOBAL.map(k => `<button data-g="${k}">${k}</button>`).join("");
 }
 function drawWatch() {
   const f = MK.find(m => m[0] === S.mk)[1];
@@ -118,13 +124,15 @@ function drawSymbol() {
   const g = gexOf(s), q = encodeURIComponent(s);
   $("links").innerHTML = [["Bias page", `/bias/`], ["Trendline Hero", `/scanners/trendline-hero/?s=${q}`], ["Confluence", `/scanners/confluence/?s=${q}`], ["God-father", `/scanners/godfather/`], ["Next Candle AI", `/scanners/next-candle/`], ["AI Forecast", `/scanners/forecast-24h/`], ["Backtest", `/backtesting/`], g ? ["GEX", `/scanners/gex/#${g}`] : null].filter(Boolean).map(([t, u]) => `<a href="${u}">${t} ↗</a>`).join("");
   const v = $("vw");
-  if (S.view === "GEX") v.innerHTML = g ? `<iframe title="GEX ${E(g)}" src="/scanners/gex/?embed=1#${g}"></iframe>` : `<div class="empty">No options gamma for ${E(s)}. GEX covers US indices and mega-caps, NIFTY, BANKNIFTY, FINNIFTY, Gold/Silver ETFs, BTC and ETH.</div>`;
-  else if (S.view === "CHART") v.innerHTML = `<iframe title="Confluence chart ${E(s)}" src="/scanners/confluence/?s=${q}"></iframe>`;
+  if (S.view === "CHART") { v.innerHTML = `<div class="tfb">${["10M", "1H", "4H", "1D", "1W"].map(t => `<button class="${t === S.tf ? "on" : ""}" data-tf="${t}">${t}</button>`).join("")}<span class="mu" style="margin-left:8px">day high/low · GEX walls · confluence zone</span></div><div id="chart"></div>`; drawChart(s); }
+  else if (S.view === "WHY") v.innerHTML = `<div class="list">${why(s)}</div>`;
+  else if (S.view === "GEX") v.innerHTML = g ? `<iframe title="GEX ${E(g)}" src="/scanners/gex/?embed=1#${g}"></iframe>` : `<div class="empty">No options gamma for ${E(s)}. GEX covers US indices and mega-caps, NIFTY, BANKNIFTY, FINNIFTY, Gold/Silver ETFs, BTC and ETH.</div>`;
+  else if (S.view === "ZONES") v.innerHTML = `<iframe title="Confluence chart ${E(s)}" src="/scanners/confluence/?s=${q}"></iframe>`;
   else if (S.view === "NEWS") { const n = S.nw.filter(x => x.symbol === s); v.innerHTML = n.length ? `<div class="list">${n.flatMap(x => x.stories || []).map(st => `<div class="it"><a href="${E(st.u)}" target="_blank" rel="noopener nofollow">${E(st.t)}</a> <span class="mu">${E(st.src || "")}</span></div>`).join("")}</div>` : `<div class="empty">No tagged news for ${E(s)} right now.</div>`; }
-  else { const st = setupsFor(s); v.innerHTML = `<div class="list"><div class="it am">ACTIVE SETUPS</div>${st.length ? st.map(x => `<div class="it">${x}</div>`).join("") : `<div class="it mu">No graded setup on ${E(s)} right now.</div>`}<div class="it mu">Tip: type <b class="am">${E(s)} GEX</b>, <b class="am">${E(s)} CHART</b> or <b class="am">${E(s)} NEWS</b>.</div></div>`; }
+  else { const st = setupsFor(s); v.innerHTML = `<div class="list"><div class="it am">ACTIVE SETUPS</div>${st.length ? st.map(x => `<div class="it">${x}</div>`).join("") : `<div class="it mu">No graded setup on ${E(s)} right now.</div>`}<div class="it am">UPCOMING EVENTS FOR THIS MARKET</div>${eventsFor(s).slice(0, 6).map(evRow).join("") || `<div class="it mu">No scheduled event this week.</div>`}<div class="it mu">Tip: <b class="am">${E(s)} CHART</b> · <b class="am">${E(s)} WHY</b> · <b class="am">${E(s)} GEX</b> · <b class="am">${E(s)} NEWS</b></div></div>`; }
 }
 function helpHtml() {
-  return `<b>COMMANDS</b><br><br><b>XAUUSD</b> or <b>GC=F</b> · open a market<br><b>NIFTY GEX</b> · gamma levels<br><b>BTC CHART</b> · confluence chart<br><b>AAPL NEWS</b> · tagged news<br><b>GF</b> God-father · <b>CF</b> Confluence · <b>TL</b> Trendline Hero · <b>NC</b> Next Candle · <b>AI</b> Forecast · <b>BT</b> Backtest · <b>API</b> MT5 auto-entry<br><b>US · INDIA · FX · CMDTY · CRYPTO</b> · filter the watchlist<br><br>Click any row in the right panels to open it here.`;
+  return `<b>COMMANDS</b><br><br><b>XAUUSD</b> or <b>GC=F</b> · open a market<br><b>NIFTY GEX</b> · gamma levels<br><b>BTC CHART</b> · live chart with day high/low, GEX walls and zone<br><b>XAUUSD WHY</b> · analyst summary: why it is moving<br><b>EURUSD ZONES</b> · confluence chart<br><b>CAL</b> economic calendar · <b>ALERTS</b> alert center · <b>SCREEN</b> screener · <b>JOURNAL</b> EA trade log<br><b>AAPL NEWS</b> · tagged news<br><b>GF</b> God-father · <b>CF</b> Confluence · <b>TL</b> Trendline Hero · <b>NC</b> Next Candle · <b>AI</b> Forecast · <b>BT</b> Backtest · <b>API</b> MT5 auto-entry<br><b>US · INDIA · FX · CMDTY · CRYPTO</b> · filter the watchlist<br><br>Click any row in the right panels to open it here.`;
 }
 function drawRight() {
   $("gf").innerHTML = S.gf.map(r => `<tr class="r" data-s="${E(r.symbol)}"><td><span class="chip a">${E(r.grade)}</span></td><td>${E(r.symbol)}</td><td><span class="chip ${side(r.side)}">${sideTxt(r.side)}</span></td><td class="mu">${E((r.setup_name || "").slice(0, 22))}</td></tr>`).join("") || `<tr><td class="empty">No A+ / A setup on live markets right now.</td></tr>`;
@@ -139,6 +147,88 @@ function drawTick() {
   const m = [...S.rows].filter(r => r.change_pct != null).sort((a, b) => Math.abs(b.change_pct) - Math.abs(a.change_pct)).slice(0, 30);
   const h = m.map(r => `<span>${E(r.symbol)} <b class="${cls(r.change_pct)}">${pct(r.change_pct)}</b></span>`).join("");
   $("tk").innerHTML = h + h;
+}
+// ---------- economic calendar ----------
+const CURS = s => { const m = /^([A-Z]{3})([A-Z]{3})=X$/.exec(s); if (m) return [m[1], m[2]]; if (/\.NS$|^\^NSE|^\^CNX|NIFTY/.test(s)) return ["INR"]; if (/^\^FTSE|\.L$/.test(s)) return ["GBP"]; if (/^\^GDAXI|\.DE$/.test(s)) return ["EUR"]; if (/^\^N225|\.T$/.test(s)) return ["JPY"]; return ["USD"]; };
+const ist = t => new Date(t * 1000).toLocaleString("en-IN", { weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kolkata" });
+const until = t => { const d = t - Date.now() / 1000; if (d < -3600) return "done"; if (d < 0) return "just out"; const h = Math.floor(d / 3600), m = Math.floor(d % 3600 / 60); return h ? `in ${h}h ${m}m` : `in ${m}m`; };
+const evRow = e => `<div class="it"><span class="imp-${E(e.impact)}">●</span> ${ist(e.t)} IST · <b>${E(e.cur)}</b> ${E(e.title)} <span class="mu">${e.forecast ? "f " + E(e.forecast) : ""} ${e.previous ? "p " + E(e.previous) : ""} · ${until(e.t)}</span></div>`;
+function eventsFor(s) { const c = CURS(s), now = Date.now() / 1000; return S.econ.filter(e => c.includes(e.cur) && e.t > now - 3600 && (e.impact === "High" || e.impact === "Medium")); }
+function drawNext() { const now = Date.now() / 1000, n = S.econ.find(e => e.impact === "High" && e.t > now - 300); $("nx").textContent = n ? `NEXT HIGH: ${n.cur} ${n.title.slice(0, 28)} ${until(n.t)}` : ""; }
+// ---------- native chart ----------
+async function drawChart(s) {
+  const box = $("chart"); if (!box) return;
+  if (!window.LightweightCharts) { box.innerHTML = `<div class="empty">Chart library loading… try again in a moment.</div>`; return; }
+  const d = await J(`/api.php?r=symbol&sym=${encodeURIComponent(s)}&tf=${S.tf}`);
+  if (!d || !d.candles || !d.candles.t) { box.innerHTML = `<div class="empty">No candles for ${E(s)} on ${S.tf} yet.</div>`; return; }
+  if (S.sel !== s || !$("chart")) return;
+  box.innerHTML = "";
+  const ch = LightweightCharts.createChart(box, { layout: { background: { color: "#07080a" }, textColor: "#9aa3b2" }, grid: { vertLines: { color: "#12151a" }, horzLines: { color: "#12151a" } }, timeScale: { timeVisible: true, borderColor: "#1c2027" }, rightPriceScale: { borderColor: "#1c2027" }, autoSize: true });
+  const cs = ch.addCandlestickSeries({ upColor: "#21c77a", downColor: "#ff5a5f", wickUpColor: "#21c77a", wickDownColor: "#ff5a5f", borderVisible: false });
+  const c = d.candles; cs.setData(c.t.map((t, i) => ({ time: t, open: c.o[i], high: c.h[i], low: c.l[i], close: c.c[i] })));
+  const line = (p, color, title, style = 2) => { if (p) cs.createPriceLine({ price: Number(p), color, lineWidth: 1, lineStyle: style, axisLabelVisible: true, title }); };
+  const r = S.by[s] || {}; line(r.day_high ?? r.today_high, "#ffb02e", "Day H"); line(r.day_low ?? r.today_low, "#ffb02e", "Day L");
+  const g = gexOf(s), b = g && S.board.find(x => x.symbol === g);
+  if (b && b.spot && r.price) { const k = Number(r.price) / Number(b.spot); line(b.call_wall * k, "#ff5a5f", "Call wall", 0); line(b.put_wall * k, "#21c77a", "Put wall", 0); line(b.zero_gamma * k, "#5aa9ff", "Zero γ", 1); }
+  const z = S.cf.find(x => x.symbol === s); if (z && z.zone) { line(z.zone[0], "#c9a227", "Zone", 0); line(z.zone[1], "#c9a227", "Zone", 0); }
+  ch.timeScale().fitContent(); S.chart = ch;
+}
+// ---------- analyst summary (rule-based, from live ChartPulse data) ----------
+function why(s) {
+  const r = S.by[s]; if (!r) return "";
+  const L = [], mv = Number(r.move_atr), ch = Number(r.change_pct);
+  L.push(`<div class="it am">WHY IS ${E(s)} MOVING?</div>`);
+  L.push(`<div class="it">${E(s)} is ${ch >= 0 ? "up" : "down"} <b class="${cls(ch)}">${pct(ch)}</b> today${isFinite(mv) ? `, about <b>${Math.abs(mv).toFixed(1)}×</b> its daily ATR — ${Math.abs(mv) >= 1.5 ? "a stretched, unusual move" : Math.abs(mv) >= 0.8 ? "a normal full-day move" : "a quiet day so far"}` : ""}.</div>`);
+  L.push(`<div class="it">Trend bias: <span class="chip ${side(r.bias)}">${sideTxt(r.bias)}</span>. ${r.live ? "Market is live." : "Market is closed; levels are from the last session."}</div>`);
+  const n = S.nw.find(x => x.symbol === s);
+  if (n) L.push(`<div class="it">News: ${n.n24 || n.n} stories in 24h, tone <b class="${n.side === "UP" ? "up" : n.side === "DOWN" ? "dn" : "mu"}">${E(n.side || "mixed")}</b>${n.imp === "high" ? ", <b class='dn'>high impact</b>" : ""}. Latest: ${E(((n.stories || [])[0] || {}).t || "")}</div>`);
+  else L.push(`<div class="it mu">No tagged news — the move looks technical or flow-driven.</div>`);
+  const g = gexOf(s), b = g && S.board.find(x => x.symbol === g);
+  if (b) L.push(`<div class="it">Dealer gamma (${E(g)}): <b>${/pos/i.test(b.regime || "") || Number(b.net_gex) > 0 ? "positive — moves tend to be absorbed, ranges and reversals favoured" : "negative — moves tend to extend, breakouts favoured"}</b>. Call wall ${px(b.call_wall)}, put wall ${px(b.put_wall)}.</div>`);
+  const st = setupsFor(s); if (st.length) L.push(`<div class="it">Setups: ${st.join(" · ")}</div>`);
+  const ev = eventsFor(s).filter(e => e.impact === "High").slice(0, 2); if (ev.length) L.push(`<div class="it">Scheduled risk: ${ev.map(e => `${E(e.cur)} ${E(e.title)} ${until(e.t)}`).join(" · ")}</div>`);
+  L.push(`<div class="it mu">Built from ChartPulse data (trend engine, news scanner, GEX, scanners, calendar). Not financial advice.</div>`);
+  return L.join("");
+}
+// ---------- global views ----------
+function showGlobal(k) {
+  S.sel = null; $("hd").innerHTML = `<h2>${k}</h2>`; $("kv").innerHTML = ""; $("links").innerHTML = ""; const v = $("vw");
+  history.replaceState(null, "", "#" + k);
+  if (k === "CAL") {
+    const f = LS.get("calImp", "High"); const now = Date.now() / 1000;
+    const ev = S.econ.filter(e => e.t > now - 6 * 3600 && (f === "All" || e.impact === f || (f === "Medium" && e.impact === "High")));
+    v.innerHTML = `<div class="frm">Impact <select id="ci">${["High", "Medium", "All"].map(x => `<option${x === f ? " selected" : ""}>${x}</option>`).join("")}</select><span class="mu">Times in IST. High-impact events lock MT5 auto-entry 20 min either side.</span></div><div class="bd list">${ev.map(evRow).join("") || `<div class="empty">Calendar not available right now.</div>`}</div>`;
+    $("ci").onchange = e => { LS.set("calImp", e.target.value); showGlobal("CAL"); };
+  } else if (k === "ALERTS") {
+    v.innerHTML = `<div class="frm"><label><input type="checkbox" id="ao" ${S.alertsOn ? "checked" : ""}> Desktop alerts for new God-father A+ / A and Confluence GO</label><a class="am" href="/scanners/godfather/">Telegram alerts ↗</a></div><div class="bd list">${S.alerts.map(a => `<div class="it">${a.t} · <a href="#" data-s="${E(a.s)}" class="am">${E(a.s)}</a> ${a.m}</div>`).join("") || `<div class="empty">No alerts yet in this session. New A+ / A and GO setups appear here as they happen.</div>`}</div>`;
+    $("ao").onchange = async e => { S.alertsOn = e.target.checked; LS.set("alerts", S.alertsOn); if (S.alertsOn && "Notification" in window && Notification.permission === "default") await Notification.requestPermission(); };
+  } else if (k === "SCREEN") {
+    const F = LS.get("scr", { live: true, bias: "ANY", mv: 0, setup: false });
+    const rows = S.rows.filter(r => (!F.live || r.live) && (F.bias === "ANY" || sideTxt(r.bias) === F.bias) && Math.abs(Number(r.move_atr) || 0) >= Number(F.mv) && (!F.setup || setupsFor(r.symbol).length))
+      .sort((a, b) => Math.abs(b.move_atr || 0) - Math.abs(a.move_atr || 0)).slice(0, 200);
+    v.innerHTML = `<div class="frm"><label><input type="checkbox" id="f1" ${F.live ? "checked" : ""}> Live only</label> Bias <select id="f2">${["ANY", "BUY", "SELL"].map(x => `<option${x === F.bias ? " selected" : ""}>${x}</option>`).join("")}</select> Move ≥ <input id="f3" type="number" step="0.1" min="0" value="${F.mv}" style="width:60px">× ATR <label><input type="checkbox" id="f4" ${F.setup ? "checked" : ""}> Has a setup</label> <span class="mu">${rows.length} results</span></div><div class="bd"><table><tbody>${rows.map(r => `<tr class="r" data-s="${E(r.symbol)}"><td>${E(r.symbol)}</td><td>${px(r.price)}</td><td class="${cls(r.change_pct)}">${pct(r.change_pct)}</td><td>${r.move_atr != null ? Number(r.move_atr).toFixed(2) + "×" : "–"}</td><td><span class="chip ${side(r.bias)}">${sideTxt(r.bias)}</span></td><td class="mu">${setupsFor(r.symbol).length ? "setup" : ""}</td></tr>`).join("")}</tbody></table></div>`;
+    const save = () => { LS.set("scr", { live: $("f1").checked, bias: $("f2").value, mv: Number($("f3").value) || 0, setup: $("f4").checked }); showGlobal("SCREEN"); };
+    ["f1", "f2", "f3", "f4"].forEach(id => $(id).onchange = save);
+  } else if (k === "JOURNAL") {
+    v.innerHTML = `<div class="frm">Load your MT5 EA log (<code>MQL5/Files/ChartPulse_log.csv</code>): <input type="file" id="jf" accept=".csv"><span class="mu">Read in your browser only; nothing is uploaded.</span></div><div class="bd" id="jo"><div class="empty">Shows entries and skips by pattern, timeframe and reason.</div></div>`;
+    $("jf").onchange = e => { const f = e.target.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => journal(String(rd.result)); rd.readAsText(f); };
+  }
+}
+function journal(txt) {
+  const L = txt.trim().split(/\r?\n/).slice(1).map(x => x.split(",")); const by = {};
+  L.forEach(c => { const k = `${c[4] || "?"} · ${c[2] || "?"}`; const o = by[k] = by[k] || { n: 0, in: 0, sk: {} }; o.n++; if (/ENTERED/.test(c[5])) o.in++; else o.sk[c[5]] = (o.sk[c[5]] || 0) + 1; });
+  $("jo").innerHTML = `<table><tbody><tr class="mu"><td>Pattern · TF</td><td>Found</td><td>Entered</td><td>Main skip reason</td></tr>${Object.entries(by).sort((a, b) => b[1].n - a[1].n).map(([k, o]) => { const top = Object.entries(o.sk).sort((a, b) => b[1] - a[1])[0]; return `<tr><td>${E(k)}</td><td>${o.n}</td><td class="up">${o.in}</td><td class="mu">${top ? E(top[0]) + " (" + top[1] + ")" : "–"}</td></tr>`; }).join("")}</tbody></table><div class="empty">${L.length} log lines. Profit per trade is in your MT5 account history; send this log to tune the rules.</div>`;
+}
+// ---------- alerts ----------
+function checkAlerts() {
+  const keys = new Set([...S.gf.map(r => `G|${r.symbol}|${r.side}|${r.grade}`), ...S.cf.filter(r => r.stage >= 5).map(r => `C|${r.symbol}|${r.bias}`)]);
+  if (S.seen) {
+    const t = new Date().toLocaleTimeString("en-IN", { hour12: false, timeZone: "Asia/Kolkata" });
+    keys.forEach(k => { if (S.seen.has(k)) return; const [kind, s, sd, gr] = k.split("|"); const m = kind === "G" ? `God-father <span class="chip a">${E(gr)}</span> ${sideTxt(sd)}` : `Confluence GO ${sideTxt(sd)}`;
+      S.alerts.unshift({ t, s, m }); if (S.alertsOn && "Notification" in window && Notification.permission === "granted") { try { new Notification(`ChartPulse: ${s}`, { body: m.replace(/<[^>]+>/g, "") }); } catch (e) {} } });
+    S.alerts = S.alerts.slice(0, 100);
+  }
+  S.seen = keys;
 }
 function open(s, view) {
   s = String(s || "").toUpperCase().trim(); if (!s) return;
@@ -156,32 +246,40 @@ function run(cmd) {
   const p = cmd.toUpperCase().trim().split(/\s+/); const a = p[0] || "";
   const go = { GF: "/scanners/godfather/", CF: "/scanners/confluence/", TL: "/scanners/trendline-hero/", NC: "/scanners/next-candle/", AI: "/scanners/forecast-24h/", BT: "/backtesting/", API: "/api/", GEX: "/scanners/gex/", NEWS: "/scanners/news/" };
   if (a === "HELP" || a === "?") { S.sel = null; $("hd").innerHTML = ""; $("kv").innerHTML = ""; $("links").innerHTML = ""; $("vw").innerHTML = `<div class="help">${helpHtml()}</div>`; return; }
-  if (p.length === 1 && go[a] && !S.by[a]) { location.href = go[a]; return; }
+  if (p.length === 1 && go[a] && !S.by[a] && a !== "NEWS") { location.href = go[a]; return; }
+  if (a === "NEWS" && p.length === 1) { location.href = go.NEWS; return; }
+  if (GLOBAL.includes(a)) { showGlobal(a); return; }
   if (MK.some(m => m[0] === a)) { S.mk = a; drawTabs(); drawWatch(); return; }
   const v = VIEWS.includes(p[p.length - 1]) && p.length > 1 ? p.pop() : null;
   open(p.join(" "), v || "OVERVIEW");
 }
 async function load() {
-  const [sc, gf, cf, nw, gl] = await Promise.all([J("/api.php?r=scan"), J("/gf2_api.php"), J("/cf_api.php"), J("/tl_api.php?r=news"), S.gexList.length ? null : J("/gex_api.php?r=list")]);
+  const [sc, gf, cf, nw, gl, ec, bd] = await Promise.all([J("/api.php?r=scan"), J("/gf2_api.php"), J("/cf_api.php"), J("/tl_api.php?r=news"), S.gexList.length ? null : J("/gex_api.php?r=list"), J("/econ.php"), J("/gex_api.php?r=board")]);
+  if (ec && Array.isArray(ec.events)) S.econ = ec.events;
+  if (bd) S.board = Array.isArray(bd) ? bd : (bd.rows || bd.board || []);
   if (gl && gl.ok) S.gexList = [...(gl.US || []), ...(gl.IN || []), ...(gl.CR || [])];
   if (sc && Array.isArray(sc.rows)) { S.rows = sc.rows; S.by = Object.fromEntries(sc.rows.map(r => [r.symbol, r])); $("syms").innerHTML = sc.rows.slice(0, 1200).map(r => `<option value="${E(r.symbol)}">${E(r.name || "")}</option>`).join(""); }
   if (gf && Array.isArray(gf.rows)) S.gf = gf.rows.filter(r => r.grade === "A+" || r.grade === "A");
   if (cf && Array.isArray(cf.rows)) S.cf = cf.rows.filter(r => (r.stage || 0) >= 4);
   if (nw && Array.isArray(nw.rows)) S.nw = nw.rows;
-  drawWatch(); drawRight(); drawTick();
-  if (S.sel) { if (S.view !== "GEX" && S.view !== "CHART") drawSymbol(); else { const r = S.by[S.sel]; if (r) $("hd").querySelector(".px") && ($("hd").querySelector(".px").textContent = px(r.price)); } }
+  drawWatch(); drawRight(); drawTick(); checkAlerts();
+  if (S.sel) { if (!["GEX", "ZONES", "CHART"].includes(S.view)) drawSymbol(); else { const r = S.by[S.sel]; if (r) $("hd").querySelector(".px") && ($("hd").querySelector(".px").textContent = px(r.price)); } }
 }
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-s],[data-k],[data-v]"); if (!t) return;
+  const t = e.target.closest("[data-s],[data-k],[data-v],[data-tf],[data-g]"); if (!t) return;
+  if (t.dataset.tf) { S.tf = t.dataset.tf; drawSymbol(); return; }
+  if (t.dataset.g) { showGlobal(t.dataset.g); return; }
   if (t.dataset.k) { S.mk = t.dataset.k; drawTabs(); drawWatch(); }
-  else if (t.dataset.v) { S.view = t.dataset.v; drawTabs(); if (S.sel) open(S.sel); }
+  else if (t.dataset.v) { S.view = t.dataset.v; drawTabs(); if (S.sel) open(S.sel); else if (S.rows[0]) open(S.rows[0].symbol); }
   else if (t.dataset.s) { e.preventDefault(); open(t.dataset.s, "OVERVIEW"); }
 });
 $("q").addEventListener("keydown", e => { if (e.key === "Enter") { run(e.target.value); e.target.value = ""; } });
 document.addEventListener("keydown", e => { if (e.key === "/" && document.activeElement !== $("q")) { e.preventDefault(); $("q").focus(); } });
+S.alertsOn = LS.get("alerts", false);
+setInterval(drawNext, 30000);
 setInterval(() => { const d = new Date(); $("clk").textContent = d.toUTCString().slice(17, 25) + " UTC · " + d.toLocaleTimeString("en-IN", { hour12: false, timeZone: "Asia/Kolkata" }) + " IST"; }, 1000);
 drawTabs(); $("vw").innerHTML = `<div class="help">${helpHtml()}</div>`;
-load().then(() => { const h = decodeURIComponent(location.hash.slice(1)); if (h) { const [s, v] = h.split("/"); open(s, VIEWS.includes(v) ? v : "OVERVIEW"); } });
+load().then(() => { drawNext(); const h = decodeURIComponent(location.hash.slice(1)); if (GLOBAL.includes(h)) showGlobal(h); else if (h) { const [s, v] = h.split("/"); open(s, VIEWS.includes(v) ? v : "OVERVIEW"); } });
 setInterval(load, 60000);
 </script>
 </body>

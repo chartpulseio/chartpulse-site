@@ -98,6 +98,7 @@ function sa_signals(): array {
     // News: high impact in the last 60 minutes blocks new entries on that market
     $block = [];
     try { require_once __DIR__ . '/news_scan.php'; foreach (ns_scan()['rows'] ?? [] as $r) if (($r['imp'] ?? '') === 'high' && $now - (int)($r['last'] ?? 0) <= 3600) $block[$r['symbol']] = true; } catch (Throwable $e) {}
+    $econOk = is_file(__DIR__ . '/econ.php'); if ($econOk) require_once __DIR__ . '/econ.php';
     $gexOk = is_file(__DIR__ . '/gex_engine.php'); if ($gexOk) require_once __DIR__ . '/gex_engine.php';
     $out = [];
     foreach ($S as $x) {
@@ -110,6 +111,8 @@ function sa_signals(): array {
         if (!$withHtf) $x['sources'] = array_values(array_intersect($x['sources'], ['daydrive', 'reversal']));   // trend tools only count when they agree with D+W
         $x['bias'] = $withHtf ? ($want < 0 ? 'BEAR (D+W)' : 'BULL (D+W)') : 'COUNTER-TREND REVERSAL'; unset($x['dw']);
         $x['sources'] = array_values(array_unique($x['sources'])); $x['news_block'] = isset($block[$x['symbol']]);
+        // owner, 28 Nov 2026: scheduled high-impact event (CPI, FOMC, NFP, RBI...) within 20 min for this market = no entry
+        if (!$x['news_block'] && $econOk) { try { $ev = econ_risk($x['symbol'], $now, 20); if ($ev) { $x['news_block'] = true; $x['event'] = $ev['cur'] . ' ' . $ev['title']; } } catch (Throwable $e) {} }
         $x['gex'] = null; if ($gexOk) { try { $g = gex_label_for($x['symbol']); if ($g) $x['gex'] = ['regime' => ((float)($g['rg'] ?? 0)) > 0 ? 'positive' : 'negative', 'call_wall' => $g['cw'] ?? null, 'put_wall' => $g['pw'] ?? null, 'flip' => $g['flip'] ?? null]; } catch (Throwable $e) {} }
         $x['id'] = substr(sha1($x['symbol'] . '|' . $x['side'] . '|' . gmdate('Y-m-d', $now) . '|' . round($x['zone'][0], 4)), 0, 12);
         $x['score'] = count($x['sources']); $out[] = $x;
